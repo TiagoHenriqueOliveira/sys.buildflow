@@ -1,0 +1,124 @@
+@font-face {
+  font-family: 'Poppins';
+  src: url('/movicare/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: url('/movicare/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+:root {
+  --bs-body-font-family: 'Poppins', sans-serif;
+  --header-color: #b5e1d4;
+  --sidebar-color: #2A9D8F;
+  --text-color: #2d3748;
+  --hover-brightness: 0.9;
+  --bs-body-color: #212529e5;
+}
+
+html body {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+.bg-gradient-darkblue {
+  background-color: #1e3a8a;
+  background-image: linear-gradient(180deg, #1e3a8a 75%, #020617 100%);
+  background-size: cover;
+}
+
+.sidebar-dark .nav-item .nav-link {
+  font-weight: 600;
+}
+
+.sidebar .nav-item .collapse .collapse-inner .collapse-header,
+.sidebar .nav-item .collapsing .collapse-inner .collapse-header {
+  padding: 0.2rem 1.5rem;
+}
+
+.sidebar hr.sidebar-divider {
+  margin: 0.5rem 1rem;
+  opacity: 1;
+}
+
+.sidebar.toggled .nav-item .collapse {
+  z-index: 999;
+}
+
+/* muda posição do menu  */
+#collapseConfiguracoes {
+  top: -15rem;
+}
+
+.nav-item i {
+  transition: color 0.3s, transform 0.3s;
+  color: #adb5bd;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.nav-link {
+  transition: transform 0.3s;
+}
+
+.nav-link:hover i {
+  color: #F0F3F4;
+}
+
+.sidebar .nav-link:hover {
+  transform: scale(1.25);
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus {
+  border-color: #36b9cc;
+}
+
+.nav-tabs .nav-link.disabled {
+  color: #858796;
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+  color: #6e707e;
+  background-color: #fff;
+  border-color: #36b9cc;
+}
+
+#nav-tab-patologia {
+  border-bottom: 1px solid #36b9cc;
+}
+
+.collapse-item .menu-icon {
+  margin-right: 8px;
+  color: inherit;
+  transition: none;
+}
+
+.collapse-item:hover .menu-icon {
+  color: inherit;
+}
+
+.nav-link.collapsed:hover>i,
+.nav-link:not(.collapsed):hover>i {
+  color: #F4D35E !important;
+}
+
+.collapse-item:hover>i,
+.collapse-item:hover>div>i {
+  color: #264653;
+}
+
+.collapse-item:hover,
+.submenu-item:hover>i,
+.submenu-item:hover {
+  color: #264653;
+  font-weight: bold;
+  text-decoration: none;
+}

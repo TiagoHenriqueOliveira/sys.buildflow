@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TipoOcupacaoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,3 +26,6 @@ Route::controller(AuthController::class)->group(function () {
 Route::controller(DashboardController::class)->group(function () {
     Route::get('/dashboard', 'index');
 });
+
+// Tipos de Ocupações
+Route::resource('tipos-de-ocupacoes', TipoOcupacaoController::class)->except(['create', 'edit', 'show', 'destroy']);

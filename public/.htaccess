@@ -5,21 +5,14 @@
 
     RewriteEngine On
 
-    # Defina a base do Rewrite
-    RewriteBase /sys-buildflow/
-
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Redirecionar solicitações para storage
-    RewriteCond %{REQUEST_URI} ^/sys.buildflow/storage/
-    RewriteRule ^storage/(.*)$ storage/$1 [L]
-
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
-    RewriteRule ^(.*)/$ /$1 [L,R=301]
+    RewriteRule ^ %1 [L,R=301]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d

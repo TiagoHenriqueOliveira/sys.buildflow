@@ -8,26 +8,32 @@
         <meta name="author" content="">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>Sys.Buildflow</title>
+        <title>{{ $title ?? '' }} | Sys.Buildflow</title>
 
         <!-- CSS -->
-        <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
-        <link href="{{ asset('css/fontawesome-free/all.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/sb-admin-2.css') }}" rel="stylesheet">
+        <!-- Bootstrap CSS -->
+        <link href="{{ asset('css/bootstrap/bootstrap.css') }}" rel="stylesheet">
         <link href="{{ asset('css/bootstrap/jquery-ui.min.css') }}" rel="stylesheet">
         <link href="{{ asset('css/bootstrap/jquery-ui.theme.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/datatables/dataTables.bootstrap4.min.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/datatables/responsive.dataTables.min.css') }}" rel="stylesheet">
+        <!-- DataTables CSS -->
+        <link href="{{ asset('css/datatables/dataTables.bootstrap4.css') }}" rel="stylesheet">
+        <link href="{{ asset('css/datatables/responsive.dataTables.css') }}" rel="stylesheet">
+        <!-- Fontawesome CSS -->
+        <link href="{{ asset('css/fontawesome-free/all.css') }}" rel="stylesheet">
+        <!-- Tema SB Admin 2 -->
+        <link href="{{ asset('css/sb-admin-2.css') }}" rel="stylesheet">
+        <!-- CSS personalizado -->
+        <link href="{{ asset('css/custom.css') }}" rel="stylesheet">
     </head>
 
     <body id="page-top">
         <!-- Page Wrapper -->
         <div id="wrapper">
             <!-- Sidebar -->
-            <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion toggled" id="accordionSidebar">
+            <ul class="navbar-nav bg-gradient-darkblue sidebar sidebar-dark accordion toggled" id="accordionSidebar">
                 <!-- Nav Item - Dashboard -->
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/') }}">
+                    <a class="nav-link" href="{{ url('/dashboard') }}">
                         <i class="fas fa-fw fa-tachometer-alt"></i>
                         <span>Dashboard</span>
                     </a>
@@ -35,11 +41,6 @@
 
                 <!-- Divider -->
                 <hr class="sidebar-divider">
-
-                <!-- Heading -->
-                <div class="sidebar-heading">
-                    Lançamentos
-                </div>
 
                 <!-- Nav Item - Despesas -->
                 <li class="nav-item">
@@ -55,38 +56,28 @@
                         <span>Receitas</span></a>
                 </li>
 
-                <!-- Divider -->
-                <hr class="sidebar-divider">
-
-                <!-- Heading -->
-                <div class="sidebar-heading">
-                    Adicionais
-                </div>
-
                 <!-- Nav Item - Configurações Collapse Menu -->
                 <li class="nav-item">
                     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
-                        <i class="fas fa-fw fa-cog"></i>
+                        <i class="fas fa-cogs fa-2x"></i>
                         <span>Configurações</span>
                     </a>
                     <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                         <div class="bg-white py-2 collapse-inner rounded">
-                            <h6 class="collapse-header">Financeiras</h6>
-                            <a class="collapse-item" href="{{ url('/contas-bancarias') }}">Contas Bancárias</a>
-                            <h6 class="collapse-header">Operacionais</h6>
-                            <a class="collapse-item" href="{{ url('/formas-de-pagamentos') }}">Formas de Pagamento</a>
-                            <a class="collapse-item" href="{{ url('/tipos-de-lancamentos') }}">Tipos de Lançamentos</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Equipamentos</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Modelos de Relatórios</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Naturezas de Atendimentos</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Ocorrências</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Ocupações</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Tipos de Atendimentos</a>
+                            <a class="collapse-item" href="{{ route('tipos-de-ocupacoes.index') }}">Tipos de Ocupações</a>
+                            <a class="collapse-item" href="{{ url('/') }}">Usuários</a>
                         </div>
                     </div>
                 </li>
 
                 <!-- Divider -->
                 <hr class="sidebar-divider d-none d-md-block">
-
-                <!-- Sidebar Toggler (Sidebar) -->
-                <div class="text-center d-none d-md-inline">
-                    <button class="rounded-circle border-0" id="sidebarToggle"></button>
-                </div>
 
             </ul>
             <!-- End of Sidebar -->
@@ -115,21 +106,13 @@
                                 <!-- Dropdown - User Information -->
                                 <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
                                     <a class="dropdown-item" href="#">
-                                        <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                        Profile
-                                    </a>
-                                    <a class="dropdown-item" href="#">
-                                        <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                        Settings
-                                    </a>
-                                    <a class="dropdown-item" href="#">
-                                        <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
-                                        Activity Log
+                                        <i class="fas fa-key mr-2 text-gray-400"></i>
+                                        Senha
                                     </a>
                                     <div class="dropdown-divider"></div>
                                     <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                         <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                                        Logout
+                                        Sair
                                     </a>
                                 </div>
                             </li>
@@ -188,7 +171,6 @@
                 </div>
             </div>
         </div>
-
         <!-- JavaScript -->
         <script src="{{ asset('js/jquery/jquery.js') }}"></script>
         <script src="{{ asset('js/jquery/jquery-ui.min.js') }}"></script>
@@ -196,7 +178,6 @@
         <script src="{{ asset('js/jquery-easing/jquery.easing.min.js') }}"></script>
         <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
         <script src="{{ asset('js/app/utils.js') }}"></script>
-
         <!-- DataTables -->
         <script src="{{ asset('js/datatables/jquery.dataTables.min.js') }}"></script>
         <script src="{{ asset('js/datatables/dataTables.bootstrap4.min.js') }}"></script>
@@ -204,22 +185,18 @@
         <script src="{{ asset('js/datatables/dataTables.buttons.min.js') }}"></script>
         <script src="{{ asset('js/datatables/buttons.html5.min.js') }}"></script>
         <script src="{{ asset('js/datatables/jszip.min.js') }}"></script>
-
         <!-- JQuery Mask -->
         <script src="{{ asset('js/jquery-mask/jquery.mask.js') }}"></script>
         <script src="{{ asset('js/jquery-mask/mask.js') }}"></script>
-
         <!-- Bootstrap Notify -->
         <script src="{{ asset('js/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
-
         <!-- Charts JS -->
         <script src="{{ asset('js/chart.js/Chart.min.js') }}"></script>
         <script src="{{ asset('js/chart.js/chartjs-plugin-datalabels.min.js') }}"></script>
-
+        <!-- Base URL global -->
         <script>
-            var baseURL = window.location.origin + window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1));
+            var baseURL = '{{ url("/") }}';
         </script>
-
         <!-- Scritps do App -->
         @stack('scripts')
     </body>
