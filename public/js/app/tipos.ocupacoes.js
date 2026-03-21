@@ -18,8 +18,6 @@ function configDataTableTiposOcupacoes() {
     const url = tableEl.data("url");
 
     tableEl.DataTable({
-        destroy: true,
-        ordering: false,
         ajax: {
             url: url,
             type: "GET",

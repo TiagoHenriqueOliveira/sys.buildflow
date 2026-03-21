@@ -177,7 +177,7 @@
         <script src="{{ asset('js/bootstrap/bootstrap.bundle.min.js') }}"></script>
         <script src="{{ asset('js/jquery-easing/jquery.easing.min.js') }}"></script>
         <script src="{{ asset('js/sb-admin-2.min.js') }}"></script>
-        <script src="{{ asset('js/app/utils.js') }}"></script>
+
         <!-- DataTables -->
         <script src="{{ asset('js/datatables/jquery.dataTables.min.js') }}"></script>
         <script src="{{ asset('js/datatables/dataTables.bootstrap4.min.js') }}"></script>
@@ -185,18 +185,20 @@
         <script src="{{ asset('js/datatables/dataTables.buttons.min.js') }}"></script>
         <script src="{{ asset('js/datatables/buttons.html5.min.js') }}"></script>
         <script src="{{ asset('js/datatables/jszip.min.js') }}"></script>
-        <!-- JQuery Mask -->
+
+        <!-- Utils.js -->
+        <script src="{{ asset('js/app/utils.js') }}"></script>
+
+        <!-- Outros plugins -->
         <script src="{{ asset('js/jquery-mask/jquery.mask.js') }}"></script>
-        <script src="{{ asset('js/jquery-mask/mask.js') }}"></script>
-        <!-- Bootstrap Notify -->
         <script src="{{ asset('js/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
-        <!-- Charts JS -->
-        <script src="{{ asset('js/chart.js/Chart.min.js') }}"></script>
-        <script src="{{ asset('js/chart.js/chartjs-plugin-datalabels.min.js') }}"></script>
-        <!-- Base URL global -->
+
+        <!-- Base URL -->
         <script>
             var baseURL = '{{ url("/") }}';
         </script>
+
+        @stack('scripts')
         <!-- Scritps do App -->
         @stack('scripts')
     </body>

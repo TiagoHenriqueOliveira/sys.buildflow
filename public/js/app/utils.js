@@ -6,6 +6,8 @@ if ($.fn.dataTable) {
         language: {
             url: "/js/datatables/pt-BR.json"
         },
+        destroy: true,
+        ordering: false,
         responsive: true,
         pageLength: 25,
         processing: true
