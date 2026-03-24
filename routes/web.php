@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipamentosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
+use App\Http\Controllers\OcupacoesController;
 use App\Http\Controllers\TiposAtendimentosController;
 use App\Http\Controllers\TiposOcupacoesController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,8 @@ Route::controller(DashboardController::class)->group(function () {
 Route::resource('equipamentos', EquipamentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Ocorrências
 Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
+// Ocupações
+Route::resource('mao-de-obra', OcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Natureza dos Atendimentos
 Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Tipos de Atendimentos

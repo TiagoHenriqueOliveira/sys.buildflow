@@ -9,13 +9,18 @@ class TipoAtendimentoRepository implements CrudRepositoryInterface
 {
     public function all()
     {
-        return TipoAtendimento::with('naturezaAtendimento')
-            ->get()
-            ->sortBy(function ($a) {
-                $nat = optional($a->naturezaAtendimento)->nat_aten_descricao ?? '';
-                return mb_strtolower($a->tp_aten_descricao) . '|' . mb_strtolower($nat);
-            })
-            ->values();
+        return TipoAtendimento::query()
+            ->select('tipos_atendimentos.*')
+            ->join(
+                'naturezas_atendimentos',
+                'naturezas_atendimentos.nat_aten_id',
+                '=',
+                'tipos_atendimentos.tp_aten_nat_atendimento_id'
+            )
+            ->with('naturezaAtendimento')
+            ->orderBy('tipos_atendimentos.tp_aten_descricao', 'asc')
+            ->orderBy('naturezas_atendimentos.nat_aten_descricao', 'asc')
+            ->get();
     }
 
     public function create(array $data)
