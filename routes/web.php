@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EquipamentosController;
 use App\Http\Controllers\NaturezaAtendimentoController;
 use App\Http\Controllers\TipoOcupacaoController;
 use Illuminate\Support\Facades\Route;
@@ -27,9 +28,9 @@ Route::controller(AuthController::class)->group(function () {
 Route::controller(DashboardController::class)->group(function () {
     Route::get('/dashboard', 'index');
 });
-
+// Equipamentos
+Route::resource('equipamentos', EquipamentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Tipos de Ocupações
 Route::resource('tipos-de-mao-de-obra', TipoOcupacaoController::class)->except(['create', 'edit', 'show', 'destroy']);
-
 // Natureza dos Atendimentos
 Route::resource('naturezas-dos-atendimentos', NaturezaAtendimentoController::class)->except(['create', 'edit', 'show', 'destroy']);

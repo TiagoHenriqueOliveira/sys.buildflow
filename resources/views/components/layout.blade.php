@@ -64,7 +64,7 @@
                     </a>
                     <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                         <div class="bg-white py-2 collapse-inner rounded">
-                            <a class="collapse-item" href="{{ url('/') }}">Equipamentos</a>
+                            <a class="collapse-item" href="{{ url('/equipamentos') }}">Equipamentos</a>
                             <a class="collapse-item" href="{{ url('/') }}">Modelos de Relatórios</a>
                             <a class="collapse-item" href="{{ url('/naturezas-dos-atendimentos') }}">Naturezas de Atendimentos</a>
                             <a class="collapse-item" href="{{ url('/') }}">Ocorrências</a>

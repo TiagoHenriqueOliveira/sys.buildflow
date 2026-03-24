@@ -13,3 +13,19 @@ if ($.fn.dataTable) {
         processing: true
     });
 }
+
+// Função para exibir notificações na tela
+function showNotification(icon, message, type, delay) {
+    $.notify({
+        icon: icon,
+        message: message
+    }, {
+        type: type,
+        delay: delay,
+        z_index: 9999,
+        placement: {
+            from: "top",
+            align: "center"
+        }
+    });
+}
