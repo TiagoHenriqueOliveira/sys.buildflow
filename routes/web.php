@@ -8,6 +8,7 @@ use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OcupacoesController;
 use App\Http\Controllers\TiposAtendimentosController;
 use App\Http\Controllers\TiposOcupacoesController;
+use App\Http\Controllers\UsuariosController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,3 +44,5 @@ Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::c
 Route::resource('tipos-de-atendimentos', TiposAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Tipos de Ocupações
 Route::resource('tipos-de-mao-de-obra', TiposOcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
+// Usuários
+Route::resource('usuarios', UsuariosController::class)->except(['create', 'edit', 'show', 'destroy']);

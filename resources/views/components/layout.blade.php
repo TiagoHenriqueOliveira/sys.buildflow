@@ -71,7 +71,7 @@
                             <a class="collapse-item" href="{{ url('/mao-de-obra') }}">Mão de Obra</a>
                             <a class="collapse-item" href="{{ url('/tipos-de-atendimentos') }}">Tipos de Atendimentos</a>
                             <a class="collapse-item" href="{{ url('tipos-de-mao-de-obra') }}">Tipos de Mão de Obra</a>
-                            <a class="collapse-item" href="{{ url('/') }}">Usuários</a>
+                            <a class="collapse-item" href="{{ url('/usuarios') }}">Usuários</a>
                         </div>
                     </div>
                 </li>
