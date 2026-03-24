@@ -69,7 +69,7 @@
                             <a class="collapse-item" href="{{ url('/naturezas-dos-atendimentos') }}">Naturezas de Atendimentos</a>
                             <a class="collapse-item" href="{{ url('/ocorrencias') }}">Ocorrências</a>
                             <a class="collapse-item" href="{{ url('/') }}">Mão de Obra</a>
-                            <a class="collapse-item" href="{{ url('/') }}">Tipos de Atendimentos</a>
+                            <a class="collapse-item" href="{{ url('/tipos-de-atendimentos') }}">Tipos de Atendimentos</a>
                             <a class="collapse-item" href="{{ url('tipos-de-mao-de-obra') }}">Tipos de Mão de Obra</a>
                             <a class="collapse-item" href="{{ url('/') }}">Usuários</a>
                         </div>

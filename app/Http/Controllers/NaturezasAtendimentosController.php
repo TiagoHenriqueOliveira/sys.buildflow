@@ -6,7 +6,7 @@ use App\Http\Requests\NaturezaAtendimentoRequest;
 use App\Repositories\NaturezaAtendimentoRepository;
 use Illuminate\Http\Request;
 
-class NaturezaAtendimentoController extends Controller
+class NaturezasAtendimentosController extends Controller
 {
     public function __construct(
         private NaturezaAtendimentoRepository $repository

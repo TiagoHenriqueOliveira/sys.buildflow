@@ -13,4 +13,12 @@ class TipoOcupacaoRequest extends FormRequest
             'tp_ocup_ativo' => ['nullable', 'boolean'],
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'tp_ocup_descricao.required' => 'A descrição é obrigatória.',
+            'tp_ocup_descricao.max' => 'A descrição deve ter no máximo 50 caracteres.',
+        ];
+    }
 }

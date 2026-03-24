@@ -13,4 +13,12 @@ class OcorrenciaRequest extends FormRequest
             'ocor_ativo' => ['nullable', 'boolean'],
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'ocor_descricao.required' => 'A descrição é obrigatória.',
+            'ocor_descricao.max' => 'A descrição deve ter no máximo 50 caracteres.',
+        ];
+    }
 }

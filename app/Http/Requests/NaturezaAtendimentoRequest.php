@@ -13,4 +13,12 @@ class NaturezaAtendimentoRequest extends FormRequest
             'nat_aten_ativo' => ['nullable', 'boolean'],
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'nat_aten_descricao.required' => 'A descrição é obrigatória.',
+            'nat_aten_descricao.max' => 'A descrição deve ter no máximo 50 caracteres.',
+        ];
+    }
 }

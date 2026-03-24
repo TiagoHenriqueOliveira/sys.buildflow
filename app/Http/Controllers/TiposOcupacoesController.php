@@ -6,7 +6,7 @@ use App\Http\Requests\TipoOcupacaoRequest;
 use App\Repositories\TipoOcupacaoRepository;
 use Illuminate\Http\Request;
 
-class TipoOcupacaoController extends Controller
+class TiposOcupacoesController extends Controller
 {
     public function __construct(
         private TipoOcupacaoRepository $repository

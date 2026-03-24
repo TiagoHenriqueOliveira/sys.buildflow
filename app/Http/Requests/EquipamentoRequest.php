@@ -13,4 +13,12 @@ class EquipamentoRequest extends FormRequest
             'equip_ativo' => ['nullable', 'boolean'],
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'equip_descricao.required' => 'A descrição é obrigatória.',
+            'equip_descricao.max' => 'A descrição deve ter no máximo 50 caracteres.',
+        ];
+    }
 }
