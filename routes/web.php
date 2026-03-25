@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EquipamentosController;
+use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OcupacoesController;
@@ -34,12 +35,14 @@ Route::controller(DashboardController::class)->group(function () {
 });
 // Equipamentos
 Route::resource('equipamentos', EquipamentosController::class)->except(['create', 'edit', 'show', 'destroy']);
+// Modelos de Relatórios
+Route::resource('modelos-de-relatorios', ModelosRelatoriosController::class)->except(['create', 'edit', 'show', 'destroy']);
+// Natureza dos Atendimentos
+Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Ocorrências
 Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Ocupações
 Route::resource('mao-de-obra', OcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
-// Natureza dos Atendimentos
-Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Tipos de Atendimentos
 Route::resource('tipos-de-atendimentos', TiposAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Tipos de Ocupações

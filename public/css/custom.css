@@ -123,3 +123,8 @@ html body {
   background-color: #f2f2f2;
   cursor: pointer;
 }
+
+legend {
+  font-size: 1.1rem;
+  margin: 0;
+}

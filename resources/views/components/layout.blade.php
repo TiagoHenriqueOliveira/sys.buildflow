@@ -80,7 +80,7 @@
                     </a>
                     <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
                         <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{ url('/') }}">
+                        <a class="collapse-item" href="{{ url('/modelos-de-relatorios') }}">
                             <i class="fas fa-file-alt fa-fw mr-2"></i>Modelos de Relatórios
                         </a>
                         <a class="collapse-item" href="{{ url('/naturezas-dos-atendimentos') }}">
