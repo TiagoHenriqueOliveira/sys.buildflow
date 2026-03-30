@@ -42,6 +42,14 @@
                 <!-- Divider -->
                 <hr class="sidebar-divider">
 
+                <!-- Nav Item - Atendimentos -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url('/atendimentos') }}">
+                        <i class="fas fa-headset fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <span>Atendimentos</span>
+                    </a>
+                </li>
+
                 <!-- Nav Item - Clientes -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/clientes') }}">
