@@ -101,8 +101,12 @@ html body {
   color: inherit;
 }
 
-.nav-link.collapsed:hover>i,
-.nav-link:not(.collapsed):hover>i {
+.nav-link i {
+  color: #E5C07B !important;
+}
+
+.nav-link.collapsed:hover > i,
+.nav-link:not(.collapsed):hover > i {
   color: #F4D35E !important;
 }
 

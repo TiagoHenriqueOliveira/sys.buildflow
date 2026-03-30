@@ -34,7 +34,7 @@
                 <!-- Nav Item - Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/dashboard') }}">
-                        <i class="fas fa-tachometer-alt fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-tachometer-alt fa-fw fa-lg"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
@@ -45,7 +45,7 @@
                 <!-- Nav Item - Atendimentos -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/atendimentos') }}">
-                        <i class="fas fa-headset fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-headset fa-fw fa-lg"></i>
                         <span>Atendimentos</span>
                     </a>
                 </li>
@@ -53,7 +53,7 @@
                 <!-- Nav Item - Clientes -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/clientes') }}">
-                        <i class="fas fa-user-tie fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-user-tie fa-fw fa-lg"></i>
                         <span>Clientes</span>
                     </a>
                 </li>
@@ -61,7 +61,7 @@
                 <!-- Nav Item - Equipamentos -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/equipamentos') }}">
-                        <i class="fas fa-toolbox fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-toolbox fa-fw fa-lg"></i>
                         <span>Equipamentos</span>
                     </a>
                 </li>
@@ -69,21 +69,21 @@
                 <!-- Nav Item - Ocorrências -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/ocorrencias') }}">
-                        <i class="fas fa-exclamation fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-exclamation fa-fw fa-lg"></i>
                         <span>Ocorrências</span>
                     </a>
                 </li>
                 <!-- Nav Item - Mão de Obra -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/mao-de-obra') }}">
-                        <i class="fas fa-people-carry fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-people-carry fa-fw fa-lg"></i>
                         <span>Mão de Obra</span>
                     </a>
                 </li>
                 <!-- Nav Item - Usuários -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/usuarios') }}">
-                        <i class="fas fa-user fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-user fa-fw fa-lg"></i>
                         <span>Usuários</span>
                     </a>
                 </li>
@@ -91,7 +91,7 @@
                 <!-- Nav Item - Configurações Collapse Menu -->
                 <li class="nav-item">
                     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
-                        <i class="fas fa-sliders-h fa-fw fa-lg" style="color: rgb(99, 230, 190);"></i>
+                        <i class="fas fa-sliders-h fa-fw fa-lg"></i>
                         <span>Configurações</span>
                     </a>
                     <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
