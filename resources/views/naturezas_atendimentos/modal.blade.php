@@ -35,6 +35,9 @@
                         </div>
                     </div>
 
+                    {{-- Tipo de Atendimento --}}
+                    <x-select-tipo-atendimento :tipos="$tiposAtivos" />
+
                     {{-- Modelo de Relatório --}}
                     <x-select-modelo-relatorio :modelosRelatorios="$modelosRelatorios" />
 

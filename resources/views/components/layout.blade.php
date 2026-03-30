@@ -102,9 +102,9 @@
                         <a class="collapse-item" href="{{ url('/naturezas-dos-atendimentos') }}">
                             <i class="fas fa-tags fa-fw fa-lg mr-2"></i>Naturezas de Atendimentos
                         </a>
-                        <a class="collapse-item" href="{{ url('/tipos-de-atendimentos') }}">
+                        <a class="collapse-item" href="{{ url('/setores') }}">
                             <!-- <i class="fas fa-headset fa-fw"></i> -->
-                            <i class="fas fa-clipboard-list fa-fw fa-lg mr-2"></i>Tipos de Atendimentos
+                            <i class="fas fa-clipboard-list fa-fw fa-lg mr-2"></i>Setores
                         </a>
                         <a class="collapse-item" href="{{ url('tipos-de-mao-de-obra') }}">
                             <i class="fas fa-briefcase fa-fw fa-lg mr-2"></i>Tipos de Mão de Obra

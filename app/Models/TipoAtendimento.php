@@ -14,7 +14,6 @@ class TipoAtendimento extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tp_aten_nat_atendimento_id',
         'tp_aten_descricao',
         'tp_aten_ativo',
     ];
@@ -23,8 +22,8 @@ class TipoAtendimento extends Model
         'tp_aten_ativo' => 'boolean',
     ];
 
-    public function naturezaAtendimento()
+    public function naturezasAtendimentos()
     {
-        return $this->belongsTo(NaturezaAtendimento::class, 'tp_aten_nat_atendimento_id', 'nat_aten_id');
+        return $this->hasMany(NaturezaAtendimento::class, 'nat_aten_tp_atendimento_id', 'tp_aten_id');
     }
 }

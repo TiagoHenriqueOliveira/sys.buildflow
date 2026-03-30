@@ -1,12 +1,10 @@
-<x-layout title="Tipos de Atendimentos">
+<x-layout title="Setoes">
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <a href="javascript:void(0)"
                 class="btn btn-info btn-icon-split"
                 id="btnNovoTipoAtendimento">
-                <span class="icon text-white-50">
-                    <i class="fas fa-plus"></i>
-                </span>
+                <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
                 <span class="text">Cadastrar</span>
             </a>
         </div>
@@ -15,12 +13,11 @@
             <div class="table-responsive">
                 <table id="dataTableTiposAtendimentos"
                     class="table table-translate dt-responsive"
-                    data-url="{{ route('tipos-de-atendimentos.index') }}"
+                    data-url="{{ route('setores.index') }}"
                     width="100%" cellspacing="0">
                     <thead>
                         <tr>
                             <th>Ações</th>
-                            <th>Natureza</th>
                             <th>Descrição</th>
                             <th>Status</th>
                         </tr>
@@ -31,7 +28,7 @@
         </div>
     </div>
 
-    @include('tipos_atendimentos.modal', ['naturezasAtivas' => $naturezasAtivas])
+    @include('tipos_atendimentos.modal')
 
     @push('scripts')
     <script src="{{ asset('js/app/tipos.atendimentos.js') }}"></script>

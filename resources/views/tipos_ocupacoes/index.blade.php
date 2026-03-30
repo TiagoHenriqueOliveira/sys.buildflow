@@ -1,4 +1,4 @@
-<x-layout title="Mão de Obra">
+<x-layout title="Tipos de Mão de Obra">
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <a href="javascript:void(0)" class="btn btn-info btn-icon-split" id="btnNovoTipoOcupacao">

@@ -1,12 +1,23 @@
-@props(['tipos'])
+@props([
+    'tipos',
+    'selected' => ''
+])
 
 <div class="form-group row">
-    <label class="col-sm-3 col-form-label font-weight-bold">Tipo de Atendimento:</label>
+    <label for="nat_aten_tp_atendimento_id" class="col-sm-3 col-form-label font-weight-bold">Setor:</label>
+
     <div class="col-sm-9">
-        <select class="form-control" name="aten_tp_atendimento_id" id="aten_tp_atendimento_id">
-            <option value="">Selecione...</option>
+        <select class="form-control" name="nat_aten_tp_atendimento_id" id="nat_aten_tp_atendimento_id">
+            <option value="" disabled hidden
+                {{ $selected === '' ? 'selected' : '' }}>
+                Selecione...
+            </option>
+
             @foreach($tipos as $t)
-            <option value="{{ $t->tp_aten_id }}">{{ $t->tp_aten_descricao }}</option>
+            <option value="{{ $t->tp_aten_id }}"
+                {{ (string)$selected === (string)$t->tp_aten_id ? 'selected' : '' }}>
+                {{ $t->tp_aten_descricao }}
+            </option>
             @endforeach
         </select>
     </div>

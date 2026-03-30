@@ -2,9 +2,7 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <a href="javascript:void(0)" class="btn btn-info btn-icon-split" id="btnNovaNaturezaAtendimento">
-                <span class="icon text-white-50">
-                    <i class="fas fa-plus"></i>
-                </span>
+                <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
                 <span class="text">Cadastrar</span>
             </a>
         </div>
@@ -19,6 +17,7 @@
                         <tr>
                             <th>Ações</th>
                             <th>Descrição</th>
+                            <th>Setor</th>
                             <th>Modelo de Relatório</th>
                             <th>Status</th>
                         </tr>
@@ -29,8 +28,7 @@
         </div>
     </div>
 
-    {{-- Modal --}}
-    @include('naturezas_atendimentos.modal', ['modelosRelatorios' => $modelosRelatorios])
+    @include('naturezas_atendimentos.modal', ['modelosRelatorios' => $modelosRelatorios, 'tiposAtivos' => $tiposAtivos])
 
     @push('scripts')
     <script src="{{ asset('js/app/naturezas.atendimentos.js') }}"></script>

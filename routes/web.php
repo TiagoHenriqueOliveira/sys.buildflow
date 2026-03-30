@@ -50,8 +50,8 @@ Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::c
 Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Ocupações
 Route::resource('mao-de-obra', OcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
-// Tipos de Atendimentos
-Route::resource('tipos-de-atendimentos', TiposAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
+// Setores
+Route::resource('setores', TiposAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Tipos de Ocupações
 Route::resource('tipos-de-mao-de-obra', TiposOcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Usuários

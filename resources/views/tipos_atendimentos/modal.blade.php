@@ -2,17 +2,15 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
 
-            {{-- Header --}}
             <div class="modal-header">
                 <h5 class="modal-title text-primary font-weight-bold" id="modal_tipo_atendimento_label">
-                    Tipos de Atendimentos | Novo
+                    Setores | Novo
                 </h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
-            {{-- Body --}}
             <div class="modal-body ui-front">
                 <form id="form_tipo_atendimento" method="POST">
                     @csrf
@@ -33,10 +31,6 @@
                         </div>
                     </div>
 
-                    {{-- Select Naturezas (somente ativas) --}}
-                    <x-select-naturezas-atendimentos :naturezas="$naturezasAtivas" />
-
-                    {{-- Ativo somente ao editar --}}
                     <div class="form-group row d-none" id="div_tp_aten_ativo">
                         <label for="tp_aten_ativo" class="col-sm-3 col-form-label font-weight-bold">
                             Ativo:
@@ -55,14 +49,12 @@
                         </div>
                     </div>
 
-                    {{-- Footer --}}
                     <div class="modal-footer p-0 pt-3">
                         <button type="submit" class="btn btn-success">Salvar</button>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
                     </div>
                 </form>
             </div>
-
         </div>
     </div>
 </div>
