@@ -31,7 +31,6 @@
         </div>
     </div>
 
-    {{-- Modal --}}
     @include('ocorrencias.modal')
 
     @push('scripts')

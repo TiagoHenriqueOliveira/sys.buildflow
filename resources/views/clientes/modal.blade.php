@@ -1,8 +1,6 @@
 <div class="modal fade" id="modal_cliente" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-
-            {{-- Header --}}
             <div class="modal-header">
                 <h5 class="modal-title text-primary font-weight-bold" id="modal_cliente_label">
                     Clientes | Novo
@@ -12,14 +10,12 @@
                 </button>
             </div>
 
-            {{-- Body --}}
             <div class="modal-body">
                 <form id="form_cliente" method="POST">
                     @csrf
                     <input type="hidden" name="_method" id="cli_method" value="POST">
                     <input type="hidden" id="cli_id" name="cli_id">
 
-                    {{-- Nome --}}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             Nome:
@@ -34,7 +30,6 @@
                         </div>
                     </div>
 
-                    {{-- CNPJ --}}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             CNPJ:
@@ -49,7 +44,6 @@
                         </div>
                     </div>
 
-                    {{-- Cidade --}}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             Cidade:
@@ -63,7 +57,6 @@
                         </div>
                     </div>
 
-                    {{-- UF --}}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             UF:
@@ -78,7 +71,6 @@
                         </div>
                     </div>
 
-                    {{-- Telefone --}}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             Telefone:
@@ -93,7 +85,6 @@
                         </div>
                     </div>
 
-                    {{-- E-mail --}}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             E-mail:
@@ -107,7 +98,6 @@
                         </div>
                     </div>
 
-                    {{-- Ativo (somente ao editar) --}}
                     <div class="form-group row d-none" id="div_cli_ativo">
                         <label class="col-sm-2 col-form-label font-weight-bold">
                             Ativo:
@@ -128,13 +118,19 @@
                         </div>
                     </div>
 
-                    {{-- Footer --}}
                     <div class="modal-footer p-0 pt-3">
-                        <button type="submit" class="btn btn-success">
-                            Salvar
+                        <button type="submit" class="btn btn-success btn-icon-split">
+                            <span class=" icon text-white-50">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span class="text">Salvar</span>
                         </button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Fechar
+
+                        <button type="button" class="btn btn-secondary btn-icon-split" data-dismiss="modal">
+                            <span class=" icon text-white-50">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span class="text">Fechar</span>
                         </button>
                     </div>
                 </form>

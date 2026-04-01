@@ -2,8 +2,6 @@
 <div class="modal fade" id="modal_natureza_atendimento" tabindex="-1" role="dialog" aria-labelledby="modalNaturezaAtendimentoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-
-            {{-- Header --}}
             <div class="modal-header">
                 <h5 class="modal-title text-primary font-weight-bold" id="modal_natureza_atendimento_label">
                     Naturezas de Atendimento | Novo
@@ -14,7 +12,6 @@
                 </button>
             </div>
 
-            {{-- Body --}}
             <div class="modal-body ui-front">
                 <form id="form_natureza_atendimento" method="POST">
                     @csrf
@@ -35,13 +32,10 @@
                         </div>
                     </div>
 
-                    {{-- Tipo de Atendimento --}}
                     <x-select-tipo-atendimento :tipos="$tiposAtivos" />
 
-                    {{-- Modelo de Relatório --}}
                     <x-select-modelo-relatorio :modelosRelatorios="$modelosRelatorios" />
 
-                    {{-- Ativo: somente visível ao editar --}}
                     <div class="form-group row d-none" id="div_nat_aten_ativo">
                         <label for="nat_aten_ativo" class="col-sm-3 col-form-label font-weight-bold">
                             Ativo:
@@ -62,13 +56,19 @@
                         </div>
                     </div>
 
-                    {{-- Footer --}}
                     <div class="modal-footer p-0 pt-3">
-                        <button type="submit" class="btn btn-success">
-                            Salvar
+                        <button type="submit" class="btn btn-success btn-icon-split">
+                            <span class=" icon text-white-50">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span class="text">Salvar</span>
                         </button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Fechar
+
+                        <button type="button" class="btn btn-secondary btn-icon-split" data-dismiss="modal">
+                            <span class=" icon text-white-50">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span class="text">Fechar</span>
                         </button>
                     </div>
                 </form>

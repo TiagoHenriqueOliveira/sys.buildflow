@@ -1,7 +1,6 @@
 <div class="modal fade" id="modal_equipamento" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-
             <div class="modal-header">
                 <h5 class="modal-title text-primary font-weight-bold" id="modal_equipamento_label">
                     Equipamentos | Novo
@@ -50,12 +49,22 @@
                     </div>
 
                     <div class="modal-footer p-0 pt-3">
-                        <button type="submit" class="btn btn-success">Salvar</button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                        <button type="submit" class="btn btn-success btn-icon-split">
+                            <span class=" icon text-white-50">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span class="text">Salvar</span>
+                        </button>
+
+                        <button type="button" class="btn btn-secondary btn-icon-split" data-dismiss="modal">
+                            <span class=" icon text-white-50">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span class="text">Fechar</span>
+                        </button>
                     </div>
                 </form>
             </div>
-
         </div>
     </div>
 </div>
