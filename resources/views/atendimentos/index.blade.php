@@ -20,9 +20,11 @@
                     <thead>
                         <tr>
                             <th>Ações</th>
-                            <th>Tipo</th>
-                            <th>Cliente</th>
+                            <th>Setor</th>
+                            <th>Natureza</th>
                             <th>Usuário</th>
+                            <th>Cliente</th>
+                            <th>Obra</th>
                             <th>Período</th>
                             <th>Status</th>
                         </tr>

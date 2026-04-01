@@ -3,10 +3,8 @@
 // Configuração global do DataTables
 if ($.fn.dataTable) {
     $.extend(true, $.fn.dataTable.defaults, {
-        language: {
-            url: "/js/datatables/pt-BR.json"
-        },
-        destroy: true,
+        language: { url: "/js/datatables/pt-BR.json" },
+        retrieve: true,
         ordering: false,
         responsive: true,
         pageLength: 25,

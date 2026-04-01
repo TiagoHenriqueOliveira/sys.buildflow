@@ -14,17 +14,6 @@ use App\Http\Controllers\TiposOcupacoesController;
 use App\Http\Controllers\UsuariosController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
-
 Route::controller(AuthController::class)->group(function () {
     Route::get('/', 'mostrarLogin')->name('login');
     Route::post('/login', 'login')->name('login.post');
@@ -37,7 +26,8 @@ Route::controller(DashboardController::class)->group(function () {
 });
 // Atendimentos
 Route::resource('atendimentos', AtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
-Route::get('/atendimento/autocomplete', [AtendimentosController::class, 'autoComplete'])->name('atendimento.autocomplete');
+Route::get('/atendimentos/autocomplete', [AtendimentosController::class, 'autoComplete'])->name('atendimentos.autocomplete');
+Route::get('/atendimentos/naturezas-por-tipo', [AtendimentosController::class, 'naturezasPorTipo'])->name('atendimentos.naturezas_por_tipo');
 // Clientes
 Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Equipamentos

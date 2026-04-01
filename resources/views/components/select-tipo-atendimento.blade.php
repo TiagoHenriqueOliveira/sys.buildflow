@@ -4,14 +4,11 @@
 ])
 
 <div class="form-group row">
-    <label for="nat_aten_tp_atendimento_id" class="col-sm-3 col-form-label font-weight-bold">Setor:</label>
+    <label for="aten_tp_atendimento_id" class="col-sm-3 col-form-label font-weight-bold">Setor:</label>
 
     <div class="col-sm-9">
-        <select class="form-control" name="nat_aten_tp_atendimento_id" id="nat_aten_tp_atendimento_id">
-            <option value="" disabled hidden
-                {{ $selected === '' ? 'selected' : '' }}>
-                Selecione...
-            </option>
+        <select class="form-control" name="aten_tp_atendimento_id" id="aten_tp_atendimento_id">
+            <option value="" disabled hidden {{ $selected === '' ? 'selected' : '' }}>Selecione...</option>
 
             @foreach($tipos as $t)
             <option value="{{ $t->tp_aten_id }}"

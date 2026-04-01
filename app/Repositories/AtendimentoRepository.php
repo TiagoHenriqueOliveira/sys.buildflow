@@ -9,8 +9,20 @@ class AtendimentoRepository implements CrudRepositoryInterface
 {
     public function all()
     {
-        return Atendimento::with(['tipoAtendimento', 'cliente', 'usuario'])
-            ->orderBy('aten_dt_inicio', 'desc')
+        return Atendimento::with([
+            'natureza.tipoAtendimento',
+            'cliente',
+            'usuario'
+        ])
+            ->orderBy('aten_dt_inicio', 'asc')
+
+            ->join('usuarios', 'usuarios.user_id', '=', 'atendimentos.aten_usuario_id')
+            ->orderBy('usuarios.user_nome', 'asc')
+
+            ->orderBy('aten_status', 'asc')
+
+            ->select('atendimentos.*')
+
             ->get();
     }
 

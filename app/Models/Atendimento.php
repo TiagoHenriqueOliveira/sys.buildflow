@@ -14,11 +14,12 @@ class Atendimento extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'aten_tp_atendimento_id',
+        'aten_natureza_id',
         'aten_cliente_id',
         'aten_usuario_id',
         'aten_status',
         'aten_nr_proposta',
+        'aten_descricao',
         'aten_responsavel',
         'aten_endereco',
         'aten_dt_inicio',
@@ -31,9 +32,9 @@ class Atendimento extends Model
         'aten_dt_fim' => 'date',
     ];
 
-    public function tipoAtendimento()
+    public function natureza()
     {
-        return $this->belongsTo(TipoAtendimento::class, 'aten_tp_atendimento_id', 'tp_aten_id');
+        return $this->belongsTo(NaturezaAtendimento::class, 'aten_natureza_id', 'nat_aten_id');
     }
 
     public function cliente()
