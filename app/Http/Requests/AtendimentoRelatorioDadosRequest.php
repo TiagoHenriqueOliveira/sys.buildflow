@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Carbon\Carbon;
 
-class AtendimentoRelatorioRequest extends FormRequest
+class AtendimentoRelatorioDadosRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,13 +16,8 @@ class AtendimentoRelatorioRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'aten_id' => [
-                'required',
-                'integer',
-                'exists:atendimentos,aten_id',
-            ],
             'aten_rel_data' => [
-                'nullable',
+                'required',
                 'date',
             ],
         ];
@@ -48,9 +43,8 @@ class AtendimentoRelatorioRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'aten_id.required' => 'Informe o atendimento.',
-            'aten_id.exists'   => 'Atendimento inválido.',
-            'aten_rel_data.date' => 'Data do relatório inválida.',
+            'aten_rel_data.required' => 'Informe a data do relatório.',
+            'aten_rel_data.date'     => 'Data do relatório inválida.',
         ];
     }
 }

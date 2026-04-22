@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\NaturezaAtendimento;
+use App\Models\Cliente;
+use App\Models\Usuario;
 
 class Atendimento extends Model
 {
@@ -27,9 +30,9 @@ class Atendimento extends Model
     ];
 
     protected $casts = [
-        'aten_status' => 'integer',
+        'aten_status'    => 'integer',
         'aten_dt_inicio' => 'date',
-        'aten_dt_fim' => 'date',
+        'aten_dt_fim'    => 'date',
     ];
 
     public function natureza()

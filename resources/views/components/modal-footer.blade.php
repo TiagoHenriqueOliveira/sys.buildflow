@@ -6,9 +6,7 @@
         <span class="text">{{ $saveText ?? 'Salvar' }}</span>
     </button>
 
-    <button type="button"
-            class="btn btn-secondary btn-icon-split"
-            data-dismiss="modal">
+    <button type="button" class="btn btn-secondary btn-icon-split" data-dismiss="modal">
         <span class="icon text-white-50">
             <i class="fas fa-times"></i>
         </span>

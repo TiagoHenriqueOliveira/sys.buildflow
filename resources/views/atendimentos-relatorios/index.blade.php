@@ -15,6 +15,7 @@
             <div class="table-responsive">
                 <table id="dataTableAtendimentosRelatorios"
                     class="table table-translate dt-responsive"
+                    data-url="{{ route('atendimentos-relatorios.index') }}"
                     width="100%">
                     <thead>
                         <tr>

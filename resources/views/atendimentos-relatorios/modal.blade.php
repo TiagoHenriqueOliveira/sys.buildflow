@@ -1,119 +1,45 @@
-<div class="modal fade" id="modal_relatorio" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
+<div class="modal fade" id="modal_relatorio" tabindex="-1" role="dialog" aria-labelledby="modal_relatorio_label" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered" role="document">
         <div class="modal-content">
-
             <div class="modal-header">
-                <h5 class="modal-title text-primary font-weight-bold">
+                <h5 class="modal-title text-primary font-weight-bold" id="modal_relatorio_label">
                     Relatório de Atendimento
                 </h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                    <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
             <div class="modal-body ui-front">
-                {{-- Tabs --}}
-                <ul class="nav nav-tabs mb-3" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" data-toggle="tab" href="#tab-dados" role="tab">
-                            Dados
-                        </a>
-                    </li>
+                <form id="form_relatorio" autocomplete="off">
+                    <div class="form-group">
+                        <label for="rel_aten_label" class="font-weight-bold mb-1">Atendimento</label>
 
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-horarios" role="tab">
-                            Horário
-                        </a>
-                    </li>
+                        <input type="hidden" id="rel_aten_id" name="aten_id">
 
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-clima" role="tab">
-                            Clima
-                        </a>
-                    </li>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="rel_aten_label"
+                            name="aten_label"
+                            placeholder="Digite para buscar..."
+                            autocomplete="off">
+                        <small class="text-muted">
+                            Busque pelo nome do cliente ou descrição da obra.
+                        </small>
+                    </div>
 
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-mao-obra" role="tab">
-                            Mão de Obra
-                        </a>
-                    </li>
+                    <div class="form-group mb-0">
+                        <label for="rel_data" class="font-weight-bold mb-1">Data do relatório</label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="rel_data"
+                            name="aten_rel_data">
+                    </div>
 
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-equipamentos" role="tab">
-                            Equipamentos
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-atividades" role="tab">
-                            Atividades
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias" role="tab">
-                            Ocorrências
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-checklist" role="tab">
-                            Checklist
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-materiais" role="tab">
-                            Materiais
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-comentarios" role="tab">
-                            Comentários
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-anexos" role="tab">
-                            Anexos
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-fotos" role="tab">
-                            Fotos
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-videos" role="tab">
-                            Vídeos
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#tab-assinatura" role="tab">
-                            Assinatura
-                        </a>
-                    </li>
-                </ul>
-
-                <div class="tab-content p-2">
-                    {{-- Tabs --}}
-                    @include('atendimentos-relatorios.tabs.dados')
-                    @include('atendimentos-relatorios.tabs.horarios')
-                    @include('atendimentos-relatorios.tabs.clima')
-                    @include('atendimentos-relatorios.tabs.mao-obra')
-                    @include('atendimentos-relatorios.tabs.equipamentos')
-                    @include('atendimentos-relatorios.tabs.atividades')
-                    @include('atendimentos-relatorios.tabs.ocorrencias')
-                    @include('atendimentos-relatorios.tabs.checklist')
-                    @include('atendimentos-relatorios.tabs.materiais')
-                    @include('atendimentos-relatorios.tabs.comentarios')
-                    @include('atendimentos-relatorios.tabs.anexos')
-                    @include('atendimentos-relatorios.tabs.assinaturas')
-                </div>
+                    <x-modal-footer />
+                </form>
             </div>
         </div>
     </div>

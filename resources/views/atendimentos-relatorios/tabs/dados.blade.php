@@ -1,45 +1,40 @@
 <div class="tab-pane fade show active" id="tab-dados" role="tabpanel">
-    <form id="form_relatorio_dados">
+    <form id="form_relatorio_dados" data-action="{{ route('atendimentos-relatorios.update-dados', $atendimentoRelatorio->aten_rel_id) }}">
 
-        {{-- RELATÓRIO (centralizado) --}}
-        <div class="text-center mb-4">
-            <p class="h5 font-weight-bold text-primary text-decoration-underline mb-0">
-                Relatório Diário de Obra (RDO)
-            </p>
-        </div>
+        @csrf
 
         {{-- LINHA: Data | Dia da Semana | Prazo | Decorrido | À Vencer --}}
         <div class="row mb-3">
             <div class="col-md-3">
                 <label class="font-weight-bold">Data</label>
-                <input type="date" class="form-control">
+                <input type="date" name="aten_rel_data" class="form-control" value="{{ $atendimentoRelatorio->aten_rel_data->format('Y-m-d') }}">
             </div>
 
-            <div class="col-md-3 text-center">
+            <div class="col-md-3">
                 <label class="font-weight-bold">Dia da Semana</label>
-                <span class="form-control-plaintext">
-                    Segunda-feira
+                <span class="readonly-field dia-semana form-control-plaintext">
+                    {{ getFormatDiaSemana($atendimentoRelatorio->aten_rel_data) }}
                 </span>
             </div>
 
-            <div class="col-md-2 text-center">
+            <div class="col-md-2">
                 <label class="font-weight-bold">Prazo (dias)</label>
-                <span class="form-control-plaintext text-indigo">
-                    15 dias
+                <span class="readonly-field prazo-total form-control-plaintext text-indigo">
+                    {{ $prazoTotal }} dias
                 </span>
             </div>
 
-            <div class="col-md-2 text-center">
+            <div class="col-md-2">
                 <label class="font-weight-bold">Prazo Decorrido</label>
-                <span class="form-control-plaintext text-warning">
-                    7 dias
+                <span class="readonly-field prazo-decorrido form-control-plaintext text-warning">
+                    {{ $prazoDecorrido }} dias
                 </span>
             </div>
 
-            <div class="col-md-2 text-center">
+            <div class="col-md-2">
                 <label class="font-weight-bold">Prazo à Vencer</label>
-                <span class="form-control-plaintext text-success">
-                    8 dias
+                <span class="readonly-field prazo-vencer form-control-plaintext text-success">
+                    {{ $prazoAVencer }} dias
                 </span>
             </div>
         </div>
@@ -48,13 +43,15 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label class="font-weight-bold">Obra</label>
-                <input type="text" class="form-control">
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_descricao }}
+                </span>
             </div>
 
             <div class="col-md-6">
                 <label class="font-weight-bold">Endereço</label>
-                <span class="form-control-plaintext">
-                    Rua das Laranjeiras, 258 – Distrito Industrial
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_endereco }}
                 </span>
             </div>
         </div>
@@ -63,26 +60,24 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label class="font-weight-bold">Cliente</label>
-                <span class="form-control-plaintext">
-                    Nutriouro Alimentos LTDA
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->cliente->cli_nome }}
                 </span>
             </div>
 
             <div class="col-md-4">
                 <label class="font-weight-bold">Responsável</label>
-                <span class="form-control-plaintext">
-                    Rafael Oliveira
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_responsavel }}
                 </span>
             </div>
 
             <div class="col-md-2">
                 <label class="font-weight-bold">Nº Proposta</label>
-                <span class="form-control-plaintext">
-                    000235/2026
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_nr_proposta }}
                 </span>
             </div>
         </div>
-
-        <x-modal-footer />
     </form>
 </div>

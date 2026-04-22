@@ -11,15 +11,15 @@ class AtendimentoRelatorioRepository implements CrudRepositoryInterface
     {
         $q = AtendimentoRelatorio::query()
             ->select('atendimentos_relatorios.*')
-            ->with('modeloRelatorio')
+            ->with([
+                'atendimento.cliente',
+                'atendimento.natureza.tipoAtendimento',
+            ])
             ->orderBy('aten_rel_data', 'desc')
             ->orderBy('aten_rel_id', 'desc');
 
         if (!empty($filters['aten_rel_atendimento_id'])) {
-            $q->where(
-                'aten_rel_atendimento_id',
-                $filters['aten_rel_atendimento_id']
-            );
+            $q->where('aten_rel_atendimento_id', $filters['aten_rel_atendimento_id']);
         }
 
         return $q->get();

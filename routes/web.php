@@ -30,7 +30,11 @@ Route::resource('atendimentos', AtendimentosController::class)->except(['create'
 Route::get('/atendimentos/autocomplete', [AtendimentosController::class, 'autoComplete'])->name('atendimentos.autocomplete');
 Route::get('/atendimentos/naturezas-por-tipo', [AtendimentosController::class, 'naturezasPorTipo'])->name('atendimentos.naturezas_por_tipo');
 // Atendimentos Relatórios
-Route::resource('atendimentos-relatorios', AtendimentosRelatoriosController::class)->except(['create', 'edit', 'show', 'destroy']);
+Route::resource('atendimentos-relatorios', AtendimentosRelatoriosController::class)->except(['create', 'edit', 'destroy']);
+Route::get('/atendimentos-relatorios/autocomplete', [AtendimentosRelatoriosController::class, 'autoComplete'])->name('atendimentos_relatorios.autocomplete');
+Route::post('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'updateDados'])->name('atendimentos-relatorios.update-dados');
+Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->name('atendimentos-relatorios.update-horarios');
+Route::get('/atendimentos-relatorios/{id}/get-data', [AtendimentosRelatoriosController::class, 'getData'])->name('atendimentos-relatorios.get-data');
 // Clientes
 Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Equipamentos
