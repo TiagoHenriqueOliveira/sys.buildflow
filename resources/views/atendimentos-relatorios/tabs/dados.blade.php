@@ -1,8 +1,6 @@
 <div class="tab-pane fade show active" id="tab-dados" role="tabpanel">
     <form id="form_relatorio_dados" data-action="{{ route('atendimentos-relatorios.update-dados', $atendimentoRelatorio->aten_rel_id) }}">
-
         @csrf
-
         {{-- LINHA: Data | Dia da Semana | Prazo | Decorrido | À Vencer --}}
         <div class="row mb-3">
             <div class="col-md-3">

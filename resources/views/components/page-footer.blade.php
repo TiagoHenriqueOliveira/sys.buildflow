@@ -1,6 +1,6 @@
 <div class="card-footer d-flex justify-content-end">
     @if ($showSave ?? false)
-    <button type="button" id="btnAtualizarRelatorio" class="btn btn-success btn-icon-split mr-2">
+    <button type="button" id="btnAtualizarRelatorio" data-relatorio-id="{{ $relatorioId ?? null }}" class="btn btn-success btn-icon-split mr-2">
         <span class="icon text-white-50">
             <i class="fas fa-save"></i>
         </span>

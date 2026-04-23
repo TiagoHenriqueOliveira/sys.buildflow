@@ -72,7 +72,7 @@
         </div>
 
         {{-- FOOTER DA PÁGINA --}}
-        <x-page-footer :showSave="true" saveText="Atualizar" :backRoute="route('atendimentos-relatorios.index')" />
+        <x-page-footer :showSave="true" saveText="Atualizar" :relatorioId="$atendimentoRelatorio->aten_rel_id" :backRoute="route('atendimentos-relatorios.index')" />
     </div>
 
     @push('scripts')

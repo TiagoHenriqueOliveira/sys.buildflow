@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
 use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
+use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
 use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
@@ -202,11 +204,55 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function updateClima(AtendimentoRelatorioCondicaoClimaticaRequest $request, int $id)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $condMap = [
+                'ensolarado' => 1,
+                'nublado'    => 2,
+                'chuvoso'    => 3,
+            ];
+
+            $periodos = [
+                1 => $request->clima_manha,
+                2 => $request->clima_tarde,
+                3 => $request->clima_noite,
+            ];
+
+            foreach ($periodos as $periodo => $condStr) {
+                AtendimentoRelatorioCondicaoClimatica::updateOrCreate(
+                    [
+                        'aten_rel_clima_relatorio_id' => $relatorio->aten_rel_id,
+                        'aten_rel_clima_periodo'      => $periodo,
+                    ],
+                    [
+                        'aten_rel_clima_condicao' => $condMap[$condStr],
+                    ]
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Clima atualizado com sucesso.',
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar o clima do relatório.',
+            ], 500);
+        }
+    }
+
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
             'atendimento',
             'horarios',
+            'climas'
         ])->findOrFail($id);
 
         $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
@@ -218,6 +264,25 @@ class AtendimentosRelatoriosController extends Controller
             $inicio->diffInDays($base),
             $prazoTotal
         );
+
+        $condReverse = [
+            1 => 'ensolarado',
+            2 => 'nublado',
+            3 => 'chuvoso',
+        ];
+
+        $climaPorPeriodo = [
+            'manha' => null,
+            'tarde' => null,
+            'noite' => null,
+        ];
+
+        foreach ($relatorio->climas as $c) {
+            if ($c->aten_rel_clima_periodo === 1) $climaPorPeriodo['manha'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
+            if ($c->aten_rel_clima_periodo === 2) $climaPorPeriodo['tarde'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
+            if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
+        }
+
 
         return response()->json([
             'dados' => [
@@ -235,6 +300,8 @@ class AtendimentosRelatoriosController extends Controller
                 'fim_intervalo'    => optional($relatorio->horarios)->aten_rel_hora_fim_intervalo,
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
+
+            'clima' => $climaPorPeriodo
         ]);
     }
 

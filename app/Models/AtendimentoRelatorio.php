@@ -50,4 +50,13 @@ class AtendimentoRelatorio extends Model
             'aten_rel_id'
         );
     }
+
+    public function climas()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioCondicaoClimatica::class,
+            'aten_rel_clima_relatorio_id',
+            'aten_rel_id'
+        );
+    }
 }

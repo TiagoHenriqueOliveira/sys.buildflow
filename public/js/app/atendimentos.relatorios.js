@@ -1,5 +1,5 @@
 // atendimentos.relatorios.js
-console.log('✅ JS atendimentos.relatorios.js carregado');
+
 $(document).ready(function () {
     try {
         configDataTableAtendimentosRelatorios();
@@ -23,15 +23,25 @@ $(document).ready(function () {
         setTimeout(() => $("#rel_aten_label").focus(), 200);
     });
 
-    setupAutocomplete(
-        "#rel_aten_label",
-        "#rel_aten_id",
-        baseURL + "/atendimentos-relatorios/autocomplete"
-    );
+    if ($.ui && $.ui.autocomplete && $('#rel_aten_label').length) {
+        setupAutocomplete(
+            "#rel_aten_label",
+            "#rel_aten_id",
+            baseURL + "/atendimentos-relatorios/autocomplete"
+        );
+    }
 
     $("#modal_relatorio").on("hidden.bs.modal", function () {
         $("#form_relatorio button[type='submit']").prop("disabled", false);
     });
+
+    const relatorioId = $('#btnAtualizarRelatorio').data('relatorio-id');
+
+    if (relatorioId) {
+        getData(relatorioId, 'tab-dados');
+        getData(relatorioId, 'tab-horarios');
+        getData(relatorioId, 'tab-clima');
+    }
 });
 
 function configDataTableAtendimentosRelatorios() {
@@ -139,17 +149,16 @@ function initAtualizarRelatorio() {
                 form = $('#form_relatorio_horarios');
                 break;
 
-            // futuras abas
-            // case 'tab-clima':
-            //     form = $('#form_relatorio_clima');
-            //     break;
+            case 'tab-clima':
+                form = $('#form_relatorio_clima');
+                break;
 
             default:
                 showNotification(
                     'fas fa-exclamation-triangle',
                     'Nenhuma ação definida para esta aba.',
                     'warning',
-                    4000
+                    3000
                 );
                 return;
         }
@@ -159,7 +168,7 @@ function initAtualizarRelatorio() {
                 'fas fa-exclamation-triangle',
                 'Formulário não encontrado para esta aba.',
                 'warning',
-                4000
+                3000
             );
             return;
         }
@@ -256,6 +265,10 @@ function getData(relatorioId, guia) {
             case 'tab-horarios':
                 applyHorarios(data.horarios);
                 break;
+
+            case 'tab-clima':
+                applyClima(data.clima);
+                break;
         }
     });
 }
@@ -273,4 +286,16 @@ function applyHorarios(h) {
     $('input[name="aten_rel_hora_inicio_intervalo"]').val(h.inicio_intervalo?.substring(0, 5) || '');
     $('input[name="aten_rel_hora_fim_intervalo"]').val(h.fim_intervalo?.substring(0, 5) || '');
     $('input[name="aten_rel_hora_saida"]').val(h.saida?.substring(0, 5) || '');
+}
+
+function applyClima(clima) {
+    if (clima?.manha) {
+        $(`#manha_${clima.manha}`).prop('checked', true);
+    }
+    if (clima?.tarde) {
+        $(`#tarde_${clima.tarde}`).prop('checked', true);
+    }
+    if (clima?.noite) {
+        $(`#noite_${clima.noite}`).prop('checked', true);
+    }
 }

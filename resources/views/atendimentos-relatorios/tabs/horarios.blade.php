@@ -1,9 +1,7 @@
 {{-- HORÁRIOS --}}
 <div class="tab-pane fade" id="tab-horarios" role="tabpanel">
-    <form id="form_relatorio_horarios"
-          data-action="{{ route('atendimentos-relatorios.update-horarios', $atendimentoRelatorio->aten_rel_id) }}">
+    <form id="form_relatorio_horarios" data-action="{{ route('atendimentos-relatorios.update-horarios', $atendimentoRelatorio->aten_rel_id) }}">
         @csrf
-
         <div class="row">
             <div class="col-md-3">
                 <label class="font-weight-bold">Entrada</label>
