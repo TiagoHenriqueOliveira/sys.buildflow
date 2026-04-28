@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\OcupacaoRequest;
+use App\Models\Ocupacao;
 use App\Models\TipoOcupacao;
 use App\Repositories\OcupacaoRepository;
 use Illuminate\Http\Request;
@@ -58,5 +59,37 @@ class OcupacoesController extends Controller
             report($e);
             return response()->json(['message' => 'Erro ao atualizar.'], 500);
         }
+    }
+
+    public function autoComplete(Request $request)
+    {
+        $term = trim((string) $request->get('term', ''));
+
+        if (mb_strlen($term) < 3) {
+            return response()->json([]);
+        }
+
+        $items = Ocupacao::query()
+            ->with(['tipoOcupacao:tp_ocup_id,tp_ocup_descricao'])
+            ->where('ocup_ativo', 1)
+            ->where('ocup_descricao', 'like', "%{$term}%")
+            ->orderBy('ocup_descricao')
+            ->limit(20)
+            ->get()
+            ->map(function ($o) {
+                $tpId = (int) optional($o->tipoOcupacao)->tp_ocup_id;
+                $tpLabel = (string) optional($o->tipoOcupacao)->tp_ocup_descricao;
+
+                return [
+                    'id'       => (int) $o->ocup_id,
+                    'label'    => $o->ocup_descricao . ($tpLabel ? " ({$tpLabel})" : ''),
+                    'tp_id'    => $tpId,
+                    'tp_label' => $tpLabel,
+                    'ocup'     => $o->ocup_descricao,
+                ];
+            })
+            ->values();
+
+        return response()->json($items);
     }
 }

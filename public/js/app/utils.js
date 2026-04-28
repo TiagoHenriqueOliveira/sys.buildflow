@@ -70,3 +70,13 @@ function setupAutocomplete(inputSelector, hiddenInputSelector, url, callback) {
         return $("<li>").append(`<div>${item.label}</div>`).appendTo(ul);
     };
 }
+
+// util simples para evitar injeção no html da linha
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}

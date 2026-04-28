@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
 use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
+use App\Http\Requests\AtendimentoRelatorioMaoObraRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
+use App\Models\Ocupacao;
 use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -247,12 +249,75 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function storeMaoObra(AtendimentoRelatorioMaoObraRequest $request, int $id)
+    {
+        try {
+            $ocupId = (int) $request->ocup_id;
+            $qtd    = (int) $request->qtd;
+
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $exists = $relatorio->ocupacoes()
+                ->where('ocupacoes.ocup_id', $ocupId)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Essa mão de obra já foi adicionada neste relatório.'
+                ], 422);
+            }
+
+            $ocup = Ocupacao::with('tipoOcupacao')->findOrFail($ocupId);
+
+            $relatorio->ocupacoes()->attach($ocupId, [
+                'aten_rel_ocup_quantidade' => $qtd,
+            ]);
+
+            return response()->json([
+                'message' => 'Mão de obra adicionada!',
+                'data' => [
+                    'ocup_id'  => $ocup->ocup_id,
+                    'ocup'     => $ocup->ocup_descricao,
+                    'tp_id'    => $ocup->ocup_tp_ocupacao_id,
+                    'tp_label' => optional($ocup->tipoOcupacao)->tp_ocup_descricao,
+                    'qtd'      => $qtd,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao adicionar mão de obra.'
+            ], 500);
+        }
+    }
+
+    public function destroyMaoObra(int $id, int $ocupId)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $relatorio->ocupacoes()->detach($ocupId);
+
+            return response()->json([
+                'message' => 'Mão de obra removida!'
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao remover mão de obra.'
+            ], 500);
+        }
+    }
+
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
             'atendimento',
             'horarios',
-            'climas'
+            'climas',
+            'ocupacoes.tipoOcupacao'
         ])->findOrFail($id);
 
         $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
@@ -283,6 +348,15 @@ class AtendimentosRelatoriosController extends Controller
             if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
         }
 
+        $maoObra = $relatorio->ocupacoes->map(function ($o) {
+            return [
+                'ocup_id'  => $o->ocup_id,
+                'ocup'     => $o->ocup_descricao,
+                'tp_id'    => $o->ocup_tp_ocupacao_id,
+                'tp_label' => optional($o->tipoOcupacao)->tp_ocup_descricao,
+                'qtd'      => (int) $o->pivot->aten_rel_ocup_quantidade,
+            ];
+        })->values();
 
         return response()->json([
             'dados' => [
@@ -301,7 +375,8 @@ class AtendimentosRelatoriosController extends Controller
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
 
-            'clima' => $climaPorPeriodo
+            'clima' => $climaPorPeriodo,
+            'mao_obra' => $maoObra
         ]);
     }
 

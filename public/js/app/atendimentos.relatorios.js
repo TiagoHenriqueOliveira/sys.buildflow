@@ -9,6 +9,7 @@ $(document).ready(function () {
 
     initSubmitRelatorio();
     initAtualizarRelatorio();
+    initMaoObraTab();
 
     $("#btnNovoRelatorio").on("click", function () {
         $("#rel_aten_id").val("");
@@ -89,49 +90,74 @@ function configDataTableAtendimentosRelatorios() {
     });
 }
 
-function initSubmitRelatorio() {
-    $(document)
-        .off("submit", "#form_relatorio")
-        .on("submit", "#form_relatorio", function (event) {
-            event.preventDefault();
+function handleAjaxError(xhr) {
+    if (xhr.status === 422) {
+        const errors = xhr.responseJSON?.errors || {};
+        let msg = "<ul>";
 
-            const form = $(this);
-            const actionUrl = baseURL + "/atendimentos-relatorios";
-            const formData = form.serialize();
-
-            const btnSubmit = form.find("button[type='submit']");
-            btnSubmit.prop("disabled", true);
-
-            $.ajax({
-                url: actionUrl,
-                type: "POST",
-                data: formData,
-                dataType: "json",
-                headers: {
-                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
-                },
-                success: function (response) {
-                    $("#modal_relatorio").modal("hide");
-
-                    $("#dataTableAtendimentosRelatorios")
-                        .DataTable()
-                        .ajax.reload(null, false);
-
-                    showNotification(
-                        "fas fa-check-double",
-                        response.message,
-                        "success",
-                        2000
-                    );
-
-                    btnSubmit.prop("disabled", false);
-                },
-                error: function (xhr) {
-                    btnSubmit.prop("disabled", false);
-                    handleAjaxError(xhr);
-                }
-            });
+        Object.values(errors).flat().forEach(m => {
+            msg += `<li>${m}</li>`;
         });
+
+        msg += "</ul>";
+
+        showNotification(
+            "fas fa-bug",
+            "Ocorreram erros:<br>" + msg,
+            "danger",
+            5000
+        );
+    } else {
+        showNotification(
+            "fas fa-bug",
+            "Ops... um erro inesperado ocorreu!",
+            "danger",
+            5000
+        );
+    }
+}
+
+function initSubmitRelatorio() {
+    $(document).off("submit", "#form_relatorio").on("submit", "#form_relatorio", function (event) {
+        event.preventDefault();
+
+        const form = $(this);
+        const actionUrl = baseURL + "/atendimentos-relatorios";
+        const formData = form.serialize();
+
+        const btnSubmit = form.find("button[type='submit']");
+        btnSubmit.prop("disabled", true);
+
+        $.ajax({
+            url: actionUrl,
+            type: "POST",
+            data: formData,
+            dataType: "json",
+            headers: {
+                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+            },
+            success: function (response) {
+                $("#modal_relatorio").modal("hide");
+
+                $("#dataTableAtendimentosRelatorios")
+                    .DataTable()
+                    .ajax.reload(null, false);
+
+                showNotification(
+                    "fas fa-check-double",
+                    response.message,
+                    "success",
+                    2000
+                );
+
+                btnSubmit.prop("disabled", false);
+            },
+            error: function (xhr) {
+                btnSubmit.prop("disabled", false);
+                handleAjaxError(xhr);
+            }
+        });
+    });
 }
 
 function initAtualizarRelatorio() {
@@ -227,31 +253,200 @@ function initAtualizarRelatorio() {
     });
 }
 
-function handleAjaxError(xhr) {
-    if (xhr.status === 422) {
-        const errors = xhr.responseJSON?.errors || {};
-        let msg = "<ul>";
-
-        Object.values(errors).flat().forEach(m => {
-            msg += `<li>${m}</li>`;
-        });
-
-        msg += "</ul>";
-
-        showNotification(
-            "fas fa-bug",
-            "Ocorreram erros:<br>" + msg,
-            "danger",
-            5000
-        );
-    } else {
-        showNotification(
-            "fas fa-bug",
-            "Ops... um erro inesperado ocorreu!",
-            "danger",
-            5000
+function initMaoObraTab() {
+    if ($.ui && $.ui.autocomplete && $('#mao_obra_label').length) {
+        setupAutocomplete(
+            '#mao_obra_label',
+            '#mao_obra_id',
+            baseURL + '/mao-de-obra/autocomplete',
+            function (item) {
+                $('#mao_obra_tp_id').val(item.tp_id || '');
+                $('#mao_obra_label').data('selectedItem', item);
+            }
         );
     }
+
+    $(document).off('input blur', '#mao_obra_qtd').on('input blur', '#mao_obra_qtd', function () {
+        const v = parseInt($(this).val(), 10);
+        if (isNaN(v) || v < 1) {
+            $(this).val(1);
+        }
+    });
+
+    $(document).off('change', '#mao_obra_label').on('change', '#mao_obra_label', function () {
+        if (!$('#mao_obra_id').val()) {
+            $('#mao_obra_tp_id').val('');
+            $('#mao_obra_label').removeData('selectedItem');
+        }
+    });
+
+    $(document).off('click', '#btnAddMaoObra').on('click', '#btnAddMaoObra', function () {
+
+        const relatorioId = getRelatorioIdAtual();
+
+        if (!relatorioId) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Salve o relatório antes de adicionar mão de obra.',
+                'warning',
+                3500
+            );
+            return;
+        }
+
+        const ocupId = $('#mao_obra_id').val();
+        const tpId = $('#mao_obra_tp_id').val();
+        const qtd = parseInt($('#mao_obra_qtd').val(), 10);
+
+        if (!ocupId || !tpId) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Selecione uma mão de obra válida na lista.',
+                'warning',
+                3000
+            );
+            return;
+        }
+
+        if (isNaN(qtd) || qtd < 1) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Quantidade deve ser no mínimo 1.',
+                'warning',
+                3000
+            );
+            return;
+        }
+
+        const key = `${tpId}-${ocupId}`;
+        if ($(`#tableMaoObra tbody tr[data-key="${key}"]`).length) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Essa mão de obra já foi adicionada.',
+                'warning',
+                3000
+            );
+            return;
+        }
+
+        const btn = $('#btnAddMaoObra');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/mao-de-obra`,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                ocup_id: ocupId,
+                qtd: qtd
+            },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                const d = response.data;
+
+                const tr = $(`
+                        <tr data-key="${d.tp_id}-${d.ocup_id}"
+                            data-ocup-id="${d.ocup_id}"
+                            style="display:none;">
+                            <td>
+                                <button type="button"
+                                    class="btn btn-danger btn-sm btn-icon-split btnRemoveMaoObra">
+                                    <span class="icon text-white-50">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                    <span class="text">Excluir</span>
+                                </button>
+                            </td>
+                            <td>${escapeHtml(d.tp_label)}</td>
+                            <td>${escapeHtml(d.ocup)}</td>
+                            <td>${d.qtd}</td>
+                        </tr>
+                    `);
+
+                $('#tableMaoObra tbody').append(tr);
+                tr.fadeIn(500);
+
+                showNotification(
+                    'fas fa-check',
+                    response.message,
+                    'success',
+                    2000
+                );
+
+                $('#mao_obra_label').val('').removeData('selectedItem');
+                $('#mao_obra_id').val('');
+                $('#mao_obra_tp_id').val('');
+                $('#mao_obra_qtd').val(1);
+                $('#mao_obra_label').focus();
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) {
+                    const msg = xhr.responseJSON?.message || 'Erro de validação.';
+                    showNotification('fas fa-bug', msg, 'danger', 4000);
+                } else {
+                    handleAjaxError(xhr);
+                }
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+
+    $(document).off('click', '.btnRemoveMaoObra').on('click', '.btnRemoveMaoObra', function () {
+
+        const relatorioId = getRelatorioIdAtual();
+        const tr = $(this).closest('tr');
+        const ocupId = tr.data('ocup-id');
+
+        if (!relatorioId || !ocupId) {
+            tr.fadeOut(500, function () { tr.remove(); });
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/mao-de-obra/${ocupId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                tr.fadeOut(500, function () {
+                    tr.remove();
+                });
+
+                showNotification(
+                    'fas fa-check',
+                    response.message,
+                    'success',
+                    2000
+                );
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false);
+                handleAjaxError(xhr);
+            }
+        });
+    });
+}
+
+function getRelatorioIdAtual() {
+    const byData = $('#btnAtualizarRelatorio').data('relatorio-id');
+    if (byData) return byData;
+
+    const action = $('#form_relatorio_dados').data('action');
+    if (action) {
+        const m = String(action).match(/\d+/);
+        if (m) return m[0];
+    }
+
+    return null;
 }
 
 function getData(relatorioId, guia) {
@@ -269,6 +464,10 @@ function getData(relatorioId, guia) {
             case 'tab-clima':
                 applyClima(data.clima);
                 break;
+        }
+
+        if (data.mao_obra) {
+            applyMaoDeObra(data.mao_obra);
         }
     });
 }
@@ -298,4 +497,40 @@ function applyClima(clima) {
     if (clima?.noite) {
         $(`#noite_${clima.noite}`).prop('checked', true);
     }
+}
+
+function applyMaoDeObra(lista) {
+    const tbody = $('#tableMaoObra tbody');
+
+    tbody.empty();
+
+    if (!Array.isArray(lista) || !lista.length) {
+        return;
+    }
+
+    lista.forEach(function (d) {
+        const key = `${d.tp_id}-${d.ocup_id}`;
+
+        const tr = $(`
+            <tr data-key="${key}"
+                data-ocup-id="${d.ocup_id}"
+                style="display:none;">
+                <td>
+                    <button type="button"
+                        class="btn btn-danger btn-sm btn-icon-split btnRemoveMaoObra">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span class="text">Excluir</span>
+                    </button>
+                </td>
+                <td>${escapeHtml(d.tp_label)}</td>
+                <td>${escapeHtml(d.ocup)}</td>
+                <td>${d.qtd}</td>
+            </tr>
+        `);
+
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
 }

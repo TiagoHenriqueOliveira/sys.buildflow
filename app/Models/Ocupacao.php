@@ -27,4 +27,14 @@ class Ocupacao extends Model
     {
         return $this->belongsTo(TipoOcupacao::class, 'ocup_tp_ocupacao_id', 'tp_ocup_id');
     }
+
+    public function relatorios()
+    {
+        return $this->belongsToMany(
+            AtendimentoRelatorio::class,
+            'atendimentos_relatorios_maos_obras',
+            'aten_rel_mo_ocupacao_id',
+            'aten_rel_mo_relatorio_id'
+        )->withPivot(['aten_rel_mo_qtd']);
+    }
 }

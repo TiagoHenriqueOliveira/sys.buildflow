@@ -59,4 +59,17 @@ class AtendimentoRelatorio extends Model
             'aten_rel_id'
         );
     }
+
+    public function ocupacoes()
+    {
+        return $this->belongsToMany(
+            Ocupacao::class,
+            'atendimentos_relatorios_ocupacoes',
+            'aten_rel_ocup_relatorio_id',
+            'aten_rel_ocup_ocupacao_id'
+        )->withPivot([
+            'aten_rel_ocup_quantidade',
+            'aten_rel_ocup_id',
+        ]);
+    }
 }
