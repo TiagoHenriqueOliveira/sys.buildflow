@@ -72,11 +72,13 @@ function setupAutocomplete(inputSelector, hiddenInputSelector, url, callback) {
 }
 
 // util simples para evitar injeção no html da linha
-function escapeHtml(str) {
-    return String(str ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+if (typeof escapeHtml !== 'function') {
+    function escapeHtml(str) {
+        return String(str ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
 }

@@ -72,4 +72,14 @@ class AtendimentoRelatorio extends Model
             'aten_rel_ocup_id',
         ]);
     }
+
+    public function equipamentos()
+    {
+        return $this->belongsToMany(
+            Equipamento::class,
+            'atendimentos_relatorios_equipamentos',
+            'aten_rel_equip_relatorio_id',
+            'aten_rel_equip_equipamento_id'
+        )->withPivot(['aten_rel_equip_quantidade', 'aten_rel_equip_id']);
+    }
 }

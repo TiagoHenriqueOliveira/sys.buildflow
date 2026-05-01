@@ -26,7 +26,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-sm" id="tableMaoObra">
+        <table class="table table-sm table-striped" id="tableMaoObra">
             <thead>
                 <tr>
                     <th style="width: 10%;">Ações</th>

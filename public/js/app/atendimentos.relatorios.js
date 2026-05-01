@@ -10,6 +10,7 @@ $(document).ready(function () {
     initSubmitRelatorio();
     initAtualizarRelatorio();
     initMaoObraTab();
+    initEquipTab();
 
     $("#btnNovoRelatorio").on("click", function () {
         $("#rel_aten_id").val("");
@@ -436,6 +437,273 @@ function initMaoObraTab() {
     });
 }
 
+function initEquipTab() {
+
+    // Autocomplete de equipamentos (utils.js)
+    if ($.ui && $.ui.autocomplete && $('#equip_label').length) {
+        setupAutocomplete(
+            '#equip_label',
+            '#equip_id',
+            baseURL + '/equipamentos/autocomplete',
+            function (item) {
+                $('#equip_label').data('selectedItem', item);
+            }
+        );
+    }
+
+    // qtd nunca < 1
+    $(document).off('input blur', '#equip_qtd').on('input blur', '#equip_qtd', function () {
+        const v = parseInt($(this).val(), 10);
+        if (isNaN(v) || v < 1) $(this).val(1);
+    });
+
+    // se alterar label e não tiver id, limpa seleção
+    $(document).off('change', '#equip_label').on('change', '#equip_label', function () {
+        if (!$('#equip_id').val()) {
+            $('#equip_label').removeData('selectedItem');
+        }
+    });
+
+    // ADD equipamento
+    $(document).off('click', '#btnAddEquip').on('click', '#btnAddEquip', function () {
+        const relatorioId = getRelatorioIdAtual();
+
+        if (!relatorioId) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar equipamento.', 'warning', 3500);
+            return;
+        }
+
+        const equipId = $('#equip_id').val();
+        const qtd = parseInt($('#equip_qtd').val(), 10);
+
+        if (!equipId) {
+            showNotification('fas fa-exclamation-triangle', 'Selecione um equipamento válido na lista.', 'warning', 3000);
+            return;
+        }
+        if (isNaN(qtd) || qtd < 1) {
+            showNotification('fas fa-exclamation-triangle', 'Quantidade deve ser no mínimo 1.', 'warning', 3000);
+            return;
+        }
+
+        const key = `equip-${equipId}`;
+        if ($(`#tableEquip tbody tr[data-key="${key}"]`).length) {
+            showNotification('fas fa-exclamation-triangle', 'Esse equipamento já foi adicionado.', 'warning', 3000);
+            return;
+        }
+
+        const btn = $('#btnAddEquip');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/equipamentos`,
+            type: 'POST',
+            dataType: 'json',
+            data: { equip_id: equipId, qtd: qtd },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (response) {
+                const d = response.data;
+
+                const tr = $(`
+                    <tr data-key="equip-${d.equip_id}"
+                        data-equip-id="${d.equip_id}"
+                        style="display:none;">
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveEquip">
+                                <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+                                <span class="text">Excluir</span>
+                            </button>
+                        </td>
+                        <td>${escapeHtml(d.equip)}</td>
+                        <td>${d.qtd}</td>
+                    </tr>
+                `);
+
+                $('#tableEquip tbody').append(tr);
+                tr.fadeIn(500);
+
+                showNotification('fas fa-check', response.message, 'success', 2000);
+
+                // limpa campos
+                $('#equip_label').val('').removeData('selectedItem');
+                $('#equip_id').val('');
+                $('#equip_qtd').val(1);
+                $('#equip_label').focus();
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) {
+                    const msg = xhr.responseJSON?.message || 'Erro de validação.';
+                    showNotification('fas fa-bug', msg, 'danger', 4000);
+                } else {
+                    handleAjaxError(xhr);
+                }
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+
+    // REMOVE equipamento
+    $(document).off('click', '.btnRemoveEquip').on('click', '.btnRemoveEquip', function () {
+        const relatorioId = getRelatorioIdAtual();
+        const tr = $(this).closest('tr');
+        const equipId = tr.data('equip-id');
+
+        if (!relatorioId || !equipId) {
+            tr.fadeOut(500, function () { tr.remove(); });
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/equipamentos/${equipId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (response) {
+                tr.fadeOut(500, function () { tr.remove(); });
+                showNotification('fas fa-check', response.message, 'success', 2000);
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false);
+                handleAjaxError(xhr);
+            }
+        });
+    });
+}
+
+function initEquipTab() {
+    if ($.ui && $.ui.autocomplete && $('#equip_label').length) {
+        setupAutocomplete(
+            '#equip_label',
+            '#equip_id',
+            baseURL + '/equipamentos/autocomplete',
+            function (item) {
+                $('#equip_label').data('selectedItem', item);
+            }
+        );
+    }
+
+    $(document).off('input blur', '#equip_qtd').on('input blur', '#equip_qtd', function () {
+        const v = parseInt($(this).val(), 10);
+        if (isNaN(v) || v < 1) $(this).val(1);
+    });
+
+    $(document).off('change', '#equip_label').on('change', '#equip_label', function () {
+        if (!$('#equip_id').val()) {
+            $('#equip_label').removeData('selectedItem');
+        }
+    });
+
+    $(document).off('click', '#btnAddEquip').on('click', '#btnAddEquip', function () {
+        const relatorioId = getRelatorioIdAtual();
+
+        if (!relatorioId) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar equipamento.', 'warning', 3500);
+            return;
+        }
+
+        const equipId = $('#equip_id').val();
+        const qtd = parseInt($('#equip_qtd').val(), 10);
+
+        if (!equipId) {
+            showNotification('fas fa-exclamation-triangle', 'Selecione um equipamento válido na lista.', 'warning', 3000);
+            return;
+        }
+        if (isNaN(qtd) || qtd < 1) {
+            showNotification('fas fa-exclamation-triangle', 'Quantidade deve ser no mínimo 1.', 'warning', 3000);
+            return;
+        }
+
+        const key = `equip-${equipId}`;
+        if ($(`#tableEquip tbody tr[data-key="${key}"]`).length) {
+            showNotification('fas fa-exclamation-triangle', 'Esse equipamento já foi adicionado.', 'warning', 3000);
+            return;
+        }
+
+        const btn = $('#btnAddEquip');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/equipamentos`,
+            type: 'POST',
+            dataType: 'json',
+            data: { equip_id: equipId, qtd: qtd },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (response) {
+                const d = response.data;
+
+                const tr = $(`
+                    <tr data-key="equip-${d.equip_id}"
+                        data-equip-id="${d.equip_id}"
+                        style="display:none;">
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveEquip">
+                                <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+                                <span class="text">Excluir</span>
+                            </button>
+                        </td>
+                        <td>${escapeHtml(d.equip)}</td>
+                        <td>${d.qtd}</td>
+                    </tr>
+                `);
+
+                $('#tableEquip tbody').append(tr);
+                tr.fadeIn(500);
+
+                showNotification('fas fa-check', response.message, 'success', 2000);
+
+                $('#equip_label').val('').removeData('selectedItem');
+                $('#equip_id').val('');
+                $('#equip_qtd').val(1);
+                $('#equip_label').focus();
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) {
+                    const msg = xhr.responseJSON?.message || 'Erro de validação.';
+                    showNotification('fas fa-bug', msg, 'danger', 4000);
+                } else {
+                    handleAjaxError(xhr);
+                }
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+
+    $(document).off('click', '.btnRemoveEquip').on('click', '.btnRemoveEquip', function () {
+        const relatorioId = getRelatorioIdAtual();
+        const tr = $(this).closest('tr');
+        const equipId = tr.data('equip-id');
+
+        if (!relatorioId || !equipId) {
+            tr.fadeOut(500, function () { tr.remove(); });
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/equipamentos/${equipId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (response) {
+                tr.fadeOut(500, function () { tr.remove(); });
+                showNotification('fas fa-check', response.message, 'success', 2000);
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false);
+                handleAjaxError(xhr);
+            }
+        });
+    });
+}
+
 function getRelatorioIdAtual() {
     const byData = $('#btnAtualizarRelatorio').data('relatorio-id');
     if (byData) return byData;
@@ -468,6 +736,10 @@ function getData(relatorioId, guia) {
 
         if (data.mao_obra) {
             applyMaoDeObra(data.mao_obra);
+        }
+
+        if (data.equipamentos) {
+            applyEquipamentos(data.equipamentos);
         }
     });
 }
@@ -526,6 +798,33 @@ function applyMaoDeObra(lista) {
                 </td>
                 <td>${escapeHtml(d.tp_label)}</td>
                 <td>${escapeHtml(d.ocup)}</td>
+                <td>${d.qtd}</td>
+            </tr>
+        `);
+
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
+
+function applyEquipamentos(lista) {
+    const tbody = $('#tableEquip tbody');
+    tbody.empty();
+
+    if (!Array.isArray(lista) || !lista.length) return;
+
+    lista.forEach(function (d) {
+        const tr = $(`
+            <tr data-key="equip-${d.equip_id}"
+                data-equip-id="${d.equip_id}"
+                style="display:none;">
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveEquip">
+                        <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+                        <span class="text">Excluir</span>
+                    </button>
+                </td>
+                <td>${escapeHtml(d.equip)}</td>
                 <td>${d.qtd}</td>
             </tr>
         `);

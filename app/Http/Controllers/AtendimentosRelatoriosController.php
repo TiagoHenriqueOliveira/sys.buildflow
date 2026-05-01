@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
+use App\Http\Requests\AtendimentoRelatorioEquipamentoRequest;
 use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
 use App\Http\Requests\AtendimentoRelatorioMaoObraRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
@@ -11,6 +12,7 @@ use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
+use App\Models\Equipamento;
 use App\Models\Ocupacao;
 use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
@@ -311,13 +313,73 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function storeEquipamento(AtendimentoRelatorioEquipamentoRequest $request, int $id)
+    {
+        try {
+            $equipId = (int) $request->equip_id;
+            $qtd     = (int) $request->qtd;
+
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $exists = $relatorio->equipamentos()
+                ->where('equipamentos.equip_id', $equipId)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Esse equipamento já foi adicionado neste relatório.'
+                ], 422);
+            }
+
+            $equip = Equipamento::findOrFail($equipId);
+
+            $relatorio->equipamentos()->attach($equipId, [
+                'aten_rel_equip_quantidade' => $qtd,
+            ]);
+
+            return response()->json([
+                'message' => 'Equipamento adicionado!',
+                'data' => [
+                    'equip_id' => (int) $equip->equip_id,
+                    'equip'    => (string) $equip->equip_descricao,
+                    'qtd'      => $qtd,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao adicionar equipamento.'
+            ], 500);
+        }
+    }
+
+    public function destroyEquipamento(int $id, int $equipId)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+            $relatorio->equipamentos()->detach($equipId);
+
+            return response()->json([
+                'message' => 'Equipamento removido!'
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao remover equipamento.'
+            ], 500);
+        }
+    }
+
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
             'atendimento',
             'horarios',
             'climas',
-            'ocupacoes.tipoOcupacao'
+            'ocupacoes.tipoOcupacao',
+            'equipamentos'
         ])->findOrFail($id);
 
         $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
@@ -358,6 +420,14 @@ class AtendimentosRelatoriosController extends Controller
             ];
         })->values();
 
+        $equipamentos = $relatorio->equipamentos->map(function ($e) {
+            return [
+                'equip_id' => $e->equip_id,
+                'equip'    => $e->equip_descricao,
+                'qtd'      => (int) $e->pivot->aten_rel_equip_quantidade,
+            ];
+        })->values();
+
         return response()->json([
             'dados' => [
                 'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
@@ -376,7 +446,8 @@ class AtendimentosRelatoriosController extends Controller
             ],
 
             'clima' => $climaPorPeriodo,
-            'mao_obra' => $maoObra
+            'mao_obra' => $maoObra,
+            'equipamentos' => $equipamentos,
         ]);
     }
 
