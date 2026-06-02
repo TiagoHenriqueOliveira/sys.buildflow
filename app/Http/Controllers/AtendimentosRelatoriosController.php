@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AtendimentoRelatorioAtividadeRequest;
+use App\Http\Requests\AtendimentoRelatorioComentarioRequest;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
 use App\Http\Requests\AtendimentoRelatorioEquipamentoRequest;
@@ -13,6 +14,7 @@ use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAtividade;
+use App\Models\AtendimentoRelatorioComentario;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
 use App\Models\Equipamento;
@@ -507,6 +509,84 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function storeComentario(AtendimentoRelatorioComentarioRequest $request, int $id)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $row = AtendimentoRelatorioComentario::create([
+                'aten_rel_com_relatorio_id' => $relatorio->aten_rel_id,
+                'aten_rel_com_descricao'    => $request->aten_rel_com_descricao,
+            ]);
+
+            return response()->json([
+                'message' => 'Comentário adicionado!',
+                'data'    => [
+                    'id'        => (int) $row->aten_rel_com_id,
+                    'descricao' => (string) $row->aten_rel_com_descricao,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao adicionar comentário.'
+            ], 500);
+        }
+    }
+
+    public function updateComentario(AtendimentoRelatorioComentarioRequest $request, int $id, int $comentarioId)
+    {
+        try {
+            AtendimentoRelatorio::findOrFail($id);
+
+            $row = AtendimentoRelatorioComentario::where('aten_rel_com_id', $comentarioId)
+                ->where('aten_rel_com_relatorio_id', $id)
+                ->firstOrFail();
+
+            $row->update([
+                'aten_rel_com_descricao' => $request->aten_rel_com_descricao,
+            ]);
+
+            return response()->json([
+                'message' => 'Comentário atualizado!',
+                'data'    => [
+                    'id'        => (int) $row->aten_rel_com_id,
+                    'descricao' => (string) $row->aten_rel_com_descricao,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao atualizar comentário.'
+            ], 500);
+        }
+    }
+
+    public function destroyComentario(int $id, int $comentarioId)
+    {
+        try {
+            AtendimentoRelatorio::findOrFail($id);
+
+            $row = AtendimentoRelatorioComentario::where('aten_rel_com_id', $comentarioId)
+                ->where('aten_rel_com_relatorio_id', $id)
+                ->firstOrFail();
+
+            $row->delete();
+
+            return response()->json([
+                'message' => 'Comentário removido!'
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao remover comentário.'
+            ], 500);
+        }
+    }
+
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
@@ -583,6 +663,15 @@ class AtendimentosRelatoriosController extends Controller
             ];
         })->values();
 
+        $comentarios = $relatorio->comentarios
+            ->sortBy('aten_rel_com_id')
+            ->map(function ($c) {
+                return [
+                    'id'        => (int) $c->aten_rel_com_id,
+                    'descricao' => (string) $c->aten_rel_com_descricao,
+                ];
+            })->values();
+
         return response()->json([
             'dados' => [
                 'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
@@ -605,6 +694,7 @@ class AtendimentosRelatoriosController extends Controller
             'equipamentos'  => $equipamentos,
             'atividades'    => $atividades,
             'ocorrencias' => $ocorrencias,
+            'comentarios' => $comentarios
         ]);
     }
 

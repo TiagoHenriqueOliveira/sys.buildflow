@@ -13,6 +13,7 @@ $(document).ready(function () {
     initEquipTab();
     initAtividadesTab();
     initOcorrenciasTab();
+    initComentariosTab();
 
     $("#btnNovoRelatorio").on("click", function () {
         $("#rel_aten_id").val("");
@@ -879,6 +880,152 @@ function initOcorrenciasTab() {
     });
 }
 
+function initComentariosTab() {
+    $(document).off('click', '#btnNovoComentario').on('click', '#btnNovoComentario', function () {
+        $('#aten_rel_com_id').val('');
+        $('#aten_rel_com_descricao').val('');
+
+        $('#modalComentario').modal({
+            backdrop: 'static',
+            keyboard: false
+        });
+
+        setTimeout(() => $('#aten_rel_com_descricao').focus(), 200);
+    });
+
+    $(document).off('hidden.bs.modal', '#modalComentario').on('hidden.bs.modal', '#modalComentario', function () {
+        $('#aten_rel_com_id').val('');
+        $('#aten_rel_com_descricao').val('');
+        $('#btnSalvarComentario').prop('disabled', false);
+    });
+
+    $(document).off('submit', '#formComentario').on('submit', '#formComentario', function (e) {
+        e.preventDefault();
+
+        const relatorioId = getRelatorioIdAtual();
+
+        if (!relatorioId) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Salve o relatório antes de adicionar comentários.',
+                'warning',
+                3500
+            );
+            return;
+        }
+
+        const comentarioId = $('#aten_rel_com_id').val();
+
+        const payload = {
+            aten_rel_com_descricao: $('#aten_rel_com_descricao').val()
+        };
+
+        const url = comentarioId
+            ? baseURL + `/atendimentos-relatorios/${relatorioId}/comentarios/${comentarioId}`
+            : baseURL + `/atendimentos-relatorios/${relatorioId}/comentarios`;
+
+        const btn = $('#btnSalvarComentario');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: payload,
+            dataType: 'json',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+
+                if (!comentarioId && response.data) {
+                    const tr = buildComentarioRow(response.data).hide();
+                    $('#tableComentarios tbody').append(tr);
+                    tr.fadeIn(500);
+                } else if (comentarioId && response.data) {
+                    const tr = $(`#tableComentarios tbody tr[data-com-id="${response.data.id}"]`);
+
+                    if (tr.length) {
+                        tr.find('.td-comentario').html(escapeHtml(response.data.descricao));
+                        tr.data('descricao', response.data.descricao);
+                    } else {
+                        const relId = getRelatorioIdAtual();
+                        if (relId) {
+                            getData(relId, 'tab-dados');
+                        }
+                    }
+                }
+
+                $('#modalComentario').modal('hide');
+
+                showNotification(
+                    'fas fa-check',
+                    response.message,
+                    'success',
+                    2000
+                );
+            },
+            error: function (xhr) {
+                handleAjaxError(xhr);
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+
+    $(document).off('click', '.btnEditComentario').on('click', '.btnEditComentario', function () {
+        const tr = $(this).closest('tr');
+
+        $('#aten_rel_com_id').val(tr.data('com-id'));
+        $('#aten_rel_com_descricao').val(tr.data('descricao'));
+
+        $('#modalComentario').modal({
+            backdrop: 'static',
+            keyboard: false
+        });
+
+        setTimeout(() => $('#aten_rel_com_descricao').focus(), 200);
+    });
+
+    $(document).off('click', '.btnDelComentario').on('click', '.btnDelComentario', function () {
+        const relatorioId = getRelatorioIdAtual();
+        const tr = $(this).closest('tr');
+        const comentarioId = tr.data('com-id');
+
+        if (!relatorioId || !comentarioId) {
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/comentarios/${comentarioId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                tr.fadeOut(500, function () {
+                    tr.remove();
+                });
+
+                showNotification(
+                    'fas fa-check',
+                    response.message,
+                    'success',
+                    2000
+                );
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false);
+                handleAjaxError(xhr);
+            }
+        });
+    });
+}
+
 function buildAtividadeRow(a) {
     return $(`
         <tr data-ativ-id="${a.id}"
@@ -894,6 +1041,23 @@ function buildAtividadeRow(a) {
             </td>
             <td class="td-descricao">${escapeHtml(a.descricao)}</td>
             <td class="td-status">${renderStatusAtividade(a.status)}</td>
+        </tr>
+    `);
+}
+
+function buildComentarioRow(c) {
+    return $(`
+        <tr data-com-id="${c.id}"
+            data-descricao="${escapeHtml(c.descricao)}">
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-primary btnEditComentario" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger btnDelComentario" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+            <td class="td-comentario">${escapeHtml(c.descricao)}</td>
         </tr>
     `);
 }
@@ -943,6 +1107,11 @@ function getData(relatorioId, guia) {
         if (data.ocorrencias) {
             applyOcorrencias(data.ocorrencias);
         }
+
+        if (data.comentarios) {
+            applyComentarios(data.comentarios);
+        }
+        
 
     });
 }
@@ -1078,6 +1247,21 @@ function applyOcorrencias(lista) {
             </tr>
         `);
 
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
+
+function applyComentarios(lista) {
+    const tbody = $('#tableComentarios tbody');
+    tbody.empty();
+
+    if (!Array.isArray(lista) || !lista.length) {
+        return;
+    }
+
+    lista.forEach(function (c) {
+        const tr = buildComentarioRow(c).hide();
         tbody.append(tr);
         tr.fadeIn(300);
     });

@@ -45,6 +45,9 @@ Route::post('/atendimentos-relatorios/{id}/atividades/{ativId}', [AtendimentosRe
 Route::delete('/atendimentos-relatorios/{id}/atividades/{ativId}', [AtendimentosRelatoriosController::class, 'destroyAtividade'])->name('atendimentos-relatorios.destroy-atividade');
 Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->name('atendimentos-relatorios.store-ocorrencia');
 Route::delete('/atendimentos-relatorios/{id}/ocorrencias/{ocorrenciaId}', [AtendimentosRelatoriosController::class, 'destroyOcorrencia'])->name('atendimentos-relatorios.destroy-ocorrencia');
+Route::post('/atendimentos-relatorios/{id}/comentarios', [AtendimentosRelatoriosController::class, 'storeComentario'])->name('atendimentos-relatorios.store-comentario');
+Route::post('/atendimentos-relatorios/{id}/comentarios/{comentarioId}', [AtendimentosRelatoriosController::class, 'updateComentario'])->name('atendimentos-relatorios.update-comentario');
+Route::delete('/atendimentos-relatorios/{id}/comentarios/{comentarioId}', [AtendimentosRelatoriosController::class, 'destroyComentario'])->name('atendimentos-relatorios.destroy-comentario');
 // Clientes
 Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Equipamentos

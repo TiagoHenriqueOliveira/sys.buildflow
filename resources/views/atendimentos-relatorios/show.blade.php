@@ -32,9 +32,6 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">Ocorrências</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-materiais">Materiais</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-comentarios">Comentários</a>
                 </li>
                 <li class="nav-item">
@@ -59,7 +56,6 @@
                 @include('atendimentos-relatorios.tabs.equipamentos')
                 @include('atendimentos-relatorios.tabs.atividades')
                 @include('atendimentos-relatorios.tabs.ocorrencias')
-                @include('atendimentos-relatorios.tabs.materiais')
                 @include('atendimentos-relatorios.tabs.comentarios')
                 @include('atendimentos-relatorios.tabs.anexos')
                 @include('atendimentos-relatorios.tabs.assinaturas')

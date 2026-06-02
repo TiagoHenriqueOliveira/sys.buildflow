@@ -104,4 +104,13 @@ class AtendimentoRelatorio extends Model
             'aten_rel_ocor_observacao',
         ]);
     }
+
+    public function comentarios()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioComentario::class,
+            'aten_rel_com_relatorio_id',
+            'aten_rel_id'
+        );
+    }
 }
