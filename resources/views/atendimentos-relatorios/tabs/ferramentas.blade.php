@@ -1,5 +1,5 @@
-{{-- EQUIPAMENTOS --}}
-<div class="tab-pane fade" id="tab-equipamentos">
+{{-- FERRAMENTAS --}}
+<div class="tab-pane fade" id="tab-ferramentas">
     <div class="mb-3">
         <div class="form-row align-items-end">
             <div class="col-md-7">
@@ -29,7 +29,7 @@
             <thead>
                 <tr>
                     <th style="width: 10%;">Ações</th>
-                    <th>Equipamento</th>
+                    <th>Ferramenta</th>
                     <th style="width: 10%;">Qtd</th>
                 </tr>
             </thead>

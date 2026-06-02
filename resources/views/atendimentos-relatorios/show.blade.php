@@ -23,7 +23,7 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-mao-obra">Mão de Obra</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-equipamentos">Equipamentos</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-ferramentas">Ferramentas</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-atividades">Atividades</a>
@@ -53,7 +53,7 @@
                 @include('atendimentos-relatorios.tabs.horarios')
                 @include('atendimentos-relatorios.tabs.clima')
                 @include('atendimentos-relatorios.tabs.mao-obra')
-                @include('atendimentos-relatorios.tabs.equipamentos')
+                @include('atendimentos-relatorios.tabs.ferramentas')
                 @include('atendimentos-relatorios.tabs.atividades')
                 @include('atendimentos-relatorios.tabs.ocorrencias')
                 @include('atendimentos-relatorios.tabs.comentarios')
