@@ -82,4 +82,13 @@ class AtendimentoRelatorio extends Model
             'aten_rel_equip_equipamento_id'
         )->withPivot(['aten_rel_equip_quantidade', 'aten_rel_equip_id']);
     }
+
+    public function atividades()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioAtividade::class,
+            'aten_rel_ativ_relatorio_id',
+            'aten_rel_id'
+        );
+    }
 }

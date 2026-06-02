@@ -40,6 +40,9 @@ Route::post('/atendimentos-relatorios/{id}/mao-de-obra', [AtendimentosRelatorios
 Route::delete('/atendimentos-relatorios/{id}/mao-de-obra/{maoObraId}', [AtendimentosRelatoriosController::class, 'destroyMaoObra'])->name('atendimentos-relatorios.destroy-mao-obra');
 Route::post('/atendimentos-relatorios/{id}/equipamentos', [AtendimentosRelatoriosController::class, 'storeEquipamento'])->name('atendimentos-relatorios.store-equipamentos');
 Route::delete('/atendimentos-relatorios/{id}/equipamentos/{equipId}', [AtendimentosRelatoriosController::class, 'destroyEquipamento'])->name('atendimentos-relatorios.destroy-equipamentos');
+Route::post('/atendimentos-relatorios/{id}/atividades', [AtendimentosRelatoriosController::class, 'storeAtividade'])->name('atendimentos-relatorios.store-atividade');
+Route::post('/atendimentos-relatorios/{id}/atividades/{ativId}', [AtendimentosRelatoriosController::class, 'updateAtividade'])->name('atendimentos-relatorios.update-atividade');
+Route::delete('/atendimentos-relatorios/{id}/atividades/{ativId}', [AtendimentosRelatoriosController::class, 'destroyAtividade'])->name('atendimentos-relatorios.destroy-atividade');
 // Clientes
 Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Equipamentos

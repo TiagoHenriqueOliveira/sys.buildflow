@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AtendimentoRelatorioAtividadeRequest;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
 use App\Http\Requests\AtendimentoRelatorioEquipamentoRequest;
@@ -10,6 +11,7 @@ use App\Http\Requests\AtendimentoRelatorioMaoObraRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
+use App\Models\AtendimentoRelatorioAtividade;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
 use App\Models\Equipamento;
@@ -372,6 +374,77 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function storeAtividade(AtendimentoRelatorioAtividadeRequest $request, int $id)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $row = AtendimentoRelatorioAtividade::create([
+                'aten_rel_ativ_relatorio_id' => $relatorio->aten_rel_id,
+                'aten_rel_ativ_descricao'    => $request->aten_rel_ativ_descricao,
+                'aten_rel_ativ_status'       => (int) $request->aten_rel_ativ_status,
+            ]);
+
+            return response()->json([
+                'message' => 'Atividade adicionada!',
+                'data'    => [
+                    'id'        => (int) $row->aten_rel_ativ_id,
+                    'descricao' => (string) $row->aten_rel_ativ_descricao,
+                    'status'    => (int) $row->aten_rel_ativ_status,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar atividade.'], 500);
+        }
+    }
+
+    public function updateAtividade(AtendimentoRelatorioAtividadeRequest $request, int $id, int $ativId)
+    {
+        try {
+            AtendimentoRelatorio::findOrFail($id);
+
+            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
+                ->where('aten_rel_ativ_relatorio_id', $id)
+                ->firstOrFail();
+
+            $row->update([
+                'aten_rel_ativ_descricao' => $request->aten_rel_ativ_descricao,
+                'aten_rel_ativ_status'    => (int) $request->aten_rel_ativ_status,
+            ]);
+
+            return response()->json([
+                'message' => 'Atividade atualizada!',
+                'data'    => [
+                    'id'        => (int) $row->aten_rel_ativ_id,
+                    'descricao' => (string) $row->aten_rel_ativ_descricao,
+                    'status'    => (int) $row->aten_rel_ativ_status,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao atualizar atividade.'], 500);
+        }
+    }
+
+    public function destroyAtividade(int $id, int $ativId)
+    {
+        try {
+            AtendimentoRelatorio::findOrFail($id);
+
+            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
+                ->where('aten_rel_ativ_relatorio_id', $id)
+                ->firstOrFail();
+
+            $row->delete();
+
+            return response()->json(['message' => 'Atividade removida!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover atividade.'], 500);
+        }
+    }
+
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
@@ -379,7 +452,8 @@ class AtendimentosRelatoriosController extends Controller
             'horarios',
             'climas',
             'ocupacoes.tipoOcupacao',
-            'equipamentos'
+            'equipamentos',
+            'atividades',
         ])->findOrFail($id);
 
         $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
@@ -428,6 +502,16 @@ class AtendimentosRelatoriosController extends Controller
             ];
         })->values();
 
+        $atividades = $relatorio->atividades
+            ->sortBy('aten_rel_ativ_id')
+            ->map(function ($a) {
+                return [
+                    'id'        => (int) $a->aten_rel_ativ_id,
+                    'descricao' => (string) $a->aten_rel_ativ_descricao,
+                    'status'    => (int) $a->aten_rel_ativ_status,
+                ];
+            })->values();
+
         return response()->json([
             'dados' => [
                 'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
@@ -445,9 +529,10 @@ class AtendimentosRelatoriosController extends Controller
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
 
-            'clima' => $climaPorPeriodo,
-            'mao_obra' => $maoObra,
-            'equipamentos' => $equipamentos,
+            'clima'         => $climaPorPeriodo,
+            'mao_obra'      => $maoObra,
+            'equipamentos'  => $equipamentos,
+            'atividades'    => $atividades
         ]);
     }
 

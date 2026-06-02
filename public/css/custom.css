@@ -152,3 +152,7 @@ legend {
   text-overflow: ellipsis;
   border-left: 4px solid #0dfddd;
 }
+
+.modal-backdrop {
+  position: relative !important;
+}
