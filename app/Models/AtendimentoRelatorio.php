@@ -91,4 +91,17 @@ class AtendimentoRelatorio extends Model
             'aten_rel_id'
         );
     }
+
+    public function ocorrencias()
+    {
+        return $this->belongsToMany(
+            Ocorrencia::class,
+            'atendimentos_relatorios_ocorrencias',
+            'aten_rel_ocor_relatorio_id',
+            'aten_rel_ocor_ocorrencia_id'
+        )->withPivot([
+            'aten_rel_ocor_id',
+            'aten_rel_ocor_observacao',
+        ]);
+    }
 }

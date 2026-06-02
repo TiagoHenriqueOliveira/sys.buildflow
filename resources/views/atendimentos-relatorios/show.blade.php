@@ -32,9 +32,6 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">Ocorrências</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-checklist">Checklist</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-materiais">Materiais</a>
                 </li>
                 <li class="nav-item">
@@ -62,7 +59,6 @@
                 @include('atendimentos-relatorios.tabs.equipamentos')
                 @include('atendimentos-relatorios.tabs.atividades')
                 @include('atendimentos-relatorios.tabs.ocorrencias')
-                @include('atendimentos-relatorios.tabs.checklist')
                 @include('atendimentos-relatorios.tabs.materiais')
                 @include('atendimentos-relatorios.tabs.comentarios')
                 @include('atendimentos-relatorios.tabs.anexos')

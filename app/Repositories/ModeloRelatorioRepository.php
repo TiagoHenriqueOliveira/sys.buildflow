@@ -33,7 +33,6 @@ class ModeloRelatorioRepository implements CrudRepositoryInterface
         return [
             'mod_rel_anexo' => 0,
             'mod_rel_atividade' => 0,
-            'mod_rel_checklist' => 0,
             'mod_rel_comentario' => 0,
             'mod_rel_cond_clima' => 0,
             'mod_rel_controle_material' => 0,

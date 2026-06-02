@@ -6,7 +6,6 @@
             @foreach([
                 'mod_rel_anexo' => 'Anexo',
                 'mod_rel_atividade' => 'Atividade',
-                'mod_rel_checklist' => 'Checklist',
                 'mod_rel_comentario' => 'Comentário',
                 'mod_rel_cond_clima' => 'Condição Climática',
                 'mod_rel_controle_material' => 'Controle de Material',

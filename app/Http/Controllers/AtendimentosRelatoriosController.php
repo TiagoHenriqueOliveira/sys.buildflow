@@ -8,6 +8,7 @@ use App\Http\Requests\AtendimentoRelatorioDadosRequest;
 use App\Http\Requests\AtendimentoRelatorioEquipamentoRequest;
 use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
 use App\Http\Requests\AtendimentoRelatorioMaoObraRequest;
+use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
@@ -15,6 +16,7 @@ use App\Models\AtendimentoRelatorioAtividade;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
 use App\Models\Equipamento;
+use App\Models\Ocorrencia;
 use App\Models\Ocupacao;
 use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
@@ -445,6 +447,66 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function storeOcorrencia(AtendimentoRelatorioOcorrenciaRequest $request, int $id)
+    {
+        try {
+            $ocorrenciaId = (int) $request->ocorrencia_id;
+            $observacao   = $request->observacao;
+
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $exists = $relatorio->ocorrencias()
+                ->where('ocorrencias.ocor_id', $ocorrenciaId)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Essa ocorrência já foi adicionada neste relatório.'
+                ], 422);
+            }
+
+            $ocorrencia = Ocorrencia::findOrFail($ocorrenciaId);
+
+            $relatorio->ocorrencias()->attach($ocorrenciaId, [
+                'aten_rel_ocor_observacao' => $observacao,
+            ]);
+
+            return response()->json([
+                'message' => 'Ocorrência adicionada!',
+                'data' => [
+                    'ocorrencia_id' => (int) $ocorrencia->ocor_id,
+                    'ocorrencia'    => (string) $ocorrencia->ocor_descricao,
+                    'observacao'    => (string) ($observacao ?? ''),
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao adicionar ocorrência.'
+            ], 500);
+        }
+    }
+
+    public function destroyOcorrencia(int $id, int $ocorrenciaId)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $relatorio->ocorrencias()->detach($ocorrenciaId);
+
+            return response()->json([
+                'message' => 'Ocorrência removida!'
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao remover ocorrência.'
+            ], 500);
+        }
+    }
+
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
@@ -454,6 +516,7 @@ class AtendimentosRelatoriosController extends Controller
             'ocupacoes.tipoOcupacao',
             'equipamentos',
             'atividades',
+            'ocorrencias'
         ])->findOrFail($id);
 
         $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
@@ -512,6 +575,14 @@ class AtendimentosRelatoriosController extends Controller
                 ];
             })->values();
 
+        $ocorrencias = $relatorio->ocorrencias->map(function ($o) {
+            return [
+                'ocorrencia_id' => (int) $o->ocor_id,
+                'ocorrencia'    => (string) $o->ocor_descricao,
+                'observacao'    => (string) ($o->pivot->aten_rel_ocor_observacao ?? ''),
+            ];
+        })->values();
+
         return response()->json([
             'dados' => [
                 'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
@@ -532,7 +603,8 @@ class AtendimentosRelatoriosController extends Controller
             'clima'         => $climaPorPeriodo,
             'mao_obra'      => $maoObra,
             'equipamentos'  => $equipamentos,
-            'atividades'    => $atividades
+            'atividades'    => $atividades,
+            'ocorrencias' => $ocorrencias,
         ]);
     }
 

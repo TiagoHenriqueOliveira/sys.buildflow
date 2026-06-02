@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\OcorrenciaRequest;
+use App\Models\Ocorrencia;
 use App\Repositories\OcorrenciaRepository;
 use Illuminate\Http\Request;
 
@@ -50,5 +51,31 @@ class OcorrenciasController extends Controller
             report($e);
             return response()->json(['message' => 'Erro ao atualizar.'], 500);
         }
+    }
+
+    public function autoComplete(Request $request)
+    {
+        $term = trim((string) $request->get('term', ''));
+
+        if (mb_strlen($term) < 3) {
+            return response()->json([]);
+        }
+
+        $rows = Ocorrencia::query()
+            ->where('ocor_ativo', 1)
+            ->where('ocor_descricao', 'like', "%{$term}%")
+            ->orderBy('ocor_descricao')
+            ->limit(20)
+            ->get();
+
+        $payload = $rows->map(function ($o) {
+            return [
+                'id'    => $o->ocor_id,
+                'label' => $o->ocor_descricao,
+                'value' => $o->ocor_descricao,
+            ];
+        });
+
+        return response()->json($payload);
     }
 }

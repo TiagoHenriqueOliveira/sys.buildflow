@@ -43,6 +43,8 @@ Route::delete('/atendimentos-relatorios/{id}/equipamentos/{equipId}', [Atendimen
 Route::post('/atendimentos-relatorios/{id}/atividades', [AtendimentosRelatoriosController::class, 'storeAtividade'])->name('atendimentos-relatorios.store-atividade');
 Route::post('/atendimentos-relatorios/{id}/atividades/{ativId}', [AtendimentosRelatoriosController::class, 'updateAtividade'])->name('atendimentos-relatorios.update-atividade');
 Route::delete('/atendimentos-relatorios/{id}/atividades/{ativId}', [AtendimentosRelatoriosController::class, 'destroyAtividade'])->name('atendimentos-relatorios.destroy-atividade');
+Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->name('atendimentos-relatorios.store-ocorrencia');
+Route::delete('/atendimentos-relatorios/{id}/ocorrencias/{ocorrenciaId}', [AtendimentosRelatoriosController::class, 'destroyOcorrencia'])->name('atendimentos-relatorios.destroy-ocorrencia');
 // Clientes
 Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Equipamentos
@@ -54,6 +56,7 @@ Route::resource('modelos-de-relatorios', ModelosRelatoriosController::class)->ex
 Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 // Ocorrências
 Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
+Route::get('/ocorrencias/autocomplete', [OcorrenciasController::class, 'autoComplete'])->name('ocorrencias.autocomplete');
 // Ocupações
 Route::resource('mao-de-obra', OcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
 Route::get('/mao-de-obra/autocomplete', [OcupacoesController::class, 'autoComplete'])->name('mao_de_obra.autocomplete');

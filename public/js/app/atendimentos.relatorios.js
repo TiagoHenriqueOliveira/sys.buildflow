@@ -12,6 +12,7 @@ $(document).ready(function () {
     initMaoObraTab();
     initEquipTab();
     initAtividadesTab();
+    initOcorrenciasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
         $("#rel_aten_id").val("");
@@ -721,6 +722,163 @@ function initAtividadesTab() {
     });
 }
 
+function initOcorrenciasTab() {
+    if ($.ui && $.ui.autocomplete && $('#ocorrencia_label').length) {
+        setupAutocomplete(
+            '#ocorrencia_label',
+            '#ocorrencia_id',
+            baseURL + '/ocorrencias/autocomplete',
+            function (item) {
+                $('#ocorrencia_label').data('selectedItem', item);
+            }
+        );
+    }
+
+    $(document).off('change', '#ocorrencia_label').on('change', '#ocorrencia_label', function () {
+        if (!$('#ocorrencia_id').val()) {
+            $('#ocorrencia_label').removeData('selectedItem');
+        }
+    });
+
+    $(document).off('click', '#btnAddOcorrencia').on('click', '#btnAddOcorrencia', function () {
+        const relatorioId = getRelatorioIdAtual();
+
+        if (!relatorioId) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Salve o relatório antes de adicionar ocorrência.',
+                'warning',
+                3500
+            );
+            return;
+        }
+
+        const ocorrenciaId = $('#ocorrencia_id').val();
+        const item = $('#ocorrencia_label').data('selectedItem');
+        const observacao = $('#ocorrencia_observacao').val();
+
+        if (!ocorrenciaId || !item) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Selecione uma ocorrência válida na lista.',
+                'warning',
+                3000
+            );
+            return;
+        }
+
+        const key = `ocorr-${ocorrenciaId}`;
+        if ($(`#tableOcorrencias tbody tr[data-key="${key}"]`).length) {
+            showNotification(
+                'fas fa-exclamation-triangle',
+                'Essa ocorrência já foi adicionada.',
+                'warning',
+                3000
+            );
+            return;
+        }
+
+        const btn = $('#btnAddOcorrencia');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/ocorrencias`,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                ocorrencia_id: ocorrenciaId,
+                observacao: observacao
+            },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                const d = response.data;
+
+                const tr = $(`
+                    <tr data-key="ocorr-${d.ocorrencia_id}"
+                        data-ocorrencia-id="${d.ocorrencia_id}"
+                        style="display:none;">
+                        <td class="text-center">
+                            <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveOcorrencia">
+                                <span class="icon text-white-50">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                                <span class="text">Excluir</span>
+                            </button>
+                        </td>
+                        <td>${escapeHtml(d.ocorrencia)}</td>
+                        <td>${escapeHtml(d.observacao || '')}</td>
+                    </tr>
+                `);
+
+                $('#tableOcorrencias tbody').append(tr);
+                tr.fadeIn(500);
+
+                showNotification(
+                    'fas fa-check',
+                    response.message,
+                    'success',
+                    2000
+                );
+
+                $('#ocorrencia_label').val('').removeData('selectedItem');
+                $('#ocorrencia_id').val('');
+                $('#ocorrencia_observacao').val('');
+                $('#ocorrencia_label').focus();
+            },
+            error: function (xhr) {
+                if (xhr.status === 422) {
+                    const msg = xhr.responseJSON?.message || 'Erro de validação.';
+                    showNotification('fas fa-bug', msg, 'danger', 4000);
+                } else {
+                    handleAjaxError(xhr);
+                }
+            },
+            complete: function () {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+
+    $(document).off('click', '.btnRemoveOcorrencia').on('click', '.btnRemoveOcorrencia', function () {
+        const relatorioId = getRelatorioIdAtual();
+        const tr = $(this).closest('tr');
+        const ocorrenciaId = tr.data('ocorrencia-id');
+
+        if (!relatorioId || !ocorrenciaId) {
+            tr.fadeOut(500, function () { tr.remove(); });
+            return;
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/ocorrencias/${ocorrenciaId}`,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                tr.fadeOut(500, function () { tr.remove(); });
+
+                showNotification(
+                    'fas fa-check',
+                    response.message,
+                    'success',
+                    2000
+                );
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false);
+                handleAjaxError(xhr);
+            }
+        });
+    });
+}
+
 function buildAtividadeRow(a) {
     return $(`
         <tr data-ativ-id="${a.id}"
@@ -781,6 +939,11 @@ function getData(relatorioId, guia) {
         if (data.atividades) {
             applyAtividades(data.atividades);
         }
+
+        if (data.ocorrencias) {
+            applyOcorrencias(data.ocorrencias);
+        }
+
     });
 }
 
@@ -884,6 +1047,37 @@ function applyAtividades(lista) {
 
     lista.forEach(function (a) {
         const tr = buildAtividadeRow(a).hide();
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
+
+function applyOcorrencias(lista) {
+    const tbody = $('#tableOcorrencias tbody');
+    tbody.empty();
+
+    if (!Array.isArray(lista) || !lista.length) {
+        return;
+    }
+
+    lista.forEach(function (d) {
+        const tr = $(`
+            <tr data-key="ocorr-${d.ocorrencia_id}"
+                data-ocorrencia-id="${d.ocorrencia_id}"
+                style="display:none;">
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveOcorrencia">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span class="text">Excluir</span>
+                    </button>
+                </td>
+                <td>${escapeHtml(d.ocorrencia)}</td>
+                <td>${escapeHtml(d.observacao || '')}</td>
+            </tr>
+        `);
+
         tbody.append(tr);
         tr.fadeIn(300);
     });

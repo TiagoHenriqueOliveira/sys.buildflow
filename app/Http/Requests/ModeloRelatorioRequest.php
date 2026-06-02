@@ -13,7 +13,6 @@ class ModeloRelatorioRequest extends FormRequest
             'mod_rel_tp_data' => ['required', 'integer', 'in:0,1'],
             'mod_rel_anexo' => ['nullable', 'boolean'],
             'mod_rel_atividade' => ['nullable', 'boolean'],
-            'mod_rel_checklist' => ['nullable', 'boolean'],
             'mod_rel_comentario' => ['nullable', 'boolean'],
             'mod_rel_cond_clima' => ['nullable', 'boolean'],
             'mod_rel_controle_material' => ['nullable', 'boolean'],

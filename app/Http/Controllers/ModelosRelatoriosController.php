@@ -25,7 +25,6 @@ class ModelosRelatoriosController extends Controller
                     'mod_rel_entrega_tecnica' => (int) $m->mod_rel_entrega_tecnica,
                     'mod_rel_anexo' => (int) $m->mod_rel_anexo,
                     'mod_rel_atividade' => (int) $m->mod_rel_atividade,
-                    'mod_rel_checklist' => (int) $m->mod_rel_checklist,
                     'mod_rel_comentario' => (int) $m->mod_rel_comentario,
                     'mod_rel_cond_clima' => (int) $m->mod_rel_cond_clima,
                     'mod_rel_controle_material' => (int) $m->mod_rel_controle_material,

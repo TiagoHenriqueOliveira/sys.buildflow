@@ -13,7 +13,6 @@ $(document).ready(function () {
             mod_rel_entrega_tecnica: 0,
             mod_rel_anexo: 0,
             mod_rel_atividade: 0,
-            mod_rel_checklist: 0,
             mod_rel_comentario: 0,
             mod_rel_cond_clima: 0,
             mod_rel_controle_material: 0,
@@ -71,7 +70,6 @@ $(document).on("click", ".btn-modal-modelo-relatorio", function () {
         mod_rel_entrega_tecnica: $(this).data("entrega-tecnica"),
         mod_rel_anexo: $(this).data("anexo"),
         mod_rel_atividade: $(this).data("atividade"),
-        mod_rel_checklist: $(this).data("checklist"),
         mod_rel_comentario: $(this).data("comentario"),
         mod_rel_cond_clima: $(this).data("cond-clima"),
         mod_rel_controle_material: $(this).data("controle-material"),
@@ -130,7 +128,6 @@ function abrirModalModeloRelatorio(data) {
     // checkboxes itens
     setCheckbox("mod_rel_anexo", data.mod_rel_anexo);
     setCheckbox("mod_rel_atividade", data.mod_rel_atividade);
-    setCheckbox("mod_rel_checklist", data.mod_rel_checklist);
     setCheckbox("mod_rel_comentario", data.mod_rel_comentario);
     setCheckbox("mod_rel_cond_clima", data.mod_rel_cond_clima);
     setCheckbox("mod_rel_controle_material", data.mod_rel_controle_material);
@@ -208,7 +205,6 @@ function initSubmitModeloRelatorio() {
         const checkboxIds = [
             "mod_rel_anexo",
             "mod_rel_atividade",
-            "mod_rel_checklist",
             "mod_rel_comentario",
             "mod_rel_cond_clima",
             "mod_rel_controle_material",

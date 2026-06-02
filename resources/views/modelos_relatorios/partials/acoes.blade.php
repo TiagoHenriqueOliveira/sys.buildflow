@@ -7,7 +7,6 @@
     data-entrega-tecnica="{{ (int)$m->mod_rel_entrega_tecnica }}"
     data-anexo="{{ (int)$m->mod_rel_anexo }}"
     data-atividade="{{ (int)$m->mod_rel_atividade }}"
-    data-checklist="{{ (int)$m->mod_rel_checklist }}"
     data-comentario="{{ (int)$m->mod_rel_comentario }}"
     data-cond-clima="{{ (int)$m->mod_rel_cond_clima }}"
     data-controle-material="{{ (int)$m->mod_rel_controle_material }}"

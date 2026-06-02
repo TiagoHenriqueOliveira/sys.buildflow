@@ -16,7 +16,6 @@ class ModeloRelatorio extends Model
     protected $fillable = [
         'mod_rel_anexo',
         'mod_rel_atividade',
-        'mod_rel_checklist',
         'mod_rel_comentario',
         'mod_rel_cond_clima',
         'mod_rel_controle_material',
@@ -37,7 +36,6 @@ class ModeloRelatorio extends Model
         'mod_rel_ativo' => 'boolean',
         'mod_rel_anexo' => 'boolean',
         'mod_rel_atividade' => 'boolean',
-        'mod_rel_checklist' => 'boolean',
         'mod_rel_comentario' => 'boolean',
         'mod_rel_cond_clima' => 'boolean',
         'mod_rel_controle_material' => 'boolean',
