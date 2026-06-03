@@ -20,9 +20,15 @@ use App\Models\AtendimentoRelatorioHorario;
 use App\Models\Equipamento;
 use App\Models\Ocorrencia;
 use App\Models\Ocupacao;
+use App\Models\AtendimentoRelatorioFoto;
+use App\Models\AtendimentoRelatorioVideo;
+use App\Models\AtendimentoRelatorioAnexo;
 use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class AtendimentosRelatoriosController extends Controller
 {
@@ -119,7 +125,10 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento',
             'atendimento.cliente',
             'atendimento.natureza.tipoAtendimento',
-            'horarios'
+            'horarios',
+            'fotos',
+            'videos',
+            'anexos'
         ]);
 
         if (!$atendimentoRelatorio->modeloRelatorio) {
@@ -696,6 +705,283 @@ class AtendimentosRelatoriosController extends Controller
             'ocorrencias' => $ocorrencias,
             'comentarios' => $comentarios
         ]);
+    }
+
+    public function uploadAnexos(Request $request, int $id)
+    {
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $saved = ['arquivos' => [], 'fotos' => [], 'videos' => []];
+
+            // arquivos gerais
+            if ($request->hasFile('arquivos')) {
+                foreach ($request->file('arquivos') as $file) {
+                    if (!$file->isValid()) continue;
+
+                    $originalName = basename($file->getClientOriginalName());
+                    $path = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $originalName, 'public');
+
+                    $anexo = AtendimentoRelatorioAnexo::create([
+                        'aten_rel_anexo_relatorio_id' => $id,
+                        'aten_rel_anexo_path' => $path,
+                    ]);
+
+                    $saved['arquivos'][] = [
+                        'id' => $anexo->aten_rel_anexo_id,
+                        'name' => $originalName,
+                        'path' => $path,
+                        'url' => asset('storage/' . $path),
+                    ];
+                }
+            }
+
+            // fotos
+            if ($request->hasFile('fotos')) {
+                foreach ($request->file('fotos') as $file) {
+                    if (!$file->isValid()) continue;
+
+                    $originalName = basename($file->getClientOriginalName());
+                    $path = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $originalName, 'public');
+
+                    $full = storage_path('app/public/' . $path);
+                    $thumbDir = "atendimentos_relatorios/{$id}/fotos/thumbs";
+                    $thumbName = $originalName;
+                    $thumbPath = $thumbDir . '/' . $thumbName;
+                    $thumbFull = storage_path('app/public/' . $thumbPath);
+                    $thumbCreated = $this->createImageThumbnail($full, $thumbFull, 400);
+
+                    $foto = AtendimentoRelatorioFoto::create([
+                        'aten_rel_foto_relatorio_id' => $id,
+                        'aten_rel_foto_path' => $path,
+                    ]);
+
+                    $saved['fotos'][] = [
+                        'id' => $foto->aten_rel_foto_id,
+                        'name' => $originalName,
+                        'path' => $path,
+                        'url' => asset('storage/' . $path),
+                        'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('storage/' . $path),
+                    ];
+                }
+            }
+
+            // videos
+            if ($request->hasFile('videos')) {
+                foreach ($request->file('videos') as $file) {
+                    if (!$file->isValid()) continue;
+
+                    $originalName = basename($file->getClientOriginalName());
+                    $path = $file->storeAs("atendimentos_relatorios/{$id}/videos", $originalName, 'public');
+
+                    $full = storage_path('app/public/' . $path);
+                    $thumbDir = "atendimentos_relatorios/{$id}/videos/thumbs";
+                    $thumbName = $originalName . '.jpg';
+                    $thumbPath = $thumbDir . '/' . $thumbName;
+                    $thumbFull = storage_path('app/public/' . $thumbPath);
+                    $thumbCreated = $this->createVideoThumbnail($full, $thumbFull);
+
+                    $video = AtendimentoRelatorioVideo::create([
+                        'aten_rel_vid_relatorio_id' => $id,
+                        'aten_rel_vid_path' => $path,
+                    ]);
+
+                    $saved['videos'][] = [
+                        'id' => $video->aten_rel_vid_id,
+                        'name' => $originalName,
+                        'path' => $path,
+                        'url' => asset('storage/' . $path),
+                        'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('img/video-placeholder.svg'),
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Uploads processados com sucesso.',
+                'data' => $saved,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['success' => false, 'message' => 'Erro ao processar uploads.'], 500);
+        }
+    }
+
+    public function getAnexos(int $id)
+    {
+        $relatorio = AtendimentoRelatorio::with(['anexos', 'fotos', 'videos'])->findOrFail($id);
+
+        $arquivos = $relatorio->anexos->map(function ($anexo) {
+            return [
+                'id' => $anexo->aten_rel_anexo_id,
+                'name' => basename($anexo->aten_rel_anexo_path),
+                'path' => $anexo->aten_rel_anexo_path,
+                'url' => asset('storage/' . $anexo->aten_rel_anexo_path),
+            ];
+        });
+
+        $fotos = $relatorio->fotos->map(function ($foto) {
+            $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
+            $thumbUrl = file_exists(public_path('storage/' . $thumbPath))
+                ? asset('storage/' . $thumbPath)
+                : asset('storage/' . $foto->aten_rel_foto_path);
+
+            return [
+                'id' => $foto->aten_rel_foto_id,
+                'name' => basename($foto->aten_rel_foto_path),
+                'path' => $foto->aten_rel_foto_path,
+                'url' => asset('storage/' . $foto->aten_rel_foto_path),
+                'thumb_url' => $thumbUrl,
+            ];
+        });
+
+        $videos = $relatorio->videos->map(function ($video) {
+            $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
+            $thumbUrl = file_exists(public_path('storage/' . $thumbPath))
+                ? asset('storage/' . $thumbPath)
+                : asset('img/video-placeholder.svg');
+
+            return [
+                'id' => $video->aten_rel_vid_id,
+                'name' => basename($video->aten_rel_vid_path),
+                'path' => $video->aten_rel_vid_path,
+                'url' => asset('storage/' . $video->aten_rel_vid_path),
+                'thumb_url' => $thumbUrl,
+            ];
+        });
+
+        return response()->json([
+            'arquivos' => $arquivos,
+            'fotos' => $fotos,
+            'videos' => $videos,
+        ]);
+    }
+
+    public function destroyAnexo(int $id, string $type, int $itemId)
+    {
+        try {
+            switch ($type) {
+                case 'arquivo':
+                    $item = AtendimentoRelatorioAnexo::where('aten_rel_anexo_id', $itemId)
+                        ->where('aten_rel_anexo_relatorio_id', $id)
+                        ->firstOrFail();
+                    $path = $item->aten_rel_anexo_path;
+                    break;
+                case 'foto':
+                    $item = AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)
+                        ->where('aten_rel_foto_relatorio_id', $id)
+                        ->firstOrFail();
+                    $path = $item->aten_rel_foto_path;
+                    $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $path);
+                    break;
+                case 'video':
+                    $item = AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)
+                        ->where('aten_rel_vid_relatorio_id', $id)
+                        ->firstOrFail();
+                    $path = $item->aten_rel_vid_path;
+                    $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $path) . '.jpg';
+                    break;
+                default:
+                    return response()->json(['success' => false, 'message' => 'Tipo de anexo inválido.'], 400);
+            }
+
+            if (isset($path) && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            if (isset($thumbPath) && Storage::disk('public')->exists($thumbPath)) {
+                Storage::disk('public')->delete($thumbPath);
+            }
+
+            $item->delete();
+
+            return response()->json(['success' => true, 'message' => 'Anexo removido com sucesso.']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['success' => false, 'message' => 'Erro ao remover o anexo.'], 500);
+        }
+    }
+
+    private function createImageThumbnail(string $src, string $dest, int $maxWidth = 300)
+    {
+        try {
+            if (!file_exists($src)) return false;
+            $info = getimagesize($src);
+            if (!$info) return false;
+
+            [$width, $height] = [$info[0], $info[1]];
+            $ratio = $height ? ($width / $height) : 1;
+            $newWidth = $maxWidth;
+            $newHeight = (int) ($newWidth / $ratio);
+
+            $mime = $info['mime'];
+            switch ($mime) {
+                case 'image/jpeg':
+                    $img = imagecreatefromjpeg($src);
+                    break;
+                case 'image/png':
+                    $img = imagecreatefrompng($src);
+                    break;
+                case 'image/gif':
+                    $img = imagecreatefromgif($src);
+                    break;
+                default:
+                    return false;
+            }
+
+            $thumb = imagecreatetruecolor($newWidth, $newHeight);
+            imagecopyresampled($thumb, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+            // ensure destination dir
+            $dir = dirname($dest);
+            if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+            switch ($mime) {
+                case 'image/jpeg':
+                    imagejpeg($thumb, $dest, 85);
+                    break;
+                case 'image/png':
+                    imagepng($thumb, $dest);
+                    break;
+                case 'image/gif':
+                    imagegif($thumb, $dest);
+                    break;
+            }
+
+            imagedestroy($img);
+            imagedestroy($thumb);
+            return true;
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
+    }
+
+    private function createVideoThumbnail(string $videoPath, string $dest)
+    {
+        try {
+            // try ffmpeg if available
+            if (!file_exists($videoPath)) return false;
+
+            $ffmpegCheck = null;
+            if (function_exists('shell_exec')) {
+                $ffmpegCheck = trim(@shell_exec('ffmpeg -version 2>&1'));
+            }
+
+            if ($ffmpegCheck) {
+                $dir = dirname($dest);
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+                $cmd = sprintf('ffmpeg -y -i %s -ss 00:00:01 -vframes 1 %s 2>&1', escapeshellarg($videoPath), escapeshellarg($dest));
+                @shell_exec($cmd);
+                return file_exists($dest);
+            }
+
+            return false;
+        } catch (\Throwable $e) {
+            report($e);
+            return false;
+        }
     }
 
     public function autoComplete(Request $request)

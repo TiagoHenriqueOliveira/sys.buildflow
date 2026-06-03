@@ -47,6 +47,26 @@ $(document).ready(function () {
         getData(relatorioId, 'tab-horarios');
         getData(relatorioId, 'tab-clima');
     }
+
+    $(document).on('click', '.upload-trigger', function () {
+        const inputId = $(this).data('input-id');
+        const input = $(`#${inputId}`);
+        if (input.length) {
+            input.trigger('click');
+        }
+    });
+
+    $(document).on('change', '.file-upload-input', function () {
+        const files = this.files;
+        const label = $(this).closest('.file-upload-group').find('.file-upload-text');
+
+        if (files && files.length) {
+            const names = Array.from(files).map(file => file.name).join(', ');
+            label.text(names);
+        } else {
+            label.text('Nenhum arquivo selecionado');
+        }
+    });
 });
 
 function configDataTableAtendimentosRelatorios() {
@@ -183,6 +203,11 @@ function initAtualizarRelatorio() {
                 form = $('#form_relatorio_clima');
                 break;
 
+            case 'tab-anexos':
+                // handled specially below (no HTML form); mark form as a dummy jQuery object
+                form = $();
+                break;
+
             default:
                 showNotification(
                     'fas fa-exclamation-triangle',
@@ -191,6 +216,58 @@ function initAtualizarRelatorio() {
                     3000
                 );
                 return;
+        }
+
+        if (abaAtiva === 'tab-anexos') {
+            const relatorioId = getRelatorioIdAtual();
+            if (!relatorioId) {
+                showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de enviar anexos.', 'warning', 3500);
+                return;
+            }
+
+            const fd = new FormData();
+            const arquivos = document.getElementById('uploadArquivosInput');
+            const fotos = document.getElementById('uploadFotosInput');
+            const videos = document.getElementById('uploadVideosInput');
+
+            if (arquivos && arquivos.files.length) {
+                Array.from(arquivos.files).forEach(f => fd.append('arquivos[]', f));
+            }
+            if (fotos && fotos.files.length) {
+                Array.from(fotos.files).forEach(f => fd.append('fotos[]', f));
+            }
+            if (videos && videos.files.length) {
+                Array.from(videos.files).forEach(f => fd.append('videos[]', f));
+            }
+
+            $.ajax({
+                url: baseURL + `/atendimentos-relatorios/${relatorioId}/upload-anexos`,
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function (response) {
+                    showNotification('fas fa-check', response.message || 'Uploads concluídos.', 'success', 3000);
+
+                    // clear file inputs and labels to avoid duplicate uploads
+                    ['uploadArquivosInput','uploadFotosInput','uploadVideosInput'].forEach(function(id){
+                        const inp = document.getElementById(id);
+                        if (inp) {
+                            inp.value = '';
+                            const lbl = $(inp).closest('.file-upload-group').find('.file-upload-text');
+                            if (lbl && lbl.length) lbl.text('Nenhum arquivo selecionado');
+                        }
+                    });
+
+                    refreshAnexos(relatorioId);
+                },
+                error: function (xhr) {
+                    handleAjaxError(xhr);
+                }
+            });
+
+            return;
         }
 
         if (!form || !form.length) {
@@ -256,6 +333,79 @@ function initAtualizarRelatorio() {
         });
     });
 }
+
+function refreshAnexos(relatorioId) {
+    $.ajax({
+        url: baseURL + `/atendimentos-relatorios/${relatorioId}/anexos`,
+        type: 'GET',
+        dataType: 'json',
+        success: function (response) {
+            renderAnexos(response);
+        },
+        error: function (xhr) {
+            handleAjaxError(xhr);
+        }
+    });
+}
+
+function renderAnexos(data) {
+    const arquivosList = $('#anexosArquivosList');
+    arquivosList.empty();
+    if (data.arquivos && data.arquivos.length) {
+        const ul = $('<ul class="list-unstyled"></ul>');
+        data.arquivos.forEach(function (item) {
+            ul.append(`<li class="d-flex align-items-center justify-content-between mb-1"><a href="${item.url}" target="_blank">${item.name}</a><button type="button" class="btn btn-sm btn-outline-danger btn-delete-anexo" data-type="arquivo" data-id="${item.id}" aria-label="Excluir anexo"><i class="fas fa-trash"></i></button></li>`);
+        });
+        arquivosList.append('<h6>Anexos</h6>').append(ul);
+    }
+
+    const fotosContainer = $('#anexosFotosContainer');
+    fotosContainer.empty();
+    if (data.fotos && data.fotos.length) {
+        data.fotos.forEach(function (item) {
+            fotosContainer.append(`<div class="m-1 position-relative" style="width:120px;"><a href="#" class="anexo-thumb" data-type="image" data-src="${item.url}"><img src="${item.thumb_url}" style="width:120px;height:80px;object-fit:cover;border-radius:.35rem;" alt="foto"></a><button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="foto" data-id="${item.id}" aria-label="Excluir foto"><i class="fas fa-trash"></i></button></div>`);
+        });
+    }
+
+    const videosContainer = $('#anexosVideosContainer');
+    videosContainer.empty();
+    if (data.videos && data.videos.length) {
+        data.videos.forEach(function (item) {
+            videosContainer.append(`<div class="m-1 position-relative" style="width:160px;"><a href="#" class="anexo-thumb" data-type="video" data-src="${item.url}"><img src="${item.thumb_url}" style="width:160px;height:90px;object-fit:cover;border-radius:.35rem;" alt="video"></a><button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="video" data-id="${item.id}" aria-label="Excluir vídeo"><i class="fas fa-trash"></i></button></div>`);
+        });
+    }
+}
+
+$(document).on('click', '.btn-delete-anexo', function (e) {
+    e.preventDefault();
+    const type = $(this).data('type');
+    const itemId = $(this).data('id');
+    const relatorioId = getRelatorioIdAtual();
+
+    if (!relatorioId) {
+        showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de excluir um anexo.', 'warning', 3500);
+        return;
+    }
+
+    if (!confirm('Deseja realmente excluir este anexo?')) {
+        return;
+    }
+
+    $.ajax({
+        url: baseURL + `/atendimentos-relatorios/${relatorioId}/anexos/${type}/${itemId}`,
+        type: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function (response) {
+            showNotification('fas fa-check', response.message || 'Anexo excluído.', 'success', 3000);
+            refreshAnexos(relatorioId);
+        },
+        error: function (xhr) {
+            handleAjaxError(xhr);
+        }
+    });
+});
 
 function initMaoObraTab() {
     if ($.ui && $.ui.autocomplete && $('#mao_obra_label').length) {
@@ -1111,8 +1261,6 @@ function getData(relatorioId, guia) {
         if (data.comentarios) {
             applyComentarios(data.comentarios);
         }
-        
-
     });
 }
 

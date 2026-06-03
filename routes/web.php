@@ -46,6 +46,9 @@ Route::delete('/atendimentos-relatorios/{id}/atividades/{ativId}', [Atendimentos
 Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->name('atendimentos-relatorios.store-ocorrencia');
 Route::delete('/atendimentos-relatorios/{id}/ocorrencias/{ocorrenciaId}', [AtendimentosRelatoriosController::class, 'destroyOcorrencia'])->name('atendimentos-relatorios.destroy-ocorrencia');
 Route::post('/atendimentos-relatorios/{id}/comentarios', [AtendimentosRelatoriosController::class, 'storeComentario'])->name('atendimentos-relatorios.store-comentario');
+Route::post('/atendimentos-relatorios/{id}/upload-anexos', [AtendimentosRelatoriosController::class, 'uploadAnexos'])->name('atendimentos-relatorios.upload-anexos');
+Route::get('/atendimentos-relatorios/{id}/anexos', [AtendimentosRelatoriosController::class, 'getAnexos'])->name('atendimentos-relatorios.get-anexos');
+Route::delete('/atendimentos-relatorios/{id}/anexos/{type}/{itemId}', [AtendimentosRelatoriosController::class, 'destroyAnexo'])->name('atendimentos-relatorios.destroy-anexo');
 Route::post('/atendimentos-relatorios/{id}/comentarios/{comentarioId}', [AtendimentosRelatoriosController::class, 'updateComentario'])->name('atendimentos-relatorios.update-comentario');
 Route::delete('/atendimentos-relatorios/{id}/comentarios/{comentarioId}', [AtendimentosRelatoriosController::class, 'destroyComentario'])->name('atendimentos-relatorios.destroy-comentario');
 // Clientes

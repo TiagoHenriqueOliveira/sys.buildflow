@@ -92,6 +92,33 @@ class AtendimentoRelatorio extends Model
         );
     }
 
+    public function fotos()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioFoto::class,
+            'aten_rel_foto_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
+    public function videos()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioVideo::class,
+            'aten_rel_vid_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
+    public function anexos()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioAnexo::class,
+            'aten_rel_anexo_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
     public function ocorrencias()
     {
         return $this->belongsToMany(

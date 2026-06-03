@@ -38,12 +38,6 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-anexos">Anexos</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-fotos">Fotos</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-videos">Vídeos</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-assinatura">Assinatura</a>
                 </li>
             </ul>
