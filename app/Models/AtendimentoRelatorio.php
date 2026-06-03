@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Atendimento;
+use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\ModeloRelatorio;
 
 class AtendimentoRelatorio extends Model
@@ -117,6 +118,25 @@ class AtendimentoRelatorio extends Model
             'aten_rel_anexo_relatorio_id',
             'aten_rel_id'
         );
+    }
+
+    public function assinaturas()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioAssinatura::class,
+            'aten_rel_ass_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
+    public function assinaturaResponsavel()
+    {
+        return $this->assinaturas()->where('aten_rel_ass_path', 'like', '%/responsavel.%')->first();
+    }
+
+    public function assinaturaCliente()
+    {
+        return $this->assinaturas()->where('aten_rel_ass_path', 'like', '%/cliente.%')->first();
     }
 
     public function ocorrencias()

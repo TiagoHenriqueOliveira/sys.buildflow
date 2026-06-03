@@ -36,6 +36,7 @@ Route::get('/atendimentos-relatorios/{id}/get-data', [AtendimentosRelatoriosCont
 Route::post('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'updateDados'])->name('atendimentos-relatorios.update-dados');
 Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->name('atendimentos-relatorios.update-horarios');
 Route::post('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'updateClima'])->name('atendimentos-relatorios.update-clima');
+Route::post('/atendimentos-relatorios/{id}/assinaturas', [AtendimentosRelatoriosController::class, 'updateAssinaturas'])->name('atendimentos-relatorios.update-assinaturas');
 Route::post('/atendimentos-relatorios/{id}/mao-de-obra', [AtendimentosRelatoriosController::class, 'storeMaoObra'])->name('atendimentos-relatorios.store-mao-obra');
 Route::delete('/atendimentos-relatorios/{id}/mao-de-obra/{maoObraId}', [AtendimentosRelatoriosController::class, 'destroyMaoObra'])->name('atendimentos-relatorios.destroy-mao-obra');
 Route::post('/atendimentos-relatorios/{id}/equipamentos', [AtendimentosRelatoriosController::class, 'storeEquipamento'])->name('atendimentos-relatorios.store-equipamentos');

@@ -1,24 +1,66 @@
 {{-- ASSINATURA --}}
 <div class="tab-pane fade" id="tab-assinatura">
-    <div class="form-group">
-        <label>Status do Relatório</label>
-        <select class="form-control">
-            <option value="0">Preenchendo</option>
-            <option value="1">Revisando</option>
-            <option value="2">Aprovado</option>
-        </select>
-    </div>
+    <form id="form_relatorio_assinaturas" data-action="{{ route('atendimentos-relatorios.update-assinaturas', $atendimentoRelatorio->aten_rel_id) }}">
+        @csrf
 
-    <div class="row mt-3">
-        <div class="col-md-6">
-            <button class="btn btn-outline-primary btn-block">
-                Assinatura Responsável
-            </button>
+        <div class="form-group">
+            <label class="font-weight-bold">Status do Relatório</label>
+            @php $statusClasses = [0 => 'info', 1 => 'warning', 2 => 'success']; @endphp
+            <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                @foreach([0 => 'Preenchendo', 1 => 'Revisar', 2 => 'Aprovado'] as $value => $label)
+                    <label class="btn btn-outline-{{ $statusClasses[$value] }} {{ $atendimentoRelatorio->aten_rel_status === $value ? 'active' : '' }}">
+                        <input type="radio" name="aten_rel_status" value="{{ $value }}" autocomplete="off" {{ $atendimentoRelatorio->aten_rel_status === $value ? 'checked' : '' }}> {{ $label }}
+                    </label>
+                @endforeach
+            </div>
         </div>
-        <div class="col-md-6">
-            <button class="btn btn-outline-success btn-block">
-                Assinatura Cliente
-            </button>
+
+        <div class="row mt-4">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header font-weight-bold">Assinatura Responsável</div>
+                    <div class="card-body">
+                        <canvas id="assinaturaResponsavelCanvas" class="border rounded w-100" width="600" height="220"></canvas>
+                        <div class="mt-2 d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-clear-signature" data-signature="responsavel">Limpar</button>
+                            <button type="button" class="btn btn-primary btn-sm btn-save-signature" data-signature="responsavel">Salvar Assinatura</button>
+                        </div>
+                        <div class="mt-3">
+                            <p class="mb-1 font-weight-bold">Preview atual</p>
+                            <div id="assinaturaResponsavelPreview">
+                                @if(optional($atendimentoRelatorio->assinaturaResponsavel())->aten_rel_ass_path)
+                                    <img src="{{ asset('storage/' . $atendimentoRelatorio->assinaturaResponsavel()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Responsável">
+                                @else
+                                    <span class="text-muted">Nenhuma assinatura registrada.</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header font-weight-bold">Assinatura Cliente</div>
+                    <div class="card-body">
+                        <canvas id="assinaturaClienteCanvas" class="border rounded w-100" width="600" height="220"></canvas>
+                        <div class="mt-2 d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-sm btn-clear-signature" data-signature="cliente">Limpar</button>
+                            <button type="button" class="btn btn-success btn-sm btn-save-signature" data-signature="cliente">Salvar Assinatura</button>
+                        </div>
+                        <div class="mt-3">
+                            <p class="mb-1 font-weight-bold">Preview atual</p>
+                            <div id="assinaturaClientePreview">
+                                @if(optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_path)
+                                    <img src="{{ asset('storage/' . $atendimentoRelatorio->assinaturaCliente()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Cliente">
+                                @else
+                                    <span class="text-muted">Nenhuma assinatura registrada.</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </form>
 </div>

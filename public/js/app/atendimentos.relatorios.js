@@ -14,6 +14,7 @@ $(document).ready(function () {
     initAtividadesTab();
     initOcorrenciasTab();
     initComentariosTab();
+    initAssinaturasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
         $("#rel_aten_id").val("");
@@ -46,7 +47,16 @@ $(document).ready(function () {
         getData(relatorioId, 'tab-dados');
         getData(relatorioId, 'tab-horarios');
         getData(relatorioId, 'tab-clima');
+        getData(relatorioId, 'tab-assinatura');
     }
+
+    $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+        const relatorioId = getRelatorioIdAtual();
+        const target = $(e.target).attr('href')?.replace('#', '');
+        if (relatorioId && target === 'tab-assinatura') {
+            getData(relatorioId, 'tab-assinatura');
+        }
+    });
 
     $(document).on('click', '.upload-trigger', function () {
         const inputId = $(this).data('input-id');
@@ -203,6 +213,10 @@ function initAtualizarRelatorio() {
                 form = $('#form_relatorio_clima');
                 break;
 
+            case 'tab-assinatura':
+                form = $('#form_relatorio_assinaturas');
+                break;
+
             case 'tab-anexos':
                 // handled specially below (no HTML form); mark form as a dummy jQuery object
                 form = $();
@@ -216,6 +230,48 @@ function initAtualizarRelatorio() {
                     3000
                 );
                 return;
+        }
+
+        if (abaAtiva === 'tab-assinatura') {
+            const relatorioId = getRelatorioIdAtual();
+            if (!relatorioId) {
+                showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de atualizar as assinaturas.', 'warning', 3500);
+                return;
+            }
+
+            const status = $('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked').val();
+            const assinaturaResponsavel = window.signatureData?.responsavel || '';
+            const assinaturaCliente = window.signatureData?.cliente || '';
+
+            $.ajax({
+                url: baseURL + `/atendimentos-relatorios/${relatorioId}/assinaturas`,
+                type: 'POST',
+                data: {
+                    aten_rel_status: status,
+                    assinatura_responsavel: assinaturaResponsavel,
+                    assinatura_cliente: assinaturaCliente,
+                },
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function (response) {
+                    showNotification('fas fa-check', response.message || 'Assinaturas atualizadas.', 'success', 3000);
+                    if (response.data?.assinaturas) {
+                        if (response.data.assinaturas.responsavel) {
+                            const urlResp = response.data.assinaturas.responsavel + '?v=' + Date.now();
+                            $('#assinaturaResponsavelPreview').html(`<img src="${urlResp}" class="img-fluid border" alt="Assinatura Responsável">`);
+                        }
+                        if (response.data.assinaturas.cliente) {
+                            const urlCli = response.data.assinaturas.cliente + '?v=' + Date.now();
+                            $('#assinaturaClientePreview').html(`<img src="${urlCli}" class="img-fluid border" alt="Assinatura Cliente">`);
+                        }
+                    }
+                    window.signatureData = {};
+                },
+                error: function (xhr) {
+                    handleAjaxError(xhr);
+                }
+            });
+
+            return;
         }
 
         if (abaAtiva === 'tab-anexos') {
@@ -1240,6 +1296,10 @@ function getData(relatorioId, guia) {
             case 'tab-clima':
                 applyClima(data.clima);
                 break;
+
+            case 'tab-assinatura':
+                applyAssinaturas(data);
+                break;
         }
 
         if (data.mao_obra) {
@@ -1289,6 +1349,159 @@ function applyClima(clima) {
     if (clima?.noite) {
         $(`#noite_${clima.noite}`).prop('checked', true);
     }
+}
+
+function applyAssinaturas(data) {
+    if (typeof data.status !== 'undefined') {
+        $(`#form_relatorio_assinaturas input[name="aten_rel_status"][value="${data.status}"]`).prop('checked', true);
+        $(`#form_relatorio_assinaturas .btn-group-toggle label`).removeClass('active');
+        $(`#form_relatorio_assinaturas .btn-group-toggle input[name="aten_rel_status"]:checked`).closest('label').addClass('active');
+    }
+
+    if (data.assinaturas?.responsavel) {
+        $('#assinaturaResponsavelPreview').html(`<img src="${data.assinaturas.responsavel}" class="img-fluid border" alt="Assinatura Responsável">`);
+    }
+    if (data.assinaturas?.cliente) {
+        $('#assinaturaClientePreview').html(`<img src="${data.assinaturas.cliente}" class="img-fluid border" alt="Assinatura Cliente">`);
+    }
+}
+
+function initAssinaturasTab() {
+    window.signatureData = window.signatureData || {};
+
+    function setupCanvas(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+
+        const ctx = canvas.getContext('2d');
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#111';
+
+        let drawing = false;
+        let hasStroke = false;
+
+        const getPoint = function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = event.touches ? event.touches[0] : event;
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top,
+            };
+        };
+
+        const startDrawing = function (event) {
+            event.preventDefault();
+            drawing = true;
+            hasStroke = true;
+            const point = getPoint(event);
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+        };
+
+        const draw = function (event) {
+            if (!drawing) return;
+            event.preventDefault();
+            const point = getPoint(event);
+            ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+        };
+
+        const endDrawing = function (event) {
+            if (!drawing) return;
+            event.preventDefault();
+            drawing = false;
+        };
+
+        const clearCanvas = function () {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.style.background = '#fff';
+            hasStroke = false;
+        };
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', endDrawing);
+        canvas.addEventListener('mouseleave', endDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', endDrawing);
+        canvas.addEventListener('touchcancel', endDrawing);
+
+        clearCanvas();
+
+        return {
+            canvas,
+            clearCanvas,
+            hasStroke: function () {
+                return hasStroke;
+            },
+            getDataUrl: function () {
+                return canvas.toDataURL('image/png');
+            }
+        };
+    }
+
+    const responsavelCanvas = setupCanvas('assinaturaResponsavelCanvas');
+    const clienteCanvas = setupCanvas('assinaturaClienteCanvas');
+
+    $(document).off('click', '.btn-clear-signature').on('click', '.btn-clear-signature', function () {
+        const signatureType = $(this).data('signature');
+        if (signatureType === 'responsavel' && responsavelCanvas) {
+            responsavelCanvas.clearCanvas();
+            delete window.signatureData.responsavel;
+        }
+        if (signatureType === 'cliente' && clienteCanvas) {
+            clienteCanvas.clearCanvas();
+            delete window.signatureData.cliente;
+        }
+    });
+
+    $(document).off('click', '.btn-save-signature').on('click', '.btn-save-signature', function () {
+        const signatureType = $(this).data('signature');
+        const relatorioId = getRelatorioIdAtual();
+        if (!relatorioId) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de registrar a assinatura.', 'warning', 3500);
+            return;
+        }
+
+        let canvasObj = null;
+        if (signatureType === 'responsavel') canvasObj = responsavelCanvas;
+        if (signatureType === 'cliente') canvasObj = clienteCanvas;
+
+        if (!canvasObj || !canvasObj.hasStroke()) {
+            showNotification('fas fa-exclamation-triangle', 'Desenhe a assinatura antes de salvar.', 'warning', 3500);
+            return;
+        }
+
+        const dataUrl = canvasObj.getDataUrl();
+        window.signatureData = window.signatureData || {};
+        window.signatureData[signatureType] = dataUrl;
+
+        $.ajax({
+            url: baseURL + `/atendimentos-relatorios/${relatorioId}/assinaturas`,
+            type: 'POST',
+            data: {
+                aten_rel_status: $('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked').val(),
+                [`assinatura_${signatureType}`]: dataUrl,
+            },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (response) {
+                showNotification('fas fa-check', 'Assinatura salva com sucesso.', 'success', 3000);
+                if (canvasObj) {
+                    canvasObj.clearCanvas();
+                }
+                if (response.data?.assinaturas && response.data.assinaturas[signatureType]) {
+                    const previewId = signatureType === 'responsavel' ? '#assinaturaResponsavelPreview' : '#assinaturaClientePreview';
+                    $(previewId).html(`<img src="${response.data.assinaturas[signatureType]}" class="img-fluid border" alt="Assinatura ${signatureType}">`);
+                    delete window.signatureData[signatureType];
+                }
+            },
+            error: function (xhr) {
+                handleAjaxError(xhr);
+            }
+        });
+    });
 }
 
 function applyMaoDeObra(lista) {

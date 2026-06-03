@@ -23,6 +23,7 @@ use App\Models\Ocupacao;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\AtendimentoRelatorioAnexo;
+use App\Models\AtendimentoRelatorioAssinatura;
 use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -57,8 +58,8 @@ class AtendimentosRelatoriosController extends Controller
                     'setor' => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao ?? '-',
 
                     'status' => match ($r->aten_rel_status) {
-                        0 => '<span class="badge badge-warning">Preenchendo</span>',
-                        1 => '<span class="badge badge-info">Revisar</span>',
+                        0 => '<span class="badge badge-info">Preenchendo</span>',
+                        1 => '<span class="badge badge-warning">Revisar</span>',
                         2 => '<span class="badge badge-success">Aprovado</span>',
                         default => '-',
                     },
@@ -128,7 +129,8 @@ class AtendimentosRelatoriosController extends Controller
             'horarios',
             'fotos',
             'videos',
-            'anexos'
+            'anexos',
+            'assinaturas'
         ]);
 
         if (!$atendimentoRelatorio->modeloRelatorio) {
@@ -264,6 +266,111 @@ class AtendimentosRelatoriosController extends Controller
                 'message' => 'Erro ao atualizar o clima do relatório.',
             ], 500);
         }
+    }
+
+    public function updateAssinaturas(Request $request, int $id)
+    {
+        try {
+            $request->validate([
+                'aten_rel_status'        => 'required|integer|in:0,1,2',
+                'assinatura_responsavel' => 'nullable|string',
+                'assinatura_cliente'     => 'nullable|string',
+            ]);
+
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+            $relatorio->update(['aten_rel_status' => $request->aten_rel_status]);
+
+            $assinaturas = [];
+
+            if ($request->filled('assinatura_responsavel')) {
+                $assinaturas['responsavel'] = $this->saveSignatureImage(
+                    $relatorio,
+                    $request->assinatura_responsavel,
+                    'responsavel'
+                );
+            }
+
+            if ($request->filled('assinatura_cliente')) {
+                $assinaturas['cliente'] = $this->saveSignatureImage(
+                    $relatorio,
+                    $request->assinatura_cliente,
+                    'cliente'
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status e assinaturas atualizados com sucesso.',
+                'data' => [
+                    'status' => $relatorio->aten_rel_status,
+                    'assinaturas' => $assinaturas,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar assinaturas.',
+            ], 500);
+        }
+    }
+
+    private function saveSignatureImage(AtendimentoRelatorio $relatorio, string $base64, string $tipo)
+    {
+        if (!preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $matches)) {
+            throw new \RuntimeException('Formato de assinatura inválido.');
+        }
+
+        $mime = $matches[1];
+        $data = base64_decode($matches[2]);
+        $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
+
+        $image = @imagecreatefromstring($data);
+        if ($image === false) {
+            throw new \RuntimeException('Não foi possível processar a imagem da assinatura.');
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        // create a white background canvas
+        $bg = imagecreatetruecolor($width, $height);
+        $white = imagecolorallocate($bg, 255, 255, 255);
+        imagefilledrectangle($bg, 0, 0, $width, $height, $white);
+
+        // Ensure we compose correctly when source has alpha (preserve strokes over white)
+        imagealphablending($image, true);
+        imagesavealpha($image, true);
+
+        imagealphablending($bg, true);
+        imagesavealpha($bg, false); // do not keep alpha in final image
+
+        // copy source onto white background
+        imagecopy($bg, $image, 0, 0, 0, 0, $width, $height);
+
+        $dir = dirname(storage_path('app/public/' . $path));
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        // save PNG without alpha channel so background stays white
+        imagepng($bg, storage_path('app/public/' . $path));
+
+        imagedestroy($image);
+        imagedestroy($bg);
+
+        AtendimentoRelatorioAssinatura::updateOrCreate(
+            [
+                'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
+                'aten_rel_ass_path'         => $path,
+            ],
+            [
+                'aten_rel_ass_path' => $path,
+            ]
+        );
+
+        return asset('storage/' . $path);
     }
 
     public function storeMaoObra(AtendimentoRelatorioMaoObraRequest $request, int $id)
@@ -458,47 +565,6 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function storeOcorrencia(AtendimentoRelatorioOcorrenciaRequest $request, int $id)
-    {
-        try {
-            $ocorrenciaId = (int) $request->ocorrencia_id;
-            $observacao   = $request->observacao;
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $exists = $relatorio->ocorrencias()
-                ->where('ocorrencias.ocor_id', $ocorrenciaId)
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'message' => 'Essa ocorrência já foi adicionada neste relatório.'
-                ], 422);
-            }
-
-            $ocorrencia = Ocorrencia::findOrFail($ocorrenciaId);
-
-            $relatorio->ocorrencias()->attach($ocorrenciaId, [
-                'aten_rel_ocor_observacao' => $observacao,
-            ]);
-
-            return response()->json([
-                'message' => 'Ocorrência adicionada!',
-                'data' => [
-                    'ocorrencia_id' => (int) $ocorrencia->ocor_id,
-                    'ocorrencia'    => (string) $ocorrencia->ocor_descricao,
-                    'observacao'    => (string) ($observacao ?? ''),
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar ocorrência.'
-            ], 500);
-        }
-    }
-
     public function destroyOcorrencia(int $id, int $ocorrenciaId)
     {
         try {
@@ -681,6 +747,15 @@ class AtendimentosRelatoriosController extends Controller
                 ];
             })->values();
 
+        $assinaturas = [
+            'responsavel' => optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path
+                ? asset('storage/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
+                : null,
+            'cliente' => optional($relatorio->assinaturaCliente())->aten_rel_ass_path
+                ? asset('storage/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
+                : null,
+        ];
+
         return response()->json([
             'dados' => [
                 'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
@@ -703,7 +778,9 @@ class AtendimentosRelatoriosController extends Controller
             'equipamentos'  => $equipamentos,
             'atividades'    => $atividades,
             'ocorrencias' => $ocorrencias,
-            'comentarios' => $comentarios
+            'comentarios' => $comentarios,
+            'status' => $relatorio->aten_rel_status,
+            'assinaturas' => $assinaturas,
         ]);
     }
 
