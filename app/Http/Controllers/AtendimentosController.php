@@ -8,13 +8,15 @@ use App\Models\NaturezaAtendimento;
 use App\Models\TipoAtendimento;
 use App\Models\Usuario;
 use App\Repositories\AtendimentoRepository;
+use App\Repositories\AtendimentoEquipamentoRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AtendimentosController extends Controller
 {
     public function __construct(
-        private AtendimentoRepository $repository
+        private AtendimentoRepository $repository,
+        private AtendimentoEquipamentoRepository $equipamentoRepository
     ) {}
 
     public function index(Request $request)
@@ -113,5 +115,62 @@ class AtendimentosController extends Controller
         ])->values()->all();
 
         return response()->json($result);
+    }
+
+    public function storeEquipamento(Request $request, int $id)
+    {
+        $request->validate([
+            'aten_equip_descricao' => ['required', 'string', 'max:255'],
+            'aten_equip_observacoes' => ['nullable', 'string'],
+        ]);
+
+        try {
+            $this->equipamentoRepository->create([
+                'aten_equip_atendimento_id' => $id,
+                'aten_equip_descricao' => $request->input('aten_equip_descricao'),
+                'aten_equip_observacoes' => $request->input('aten_equip_observacoes'),
+            ]);
+
+            $equipamentos = $this->equipamentoRepository->findByAtendimento($id);
+
+            return response()->json([
+                'message' => 'Equipamento adicionado com sucesso!',
+                'equipamentos' => $equipamentos,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar equipamento.'], 500);
+        }
+    }
+
+    public function destroyEquipamento(int $id, int $equipId)
+    {
+        try {
+            $this->equipamentoRepository->delete($equipId);
+
+            $equipamentos = $this->equipamentoRepository->findByAtendimento($id);
+
+            return response()->json([
+                'message' => 'Equipamento removido com sucesso!',
+                'equipamentos' => $equipamentos,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover equipamento.'], 500);
+        }
+    }
+
+    public function getEquipamentos(int $id): JsonResponse
+    {
+        try {
+            $equipamentos = $this->equipamentoRepository->findByAtendimento($id);
+
+            return response()->json([
+                'equipamentos' => $equipamentos,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao carregar equipamentos.'], 500);
+        }
     }
 }

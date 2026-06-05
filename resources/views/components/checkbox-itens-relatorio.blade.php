@@ -8,7 +8,7 @@
                 'mod_rel_atividade' => 'Atividade',
                 'mod_rel_comentario' => 'Comentário',
                 'mod_rel_cond_clima' => 'Condição Climática',
-                'mod_rel_controle_material' => 'Controle de Material',
+                'mod_rel_equipamento' => 'Ferramenta',
             ] as $id => $label)
             <div class="custom-control custom-checkbox">
                 <input type="checkbox" class="custom-control-input" id="{{ $id }}" name="{{ $id }}" value="1">
@@ -19,7 +19,6 @@
 
         <div class="col-md-6">
             @foreach([
-                'mod_rel_equipamento' => 'Equipamento',
                 'mod_rel_foto' => 'Foto',
                 'mod_rel_horarios' => 'Horários',
                 'mod_rel_ocorrencia' => 'Ocorrência',

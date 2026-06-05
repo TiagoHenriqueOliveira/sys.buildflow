@@ -45,6 +45,9 @@ $(document).ready(function () {
 
     $("#modal_atendimento").on("hidden.bs.modal", function () {
         $("#form_atendimento button[type='submit']").prop("disabled", false);
+        $("#form_equip_atendimento")[0].reset();
+        $("#table_equipamentos tbody").empty();
+        $("#tab-equipamentos-tab").addClass("disabled").prop("disabled", true);
     });
 });
 
@@ -241,7 +244,19 @@ function abrirModalAtendimento(data) {
                 data.aten_natureza_id,
                 true
             );
+
+            // Habilitar aba de equipamentos
+            $("#tab-equipamentos-tab").removeClass("disabled").prop("disabled", false);
+            $("#form_equip_aten_id").val(data.aten_id);
         }
+
+        // Carregar equipamentos quando a aba é selecionada
+        $("#tab-equipamentos-tab").off("click").on("click", function () {
+            carregarEquipamentos(data.aten_id);
+        });
+
+        // Inicializar o submit do formulário de equipamentos
+        initSubmitEquipamento();
     });
 }
 
@@ -302,3 +317,145 @@ function initSubmitAtendimento() {
         });
     });
 }
+
+function initSubmitEquipamento() {
+    $(document).off("submit", "#form_equip_atendimento").on("submit", "#form_equip_atendimento", function (event) {
+        event.preventDefault();
+
+        const form = $(this);
+        const atenId = $("#aten_id").val();
+        const actionUrl = baseURL + "/atendimentos/" + atenId + "/equipamentos";
+        const formData = new FormData(this);
+
+        const btnSubmit = form.find("button[type='submit']");
+        btnSubmit.prop("disabled", true);
+
+        $.ajax({
+            url: actionUrl,
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: "json",
+            headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
+            success: function (response) {
+                form[0].reset();
+                carregarEquipamentos(atenId);
+                showNotification("fas fa-check-double", response.message, "success", 2000);
+                btnSubmit.prop("disabled", false);
+            },
+            error: function (xhr) {
+                btnSubmit.prop("disabled", false);
+
+                if (xhr.status === 422) {
+                    const errors = xhr.responseJSON?.errors || {};
+                    let msg = "<ul>";
+
+                    $.each(errors, function (k, v) {
+                        (v || []).forEach(m => msg += `<li>${m}</li>`);
+                    });
+
+                    msg += "</ul>";
+
+                    showNotification(
+                        "fas fa-bug",
+                        "Ocorreram erros ao salvar:<br>" + msg,
+                        "danger",
+                        5000
+                    );
+                } else {
+                    console.error("Erro ao adicionar equipamento:", xhr.status, xhr.responseText);
+                    showNotification(
+                        "fas fa-bug",
+                        "Erro ao adicionar equipamento. Código: " + xhr.status,
+                        "danger",
+                        5000
+                    );
+                }
+            }
+        });
+    });
+}
+
+function carregarEquipamentos(atenId) {
+    if (!atenId) return;
+
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/equipamentos",
+        type: "GET",
+        dataType: "json",
+        success: function (response) {
+            renderizarEquipamentos(response.equipamentos, atenId);
+        },
+        error: function (xhr) {
+            console.error("Erro ao carregar equipamentos:", xhr.status, xhr.responseText);
+            showNotification(
+                "fas fa-bug",
+                "Erro ao carregar equipamentos. Código: " + xhr.status,
+                "danger",
+                5000
+            );
+        }
+    });
+}
+
+function renderizarEquipamentos(equipamentos, atenId) {
+    const tbody = $("#table_equipamentos tbody");
+    tbody.empty();
+
+    if (!equipamentos || equipamentos.length === 0) {
+        tbody.append("<tr><td colspan='3' class='text-center text-muted'>Nenhum equipamento cadastrado</td></tr>");
+        return;
+    }
+
+    equipamentos.forEach(equip => {
+        const row = `
+            <tr>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm btn-delete-equip" data-equip-id="${equip.aten_equip_id}" data-aten-id="${atenId}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+                <td>${e(equip.aten_equip_descricao)}</td>
+                <td>${equip.aten_equip_observacoes ? e(equip.aten_equip_observacoes) : "-"}</td>
+            </tr>
+        `;
+        tbody.append(row);
+    });
+}
+
+function e(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+$(document).on("click", ".btn-delete-equip", function () {
+    const equipId = $(this).data("equip-id");
+    const atenId = $(this).data("aten-id");
+
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/equipamentos/" + equipId,
+        type: "DELETE",
+        dataType: "json",
+        headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
+        success: function (response) {
+            carregarEquipamentos(atenId);
+            showNotification("fas fa-check-double", response.message, "success", 2000);
+        },
+        error: function (xhr) {
+            console.error("Erro ao remover equipamento:", xhr.status, xhr.responseText);
+            showNotification(
+                "fas fa-bug",
+                "Erro ao remover equipamento. Código: " + xhr.status,
+                "danger",
+                5000
+            );
+        }
+    });
+});

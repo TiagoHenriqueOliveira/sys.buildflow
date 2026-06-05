@@ -62,7 +62,7 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/equipamentos') }}">
                         <i class="fas fa-toolbox fa-fw fa-lg"></i>
-                        <span>Equipamentos</span>
+                        <span>Ferramentas</span>
                     </a>
                 </li>
 
