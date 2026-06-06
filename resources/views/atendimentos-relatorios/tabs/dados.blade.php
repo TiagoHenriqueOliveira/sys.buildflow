@@ -5,7 +5,9 @@
         <div class="row mb-3">
             <div class="col-md-3">
                 <label class="font-weight-bold">Data</label>
-                <input type="date" name="aten_rel_data" class="form-control" value="{{ $atendimentoRelatorio->aten_rel_data->format('Y-m-d') }}">
+                <input type="date" name="aten_rel_data" class="form-control"
+                    value="{{ $atendimentoRelatorio->aten_rel_data->format('Y-m-d') }}"
+                    max="{{ now()->format('Y-m-d') }}">
             </div>
 
             <div class="col-md-3">

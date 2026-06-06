@@ -77,7 +77,7 @@ class AtendimentosRelatoriosController extends Controller
         try {
             $request->validate([
                 'aten_id'       => 'required|exists:atendimentos,aten_id',
-                'aten_rel_data' => 'nullable|date',
+                'aten_rel_data' => 'nullable|date|before_or_equal:today',
             ]);
 
             $atendimento = Atendimento::query()
@@ -360,15 +360,20 @@ class AtendimentosRelatoriosController extends Controller
         imagedestroy($image);
         imagedestroy($bg);
 
-        AtendimentoRelatorioAssinatura::updateOrCreate(
-            [
+        // Busca pelo relatório + padrão do tipo (ex: "/responsavel." ou "/cliente.")
+        // para evitar duplicatas sem precisar de coluna extra
+        $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
+            ->where('aten_rel_ass_path', 'like', "%/{$tipo}.%")
+            ->first();
+
+        if ($existing) {
+            $existing->update(['aten_rel_ass_path' => $path]);
+        } else {
+            AtendimentoRelatorioAssinatura::create([
                 'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
                 'aten_rel_ass_path'         => $path,
-            ],
-            [
-                'aten_rel_ass_path' => $path,
-            ]
-        );
+            ]);
+        }
 
         return asset('storage/' . $path);
     }
@@ -565,6 +570,47 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    public function storeOcorrencia(AtendimentoRelatorioOcorrenciaRequest $request, int $id)
+    {
+        try {
+            $ocorrenciaId = (int) $request->ocorrencia_id;
+            $observacao   = $request->observacao ?? '';
+
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+
+            $exists = $relatorio->ocorrencias()
+                ->where('ocorrencias.ocor_id', $ocorrenciaId)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Essa ocorrência já foi adicionada neste relatório.'
+                ], 422);
+            }
+
+            $ocorrencia = Ocorrencia::findOrFail($ocorrenciaId);
+
+            $relatorio->ocorrencias()->attach($ocorrenciaId, [
+                'aten_rel_ocor_observacao' => $observacao,
+            ]);
+
+            return response()->json([
+                'message' => 'Ocorrência adicionada!',
+                'data' => [
+                    'ocorrencia_id' => $ocorrencia->ocor_id,
+                    'ocorrencia'    => $ocorrencia->ocor_descricao,
+                    'observacao'    => $observacao,
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Erro ao adicionar ocorrência.'
+            ], 500);
+        }
+    }
+
     public function destroyOcorrencia(int $id, int $ocorrenciaId)
     {
         try {
@@ -671,7 +717,8 @@ class AtendimentosRelatoriosController extends Controller
             'ocupacoes.tipoOcupacao',
             'equipamentos',
             'atividades',
-            'ocorrencias'
+            'ocorrencias',
+            'comentarios',
         ])->findOrFail($id);
 
         $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
@@ -786,6 +833,15 @@ class AtendimentosRelatoriosController extends Controller
 
     public function uploadAnexos(Request $request, int $id)
     {
+        $request->validate([
+            'arquivos'   => ['nullable', 'array'],
+            'arquivos.*' => ['file', 'max:20480', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv'],
+            'fotos'      => ['nullable', 'array'],
+            'fotos.*'    => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
+            'videos'     => ['nullable', 'array'],
+            'videos.*'   => ['file', 'max:102400', 'mimes:mp4,mov,avi,mkv,webm'],
+        ]);
+
         try {
             $relatorio = AtendimentoRelatorio::findOrFail($id);
 
@@ -796,8 +852,10 @@ class AtendimentosRelatoriosController extends Controller
                 foreach ($request->file('arquivos') as $file) {
                     if (!$file->isValid()) continue;
 
-                    $originalName = basename($file->getClientOriginalName());
-                    $path = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $originalName, 'public');
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $ext          = $file->getClientOriginalExtension();
+                    $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
+                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
 
                     $anexo = AtendimentoRelatorioAnexo::create([
                         'aten_rel_anexo_relatorio_id' => $id,
@@ -806,7 +864,7 @@ class AtendimentosRelatoriosController extends Controller
 
                     $saved['arquivos'][] = [
                         'id' => $anexo->aten_rel_anexo_id,
-                        'name' => $originalName,
+                        'name' => $file->getClientOriginalName(),
                         'path' => $path,
                         'url' => asset('storage/' . $path),
                     ];
@@ -818,12 +876,14 @@ class AtendimentosRelatoriosController extends Controller
                 foreach ($request->file('fotos') as $file) {
                     if (!$file->isValid()) continue;
 
-                    $originalName = basename($file->getClientOriginalName());
-                    $path = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $originalName, 'public');
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $ext          = $file->getClientOriginalExtension();
+                    $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
+                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
 
-                    $full = storage_path('app/public/' . $path);
-                    $thumbDir = "atendimentos_relatorios/{$id}/fotos/thumbs";
-                    $thumbName = $originalName;
+                    $full      = storage_path('app/public/' . $path);
+                    $thumbDir  = "atendimentos_relatorios/{$id}/fotos/thumbs";
+                    $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
                     $thumbCreated = $this->createImageThumbnail($full, $thumbFull, 400);
@@ -835,7 +895,7 @@ class AtendimentosRelatoriosController extends Controller
 
                     $saved['fotos'][] = [
                         'id' => $foto->aten_rel_foto_id,
-                        'name' => $originalName,
+                        'name' => $file->getClientOriginalName(),
                         'path' => $path,
                         'url' => asset('storage/' . $path),
                         'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('storage/' . $path),
@@ -848,12 +908,14 @@ class AtendimentosRelatoriosController extends Controller
                 foreach ($request->file('videos') as $file) {
                     if (!$file->isValid()) continue;
 
-                    $originalName = basename($file->getClientOriginalName());
-                    $path = $file->storeAs("atendimentos_relatorios/{$id}/videos", $originalName, 'public');
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $ext          = $file->getClientOriginalExtension();
+                    $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
+                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
 
-                    $full = storage_path('app/public/' . $path);
-                    $thumbDir = "atendimentos_relatorios/{$id}/videos/thumbs";
-                    $thumbName = $originalName . '.jpg';
+                    $full      = storage_path('app/public/' . $path);
+                    $thumbDir  = "atendimentos_relatorios/{$id}/videos/thumbs";
+                    $thumbName = $safeName . '.jpg';
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
                     $thumbCreated = $this->createVideoThumbnail($full, $thumbFull);
@@ -865,7 +927,7 @@ class AtendimentosRelatoriosController extends Controller
 
                     $saved['videos'][] = [
                         'id' => $video->aten_rel_vid_id,
-                        'name' => $originalName,
+                        'name' => $file->getClientOriginalName(),
                         'path' => $path,
                         'url' => asset('storage/' . $path),
                         'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('img/video-placeholder.svg'),

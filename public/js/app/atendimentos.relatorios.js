@@ -17,16 +17,19 @@ $(document).ready(function () {
     initAssinaturasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
+        const hoje = new Date();
+        const hojeISO = hoje.getFullYear() + '-'
+            + String(hoje.getMonth() + 1).padStart(2, '0') + '-'
+            + String(hoje.getDate()).padStart(2, '0');
+
         $("#rel_aten_id").val("");
         $("#rel_aten_label").val("");
-        $("#rel_data").val("");
+        $("#rel_data").val(hojeISO);
 
         $("#modal_relatorio").modal({
             backdrop: "static",
             keyboard: false
         });
-
-        setTimeout(() => $("#rel_aten_label").focus(), 200);
     });
 
     if ($.ui && $.ui.autocomplete && $('#rel_aten_label').length) {
@@ -36,6 +39,10 @@ $(document).ready(function () {
             baseURL + "/atendimentos-relatorios/autocomplete"
         );
     }
+
+    $("#modal_relatorio").on("shown.bs.modal", function () {
+        $("#rel_aten_label").focus();
+    });
 
     $("#modal_relatorio").on("hidden.bs.modal", function () {
         $("#form_relatorio button[type='submit']").prop("disabled", false);

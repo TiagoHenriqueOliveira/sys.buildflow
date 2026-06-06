@@ -7,6 +7,17 @@ use Illuminate\Validation\Rule;
 
 class NaturezaAtendimentoRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        // O componente select-tipo-atendimento envia "aten_tp_atendimento_id".
+        // Mapeamos para o nome esperado pela validação e pelo modelo.
+        if ($this->has('aten_tp_atendimento_id') && !$this->has('nat_aten_tp_atendimento_id')) {
+            $this->merge([
+                'nat_aten_tp_atendimento_id' => $this->aten_tp_atendimento_id,
+            ]);
+        }
+    }
+
     public function rules()
     {
         return [

@@ -35,7 +35,9 @@
                             type="date"
                             class="form-control"
                             id="rel_data"
-                            name="aten_rel_data">
+                            name="aten_rel_data"
+                            value="{{ now()->format('Y-m-d') }}"
+                            max="{{ now()->format('Y-m-d') }}">
                     </div>
 
                     <x-modal-footer />

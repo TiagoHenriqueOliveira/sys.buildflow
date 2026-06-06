@@ -36,6 +36,7 @@ class AtendimentosController extends Controller
                         1 => 'Paralisada',
                         2 => 'Em andamento',
                         3 => 'Concluída',
+                        default => 'Desconhecido',
                     },
                 ];
             });
