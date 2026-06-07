@@ -13,6 +13,7 @@ use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\AtendimentoRelatorioAtividade;
 use App\Models\AtendimentoRelatorioComentario;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
@@ -829,6 +830,49 @@ class AtendimentosRelatoriosController extends Controller
             'status' => $relatorio->aten_rel_status,
             'assinaturas' => $assinaturas,
         ]);
+    }
+
+    public function pdf(int $id)
+    {
+        $relatorio = AtendimentoRelatorio::with([
+            'modeloRelatorio',
+            'atendimento.cliente',
+            'atendimento.natureza.tipoAtendimento',
+            'horarios',
+            'climas',
+            'ocupacoes.tipoOcupacao',
+            'equipamentos',
+            'atividades',
+            'ocorrencias',
+            'comentarios',
+            'assinaturas',
+        ])->findOrFail($id);
+
+        $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
+        $fim    = Carbon::parse($relatorio->atendimento->aten_dt_fim);
+        $hoje   = Carbon::parse($relatorio->aten_rel_data);
+
+        $prazoTotal     = $inicio->diffInDays($fim);
+        $prazoDecorrido = min($inicio->diffInDays($hoje), $prazoTotal);
+        $prazoAVencer   = max($prazoTotal - $prazoDecorrido, 0);
+
+        $pdf = Pdf::loadView('atendimentos-relatorios.pdf', [
+            'relatorio'      => $relatorio,
+            'prazoTotal'     => $prazoTotal,
+            'prazoDecorrido' => $prazoDecorrido,
+            'prazoAVencer'   => $prazoAVencer,
+        ])
+        ->setPaper('a4', 'portrait')
+        ->setOptions([
+            'defaultFont'       => 'DejaVu Sans',
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled'   => true,
+            'dpi'               => 150,
+        ]);
+
+        $filename = 'relatorio_' . $relatorio->aten_rel_id . '_' . $relatorio->aten_rel_data->format('Y-m-d') . '.pdf';
+
+        return $pdf->stream($filename);
     }
 
     public function uploadAnexos(Request $request, int $id)

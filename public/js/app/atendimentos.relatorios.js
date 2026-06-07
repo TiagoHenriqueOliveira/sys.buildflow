@@ -124,7 +124,7 @@ function configDataTableAtendimentosRelatorios() {
             { data: "setor" },
             { data: "status" }
         ],
-        columnDefs: [{ width: "5%", targets: 0 }],
+        columnDefs: [{ width: "6%", targets: 0 }],
         createdRow: function (row) {
             $("td", row).eq(0).addClass("text-center");
         }
