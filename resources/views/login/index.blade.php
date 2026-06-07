@@ -93,15 +93,15 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="usuario" class="form-label">Usuário</label>
-                        <input type="text"
-                            id="usuario"
-                            class="form-control text-uppercase"
-                            name="usuario"
-                            value="{{ old('usuario') }}"
+                        <label for="email" class="form-label">E-mail</label>
+                        <input type="email"
+                            id="email"
+                            class="form-control"
+                            name="email"
+                            value="{{ old('email') }}"
                             required
                             autofocus
-                            autocomplete="username">
+                            autocomplete="email">
                     </div>
 
                     <div class="mb-3">

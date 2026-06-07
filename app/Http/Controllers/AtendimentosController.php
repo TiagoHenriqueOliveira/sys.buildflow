@@ -11,6 +11,7 @@ use App\Repositories\AtendimentoRepository;
 use App\Repositories\AtendimentoEquipamentoRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AtendimentosController extends Controller
 {
@@ -22,7 +23,10 @@ class AtendimentosController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->repository->all()->map(function ($a) {
+            $usuario = Auth::user();
+            $filtroUsuarioId = $usuario->user_nivel_acesso === 1 ? $usuario->user_id : null;
+
+            $data = $this->repository->all($filtroUsuarioId)->map(function ($a) {
                 return [
                     'acoes'    => view('atendimentos.partials.acoes', compact('a'))->render(),
                     'tipo'     => e(optional($a->natureza?->tipoAtendimento)->tp_aten_descricao),

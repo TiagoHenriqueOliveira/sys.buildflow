@@ -30,6 +30,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AtendimentosRelatoriosController extends Controller
@@ -41,7 +42,12 @@ class AtendimentosRelatoriosController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $rows = $this->repo->all();
+            $usuario = Auth::user();
+            $filters = $usuario->user_nivel_acesso === 1
+                ? ['usuario_id' => $usuario->user_id]
+                : [];
+
+            $rows = $this->repo->all($filters);
 
             $data = $rows->map(function ($r) {
                 return [

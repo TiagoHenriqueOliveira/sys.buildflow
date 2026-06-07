@@ -91,14 +91,17 @@
                 </li>
 
                 <!-- Nav Item - Usuários -->
+                @if(Auth::user()->user_nivel_acesso === 0)
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/usuarios') }}">
                         <i class="fas fa-user fa-fw fa-lg"></i>
                         <span>Usuários</span>
                     </a>
                 </li>
+                @endif
 
                 <!-- Nav Item - Configurações Collapse Menu -->
+                @if(Auth::user()->user_nivel_acesso === 0)
                 <li class="nav-item">
                     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
                         <i class="fas fa-sliders-h fa-fw fa-lg"></i>
@@ -121,6 +124,7 @@
                         </div>
                     </div>
                 </li>
+                @endif
 
                 <!-- Divider -->
                 <hr class="sidebar-divider d-none d-md-block">

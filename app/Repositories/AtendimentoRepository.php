@@ -7,19 +7,20 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class AtendimentoRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(?int $usuarioId = null)
     {
         return Atendimento::with([
             'natureza.tipoAtendimento',
             'cliente',
             'usuario'
         ])
-            ->orderBy('aten_dt_inicio', 'asc')
+            ->when($usuarioId, fn($q) => $q->where('atendimentos.aten_usuario_id', $usuarioId))
 
             ->join('usuarios', 'usuarios.user_id', '=', 'atendimentos.aten_usuario_id')
-            ->orderBy('usuarios.user_nome', 'asc')
 
             ->orderBy('aten_status', 'asc')
+            ->orderBy('aten_dt_inicio', 'asc')
+            ->orderBy('usuarios.user_nome', 'asc')
 
             ->select('atendimentos.*')
 

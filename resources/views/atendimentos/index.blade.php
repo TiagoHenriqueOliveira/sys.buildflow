@@ -22,7 +22,7 @@
                             <th>Ações</th>
                             <th>Setor</th>
                             <th>Natureza</th>
-                            <th>Usuário</th>
+                            <th>Técnico</th>
                             <th>Cliente</th>
                             <th>Obra</th>
                             <th>Período</th>

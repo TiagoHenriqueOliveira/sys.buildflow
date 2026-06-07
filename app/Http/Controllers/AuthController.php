@@ -23,22 +23,22 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'usuario' => ['required', 'string'],
-            'senha'   => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'senha' => ['required', 'string'],
         ], [
-            'usuario.required' => 'O campo usuário é obrigatório.',
-            'senha.required'   => 'O campo senha é obrigatório.',
+            'email.required' => 'O campo e-mail é obrigatório.',
+            'email.email'    => 'Informe um e-mail válido.',
+            'senha.required' => 'O campo senha é obrigatório.',
         ]);
 
-        $usuario = Usuario::where('user_email', strtoupper($request->usuario))
-            ->orWhere('user_nome', strtoupper($request->usuario))
+        $usuario = Usuario::where('user_email', $request->email)
             ->where('user_ativo', true)
             ->first();
 
         if (!$usuario || !Hash::check($request->senha, $usuario->user_senha)) {
             return back()
-                ->withErrors(['usuario' => 'Usuário ou senha inválidos.'])
-                ->withInput($request->only('usuario'));
+                ->withErrors(['email' => 'E-mail ou senha inválidos.'])
+                ->withInput($request->only('email'));
         }
 
         Auth::login($usuario);

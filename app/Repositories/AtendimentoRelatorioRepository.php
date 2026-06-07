@@ -22,6 +22,11 @@ class AtendimentoRelatorioRepository implements CrudRepositoryInterface
             $q->where('aten_rel_atendimento_id', $filters['aten_rel_atendimento_id']);
         }
 
+        if (!empty($filters['usuario_id'])) {
+            $q->join('atendimentos', 'atendimentos.aten_id', '=', 'atendimentos_relatorios.aten_rel_atendimento_id')
+              ->where('atendimentos.aten_usuario_id', $filters['usuario_id']);
+        }
+
         return $q->get();
     }
 
