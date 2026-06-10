@@ -102,12 +102,12 @@ html body {
 }
 
 .nav-link i {
-  color: #E5C07B !important;
+  color: #5EEAD4 !important;
 }
 
 .nav-link.collapsed:hover>i,
 .nav-link:not(.collapsed):hover>i {
-  color: #F4D35E !important;
+  color: #99F6E4 !important;
 }
 
 .collapse-item:hover>i,

@@ -34,7 +34,7 @@
                 <!-- Nav Item - Dashboard -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/dashboard') }}">
-                        <i class="fas fa-tachometer-alt fa-fw fa-lg"></i>
+                        <i class="fas fa-chart-line fa-fw fa-lg"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
@@ -53,7 +53,7 @@
                 <!-- Nav Item - Clientes -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/clientes') }}">
-                        <i class="fas fa-user-tie fa-fw fa-lg"></i>
+                        <i class="fas fa-address-card fa-fw fa-lg"></i>
                         <span>Clientes</span>
                     </a>
                 </li>
@@ -61,7 +61,7 @@
                 <!-- Nav Item - Equipamentos -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/equipamentos') }}">
-                        <i class="fas fa-toolbox fa-fw fa-lg"></i>
+                        <i class="fas fa-tools fa-fw fa-lg"></i>
                         <span>Ferramentas</span>
                     </a>
                 </li>
@@ -69,7 +69,7 @@
                 <!-- Nav Item - Ocorrências -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/ocorrencias') }}">
-                        <i class="fas fa-exclamation fa-fw fa-lg"></i>
+                        <i class="fas fa-exclamation-triangle fa-fw fa-lg"></i>
                         <span>Ocorrências</span>
                     </a>
                 </li>
@@ -85,7 +85,7 @@
                 <!-- Nav Item - Relatórios -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/atendimentos-relatorios') }}">
-                        <i class="fas fa-clipboard fa-fw fa-lg"></i>
+                        <i class="fas fa-chart-bar fa-fw fa-lg"></i>
                         <span>Relatórios</span>
                     </a>
                 </li>
@@ -94,7 +94,7 @@
                 @if(Auth::user()->user_nivel_acesso === 0)
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/usuarios') }}">
-                        <i class="fas fa-user fa-fw fa-lg"></i>
+                        <i class="fas fa-users fa-fw fa-lg"></i>
                         <span>Usuários</span>
                     </a>
                 </li>
@@ -104,7 +104,7 @@
                 @if(Auth::user()->user_nivel_acesso === 0)
                 <li class="nav-item">
                     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
-                        <i class="fas fa-sliders-h fa-fw fa-lg"></i>
+                        <i class="fas fa-cog fa-fw fa-lg"></i>
                         <span>Configurações</span>
                     </a>
                     <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
