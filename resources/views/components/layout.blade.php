@@ -50,6 +50,7 @@
                     </a>
                 </li>
 
+                @if(Auth::user()->user_nivel_acesso === 0)
                 <!-- Nav Item - Clientes -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/clientes') }}">
@@ -81,6 +82,7 @@
                         <span>Mão de Obra</span>
                     </a>
                 </li>
+                @endif
                 
                 <!-- Nav Item - Relatórios -->
                 <li class="nav-item">

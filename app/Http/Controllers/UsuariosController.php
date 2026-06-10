@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UsuarioRequest;
 use App\Repositories\UsuarioRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UsuariosController extends Controller
 {
@@ -15,7 +16,14 @@ class UsuariosController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->repository->all()->map(function ($u) {
+            $loggedEmail = Auth::user()->user_email;
+
+            $data = $this->repository->all()
+                ->filter(function ($u) use ($loggedEmail) {
+                    // admin@admin.com só aparece para ele mesmo
+                    return $u->user_email !== 'admin@admin.com' || $loggedEmail === 'admin@admin.com';
+                })
+                ->map(function ($u) {
                 $nivel = ((int)$u->user_nivel_acesso === 0) ? 'Administrador' : 'Técnico';
 
                 return [
@@ -26,7 +34,7 @@ class UsuariosController extends Controller
                     'user_ativo' => (int) $u->user_ativo,
                     'status' => $u->user_ativo ? 'Ativo' : 'Desativado',
                 ];
-            });
+            })->values();
 
             return response()->json(['data' => $data]);
         }
@@ -48,6 +56,13 @@ class UsuariosController extends Controller
     public function update(UsuarioRequest $request, int $id)
     {
         try {
+            $target = \App\Models\Usuario::findOrFail($id);
+
+            // Somente o próprio admin@admin.com pode editar a si mesmo
+            if ($target->user_email === 'admin@admin.com' && Auth::user()->user_email !== 'admin@admin.com') {
+                return response()->json(['message' => 'Não é permitido alterar o usuário administrador master.'], 403);
+            }
+
             $this->repository->update($id, $request->validated());
             return response()->json(['message' => 'Atualizado com sucesso!']);
         } catch (\Throwable $e) {

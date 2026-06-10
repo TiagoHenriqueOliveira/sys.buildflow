@@ -64,28 +64,29 @@ Route::middleware('auth')->group(function () {
     Route::post('/atendimentos-relatorios/{id}/comentarios/{comentarioId}', [AtendimentosRelatoriosController::class, 'updateComentario'])->name('atendimentos-relatorios.update-comentario');
     Route::delete('/atendimentos-relatorios/{id}/comentarios/{comentarioId}', [AtendimentosRelatoriosController::class, 'destroyComentario'])->name('atendimentos-relatorios.destroy-comentario');
 
-    // Clientes
-    Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
-
-    // Equipamentos
-    Route::get('/equipamentos/autocomplete', [EquipamentosController::class, 'autoComplete'])->name('equipamentos.autocomplete');
-    Route::resource('equipamentos', EquipamentosController::class)->except(['create', 'edit', 'show', 'destroy']);
-
-    // Configurações (somente administradores)
+    // Somente administradores
     Route::middleware('admin')->group(function () {
+        // Clientes
+        Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // Equipamentos
+        Route::get('/equipamentos/autocomplete', [EquipamentosController::class, 'autoComplete'])->name('equipamentos.autocomplete');
+        Route::resource('equipamentos', EquipamentosController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // Ocorrências
+        Route::get('/ocorrencias/autocomplete', [OcorrenciasController::class, 'autoComplete'])->name('ocorrencias.autocomplete');
+        Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // Ocupações
+        Route::get('/mao-de-obra/autocomplete', [OcupacoesController::class, 'autoComplete'])->name('mao_de_obra.autocomplete');
+        Route::resource('mao-de-obra', OcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // Configurações
         Route::resource('modelos-de-relatorios', ModelosRelatoriosController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::resource('setores', TiposAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::resource('tipos-de-mao-de-obra', TiposOcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
     });
-
-    // Ocorrências
-    Route::get('/ocorrencias/autocomplete', [OcorrenciasController::class, 'autoComplete'])->name('ocorrencias.autocomplete');
-    Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
-
-    // Ocupações
-    Route::get('/mao-de-obra/autocomplete', [OcupacoesController::class, 'autoComplete'])->name('mao_de_obra.autocomplete');
-    Route::resource('mao-de-obra', OcupacoesController::class)->except(['create', 'edit', 'show', 'destroy']);
 
     // Usuários (somente administradores)
     Route::middleware('admin')->resource('usuarios', UsuariosController::class)->except(['create', 'edit', 'show', 'destroy']);
