@@ -450,10 +450,6 @@ $(document).on('click', '.btn-delete-anexo', function (e) {
         return;
     }
 
-    if (!confirm('Deseja realmente excluir este anexo?')) {
-        return;
-    }
-
     $.ajax({
         url: baseURL + `/atendimentos-relatorios/${relatorioId}/anexos/${type}/${itemId}`,
         type: 'DELETE',
