@@ -560,6 +560,58 @@ class RelatoriosController extends Controller
     }
 
     /**
+     * Adiciona ocorrência ao relatório.
+     *
+     * POST /api/v1/relatorios/{id}/ocorrencias
+     * Body: { ocorrencia_id: int, observacao: string (opcional) }
+     */
+    public function storeOcorrencia(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'ocorrencia_id' => 'required|exists:ocorrencias,ocor_id',
+            'observacao'    => 'nullable|string',
+        ]);
+
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        if ($relatorio->ocorrencias()->where('ocorrencias.ocor_id', $request->ocorrencia_id)->exists()) {
+            return response()->json(['message' => 'Ocorrência já adicionada neste relatório.'], 422);
+        }
+
+        $ocorrencia = Ocorrencia::findOrFail($request->ocorrencia_id);
+        $relatorio->ocorrencias()->attach($request->ocorrencia_id, [
+            'aten_rel_ocor_observacao' => $request->observacao ?? '',
+        ]);
+
+        return response()->json([
+            'message' => 'Ocorrência adicionada!',
+            'data'    => [
+                'ocorrencia_id' => $ocorrencia->ocor_id,
+                'descricao'     => $ocorrencia->ocor_descricao,
+                'observacao'    => $request->observacao ?? '',
+            ],
+        ]);
+    }
+
+    /**
+     * Remove ocorrência do relatório.
+     *
+     * DELETE /api/v1/relatorios/{id}/ocorrencias/{ocorrencia_id}
+     */
+    public function destroyOcorrencia(Request $request, int $id, int $ocorrenciaId): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+        $relatorio->ocorrencias()->detach($ocorrenciaId);
+        return response()->json(['message' => 'Ocorrência removida!']);
+    }
+
+    /**
      * Salva assinaturas e atualiza status do relatório.
      *
      * POST /api/v1/relatorios/{id}/assinaturas

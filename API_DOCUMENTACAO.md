@@ -7,21 +7,33 @@
 
 ---
 
+## Convenção: campos somente leitura
+
+Em toda a API, campos marcados com **`[somente leitura]`** são apenas para **exibição no app**. O app não envia esses valores de volta — apenas o **ID** correspondente é enviado nas operações de gravação.
+
+**Exemplo:**
+- `descricao: "Eletricista"` → **[somente leitura]** — exiba para o usuário
+- `ocup_id: 2` → use este ID para adicionar ao relatório
+
+---
+
 ## Índice
 
 1. [Autenticação](#1-autenticação)
-2. [Atendimentos](#2-atendimentos)
-3. [Relatórios — Geral](#3-relatórios--geral)
-4. [Relatórios — Horários](#4-relatórios--horários)
-5. [Relatórios — Clima](#5-relatórios--clima)
-6. [Relatórios — Mão de Obra](#6-relatórios--mão-de-obra)
-7. [Relatórios — Equipamentos](#7-relatórios--equipamentos)
-8. [Relatórios — Atividades](#8-relatórios--atividades)
-9. [Relatórios — Comentários](#9-relatórios--comentários)
-10. [Relatórios — Assinaturas](#10-relatórios--assinaturas)
-11. [Relatórios — Anexos, Fotos e Vídeos](#11-relatórios--anexos-fotos-e-vídeos)
-12. [Erros Comuns](#12-erros-comuns)
-13. [Guia Flutter](#13-guia-flutter)
+2. [Catálogos — Listas de seleção](#2-catálogos--listas-de-seleção)
+3. [Atendimentos](#3-atendimentos)
+4. [Relatórios — Geral](#4-relatórios--geral)
+5. [Relatórios — Horários](#5-relatórios--horários)
+6. [Relatórios — Clima](#6-relatórios--clima)
+7. [Relatórios — Mão de Obra](#7-relatórios--mão-de-obra)
+8. [Relatórios — Ferramentas/Equipamentos](#8-relatórios--ferramentasequipamentos)
+9. [Relatórios — Atividades](#9-relatórios--atividades)
+10. [Relatórios — Ocorrências](#10-relatórios--ocorrências)
+11. [Relatórios — Comentários](#11-relatórios--comentários)
+12. [Relatórios — Assinaturas](#12-relatórios--assinaturas)
+13. [Relatórios — Anexos, Fotos e Vídeos](#13-relatórios--anexos-fotos-e-vídeos)
+14. [Erros Comuns](#14-erros-comuns)
+15. [Guia Flutter](#15-guia-flutter)
 
 ---
 
@@ -36,7 +48,7 @@ Não requer token. Retorna o Bearer token que deve ser incluído em todas as dem
 {
   "email": "tecnico@empresa.com",
   "senha": "minha_senha",
-  "device_name": "flutter_app"   // opcional — identifica o dispositivo
+  "device_name": "flutter_app"
 }
 ```
 
@@ -54,8 +66,8 @@ Não requer token. Retorna o Bearer token que deve ser incluído em todas as dem
 }
 ```
 
-> `nivel_acesso: 1` = Técnico (vê apenas seus próprios dados)  
-> `nivel_acesso: 2+` = Administrador (vê todos os dados)
+> `nivel_acesso: 1` = Técnico — vê apenas seus próprios atendimentos e relatórios  
+> `nivel_acesso: 2+` = Administrador — vê todos os dados
 
 **Response 422 — Credenciais inválidas:**
 ```json
@@ -67,9 +79,7 @@ Não requer token. Retorna o Bearer token que deve ser incluído em todas as dem
 
 ---
 
-### POST `/logout` — Logout
-
-Requer token. Revoga o token atual.
+### POST `/logout`
 
 **Headers:** `Authorization: Bearer {token}`
 
@@ -96,19 +106,114 @@ Requer token. Revoga o token atual.
 
 ---
 
-## 2. Atendimentos
+## 2. Catálogos — Listas de seleção
+
+> Esses endpoints retornam as listas que o app usa para popular dropdowns e selects.  
+> **Todos os campos de texto são somente leitura — apenas para exibição.**  
+> Apenas os campos de ID devem ser enviados de volta nas operações de gravação.
+
+---
+
+### GET `/catalogos/mao-obra` — Lista mão de obra disponível
+
+**Headers:** `Authorization: Bearer {token}`
+
+**Response 200:**
+```json
+{
+  "data": [
+    {
+      "ocup_id": 2,
+      "descricao": "Eletricista",
+      "tipo_id": 1,
+      "tipo": "Mão de Obra Direta"
+    },
+    {
+      "ocup_id": 3,
+      "descricao": "Encanador",
+      "tipo_id": 1,
+      "tipo": "Mão de Obra Direta"
+    }
+  ]
+}
+```
+
+| Campo      | Uso                                                        |
+|------------|------------------------------------------------------------|
+| `ocup_id`  | Envie este ID ao adicionar mão de obra no relatório        |
+| `descricao`| **[somente leitura]** — exiba no dropdown                  |
+| `tipo_id`  | Pode usar para agrupar visualmente                         |
+| `tipo`     | **[somente leitura]** — exiba como cabeçalho do grupo      |
+
+**Como usar para adicionar ao relatório:**
+```
+POST /relatorios/{id}/mao-obra
+Body: { "ocup_id": 2, "qtd": 3 }
+```
+
+---
+
+### GET `/catalogos/ferramentas` — Lista ferramentas disponíveis
+
+**Response 200:**
+```json
+{
+  "data": [
+    { "equip_id": 5, "descricao": "Multímetro" },
+    { "equip_id": 6, "descricao": "Furadeira" }
+  ]
+}
+```
+
+| Campo      | Uso                                                      |
+|------------|----------------------------------------------------------|
+| `equip_id` | Envie este ID ao adicionar ferramenta no relatório       |
+| `descricao`| **[somente leitura]** — exiba no dropdown                |
+
+**Como usar para adicionar ao relatório:**
+```
+POST /relatorios/{id}/equipamentos
+Body: { "equip_id": 5, "qtd": 2 }
+```
+
+---
+
+### GET `/catalogos/ocorrencias` — Lista ocorrências disponíveis
+
+**Response 200:**
+```json
+{
+  "data": [
+    { "ocorrencia_id": 3, "descricao": "Falta de material" },
+    { "ocorrencia_id": 4, "descricao": "Chuva / mau tempo" }
+  ]
+}
+```
+
+| Campo          | Uso                                                        |
+|----------------|------------------------------------------------------------|
+| `ocorrencia_id`| Envie este ID ao adicionar ocorrência no relatório         |
+| `descricao`    | **[somente leitura]** — exiba no dropdown                  |
+
+**Como usar para adicionar ao relatório:**
+```
+POST /relatorios/{id}/ocorrencias
+Body: { "ocorrencia_id": 3, "observacao": "Aguardando entrega" }
+```
+
+---
+
+## 3. Atendimentos
 
 > Técnico vê somente seus atendimentos. Admin vê todos.
 
 ### GET `/atendimentos` — Listar
 
-**Headers:** `Authorization: Bearer {token}`
-
 **Query params (opcionais):**
-| Param    | Tipo   | Descrição                       |
-|----------|--------|---------------------------------|
-| `status` | int    | 0=Não iniciada, 1=Paralisada, 2=Em andamento, 3=Concluída |
-| `search` | string | Busca em descrição e nome do cliente |
+| Param    | Tipo   | Descrição                                                    |
+|----------|--------|--------------------------------------------------------------|
+| `status` | int    | `0`=Não iniciada `1`=Paralisada `2`=Em andamento `3`=Concluída |
+| `search` | string | Busca em descrição e nome do cliente                         |
 
 **Response 200:**
 ```json
@@ -124,20 +229,23 @@ Requer token. Revoga o token atual.
       "status_label": "Em andamento",
       "dt_inicio": "2024-01-10",
       "dt_fim": "2024-03-10",
-      "natureza": { "id": 3, "descricao": "Elétrica" },
-      "setor":    { "id": 1, "descricao": "Manutenção" },
-      "cliente":  { "id": 7, "nome": "Construtora XYZ" },
-      "tecnico":  { "id": 5, "nome": "João Silva" }
+      "natureza":  { "id": 3, "descricao": "Elétrica" },
+      "setor":     { "id": 1, "descricao": "Manutenção" },
+      "cliente":   { "id": 7, "nome": "Construtora XYZ" },
+      "tecnico":   { "id": 5, "nome": "João Silva" }
     }
   ]
 }
 ```
 
+> Todos os campos de texto aqui são **[somente leitura]** — apenas para exibição.  
+> O `id` do atendimento é usado ao criar um relatório.
+
 ---
 
 ### GET `/atendimentos/{id}` — Detalhe
 
-Inclui lista de equipamentos do atendimento.
+Inclui a lista de equipamentos do atendimento (os que foram cadastrados no atendimento, não no relatório).
 
 **Response 200:**
 ```json
@@ -145,7 +253,17 @@ Inclui lista de equipamentos do atendimento.
   "data": {
     "id": 12,
     "descricao": "Instalação elétrica Bloco A",
-    ...
+    "responsavel": "João Silva",
+    "endereco": "Rua das Flores, 100",
+    "nr_proposta": "PRO-2024-001",
+    "status": 2,
+    "status_label": "Em andamento",
+    "dt_inicio": "2024-01-10",
+    "dt_fim": "2024-03-10",
+    "natureza":  { "id": 3, "descricao": "Elétrica" },
+    "setor":     { "id": 1, "descricao": "Manutenção" },
+    "cliente":   { "id": 7, "nome": "Construtora XYZ" },
+    "tecnico":   { "id": 5, "nome": "João Silva" },
     "equipamentos": [
       { "id": 1, "descricao": "Furadeira", "observacoes": null }
     ]
@@ -157,17 +275,17 @@ Inclui lista de equipamentos do atendimento.
 
 ---
 
-## 3. Relatórios — Geral
+## 4. Relatórios — Geral
 
 ### GET `/relatorios` — Listar
 
 > Técnico vê somente relatórios dos seus atendimentos.
 
 **Query params (opcionais):**
-| Param            | Tipo | Descrição                      |
-|------------------|------|--------------------------------|
-| `atendimento_id` | int  | Filtra por atendimento         |
-| `status`         | int  | 0=Preenchendo, 1=Revisar, 2=Aprovado |
+| Param            | Tipo | Descrição                                      |
+|------------------|------|------------------------------------------------|
+| `atendimento_id` | int  | Filtra por atendimento específico              |
+| `status`         | int  | `0`=Preenchendo `1`=Revisar `2`=Aprovado       |
 
 **Response 200:**
 ```json
@@ -179,9 +297,9 @@ Inclui lista de equipamentos do atendimento.
       "status": 0,
       "status_label": "Preenchendo",
       "atendimento_id": 12,
-      "obra": "Instalação elétrica Bloco A",
-      "natureza": "Elétrica",
-      "setor": "Manutenção",
+      "obra":    "Instalação elétrica Bloco A",
+      "natureza":"Elétrica",
+      "setor":   "Manutenção",
       "cliente": "Construtora XYZ"
     }
   ]
@@ -190,15 +308,20 @@ Inclui lista de equipamentos do atendimento.
 
 ---
 
-### POST `/relatorios` — Criar
+### POST `/relatorios` — Criar novo relatório
 
 **Body:**
 ```json
 {
   "aten_id": 12,
-  "aten_rel_data": "2024-02-15"   // opcional, padrão = hoje
+  "aten_rel_data": "2024-02-15"
 }
 ```
+
+| Campo          | Obrigatório | Descrição                         |
+|----------------|-------------|-----------------------------------|
+| `aten_id`      | Sim         | ID do atendimento                 |
+| `aten_rel_data`| Não         | Data do relatório (padrão: hoje)  |
 
 **Response 201:**
 ```json
@@ -208,13 +331,11 @@ Inclui lista de equipamentos do atendimento.
 }
 ```
 
-**Response 422:** Atendimento sem modelo de relatório vinculado na natureza.
-
 ---
 
 ### GET `/relatorios/{id}` — Detalhe completo
 
-Retorna todos os dados do relatório (horários, clima, atividades, etc.).
+Retorna todos os dados do relatório. Chame este endpoint ao abrir a tela de preenchimento.
 
 **Response 200:**
 ```json
@@ -222,60 +343,81 @@ Retorna todos os dados do relatório (horários, clima, atividades, etc.).
   "data": {
     "id": 8,
     "status": 0,
+
     "dados": {
-      "aten_rel_data": "2024-02-15",
-      "prazo_total": 59,
+      "aten_rel_data":   "2024-02-15",
+      "prazo_total":     59,
       "prazo_decorrido": 36,
-      "prazo_vencer": 23
+      "prazo_vencer":    23
     },
+
     "atendimento": {
-      "id": 12,
-      "descricao": "Instalação elétrica Bloco A",
+      "id":          12,
+      "descricao":   "Instalação elétrica Bloco A",
       "responsavel": "João Silva",
-      "endereco": "Rua das Flores, 100",
-      "dt_inicio": "2024-01-10",
-      "dt_fim": "2024-03-10",
-      "cliente": "Construtora XYZ",
-      "natureza": "Elétrica",
-      "setor": "Manutenção"
+      "endereco":    "Rua das Flores, 100",
+      "dt_inicio":   "2024-01-10",
+      "dt_fim":      "2024-03-10",
+      "cliente":     "Construtora XYZ",
+      "natureza":    "Elétrica",
+      "setor":       "Manutenção"
     },
+
     "horarios": {
-      "entrada": "07:00",
+      "entrada":          "07:00",
       "inicio_intervalo": "12:00",
-      "fim_intervalo": "13:00",
-      "saida": "17:00"
+      "fim_intervalo":    "13:00",
+      "saida":            "17:00"
     },
+
     "clima": {
       "manha": "ensolarado",
       "tarde": "nublado",
       "noite": null
     },
+
     "mao_obra": [
-      { "ocup_id": 2, "descricao": "Eletricista", "tipo": "Mão de Obra Direta", "qtd": 3 }
+      {
+        "ocup_id":  2,
+        "descricao":"Eletricista",
+        "tipo":     "Mão de Obra Direta",
+        "qtd":      3
+      }
     ],
+
     "equipamentos": [
       { "equip_id": 5, "descricao": "Multímetro", "qtd": 2 }
     ],
+
     "atividades": [
       { "id": 1, "descricao": "Instalar quadro de distribuição", "status": 1 }
     ],
+
     "ocorrencias": [
-      { "ocorrencia_id": 3, "descricao": "Falta de material", "observacao": "Aguardando entrega" }
+      {
+        "ocorrencia_id": 3,
+        "descricao":     "Falta de material",
+        "observacao":    "Aguardando entrega"
+      }
     ],
+
     "comentarios": [
       { "id": 1, "descricao": "Trabalho iniciado conforme cronograma." }
     ],
+
     "assinaturas": {
-      "responsavel": "https://dominio.com/storage/atendimentos_relatorios/8/assinaturas/responsavel.png",
+      "responsavel": "https://dominio.com/storage/.../responsavel.png",
       "cliente": null
     }
   }
 }
 ```
 
+> Todos os campos de texto dentro de `atendimento`, `mao_obra`, `equipamentos`, `ocorrencias` são **[somente leitura]** — apenas para exibição.
+
 ---
 
-## 4. Relatórios — Horários
+## 5. Relatórios — Horários
 
 ### POST `/relatorios/{id}/horarios`
 
@@ -289,7 +431,7 @@ Retorna todos os dados do relatório (horários, clima, atividades, etc.).
 }
 ```
 
-Todos os campos são opcionais (null limpa o valor). Formato: `"HH:MM"`.
+Todos os campos são opcionais. Formato obrigatório: `"HH:MM"`.
 
 **Response 200:**
 ```json
@@ -298,7 +440,7 @@ Todos os campos são opcionais (null limpa o valor). Formato: `"HH:MM"`.
 
 ---
 
-## 5. Relatórios — Clima
+## 6. Relatórios — Clima
 
 ### POST `/relatorios/{id}/clima`
 
@@ -311,7 +453,7 @@ Todos os campos são opcionais (null limpa o valor). Formato: `"HH:MM"`.
 }
 ```
 
-Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
+Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Todos os campos são opcionais.
 
 **Response 200:**
 ```json
@@ -320,28 +462,42 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-## 6. Relatórios — Mão de Obra
+## 7. Relatórios — Mão de Obra
 
-### POST `/relatorios/{id}/mao-obra`
+> Antes de adicionar, consulte `GET /catalogos/mao-obra` para obter os IDs disponíveis.
+
+### POST `/relatorios/{id}/mao-obra` — Adicionar
 
 **Body:**
 ```json
 { "ocup_id": 2, "qtd": 3 }
 ```
 
+| Campo     | Tipo | Descrição                                              |
+|-----------|------|--------------------------------------------------------|
+| `ocup_id` | int  | ID obtido em `GET /catalogos/mao-obra`                 |
+| `qtd`     | int  | Quantidade (mínimo 1)                                  |
+
 **Response 200:**
 ```json
 {
   "message": "Mão de obra adicionada!",
-  "data": { "ocup_id": 2, "descricao": "Eletricista", "tipo": "Mão de Obra Direta", "qtd": 3 }
+  "data": {
+    "ocup_id":  2,
+    "descricao":"Eletricista",
+    "tipo":     "Mão de Obra Direta",
+    "qtd":      3
+  }
 }
 ```
+
+> `descricao` e `tipo` no response são **[somente leitura]** — apenas para confirmar visualmente o que foi adicionado.
 
 **Response 422:** Mão de obra já adicionada neste relatório.
 
 ---
 
-### DELETE `/relatorios/{id}/mao-obra/{ocup_id}`
+### DELETE `/relatorios/{id}/mao-obra/{ocup_id}` — Remover
 
 **Response 200:**
 ```json
@@ -350,14 +506,21 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-## 7. Relatórios — Equipamentos
+## 8. Relatórios — Ferramentas/Equipamentos
 
-### POST `/relatorios/{id}/equipamentos`
+> Antes de adicionar, consulte `GET /catalogos/ferramentas` para obter os IDs disponíveis.
+
+### POST `/relatorios/{id}/equipamentos` — Adicionar
 
 **Body:**
 ```json
 { "equip_id": 5, "qtd": 2 }
 ```
+
+| Campo      | Tipo | Descrição                                            |
+|------------|------|------------------------------------------------------|
+| `equip_id` | int  | ID obtido em `GET /catalogos/ferramentas`            |
+| `qtd`      | int  | Quantidade (mínimo 1)                                |
 
 **Response 200:**
 ```json
@@ -367,9 +530,11 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 }
 ```
 
+> `descricao` no response é **[somente leitura]** — apenas confirmação visual.
+
 ---
 
-### DELETE `/relatorios/{id}/equipamentos/{equip_id}`
+### DELETE `/relatorios/{id}/equipamentos/{equip_id}` — Remover
 
 **Response 200:**
 ```json
@@ -378,15 +543,21 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-## 8. Relatórios — Atividades
+## 9. Relatórios — Atividades
 
-### POST `/relatorios/{id}/atividades`
+> Atividades são textos livres digitados pelo técnico — não vêm de catálogo.
+
+### POST `/relatorios/{id}/atividades` — Adicionar
 
 **Body:**
 ```json
 { "descricao": "Instalar quadro de distribuição", "status": 0 }
 ```
-`status`: `0` = Pendente, `1` = Concluída
+
+| Campo      | Tipo   | Descrição                        |
+|------------|--------|----------------------------------|
+| `descricao`| string | Texto livre (máx. 500 caracteres)|
+| `status`   | int    | `0` = Pendente / `1` = Concluída |
 
 **Response 200:**
 ```json
@@ -398,12 +569,9 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-### PUT `/relatorios/{id}/atividades/{ativ_id}`
+### PUT `/relatorios/{id}/atividades/{ativ_id}` — Atualizar
 
-**Body:**
-```json
-{ "descricao": "Instalar quadro de distribuição", "status": 1 }
-```
+Mesmo body do POST. Útil para marcar como concluída (`status: 1`).
 
 **Response 200:**
 ```json
@@ -415,7 +583,7 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-### DELETE `/relatorios/{id}/atividades/{ativ_id}`
+### DELETE `/relatorios/{id}/atividades/{ativ_id}` — Remover
 
 **Response 200:**
 ```json
@@ -424,9 +592,57 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-## 9. Relatórios — Comentários
+## 10. Relatórios — Ocorrências
 
-### POST `/relatorios/{id}/comentarios`
+> Antes de adicionar, consulte `GET /catalogos/ocorrencias` para obter os IDs disponíveis.
+
+### POST `/relatorios/{id}/ocorrencias` — Adicionar
+
+**Body:**
+```json
+{
+  "ocorrencia_id": 3,
+  "observacao": "Aguardando entrega do fornecedor"
+}
+```
+
+| Campo          | Tipo   | Obrigatório | Descrição                                      |
+|----------------|--------|-------------|------------------------------------------------|
+| `ocorrencia_id`| int    | Sim         | ID obtido em `GET /catalogos/ocorrencias`      |
+| `observacao`   | string | Não         | Texto livre de observação sobre a ocorrência   |
+
+**Response 200:**
+```json
+{
+  "message": "Ocorrência adicionada!",
+  "data": {
+    "ocorrencia_id": 3,
+    "descricao":     "Falta de material",
+    "observacao":    "Aguardando entrega do fornecedor"
+  }
+}
+```
+
+> `descricao` no response é **[somente leitura]** — apenas confirmação visual.
+
+**Response 422:** Ocorrência já adicionada neste relatório.
+
+---
+
+### DELETE `/relatorios/{id}/ocorrencias/{ocorrencia_id}` — Remover
+
+**Response 200:**
+```json
+{ "message": "Ocorrência removida!" }
+```
+
+---
+
+## 11. Relatórios — Comentários
+
+> Comentários são textos livres digitados pelo técnico.
+
+### POST `/relatorios/{id}/comentarios` — Adicionar
 
 **Body:**
 ```json
@@ -443,7 +659,7 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-### DELETE `/relatorios/{id}/comentarios/{com_id}`
+### DELETE `/relatorios/{id}/comentarios/{com_id}` — Remover
 
 **Response 200:**
 ```json
@@ -452,7 +668,7 @@ Valores aceitos: `"ensolarado"`, `"nublado"`, `"chuvoso"`. Campos opcionais.
 
 ---
 
-## 10. Relatórios — Assinaturas
+## 12. Relatórios — Assinaturas
 
 ### POST `/relatorios/{id}/assinaturas`
 
@@ -467,8 +683,11 @@ Salva assinaturas em base64 e atualiza o status do relatório.
 }
 ```
 
-`status`: `0` = Preenchendo, `1` = Revisar, `2` = Aprovado  
-As assinaturas são opcionais — envie apenas as que foram coletadas.
+| Campo                    | Tipo   | Obrigatório | Descrição                              |
+|--------------------------|--------|-------------|----------------------------------------|
+| `status`                 | int    | Sim         | `0`=Preenchendo `1`=Revisar `2`=Aprovado |
+| `assinatura_responsavel` | string | Não         | Imagem PNG em base64 com prefixo data URI |
+| `assinatura_cliente`     | string | Não         | Imagem PNG em base64 com prefixo data URI |
 
 **Response 200:**
 ```json
@@ -485,17 +704,17 @@ As assinaturas são opcionais — envie apenas as que foram coletadas.
 
 ---
 
-## 11. Relatórios — Anexos, Fotos e Vídeos
+## 13. Relatórios — Anexos, Fotos e Vídeos
 
 ### POST `/relatorios/{id}/anexos` — Upload
 
 Content-Type: `multipart/form-data`
 
-| Campo       | Tipo    | Limite | Formatos aceitos                       |
-|-------------|---------|--------|----------------------------------------|
-| `fotos[]`   | arquivo | 10 MB  | jpg, jpeg, png, webp, gif              |
-| `videos[]`  | arquivo | 100 MB | mp4, mov, avi, mkv, webm               |
-| `arquivos[]`| arquivo | 20 MB  | pdf, doc, docx, xls, xlsx, txt, csv   |
+| Campo       | Limite | Formatos aceitos                         |
+|-------------|--------|------------------------------------------|
+| `fotos[]`   | 10 MB  | jpg, jpeg, png, webp, gif                |
+| `videos[]`  | 100 MB | mp4, mov, avi, mkv, webm                 |
+| `arquivos[]`| 20 MB  | pdf, doc, docx, xls, xlsx, txt, csv     |
 
 Pode enviar múltiplos arquivos por campo. Todos os campos são opcionais.
 
@@ -513,7 +732,7 @@ Pode enviar múltiplos arquivos por campo. Todos os campos são opcionais.
 
 ---
 
-### DELETE `/relatorios/{id}/anexos/{tipo}/{item_id}`
+### DELETE `/relatorios/{id}/anexos/{tipo}/{item_id}` — Remover
 
 `tipo` deve ser: `foto`, `video` ou `arquivo`
 
@@ -526,15 +745,15 @@ Pode enviar múltiplos arquivos por campo. Todos os campos são opcionais.
 
 ---
 
-## 12. Erros Comuns
+## 14. Erros Comuns
 
-| Código | Significado                                      |
-|--------|--------------------------------------------------|
-| 401    | Token inválido ou ausente                        |
-| 403    | Técnico tentou acessar dado de outro técnico     |
-| 404    | Recurso não encontrado                           |
-| 422    | Validação falhou (ver campo `errors` no body)    |
-| 500    | Erro interno do servidor                         |
+| Código | Significado                                           |
+|--------|-------------------------------------------------------|
+| 401    | Token inválido ou ausente                             |
+| 403    | Técnico tentou acessar dado de outro técnico          |
+| 404    | Recurso não encontrado                                |
+| 422    | Validação falhou — veja o campo `errors` no body      |
+| 500    | Erro interno do servidor                              |
 
 **Estrutura de erro de validação (422):**
 ```json
@@ -548,11 +767,10 @@ Pode enviar múltiplos arquivos por campo. Todos os campos são opcionais.
 
 ---
 
-## 13. Guia Flutter
+## 15. Guia Flutter
 
-### Configuração inicial
+### Configuração inicial (`pubspec.yaml`)
 
-Adicione no `pubspec.yaml`:
 ```yaml
 dependencies:
   http: ^1.2.0
@@ -605,23 +823,48 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'senha': senha,
-        'device_name': 'flutter_app',
-      }),
+      body: jsonEncode({'email': email, 'senha': senha, 'device_name': 'flutter_app'}),
     );
     final data = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      await saveToken(data['token']);
-    }
+    if (response.statusCode == 200) await saveToken(data['token']);
     return data;
   }
 
   static Future<void> logout() async {
-    final headers = await _headers();
-    await http.post(Uri.parse('$baseUrl/logout'), headers: headers);
+    await http.post(Uri.parse('$baseUrl/logout'), headers: await _headers());
     await removeToken();
+  }
+
+  // ── Catálogos (listas de seleção) ─────────────────────────────────────
+  // Use estes métodos para popular dropdowns no app.
+  // Os campos de texto retornados são apenas para exibição.
+  // Apenas os IDs são enviados de volta ao gravar.
+
+  static Future<List<dynamic>> getMaoObra() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/catalogos/mao-obra'),
+      headers: await _headers(),
+    );
+    return jsonDecode(response.body)['data'];
+    // Retorna: [{ ocup_id, descricao [exibição], tipo_id, tipo [exibição] }]
+  }
+
+  static Future<List<dynamic>> getFerramentas() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/catalogos/ferramentas'),
+      headers: await _headers(),
+    );
+    return jsonDecode(response.body)['data'];
+    // Retorna: [{ equip_id, descricao [exibição] }]
+  }
+
+  static Future<List<dynamic>> getOcorrencias() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/catalogos/ocorrencias'),
+      headers: await _headers(),
+    );
+    return jsonDecode(response.body)['data'];
+    // Retorna: [{ ocorrencia_id, descricao [exibição] }]
   }
 
   // ── Atendimentos ──────────────────────────────────────────────────────
@@ -633,8 +876,7 @@ class ApiService {
 
     final uri = Uri.parse('$baseUrl/atendimentos').replace(queryParameters: params);
     final response = await http.get(uri, headers: await _headers());
-    final data = jsonDecode(response.body);
-    return data['data'] as List<dynamic>;
+    return jsonDecode(response.body)['data'];
   }
 
   static Future<Map<String, dynamic>> getAtendimento(int id) async {
@@ -642,8 +884,7 @@ class ApiService {
       Uri.parse('$baseUrl/atendimentos/$id'),
       headers: await _headers(),
     );
-    final data = jsonDecode(response.body);
-    return data['data'] as Map<String, dynamic>;
+    return jsonDecode(response.body)['data'];
   }
 
   // ── Relatórios ────────────────────────────────────────────────────────
@@ -655,8 +896,7 @@ class ApiService {
 
     final uri = Uri.parse('$baseUrl/relatorios').replace(queryParameters: params);
     final response = await http.get(uri, headers: await _headers());
-    final data = jsonDecode(response.body);
-    return data['data'] as List<dynamic>;
+    return jsonDecode(response.body)['data'];
   }
 
   static Future<Map<String, dynamic>> getRelatorio(int id) async {
@@ -664,14 +904,12 @@ class ApiService {
       Uri.parse('$baseUrl/relatorios/$id'),
       headers: await _headers(),
     );
-    final data = jsonDecode(response.body);
-    return data['data'] as Map<String, dynamic>;
+    return jsonDecode(response.body)['data'];
   }
 
   static Future<Map<String, dynamic>> criarRelatorio(int atendimentoId, {String? data}) async {
     final body = <String, dynamic>{'aten_id': atendimentoId};
     if (data != null) body['aten_rel_data'] = data;
-
     final response = await http.post(
       Uri.parse('$baseUrl/relatorios'),
       headers: await _headers(),
@@ -698,18 +936,57 @@ class ApiService {
     );
   }
 
-  static Future<void> updateAssinaturas(int relId, int status, {
-    String? assinaturaResponsavel,
-    String? assinaturaCliente,
-  }) async {
-    final body = <String, dynamic>{'status': status};
-    if (assinaturaResponsavel != null) body['assinatura_responsavel'] = assinaturaResponsavel;
-    if (assinaturaCliente != null) body['assinatura_cliente'] = assinaturaCliente;
+  // ── Mão de obra ───────────────────────────────────────────────────────
 
+  static Future<void> addMaoObra(int relId, int ocupId, int qtd) async {
     await http.post(
-      Uri.parse('$baseUrl/relatorios/$relId/assinaturas'),
+      Uri.parse('$baseUrl/relatorios/$relId/mao-obra'),
       headers: await _headers(),
-      body: jsonEncode(body),
+      body: jsonEncode({'ocup_id': ocupId, 'qtd': qtd}),
+      // ocupId vem de getMaoObra() → campo ocup_id
+    );
+  }
+
+  static Future<void> removeMaoObra(int relId, int ocupId) async {
+    await http.delete(
+      Uri.parse('$baseUrl/relatorios/$relId/mao-obra/$ocupId'),
+      headers: await _headers(),
+    );
+  }
+
+  // ── Ferramentas ───────────────────────────────────────────────────────
+
+  static Future<void> addFerramenta(int relId, int equipId, int qtd) async {
+    await http.post(
+      Uri.parse('$baseUrl/relatorios/$relId/equipamentos'),
+      headers: await _headers(),
+      body: jsonEncode({'equip_id': equipId, 'qtd': qtd}),
+      // equipId vem de getFerramentas() → campo equip_id
+    );
+  }
+
+  static Future<void> removeFerramenta(int relId, int equipId) async {
+    await http.delete(
+      Uri.parse('$baseUrl/relatorios/$relId/equipamentos/$equipId'),
+      headers: await _headers(),
+    );
+  }
+
+  // ── Ocorrências ───────────────────────────────────────────────────────
+
+  static Future<void> addOcorrencia(int relId, int ocorrenciaId, {String observacao = ''}) async {
+    await http.post(
+      Uri.parse('$baseUrl/relatorios/$relId/ocorrencias'),
+      headers: await _headers(),
+      body: jsonEncode({'ocorrencia_id': ocorrenciaId, 'observacao': observacao}),
+      // ocorrenciaId vem de getOcorrencias() → campo ocorrencia_id
+    );
+  }
+
+  static Future<void> removeOcorrencia(int relId, int ocorrenciaId) async {
+    await http.delete(
+      Uri.parse('$baseUrl/relatorios/$relId/ocorrencias/$ocorrenciaId'),
+      headers: await _headers(),
     );
   }
 
@@ -740,7 +1017,40 @@ class ApiService {
     );
   }
 
-  // ── Upload de arquivos ────────────────────────────────────────────────
+  // ── Comentários ───────────────────────────────────────────────────────
+
+  static Future<void> addComentario(int relId, String descricao) async {
+    await http.post(
+      Uri.parse('$baseUrl/relatorios/$relId/comentarios'),
+      headers: await _headers(),
+      body: jsonEncode({'descricao': descricao}),
+    );
+  }
+
+  static Future<void> deleteComentario(int relId, int comId) async {
+    await http.delete(
+      Uri.parse('$baseUrl/relatorios/$relId/comentarios/$comId'),
+      headers: await _headers(),
+    );
+  }
+
+  // ── Assinaturas ───────────────────────────────────────────────────────
+
+  static Future<void> updateAssinaturas(int relId, int status, {
+    String? assinaturaResponsavel,
+    String? assinaturaCliente,
+  }) async {
+    final body = <String, dynamic>{'status': status};
+    if (assinaturaResponsavel != null) body['assinatura_responsavel'] = assinaturaResponsavel;
+    if (assinaturaCliente != null) body['assinatura_cliente'] = assinaturaCliente;
+    await http.post(
+      Uri.parse('$baseUrl/relatorios/$relId/assinaturas'),
+      headers: await _headers(),
+      body: jsonEncode(body),
+    );
+  }
+
+  // ── Uploads ───────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> uploadAnexos(int relId, {
     List<String> fotoPaths = const [],
@@ -748,25 +1058,14 @@ class ApiService {
     List<String> arquivoPaths = const [],
   }) async {
     final token = await getToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/relatorios/$relId/anexos'),
-    );
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/relatorios/$relId/anexos'));
     request.headers['Authorization'] = 'Bearer $token';
     request.headers['Accept'] = 'application/json';
-
-    for (final path in fotoPaths) {
-      request.files.add(await http.MultipartFile.fromPath('fotos[]', path));
-    }
-    for (final path in videoPaths) {
-      request.files.add(await http.MultipartFile.fromPath('videos[]', path));
-    }
-    for (final path in arquivoPaths) {
-      request.files.add(await http.MultipartFile.fromPath('arquivos[]', path));
-    }
-
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
+    for (final p in fotoPaths)    request.files.add(await http.MultipartFile.fromPath('fotos[]', p));
+    for (final p in videoPaths)   request.files.add(await http.MultipartFile.fromPath('videos[]', p));
+    for (final p in arquivoPaths) request.files.add(await http.MultipartFile.fromPath('arquivos[]', p));
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
     return jsonDecode(response.body);
   }
 
@@ -781,68 +1080,44 @@ class ApiService {
 
 ---
 
-### Exemplo de uso — Login
+### Fluxo recomendado ao abrir a tela de preenchimento
 
 ```dart
-final resultado = await ApiService.login('joao@empresa.com', 'senha123');
-if (resultado['token'] != null) {
-  // Token salvo automaticamente. Navegar para tela principal.
-  print('Bem-vindo, ${resultado['usuario']['nome']}');
-} else {
-  print('Erro: ${resultado['message']}');
-}
+// 1. Carregue os catálogos uma vez (pode cachear localmente)
+final maoObra    = await ApiService.getMaoObra();
+final ferramentas= await ApiService.getFerramentas();
+final ocorrencias= await ApiService.getOcorrencias();
+
+// 2. Carregue os dados já salvos no relatório
+final relatorio  = await ApiService.getRelatorio(relatorioId);
+
+// 3. Use os catálogos para popular dropdowns
+// Exiba: item['descricao']   ← somente leitura
+// Envie: item['ocup_id']     ← ao gravar
 ```
 
 ---
 
-### Exemplo de uso — Listar atendimentos
+### Exemplo — Adicionar mão de obra
 
 ```dart
-final atendimentos = await ApiService.getAtendimentos(status: 2); // Em andamento
-for (final a in atendimentos) {
-  print('${a['id']} — ${a['descricao']} — ${a['cliente']['nome']}');
-}
-```
+// Usuário selecionou "Eletricista" no dropdown
+final selecionado = maoObra.firstWhere((m) => m['descricao'] == 'Eletricista');
 
----
-
-### Exemplo de uso — Criar relatório
-
-```dart
-final resultado = await ApiService.criarRelatorio(
-  12,                  // atendimento_id
-  data: '2024-02-15', // opcional
+await ApiService.addMaoObra(
+  relatorioId,
+  selecionado['ocup_id'],  // ← envia só o ID
+  3,                        // ← quantidade
 );
-if (resultado['data'] != null) {
-  final relatorioId = resultado['data']['id'];
-  // Navegar para tela de preenchimento
-}
 ```
 
 ---
 
-### Exemplo de uso — Upload de foto
+### Observações importantes
 
-```dart
-// Usando image_picker para capturar foto
-final picker = ImagePicker();
-final file = await picker.pickImage(source: ImageSource.camera);
-
-if (file != null) {
-  final resultado = await ApiService.uploadAnexos(
-    8,  // relatorio_id
-    fotoPaths: [file.path],
-  );
-  print(resultado['data']['fotos']); // [{ id: 3, url: "..." }]
-}
-```
-
----
-
-### Observações importantes para o app
-
-1. **Salve o token** em `SharedPreferences` logo após o login e leia-o antes de cada requisição.
+1. **Salve o token** em `SharedPreferences` após o login e leia-o antes de cada requisição.
 2. **Intercepte o código 401** globalmente para redirecionar ao login quando o token expirar.
-3. **Content-Type correto**: JSON para todos os endpoints exceto upload de arquivos, que usa `multipart/form-data`.
-4. **Assinaturas**: use o pacote `signature` do pub.dev para capturar a assinatura como imagem e converta para base64 com `dart:convert`.
-5. **Offline**: considere armazenar os dados dos atendimentos localmente (ex: `sqflite`) para funcionar sem internet, sincronizando ao reconectar.
+3. **Catálogos**: carregue uma vez ao abrir a tela e reutilize — eles raramente mudam. Pode cachear por sessão.
+4. **Campos de texto dos catálogos** são sempre somente leitura. Nunca envie texto de volta — apenas IDs.
+5. **Assinaturas**: use o pacote `signature` do pub.dev para capturar e exporte como PNG em base64 com o prefixo `data:image/png;base64,`.
+6. **HTTPS em produção**: configure SSL no servidor antes de publicar o app.

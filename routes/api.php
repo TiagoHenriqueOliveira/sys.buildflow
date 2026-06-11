@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AtendimentosController;
+use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\RelatoriosController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,11 @@ Route::prefix('v1')->group(function () {
         // Auth
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me',      [AuthController::class, 'me']);
+
+        // Catálogos — somente leitura, para popular selects no app
+        Route::get('/catalogos/mao-obra',    [CatalogoController::class, 'maoObra']);
+        Route::get('/catalogos/ferramentas', [CatalogoController::class, 'ferramentas']);
+        Route::get('/catalogos/ocorrencias', [CatalogoController::class, 'ocorrencias']);
 
         // Atendimentos
         Route::get('/atendimentos',      [AtendimentosController::class, 'index']);
@@ -51,6 +57,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/relatorios/{id}/atividades',             [RelatoriosController::class, 'storeAtividade']);
         Route::put('/relatorios/{id}/atividades/{ativ_id}',    [RelatoriosController::class, 'updateAtividade']);
         Route::delete('/relatorios/{id}/atividades/{ativ_id}', [RelatoriosController::class, 'destroyAtividade']);
+
+        // Relatórios — ocorrências
+        Route::post('/relatorios/{id}/ocorrencias',                   [RelatoriosController::class, 'storeOcorrencia']);
+        Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}', [RelatoriosController::class, 'destroyOcorrencia']);
 
         // Relatórios — comentários
         Route::post('/relatorios/{id}/comentarios',            [RelatoriosController::class, 'storeComentario']);
