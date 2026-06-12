@@ -443,7 +443,7 @@ class RelatoriosController extends Controller
     {
         $request->validate([
             'descricao' => 'required|string|max:500',
-            'status'    => 'required|integer|in:0,1',
+            'status'    => 'required|integer|in:0,1,2,3,4,5',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
@@ -473,7 +473,7 @@ class RelatoriosController extends Controller
     {
         $request->validate([
             'descricao' => 'required|string|max:500',
-            'status'    => 'required|integer|in:0,1',
+            'status'    => 'required|integer|in:0,1,2,3,4,5',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
