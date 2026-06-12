@@ -648,6 +648,36 @@ class RelatoriosController extends Controller
     }
 
     /**
+     * Lista fotos, vídeos e arquivos de um relatório.
+     *
+     * GET /api/v1/relatorios/{id}/anexos
+     */
+    public function getAnexos(Request $request, int $id): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::with(['fotos', 'videos', 'anexos'])->findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        $fotos = $relatorio->fotos->map(fn($f) => [
+            'id'  => $f->aten_rel_foto_id,
+            'url' => asset('storage/' . $f->aten_rel_foto_path),
+        ]);
+
+        $videos = $relatorio->videos->map(fn($v) => [
+            'id'  => $v->aten_rel_vid_id,
+            'url' => asset('storage/' . $v->aten_rel_vid_path),
+        ]);
+
+        $arquivos = $relatorio->anexos->map(fn($a) => [
+            'id'  => $a->aten_rel_anexo_id,
+            'url' => asset('storage/' . $a->aten_rel_anexo_path),
+        ]);
+
+        return response()->json(['data' => compact('fotos', 'videos', 'arquivos')]);
+    }
+
+    /**
      * Upload de fotos, vídeos e arquivos anexos.
      *
      * POST /api/v1/relatorios/{id}/anexos

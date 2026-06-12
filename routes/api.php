@@ -67,6 +67,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('/relatorios/{id}/comentarios/{com_id}', [RelatoriosController::class, 'destroyComentario']);
 
         // Relatórios — uploads
+        Route::get('/relatorios/{id}/anexos',                    [RelatoriosController::class, 'getAnexos']);
         Route::post('/relatorios/{id}/anexos',                   [RelatoriosController::class, 'uploadAnexos']);
         Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [RelatoriosController::class, 'destroyAnexo']);
     });
