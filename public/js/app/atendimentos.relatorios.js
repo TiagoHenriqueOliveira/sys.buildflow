@@ -59,9 +59,26 @@ $(document).ready(function () {
 
     $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
         const relatorioId = getRelatorioIdAtual();
+        if (!relatorioId) return;
+
         const target = $(e.target).attr('href')?.replace('#', '');
-        if (relatorioId && target === 'tab-assinatura') {
-            getData(relatorioId, 'tab-assinatura');
+
+        const tabsComGetData = [
+            'tab-dados',
+            'tab-horarios',
+            'tab-clima',
+            'tab-mao-obra',
+            'tab-ferramentas',
+            'tab-atividades',
+            'tab-ocorrencias',
+            'tab-comentarios',
+            'tab-assinatura',
+        ];
+
+        if (tabsComGetData.includes(target)) {
+            getData(relatorioId, target);
+        } else if (target === 'tab-anexos') {
+            refreshAnexos(relatorioId);
         }
     });
 

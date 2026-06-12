@@ -661,17 +661,17 @@ class RelatoriosController extends Controller
 
         $fotos = $relatorio->fotos->map(fn($f) => [
             'id'  => $f->aten_rel_foto_id,
-            'url' => asset('storage/' . $f->aten_rel_foto_path),
+            'url' => url('storage/' . $f->aten_rel_foto_path),
         ]);
 
         $videos = $relatorio->videos->map(fn($v) => [
             'id'  => $v->aten_rel_vid_id,
-            'url' => asset('storage/' . $v->aten_rel_vid_path),
+            'url' => url('storage/' . $v->aten_rel_vid_path),
         ]);
 
         $arquivos = $relatorio->anexos->map(fn($a) => [
             'id'  => $a->aten_rel_anexo_id,
-            'url' => asset('storage/' . $a->aten_rel_anexo_path),
+            'url' => url('storage/' . $a->aten_rel_anexo_path),
         ]);
 
         return response()->json(['data' => compact('fotos', 'videos', 'arquivos')]);
@@ -710,7 +710,7 @@ class RelatoriosController extends Controller
                 $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 $path     = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
                 $foto     = AtendimentoRelatorioFoto::create(['aten_rel_foto_relatorio_id' => $id, 'aten_rel_foto_path' => $path]);
-                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => asset('storage/' . $path)];
+                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('storage/' . $path)];
             }
         }
 
@@ -720,7 +720,7 @@ class RelatoriosController extends Controller
                 $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 $path     = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
                 $video    = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
-                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => asset('storage/' . $path)];
+                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path)];
             }
         }
 
@@ -730,7 +730,7 @@ class RelatoriosController extends Controller
                 $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 $path     = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
                 $anexo    = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
-                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => asset('storage/' . $path)];
+                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path)];
             }
         }
 
