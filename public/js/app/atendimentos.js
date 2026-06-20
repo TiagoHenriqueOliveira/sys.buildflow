@@ -144,7 +144,6 @@ function abrirModalAtendimento(data) {
 
     $("#aten_cliente_id").val(data.aten_cliente_id || "");
     $("#aten_cliente_nome").val(data.aten_cliente_nome || "");
-    $("#aten_usuario_id").val(data.aten_usuario_id || "");
     $("#aten_nr_proposta").val(data.aten_nr_proposta || "");
     $("#aten_descricao").val(data.aten_descricao || "");
     $("#aten_responsavel").val(data.aten_responsavel || "");
@@ -177,6 +176,8 @@ function abrirModalAtendimento(data) {
             if (naturezaSelect.length) {
                 naturezaSelect.val(String(data.aten_natureza_id)).prop("disabled", false);
             }
+
+            $("#aten_usuario_id").val(String(data.aten_usuario_id || ""));
 
             syncHiddenFromSelects();
 
