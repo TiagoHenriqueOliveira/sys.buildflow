@@ -1,3 +1,4 @@
+@if(auth()->user()->user_nivel_acesso === 0)
 <button type="button"
     class="btn btn-sm btn-indigo btn-modal-atendimento"
     data-id="{{ $a->aten_id }}"
@@ -14,3 +15,4 @@
     data-dt-fim="{{ $a->aten_dt_fim->format('Y-m-d') }}">
     <i class="fas fa-edit"></i>
 </button>
+@endif

@@ -1,6 +1,7 @@
 <x-layout title="Atendimentos">
     <div class="card shadow mb-4">
         <div class="card-header py-3">
+            @if(auth()->user()->user_nivel_acesso === 0)
             <a href="javascript:void(0)"
                 class="btn btn-info btn-icon-split"
                 id="btnNovoAtendimento">
@@ -9,6 +10,7 @@
                 </span>
                 <span class="text">Cadastrar</span>
             </a>
+            @endif
         </div>
 
         <div class="card-body">
