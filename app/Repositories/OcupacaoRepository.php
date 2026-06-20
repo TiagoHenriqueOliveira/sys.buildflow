@@ -7,7 +7,7 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class OcupacaoRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return Ocupacao::query()
             ->select('ocupacoes.*')

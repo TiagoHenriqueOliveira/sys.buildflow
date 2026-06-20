@@ -37,6 +37,8 @@ function configDataTableModelosRelatorios() {
             type: "GET",
             dataSrc: "data"
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "mod_rel_descricao" },

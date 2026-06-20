@@ -24,6 +24,8 @@ function configDataTableOcorrencias() {
             type: "GET",
             dataSrc: "data"
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "ocor_descricao" },

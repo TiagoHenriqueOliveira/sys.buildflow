@@ -6,28 +6,34 @@ use App\Http\Requests\OcupacaoRequest;
 use App\Models\Ocupacao;
 use App\Models\TipoOcupacao;
 use App\Repositories\OcupacaoRepository;
+use App\Services\DataTableService;
 use Illuminate\Http\Request;
 
 class OcupacoesController extends Controller
 {
     public function __construct(
-        private OcupacaoRepository $repository
+        private OcupacaoRepository $repository,
+        private DataTableService $dataTable,
     ) {}
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->repository->all()->map(function ($o) {
-                return [
-                    'acoes' => view('ocupacoes.partials.acoes', compact('o'))->render(),
-                    'tp_ocup_descricao' => e(optional($o->tipoOcupacao)->tp_ocup_descricao),
-                    'ocup_descricao' => e($o->ocup_descricao),
-                    'ocup_ativo' => (int) $o->ocup_ativo,
-                    'status' => $o->ocup_ativo ? 'Ativo' : 'Desativado',
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    Ocupacao::query()->with('tipoOcupacao:tp_ocup_id,tp_ocup_descricao'),
+                    searchable: ['ocup_descricao'],
+                    orderable:  ['acoes' => null, 'tp_ocup_descricao' => null, 'ocup_descricao' => 'ocup_descricao', 'status' => 'ocup_ativo'],
+                    mapper: fn($o) => [
+                        'acoes'             => view('ocupacoes.partials.acoes', compact('o'))->render(),
+                        'tp_ocup_descricao' => e(optional($o->tipoOcupacao)->tp_ocup_descricao),
+                        'ocup_descricao'    => e($o->ocup_descricao),
+                        'ocup_ativo'        => (int) $o->ocup_ativo,
+                        'status'            => $o->ocup_ativo ? 'Ativo' : 'Desativado',
+                    ],
+                )
+            );
         }
 
         // Select: somente tipos ativos e ordenados por descrição

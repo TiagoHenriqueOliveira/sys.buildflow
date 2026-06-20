@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AtendimentoStatus;
+use App\Http\Requests\AtendimentoEquipamentoRequest;
 use App\Http\Requests\AtendimentoRequest;
-use App\Models\Cliente;
 use App\Models\NaturezaAtendimento;
 use App\Models\TipoAtendimento;
 use App\Models\Usuario;
 use App\Repositories\AtendimentoRepository;
 use App\Repositories\AtendimentoEquipamentoRepository;
+use App\Services\DataTableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +19,8 @@ class AtendimentosController extends Controller
 {
     public function __construct(
         private AtendimentoRepository $repository,
-        private AtendimentoEquipamentoRepository $equipamentoRepository
+        private AtendimentoEquipamentoRepository $equipamentoRepository,
+        private DataTableService $dataTable,
     ) {}
 
     public function index(Request $request)
@@ -26,26 +29,33 @@ class AtendimentosController extends Controller
             $usuario = Auth::user();
             $filtroUsuarioId = $usuario->user_nivel_acesso === 1 ? $usuario->user_id : null;
 
-            $data = $this->repository->all($filtroUsuarioId)->map(function ($a) {
-                return [
-                    'acoes'    => view('atendimentos.partials.acoes', compact('a'))->render(),
-                    'tipo'     => e(optional($a->natureza?->tipoAtendimento)->tp_aten_descricao),
-                    'natureza' => e(optional($a->natureza)->nat_aten_descricao),
-                    'usuario'  => e(optional($a->usuario)->user_nome),
-                    'cliente'  => e(optional($a->cliente)->cli_nome),
-                    'obra'     => e($a->aten_descricao),
-                    'periodo'  => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
-                    'status'   => match ($a->aten_status) {
-                        0 => 'Não iniciada',
-                        1 => 'Paralisada',
-                        2 => 'Em andamento',
-                        3 => 'Concluída',
-                        default => 'Desconhecido',
-                    },
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    $this->repository->query($filtroUsuarioId),
+                    searchable: ['aten_descricao'],
+                    orderable:  [
+                        'acoes'    => null,
+                        'tipo'     => null,
+                        'natureza' => null,
+                        'usuario'  => 'usuarios.user_nome',
+                        'cliente'  => null,
+                        'obra'     => 'aten_descricao',
+                        'periodo'  => 'aten_dt_inicio',
+                        'status'   => 'aten_status',
+                    ],
+                    mapper: fn($a) => [
+                        'acoes'    => view('atendimentos.partials.acoes', compact('a'))->render(),
+                        'tipo'     => e(optional($a->natureza?->tipoAtendimento)->tp_aten_descricao),
+                        'natureza' => e(optional($a->natureza)->nat_aten_descricao),
+                        'usuario'  => e(optional($a->usuario)->user_nome),
+                        'cliente'  => e(optional($a->cliente)->cli_nome),
+                        'obra'     => e($a->aten_descricao),
+                        'periodo'  => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
+                        'status'   => AtendimentoStatus::tryFrom($a->aten_status)?->label() ?? 'Desconhecido',
+                    ],
+                )
+            );
         }
 
         return view('atendimentos.index', [
@@ -80,27 +90,6 @@ class AtendimentosController extends Controller
         }
     }
 
-    public function autoComplete(Request $request): JsonResponse
-    {
-        $term = $request->get('term', '');
-
-        $clientes = Cliente::where('cli_ativo', 1)
-            ->where('cli_nome', 'like', '%' . $term . '%')
-            ->orderBy('cli_nome')
-            ->limit(20)
-            ->get();
-
-        $result = $clientes->map(function ($c) {
-            return [
-                'id'    => $c->cli_id,
-                'label' => $c->cli_nome,
-                'value' => $c->cli_nome,
-            ];
-        })->values()->all();
-
-        return response()->json($result);
-    }
-
     public function naturezasPorTipo(Request $request): JsonResponse
     {
         $tipoId = (int) $request->get('tipo_id');
@@ -122,12 +111,8 @@ class AtendimentosController extends Controller
         return response()->json($result);
     }
 
-    public function storeEquipamento(Request $request, int $id)
+    public function storeEquipamento(AtendimentoEquipamentoRequest $request, int $id)
     {
-        $request->validate([
-            'aten_equip_descricao' => ['required', 'string', 'max:255'],
-            'aten_equip_observacoes' => ['nullable', 'string'],
-        ]);
 
         try {
             $this->equipamentoRepository->create([

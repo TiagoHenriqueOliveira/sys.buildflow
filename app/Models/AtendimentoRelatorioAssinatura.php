@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AssinaturaTipo;
 use Illuminate\Database\Eloquent\Model;
 
 class AtendimentoRelatorioAssinatura extends Model
@@ -13,5 +14,10 @@ class AtendimentoRelatorioAssinatura extends Model
     protected $fillable = [
         'aten_rel_ass_relatorio_id',
         'aten_rel_ass_path',
+        'aten_rel_ass_tipo',
+    ];
+
+    protected $casts = [
+        'aten_rel_ass_tipo' => AssinaturaTipo::class,
     ];
 }

@@ -3,28 +3,35 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TipoOcupacaoRequest;
+use App\Models\TipoOcupacao;
 use App\Repositories\TipoOcupacaoRepository;
+use App\Services\DataTableService;
 use Illuminate\Http\Request;
 
 class TiposOcupacoesController extends Controller
 {
     public function __construct(
-        private TipoOcupacaoRepository $repository
+        private TipoOcupacaoRepository $repository,
+        private DataTableService $dataTable,
     ) {}
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->repository->all()->map(function ($t) {
-                return [
-                    'acoes' => view('tipos_ocupacoes.partials.acoes', compact('t'))->render(),
-                    'tp_ocup_descricao' => e($t->tp_ocup_descricao),
-                    'tp_ocup_ativo' => (int) $t->tp_ocup_ativo,
-                    'status' => $t->tp_ocup_ativo ? 'Ativo' : 'Desativado',
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    TipoOcupacao::query(),
+                    searchable: ['tp_ocup_descricao'],
+                    orderable:  ['acoes' => null, 'tp_ocup_descricao' => 'tp_ocup_descricao', 'status' => 'tp_ocup_ativo'],
+                    mapper: fn($t) => [
+                        'acoes'             => view('tipos_ocupacoes.partials.acoes', compact('t'))->render(),
+                        'tp_ocup_descricao' => e($t->tp_ocup_descricao),
+                        'tp_ocup_ativo'     => (int) $t->tp_ocup_ativo,
+                        'status'            => $t->tp_ocup_ativo ? 'Ativo' : 'Desativado',
+                    ],
+                )
+            );
         }
 
         return view('tipos_ocupacoes.index');

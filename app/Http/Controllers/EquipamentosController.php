@@ -5,27 +5,33 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EquipamentoRequest;
 use App\Models\Equipamento;
 use App\Repositories\EquipamentoRepository;
+use App\Services\DataTableService;
 use Illuminate\Http\Request;
 
 class EquipamentosController extends Controller
 {
     public function __construct(
-        private EquipamentoRepository $repository
+        private EquipamentoRepository $repository,
+        private DataTableService $dataTable,
     ) {}
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->repository->all()->map(function ($e) {
-                return [
-                    'acoes' => view('equipamentos.partials.acoes', compact('e'))->render(),
-                    'equip_descricao' => e($e->equip_descricao),
-                    'equip_ativo' => (int) $e->equip_ativo,
-                    'status' => $e->equip_ativo ? 'Ativo' : 'Desativado',
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    Equipamento::query(),
+                    searchable: ['equip_descricao'],
+                    orderable:  ['acoes' => null, 'equip_descricao' => 'equip_descricao', 'status' => 'equip_ativo'],
+                    mapper: fn($e) => [
+                        'acoes'           => view('equipamentos.partials.acoes', compact('e'))->render(),
+                        'equip_descricao' => e($e->equip_descricao),
+                        'equip_ativo'     => (int) $e->equip_ativo,
+                        'status'          => $e->equip_ativo ? 'Ativo' : 'Desativado',
+                    ],
+                )
+            );
         }
 
         return view('equipamentos.index');

@@ -7,7 +7,7 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class ModeloRelatorioRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return ModeloRelatorio::orderBy('mod_rel_descricao', 'asc')->get();
     }

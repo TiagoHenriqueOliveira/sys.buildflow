@@ -7,7 +7,7 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class ClienteRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return Cliente::orderBy('cli_nome', 'asc')->get();
     }

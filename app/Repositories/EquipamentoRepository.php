@@ -7,7 +7,7 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class EquipamentoRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return Equipamento::orderBy('equip_descricao')->get();
     }

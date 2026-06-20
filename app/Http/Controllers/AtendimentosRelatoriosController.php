@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AtendimentoRelatorioStatus;
+use App\Enums\AtendimentoStatus;
+use App\Enums\CondicaoClimatica;
+use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
 use App\Http\Requests\AtendimentoRelatorioAtividadeRequest;
+use App\Http\Requests\AtendimentoRelatorioStoreRequest;
 use App\Http\Requests\AtendimentoRelatorioComentarioRequest;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
@@ -25,7 +30,10 @@ use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
+use App\Services\DataTableService;
+use App\Services\MediaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -36,7 +44,9 @@ use Illuminate\Support\Facades\DB;
 class AtendimentosRelatoriosController extends Controller
 {
     public function __construct(
-        private readonly AtendimentoRelatorioRepository $repo
+        private readonly AtendimentoRelatorioRepository $repo,
+        private readonly MediaService $media,
+        private readonly DataTableService $dataTable,
     ) {}
 
     public function index(Request $request)
@@ -47,45 +57,45 @@ class AtendimentosRelatoriosController extends Controller
                 ? ['usuario_id' => $usuario->user_id]
                 : [];
 
-            $rows = $this->repo->all($filters);
-
-            $data = $rows->map(function ($r) {
-                return [
-                    'acoes' => view(
-                        'atendimentos-relatorios.partials.acoes',
-                        ['relatorio' => $r]
-                    )->render(),
-
-                    'data' => optional($r->aten_rel_data)->format('d/m/Y'),
-
-                    'obra' => $r->atendimento?->aten_descricao ?? '-',
-
-                    'natureza' => $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
-
-                    'setor' => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao ?? '-',
-
-                    'status' => match ($r->aten_rel_status) {
-                        0 => '<span class="badge badge-info">Preenchendo</span>',
-                        1 => '<span class="badge badge-warning">Revisar</span>',
-                        2 => '<span class="badge badge-success">Aprovado</span>',
-                        default => '-',
-                    },
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    $this->repo->query($filters),
+                    searchable: [
+                        'clientes.cli_nome',
+                        'atendimentos.aten_descricao',
+                        'naturezas_atendimentos.nat_aten_descricao',
+                        'tipos_atendimentos.tp_aten_descricao',
+                        'atendimentos_relatorios.aten_rel_data',
+                    ],
+                    orderable:  [
+                        'acoes'    => null,
+                        'data'     => 'atendimentos_relatorios.aten_rel_data',
+                        'obra'     => 'atendimentos.aten_descricao',
+                        'natureza' => 'naturezas_atendimentos.nat_aten_descricao',
+                        'setor'    => 'tipos_atendimentos.tp_aten_descricao',
+                        'status'   => 'atendimentos_relatorios.aten_rel_status',
+                    ],
+                    mapper: fn($r) => [
+                        'acoes'   => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
+                        'data'    => optional($r->aten_rel_data)->format('d/m/Y'),
+                        'obra'    => $r->atendimento?->aten_descricao ?? '-',
+                        'natureza'=> $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
+                        'setor'   => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao ?? '-',
+                        'status'  => ($s = AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status))
+                            ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
+                            : '-',
+                    ],
+                )
+            );
         }
 
         return view('atendimentos-relatorios.index');
     }
 
-    public function store(Request $request)
+    public function store(AtendimentoRelatorioStoreRequest $request)
     {
         try {
-            $request->validate([
-                'aten_id'       => 'required|exists:atendimentos,aten_id',
-                'aten_rel_data' => 'nullable|date|before_or_equal:today',
-            ]);
 
             $atendimento = Atendimento::query()
                 ->with('natureza.modeloRelatorio')
@@ -108,6 +118,14 @@ class AtendimentosRelatoriosController extends Controller
                 'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
                 'aten_rel_status'              => 0,
             ]);
+
+            // Avança o atendimento para "Em andamento" somente se ainda não chegou lá
+            if (!in_array($atendimento->aten_status, [
+                AtendimentoStatus::EmAndamento->value,
+                AtendimentoStatus::Concluida->value,
+            ])) {
+                $atendimento->update(['aten_status' => AtendimentoStatus::EmAndamento->value]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -144,27 +162,13 @@ class AtendimentosRelatoriosController extends Controller
             abort(500, 'Modelo de relatório não encontrado.');
         }
 
-        $inicio = Carbon::parse($atendimentoRelatorio->atendimento->aten_dt_inicio);
-        $fim    = Carbon::parse($atendimentoRelatorio->atendimento->aten_dt_fim);
-        $hoje   = Carbon::parse($atendimentoRelatorio->aten_rel_data);
-
-        $prazoTotal = $inicio->diffInDays($fim);
-
-        $prazoDecorrido = min(
-            $inicio->diffInDays($hoje),
-            $prazoTotal
-        );
-
-        $prazoAVencer = max(
-            $prazoTotal - $prazoDecorrido,
-            0
-        );
+        $prazo = $atendimentoRelatorio->calcularPrazo();
 
         return view('atendimentos-relatorios.show', [
             'atendimentoRelatorio' => $atendimentoRelatorio,
-            'prazoTotal'           => $prazoTotal,
-            'prazoDecorrido'       => $prazoDecorrido,
-            'prazoAVencer'         => $prazoAVencer,
+            'prazoTotal'           => $prazo['prazo_total'],
+            'prazoDecorrido'       => $prazo['prazo_decorrido'],
+            'prazoAVencer'         => $prazo['prazo_a_vencer'],
         ]);
     }
 
@@ -237,12 +241,6 @@ class AtendimentosRelatoriosController extends Controller
         try {
             $relatorio = AtendimentoRelatorio::findOrFail($id);
 
-            $condMap = [
-                'ensolarado' => 1,
-                'nublado'    => 2,
-                'chuvoso'    => 3,
-            ];
-
             $periodos = [
                 1 => $request->clima_manha,
                 2 => $request->clima_tarde,
@@ -256,7 +254,7 @@ class AtendimentosRelatoriosController extends Controller
                         'aten_rel_clima_periodo'      => $periodo,
                     ],
                     [
-                        'aten_rel_clima_condicao' => $condMap[$condStr],
+                        'aten_rel_clima_condicao' => CondicaoClimatica::fromLabel($condStr)->value,
                     ]
                 );
             }
@@ -275,14 +273,9 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function updateAssinaturas(Request $request, int $id)
+    public function updateAssinaturas(AtendimentoRelatorioAssinaturasRequest $request, int $id)
     {
         try {
-            $request->validate([
-                'aten_rel_status'        => 'required|integer|in:0,1,2',
-                'assinatura_responsavel' => 'nullable|string',
-                'assinatura_cliente'     => 'nullable|string',
-            ]);
 
             $relatorio = AtendimentoRelatorio::findOrFail($id);
             $relatorio->update(['aten_rel_status' => $request->aten_rel_status]);
@@ -290,7 +283,7 @@ class AtendimentosRelatoriosController extends Controller
             $assinaturas = [];
 
             if ($request->filled('assinatura_responsavel')) {
-                $assinaturas['responsavel'] = $this->saveSignatureImage(
+                $assinaturas['responsavel'] = $this->media->saveSignatureImage(
                     $relatorio,
                     $request->assinatura_responsavel,
                     'responsavel'
@@ -298,7 +291,7 @@ class AtendimentosRelatoriosController extends Controller
             }
 
             if ($request->filled('assinatura_cliente')) {
-                $assinaturas['cliente'] = $this->saveSignatureImage(
+                $assinaturas['cliente'] = $this->media->saveSignatureImage(
                     $relatorio,
                     $request->assinatura_cliente,
                     'cliente'
@@ -321,68 +314,6 @@ class AtendimentosRelatoriosController extends Controller
                 'message' => 'Erro ao atualizar assinaturas.',
             ], 500);
         }
-    }
-
-    private function saveSignatureImage(AtendimentoRelatorio $relatorio, string $base64, string $tipo)
-    {
-        if (!preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $matches)) {
-            throw new \RuntimeException('Formato de assinatura inválido.');
-        }
-
-        $mime = $matches[1];
-        $data = base64_decode($matches[2]);
-        $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-
-        $image = @imagecreatefromstring($data);
-        if ($image === false) {
-            throw new \RuntimeException('Não foi possível processar a imagem da assinatura.');
-        }
-
-        $width = imagesx($image);
-        $height = imagesy($image);
-
-        // create a white background canvas
-        $bg = imagecreatetruecolor($width, $height);
-        $white = imagecolorallocate($bg, 255, 255, 255);
-        imagefilledrectangle($bg, 0, 0, $width, $height, $white);
-
-        // Ensure we compose correctly when source has alpha (preserve strokes over white)
-        imagealphablending($image, true);
-        imagesavealpha($image, true);
-
-        imagealphablending($bg, true);
-        imagesavealpha($bg, false); // do not keep alpha in final image
-
-        // copy source onto white background
-        imagecopy($bg, $image, 0, 0, 0, 0, $width, $height);
-
-        $dir = dirname(storage_path('app/public/' . $path));
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        // save PNG without alpha channel so background stays white
-        imagepng($bg, storage_path('app/public/' . $path));
-
-        imagedestroy($image);
-        imagedestroy($bg);
-
-        // Busca pelo relatório + padrão do tipo (ex: "/responsavel." ou "/cliente.")
-        // para evitar duplicatas sem precisar de coluna extra
-        $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
-            ->where('aten_rel_ass_path', 'like', "%/{$tipo}.%")
-            ->first();
-
-        if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path]);
-        } else {
-            AtendimentoRelatorioAssinatura::create([
-                'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_ass_path'         => $path,
-            ]);
-        }
-
-        return asset('storage/' . $path);
     }
 
     public function storeMaoObra(AtendimentoRelatorioMaoObraRequest $request, int $id)
@@ -728,21 +659,7 @@ class AtendimentosRelatoriosController extends Controller
             'comentarios',
         ])->findOrFail($id);
 
-        $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
-        $fim    = Carbon::parse($relatorio->atendimento->aten_dt_fim);
-        $base   = Carbon::parse($relatorio->aten_rel_data);
-
-        $prazoTotal = $inicio->diffInDays($fim);
-        $prazoDecorrido = min(
-            $inicio->diffInDays($base),
-            $prazoTotal
-        );
-
-        $condReverse = [
-            1 => 'ensolarado',
-            2 => 'nublado',
-            3 => 'chuvoso',
-        ];
+        $prazo = $relatorio->calcularPrazo();
 
         $climaPorPeriodo = [
             'manha' => null,
@@ -751,9 +668,10 @@ class AtendimentosRelatoriosController extends Controller
         ];
 
         foreach ($relatorio->climas as $c) {
-            if ($c->aten_rel_clima_periodo === 1) $climaPorPeriodo['manha'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 2) $climaPorPeriodo['tarde'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
+            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
+            if ($c->aten_rel_clima_periodo === 1) $climaPorPeriodo['manha'] = $label;
+            if ($c->aten_rel_clima_periodo === 2) $climaPorPeriodo['tarde'] = $label;
+            if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $label;
         }
 
         $maoObra = $relatorio->ocupacoes->map(function ($o) {
@@ -815,9 +733,9 @@ class AtendimentosRelatoriosController extends Controller
                 'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
                 'aten_rel_data_fmt' => $relatorio->aten_rel_data->format('d/m/Y'),
                 'dia_semana'        => getFormatDiaSemana($relatorio->aten_rel_data),
-                'prazo_total'       => $prazoTotal,
-                'prazo_decorrido'   => $prazoDecorrido,
-                'prazo_vencer'      => max($prazoTotal - $prazoDecorrido, 0),
+                'prazo_total'       => $prazo['prazo_total'],
+                'prazo_decorrido'   => $prazo['prazo_decorrido'],
+                'prazo_vencer'      => $prazo['prazo_a_vencer'],
             ],
 
             'horarios' => [
@@ -854,19 +772,13 @@ class AtendimentosRelatoriosController extends Controller
             'assinaturas',
         ])->findOrFail($id);
 
-        $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
-        $fim    = Carbon::parse($relatorio->atendimento->aten_dt_fim);
-        $hoje   = Carbon::parse($relatorio->aten_rel_data);
-
-        $prazoTotal     = $inicio->diffInDays($fim);
-        $prazoDecorrido = min($inicio->diffInDays($hoje), $prazoTotal);
-        $prazoAVencer   = max($prazoTotal - $prazoDecorrido, 0);
+        $prazo = $relatorio->calcularPrazo();
 
         $pdf = Pdf::loadView('atendimentos-relatorios.pdf', [
             'relatorio'      => $relatorio,
-            'prazoTotal'     => $prazoTotal,
-            'prazoDecorrido' => $prazoDecorrido,
-            'prazoAVencer'   => $prazoAVencer,
+            'prazoTotal'     => $prazo['prazo_total'],
+            'prazoDecorrido' => $prazo['prazo_decorrido'],
+            'prazoAVencer'   => $prazo['prazo_a_vencer'],
         ])
         ->setPaper('a4', 'portrait')
         ->setOptions([
@@ -936,7 +848,9 @@ class AtendimentosRelatoriosController extends Controller
                     $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
-                    $thumbCreated = $this->createImageThumbnail($full, $thumbFull, 400);
+
+                    // Gerar thumbnail de forma assíncrona (queue)
+                    ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
                     $foto = AtendimentoRelatorioFoto::create([
                         'aten_rel_foto_relatorio_id' => $id,
@@ -944,11 +858,12 @@ class AtendimentosRelatoriosController extends Controller
                     ]);
 
                     $saved['fotos'][] = [
-                        'id' => $foto->aten_rel_foto_id,
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'url' => asset('storage/' . $path),
-                        'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('storage/' . $path),
+                        'id'       => $foto->aten_rel_foto_id,
+                        'name'     => $file->getClientOriginalName(),
+                        'path'     => $path,
+                        'url'      => asset('storage/' . $path),
+                        // thumb_url usa o path esperado; o arquivo aparece quando o job processar
+                        'thumb_url'=> asset('storage/' . $thumbPath),
                     ];
                 }
             }
@@ -968,7 +883,9 @@ class AtendimentosRelatoriosController extends Controller
                     $thumbName = $safeName . '.jpg';
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
-                    $thumbCreated = $this->createVideoThumbnail($full, $thumbFull);
+
+                    // Gerar thumbnail de forma assíncrona (queue)
+                    ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
 
                     $video = AtendimentoRelatorioVideo::create([
                         'aten_rel_vid_relatorio_id' => $id,
@@ -976,11 +893,12 @@ class AtendimentosRelatoriosController extends Controller
                     ]);
 
                     $saved['videos'][] = [
-                        'id' => $video->aten_rel_vid_id,
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'url' => asset('storage/' . $path),
-                        'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('img/video-placeholder.svg'),
+                        'id'       => $video->aten_rel_vid_id,
+                        'name'     => $file->getClientOriginalName(),
+                        'path'     => $path,
+                        'url'      => asset('storage/' . $path),
+                        // thumb_url usa o path esperado; o arquivo aparece quando o job processar
+                        'thumb_url'=> asset('storage/' . $thumbPath),
                     ];
                 }
             }
@@ -1011,7 +929,7 @@ class AtendimentosRelatoriosController extends Controller
 
         $fotos = $relatorio->fotos->map(function ($foto) {
             $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
-            $thumbUrl = file_exists(public_path('storage/' . $thumbPath))
+            $thumbUrl = Storage::disk('public')->exists($thumbPath)
                 ? asset('storage/' . $thumbPath)
                 : asset('storage/' . $foto->aten_rel_foto_path);
 
@@ -1026,7 +944,7 @@ class AtendimentosRelatoriosController extends Controller
 
         $videos = $relatorio->videos->map(function ($video) {
             $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
-            $thumbUrl = file_exists(public_path('storage/' . $thumbPath))
+            $thumbUrl = Storage::disk('public')->exists($thumbPath)
                 ? asset('storage/' . $thumbPath)
                 : asset('img/video-placeholder.svg');
 
@@ -1088,88 +1006,6 @@ class AtendimentosRelatoriosController extends Controller
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['success' => false, 'message' => 'Erro ao remover o anexo.'], 500);
-        }
-    }
-
-    private function createImageThumbnail(string $src, string $dest, int $maxWidth = 300)
-    {
-        try {
-            if (!file_exists($src)) return false;
-            $info = getimagesize($src);
-            if (!$info) return false;
-
-            [$width, $height] = [$info[0], $info[1]];
-            $ratio = $height ? ($width / $height) : 1;
-            $newWidth = $maxWidth;
-            $newHeight = (int) ($newWidth / $ratio);
-
-            $mime = $info['mime'];
-            switch ($mime) {
-                case 'image/jpeg':
-                    $img = imagecreatefromjpeg($src);
-                    break;
-                case 'image/png':
-                    $img = imagecreatefrompng($src);
-                    break;
-                case 'image/gif':
-                    $img = imagecreatefromgif($src);
-                    break;
-                default:
-                    return false;
-            }
-
-            $thumb = imagecreatetruecolor($newWidth, $newHeight);
-            imagecopyresampled($thumb, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-            // ensure destination dir
-            $dir = dirname($dest);
-            if (!is_dir($dir)) mkdir($dir, 0755, true);
-
-            switch ($mime) {
-                case 'image/jpeg':
-                    imagejpeg($thumb, $dest, 85);
-                    break;
-                case 'image/png':
-                    imagepng($thumb, $dest);
-                    break;
-                case 'image/gif':
-                    imagegif($thumb, $dest);
-                    break;
-            }
-
-            imagedestroy($img);
-            imagedestroy($thumb);
-            return true;
-        } catch (\Throwable $e) {
-            report($e);
-            return false;
-        }
-    }
-
-    private function createVideoThumbnail(string $videoPath, string $dest)
-    {
-        try {
-            // try ffmpeg if available
-            if (!file_exists($videoPath)) return false;
-
-            $ffmpegCheck = null;
-            if (function_exists('shell_exec')) {
-                $ffmpegCheck = trim(@shell_exec('ffmpeg -version 2>&1'));
-            }
-
-            if ($ffmpegCheck) {
-                $dir = dirname($dest);
-                if (!is_dir($dir)) mkdir($dir, 0755, true);
-
-                $cmd = sprintf('ffmpeg -y -i %s -ss 00:00:01 -vframes 1 %s 2>&1', escapeshellarg($videoPath), escapeshellarg($dest));
-                @shell_exec($cmd);
-                return file_exists($dest);
-            }
-
-            return false;
-        } catch (\Throwable $e) {
-            report($e);
-            return false;
         }
     }
 

@@ -8,12 +8,17 @@ use Illuminate\Support\Facades\Hash;
 
 class UsuarioRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return Usuario::orderBy('user_nome', 'asc')->get();
     }
 
-    public function create(array $data)
+    public function findOrFail(int $id): Usuario
+    {
+        return Usuario::findOrFail($id);
+    }
+
+    public function create(array $data): \Illuminate\Database\Eloquent\Model
     {
         return Usuario::create([
             'user_nivel_acesso' => $data['user_nivel_acesso'],
@@ -24,7 +29,7 @@ class UsuarioRepository implements CrudRepositoryInterface
         ]);
     }
 
-    public function update(int $id, array $data)
+    public function update(int $id, array $data): \Illuminate\Database\Eloquent\Model
     {
         $user = Usuario::findOrFail($id);
 

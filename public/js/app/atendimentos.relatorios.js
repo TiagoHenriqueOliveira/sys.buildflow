@@ -133,6 +133,8 @@ function configDataTableAtendimentosRelatorios() {
                 );
             }
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "data" },

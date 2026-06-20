@@ -7,7 +7,7 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class NaturezaAtendimentoRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return NaturezaAtendimento::with(['modeloRelatorio', 'tipoAtendimento'])
             ->orderBy('nat_aten_descricao', 'asc')

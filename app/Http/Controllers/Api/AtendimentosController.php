@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\AtendimentoStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Atendimento;
 use Illuminate\Http\JsonResponse;
@@ -75,13 +76,7 @@ class AtendimentosController extends Controller
 
     private function formatAtendimento(Atendimento $a, bool $includeEquipamentos = false): array
     {
-        $statusLabel = match ($a->aten_status) {
-            0 => 'Não iniciada',
-            1 => 'Paralisada',
-            2 => 'Em andamento',
-            3 => 'Concluída',
-            default => 'Desconhecido',
-        };
+        $statusLabel = AtendimentoStatus::tryFrom($a->aten_status)?->label() ?? 'Desconhecido';
 
         $data = [
             'id'          => $a->aten_id,

@@ -27,7 +27,7 @@ $(document).ready(function () {
         });
     });
 
-    setupAutocomplete("#aten_cliente_nome", "#aten_cliente_id", baseURL + "/atendimentos/autocomplete");
+    setupAutocomplete("#aten_cliente_nome", "#aten_cliente_id", baseURL + "/clientes/autocomplete");
 
     $(document).on("change", "#aten_tp_atendimento_id", function () {
         const tipoId = $(this).val();
@@ -71,6 +71,8 @@ function configDataTableAtendimentos() {
                 showNotification("fas fa-bug", "Erro ao carregar dados. Código: " + xhr.status, "danger", 5000);
             }
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "tipo" },

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\ModeloRelatorio;
 use App\Models\TipoAtendimento;
 
 class NaturezaAtendimento extends Model
 {
+    use HasFactory;
+
     protected $table = 'naturezas_atendimentos';
     protected $primaryKey = 'nat_aten_id';
     public $timestamps = false;

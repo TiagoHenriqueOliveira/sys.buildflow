@@ -27,12 +27,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Dashboard
-    Route::controller(DashboardController::class)->group(function () {
-        Route::get('/dashboard', 'index');
+    Route::controller(DashboardController::class)->prefix('dashboard')->group(function () {
+        Route::get('/',                    'index');
+        Route::get('/data/kpis',           'kpis');
+        Route::get('/data/por-status',     'porStatus');
+        Route::get('/data/evolucao',       'evolucao');
+        Route::get('/data/mais-relatorios','maisRelatorios');
+        Route::get('/data/por-estado',     'porEstado');
+        Route::get('/data/por-tecnico',    'porTecnico');
+        Route::get('/data/por-setor',      'porSetor');
+        Route::get('/data/tempo-medio',    'tempoMedio');
     });
 
+    // Clientes — autocomplete movido para cá (era AtendimentosController)
+    Route::get('/clientes/autocomplete', [ClientesController::class, 'autoComplete'])->name('clientes.autocomplete');
+
     // Atendimentos
-    Route::get('/atendimentos/autocomplete', [AtendimentosController::class, 'autoComplete'])->name('atendimentos.autocomplete');
     Route::get('/atendimentos/naturezas-por-tipo', [AtendimentosController::class, 'naturezasPorTipo'])->name('atendimentos.naturezas_por_tipo');
     Route::resource('atendimentos', AtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
     Route::get('/atendimentos/{id}/equipamentos', [AtendimentosController::class, 'getEquipamentos'])->name('atendimentos.get-equipamentos');

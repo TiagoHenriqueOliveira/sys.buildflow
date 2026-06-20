@@ -24,6 +24,8 @@ function configDataTableEquipamentos() {
             type: "GET",
             dataSrc: "data"
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "equip_descricao" },

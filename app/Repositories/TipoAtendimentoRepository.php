@@ -7,7 +7,7 @@ use App\Repositories\Contracts\CrudRepositoryInterface;
 
 class TipoAtendimentoRepository implements CrudRepositoryInterface
 {
-    public function all()
+    public function all(): \Illuminate\Support\Collection
     {
         return TipoAtendimento::query()
             ->orderBy('tp_aten_descricao', 'asc')

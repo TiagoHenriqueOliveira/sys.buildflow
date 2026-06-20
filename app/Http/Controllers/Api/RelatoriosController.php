@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\AtendimentoRelatorioStatus;
+use App\Enums\CondicaoClimatica;
 use App\Http\Controllers\Controller;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
@@ -44,38 +46,13 @@ class RelatoriosController extends Controller
         return $relatorio->atendimento?->aten_usuario_id === $usuario->user_id;
     }
 
-    private function condLabel(int $cond): string
-    {
-        return match ($cond) {
-            1 => 'ensolarado',
-            2 => 'nublado',
-            3 => 'chuvoso',
-            default => 'desconhecido',
-        };
-    }
-
-    private function condValue(string $cond): int
-    {
-        return match ($cond) {
-            'ensolarado' => 1,
-            'nublado'    => 2,
-            'chuvoso'    => 3,
-            default      => 1,
-        };
-    }
-
     private function formatRelatorio(AtendimentoRelatorio $r): array
     {
         return [
             'id'             => $r->aten_rel_id,
             'data'           => $r->aten_rel_data?->format('Y-m-d'),
             'status'         => $r->aten_rel_status,
-            'status_label'   => match ($r->aten_rel_status) {
-                0 => 'Preenchendo',
-                1 => 'Revisar',
-                2 => 'Aprovado',
-                default => '-',
-            },
+            'status_label'   => AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status)?->label() ?? '-',
             'atendimento_id' => $r->aten_rel_atendimento_id,
             'obra'           => $r->atendimento?->aten_descricao,
             'natureza'       => $r->atendimento?->natureza?->nat_aten_descricao,
@@ -187,12 +164,13 @@ class RelatoriosController extends Controller
         $prazoTotal     = $inicio->diffInDays($fim);
         $prazoDecorrido = min($inicio->diffInDays($base), $prazoTotal);
 
-        $condReverse = [1 => 'ensolarado', 2 => 'nublado', 3 => 'chuvoso'];
+
         $clima = ['manha' => null, 'tarde' => null, 'noite' => null];
         foreach ($relatorio->climas as $c) {
-            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
+            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
+            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $label;
+            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $label;
+            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $label;
         }
 
         $assinaturas = [
@@ -328,7 +306,7 @@ class RelatoriosController extends Controller
             if ($condStr !== null) {
                 AtendimentoRelatorioCondicaoClimatica::updateOrCreate(
                     ['aten_rel_clima_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_clima_periodo' => $periodo],
-                    ['aten_rel_clima_condicao' => $this->condValue($condStr)]
+                    ['aten_rel_clima_condicao' => CondicaoClimatica::fromLabel($condStr)->value]
                 );
             }
         }
@@ -797,9 +775,9 @@ class RelatoriosController extends Controller
             ->first();
 
         if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path]);
+            $existing->update(['aten_rel_ass_path' => $path, 'aten_rel_ass_tipo' => $tipo]);
         } else {
-            AtendimentoRelatorioAssinatura::create(['aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_ass_path' => $path]);
+            AtendimentoRelatorioAssinatura::create(['aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_ass_path' => $path, 'aten_rel_ass_tipo' => $tipo]);
         }
 
         return asset('storage/' . $path);

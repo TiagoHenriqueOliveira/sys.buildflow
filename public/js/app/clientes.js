@@ -51,6 +51,8 @@ function configDataTableClientes() {
             type: "GET",
             dataSrc: "data"
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "cli_nome" },

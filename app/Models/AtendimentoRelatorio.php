@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\AssinaturaTipo;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorioAssinatura;
@@ -9,6 +12,8 @@ use App\Models\ModeloRelatorio;
 
 class AtendimentoRelatorio extends Model
 {
+    use HasFactory;
+
     protected $table = 'atendimentos_relatorios';
     protected $primaryKey = 'aten_rel_id';
     public $timestamps = false;
@@ -129,14 +134,35 @@ class AtendimentoRelatorio extends Model
         );
     }
 
-    public function assinaturaResponsavel()
+    public function assinaturaResponsavel(): ?AtendimentoRelatorioAssinatura
     {
-        return $this->assinaturas()->where('aten_rel_ass_path', 'like', '%/responsavel.%')->first();
+        return $this->assinaturas()->where('aten_rel_ass_tipo', AssinaturaTipo::Responsavel)->first();
     }
 
-    public function assinaturaCliente()
+    public function assinaturaCliente(): ?AtendimentoRelatorioAssinatura
     {
-        return $this->assinaturas()->where('aten_rel_ass_path', 'like', '%/cliente.%')->first();
+        return $this->assinaturas()->where('aten_rel_ass_tipo', AssinaturaTipo::Cliente)->first();
+    }
+
+    /**
+     * Retorna os dados de prazo calculados a partir das datas do atendimento.
+     * Centraliza a lógica usada em show(), getData() e pdf().
+     */
+    public function calcularPrazo(): array
+    {
+        $inicio = Carbon::parse($this->atendimento->aten_dt_inicio);
+        $fim    = Carbon::parse($this->atendimento->aten_dt_fim);
+        $base   = Carbon::parse($this->aten_rel_data);
+
+        $total      = $inicio->diffInDays($fim);
+        $decorrido  = min($inicio->diffInDays($base), $total);
+        $aVencer    = max($total - $decorrido, 0);
+
+        return [
+            'prazo_total'      => $total,
+            'prazo_decorrido'  => $decorrido,
+            'prazo_a_vencer'   => $aVencer,
+        ];
     }
 
     public function ocorrencias()

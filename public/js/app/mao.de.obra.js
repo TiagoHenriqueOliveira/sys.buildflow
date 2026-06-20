@@ -25,6 +25,8 @@ function configDataTableMaoDeObra() {
             type: "GET",
             dataSrc: "data"
         },
+        serverSide: true,
+        processing: true,
         columns: [
             { data: "acoes" },
             { data: "tp_ocup_descricao" },
