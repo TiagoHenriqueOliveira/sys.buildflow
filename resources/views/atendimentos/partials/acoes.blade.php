@@ -1,7 +1,6 @@
 <button type="button"
     class="btn btn-sm btn-indigo btn-modal-atendimento"
     data-id="{{ $a->aten_id }}"
-    data-tp="{{ (int) optional($a->natureza)->nat_aten_tp_atendimento_id }}"
     data-natureza-id="{{ $a->aten_natureza_id }}"
     data-cliente-id="{{ $a->aten_cliente_id }}"
     data-cliente="{{ e(optional($a->cliente)->cli_nome) }}"

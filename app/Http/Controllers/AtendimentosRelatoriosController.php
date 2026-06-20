@@ -142,7 +142,7 @@ class AtendimentosRelatoriosController extends Controller
             'modeloRelatorio',
             'atendimento',
             'atendimento.cliente',
-            'atendimento.natureza.tipoAtendimento',
+            'atendimento.natureza',
             'horarios',
             'fotos',
             'videos',
@@ -437,7 +437,7 @@ class AtendimentosRelatoriosController extends Controller
         $relatorio = AtendimentoRelatorio::with([
             'modeloRelatorio',
             'atendimento.cliente',
-            'atendimento.natureza.tipoAtendimento',
+            'atendimento.natureza',
             'horarios',
             'climas',
             'ocorrencias',

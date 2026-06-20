@@ -56,7 +56,6 @@ class RelatoriosController extends Controller
             'atendimento_id' => $r->aten_rel_atendimento_id,
             'obra'           => $r->atendimento?->aten_descricao,
             'natureza'       => $r->atendimento?->natureza?->nat_aten_descricao,
-            'setor'          => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao,
             'cliente'        => $r->atendimento?->cliente?->cli_nome,
         ];
     }
@@ -142,7 +141,7 @@ class RelatoriosController extends Controller
     {
         $relatorio = AtendimentoRelatorio::with([
             'atendimento.cliente',
-            'atendimento.natureza.tipoAtendimento',
+            'atendimento.natureza',
             'horarios',
             'climas',
             'ocupacoes.tipoOcupacao',
@@ -203,7 +202,6 @@ class RelatoriosController extends Controller
                     'dt_fim'      => $relatorio->atendimento->aten_dt_fim?->format('Y-m-d'),
                     'cliente'     => $relatorio->atendimento->cliente?->cli_nome,
                     'natureza'    => $relatorio->atendimento->natureza?->nat_aten_descricao,
-                    'setor'       => $relatorio->atendimento->natureza?->tipoAtendimento?->tp_aten_descricao,
                 ],
 
                 'horarios' => [

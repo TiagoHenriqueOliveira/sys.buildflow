@@ -24,7 +24,7 @@ class AtendimentosController extends Controller
         $usuario = $request->user();
 
         $query = Atendimento::query()
-            ->with(['natureza.tipoAtendimento', 'cliente', 'usuario'])
+            ->with(['natureza', 'cliente', 'usuario'])
             ->orderBy('aten_dt_inicio', 'desc');
 
         // Técnico só vê os próprios; admin vê todos
@@ -58,7 +58,7 @@ class AtendimentosController extends Controller
     {
         $usuario     = $request->user();
         $atendimento = Atendimento::with([
-            'natureza.tipoAtendimento',
+            'natureza',
             'cliente',
             'usuario',
             'equipamentos',
@@ -91,10 +91,6 @@ class AtendimentosController extends Controller
             'natureza'    => [
                 'id'        => optional($a->natureza)->nat_aten_id,
                 'descricao' => optional($a->natureza)->nat_aten_descricao,
-            ],
-            'setor'       => [
-                'id'        => optional($a->natureza?->tipoAtendimento)->tp_aten_id,
-                'descricao' => optional($a->natureza?->tipoAtendimento)->tp_aten_descricao,
             ],
             'cliente'     => [
                 'id'   => optional($a->cliente)->cli_id,

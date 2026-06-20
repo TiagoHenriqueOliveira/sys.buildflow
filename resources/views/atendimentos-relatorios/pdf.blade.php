@@ -281,10 +281,8 @@
             <td class="field-value">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label">Setor</td>
-            <td class="field-value" colspan="2">{{ $relatorio->atendimento->natureza?->tipoAtendimento?->tp_aten_descricao ?? '-' }}</td>
             <td class="field-label">Natureza</td>
-            <td class="field-value" colspan="2">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-value" colspan="4">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
         </tr>
     </table>
 </div>

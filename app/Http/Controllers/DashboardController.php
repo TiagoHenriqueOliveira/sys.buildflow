@@ -212,12 +212,11 @@ class DashboardController extends Controller
     {
         $rows = (clone $this->baseQuery())
             ->select(
-                'tipos_atendimentos.tp_aten_descricao as setor',
+                'naturezas_atendimentos.nat_aten_descricao as setor',
                 DB::raw('COUNT(*) as total')
             )
             ->join('naturezas_atendimentos', 'naturezas_atendimentos.nat_aten_id', '=', 'atendimentos.aten_natureza_id')
-            ->join('tipos_atendimentos', 'tipos_atendimentos.tp_aten_id', '=', 'naturezas_atendimentos.nat_aten_tp_atendimento_id')
-            ->groupBy('tipos_atendimentos.tp_aten_descricao')
+            ->groupBy('naturezas_atendimentos.nat_aten_descricao')
             ->orderByDesc('total')
             ->get();
 
