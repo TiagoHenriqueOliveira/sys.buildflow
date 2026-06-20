@@ -42,12 +42,16 @@ class AtendimentosController extends Controller
                         'status'   => 'aten_status',
                     ],
                     mapper: fn($a) => [
-                        'acoes'    => view('atendimentos.partials.acoes', compact('a'))->render(),
-                        'natureza' => e(optional($a->natureza)->nat_aten_descricao),
-                        'usuario'  => e(optional($a->usuario)->user_nome),
-                        'cliente'  => e(optional($a->cliente)->cli_nome),
-                        'periodo'  => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
-                        'status'   => AtendimentoStatus::tryFrom($a->aten_status)?->label() ?? 'Desconhecido',
+                        'acoes'        => view('atendimentos.partials.acoes', compact('a'))->render(),
+                        'natureza'     => e(optional($a->natureza)->nat_aten_descricao),
+                        'usuario'      => e(optional($a->usuario)->user_nome),
+                        'cliente'      => e(optional($a->cliente)->cli_nome),
+                        'periodo'      => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
+                        'status'       => ($s = AtendimentoStatus::tryFrom($a->aten_status))
+                            ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
+                            : '-',
+                        'aten_status'  => $a->aten_status,
+                        'aten_dt_fim'  => $a->aten_dt_fim->format('Y-m-d'),
                     ],
                 )
             );
@@ -55,7 +59,7 @@ class AtendimentosController extends Controller
 
         return view('atendimentos.index', [
             'usuarios'              => Usuario::where('user_nivel_acesso', 1)->where('user_ativo', 1)->orderBy('user_nome')->get(),
-            'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao', 'nat_aten_tp_atendimento_id')
+            'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao')
                 ->where('nat_aten_ativo', 1)
                 ->orderBy('nat_aten_descricao')
                 ->get(),

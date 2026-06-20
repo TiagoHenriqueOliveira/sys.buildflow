@@ -205,3 +205,13 @@ legend {
 .file-upload-box p {
   margin-bottom: .5rem;
 }
+
+/* Atendimentos com prazo vencido e não concluídos */
+tr.row-atrasado td {
+  background-color: #fde8e8 !important;
+  color: #7b2020;
+}
+
+tr.row-atrasado:hover td {
+  background-color: #f9d0d0 !important;
+}

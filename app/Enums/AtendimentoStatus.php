@@ -18,4 +18,14 @@ enum AtendimentoStatus: int
             self::Concluida   => 'Concluída',
         };
     }
+
+    public function badgeClass(): string
+    {
+        return match ($this) {
+            self::NaoIniciada => 'badge-secondary',
+            self::Paralisada  => 'badge-warning',
+            self::EmAndamento => 'badge-primary',
+            self::Concluida   => 'badge-success',
+        };
+    }
 }

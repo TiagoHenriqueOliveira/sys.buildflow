@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\NaturezaAtendimentoRequest;
 use App\Models\ModeloRelatorio;
 use App\Models\NaturezaAtendimento;
-use App\Models\TipoAtendimento;
 use App\Repositories\NaturezaAtendimentoRepository;
 use App\Services\DataTableService;
 use Illuminate\Http\Request;
@@ -23,24 +22,21 @@ class NaturezasAtendimentosController extends Controller
             return response()->json(
                 $this->dataTable->process(
                     $request,
-                    NaturezaAtendimento::query()->with(['tipoAtendimento', 'modeloRelatorio']),
+                    NaturezaAtendimento::query()->with(['modeloRelatorio']),
                     searchable: ['nat_aten_descricao'],
                     orderable:  [
-                        'acoes'               => null,
-                        'nat_aten_descricao'  => 'nat_aten_descricao',
-                        'tp_aten_descricao'   => null,
-                        'mod_rel_descricao'   => null,
-                        'status'              => 'nat_aten_ativo',
+                        'acoes'              => null,
+                        'nat_aten_descricao' => 'nat_aten_descricao',
+                        'mod_rel_descricao'  => null,
+                        'status'             => 'nat_aten_ativo',
                     ],
                     mapper: fn($n) => [
-                        'acoes'                      => view('naturezas_atendimentos.partials.acoes', compact('n'))->render(),
-                        'nat_aten_descricao'         => e($n->nat_aten_descricao),
-                        'tp_aten_descricao'          => e(optional($n->tipoAtendimento)->tp_aten_descricao),
-                        'nat_aten_tp_atendimento_id' => (int) $n->nat_aten_tp_atendimento_id,
-                        'mod_rel_descricao'          => e(optional($n->modeloRelatorio)->mod_rel_descricao),
-                        'nat_aten_mod_relatorio_id'  => (int) $n->nat_aten_mod_relatorio_id,
-                        'nat_aten_ativo'             => (int) $n->nat_aten_ativo,
-                        'status'                     => $n->nat_aten_ativo ? 'Ativo' : 'Desativado',
+                        'acoes'                     => view('naturezas_atendimentos.partials.acoes', compact('n'))->render(),
+                        'nat_aten_descricao'        => e($n->nat_aten_descricao),
+                        'mod_rel_descricao'         => e(optional($n->modeloRelatorio)->mod_rel_descricao),
+                        'nat_aten_mod_relatorio_id' => (int) $n->nat_aten_mod_relatorio_id,
+                        'nat_aten_ativo'            => (int) $n->nat_aten_ativo,
+                        'status'                    => $n->nat_aten_ativo ? 'Ativo' : 'Desativado',
                     ],
                 )
             );
@@ -50,12 +46,7 @@ class NaturezasAtendimentosController extends Controller
             ->orderBy('mod_rel_descricao')
             ->get();
 
-        $tiposAtivos = TipoAtendimento::select('tp_aten_id', 'tp_aten_descricao')
-            ->where('tp_aten_ativo', 1)
-            ->orderBy('tp_aten_descricao')
-            ->get();
-
-        return view('naturezas_atendimentos.index', compact('modelosRelatorios', 'tiposAtivos'));
+        return view('naturezas_atendimentos.index', compact('modelosRelatorios'));
     }
 
     public function store(NaturezaAtendimentoRequest $request)

@@ -17,12 +17,13 @@ class AtendimentoRelatorioRepository implements CrudRepositoryInterface
             ->select('atendimentos_relatorios.*')
             ->with([
                 'atendimento.cliente',
-                'atendimento.natureza.tipoAtendimento',
+                'atendimento.natureza',
+                'atendimento.usuario',
             ])
             ->join('atendimentos',          'atendimentos.aten_id',             '=', 'atendimentos_relatorios.aten_rel_atendimento_id')
             ->join('clientes',              'clientes.cli_id',                  '=', 'atendimentos.aten_cliente_id')
             ->join('naturezas_atendimentos','naturezas_atendimentos.nat_aten_id','=', 'atendimentos.aten_natureza_id')
-            ->join('tipos_atendimentos',    'tipos_atendimentos.tp_aten_id',    '=', 'naturezas_atendimentos.nat_aten_tp_atendimento_id')
+            ->join('usuarios',              'usuarios.user_id',                 '=', 'atendimentos.aten_usuario_id')
             ->orderByDesc('atendimentos_relatorios.aten_rel_data')
             ->orderByDesc('atendimentos_relatorios.aten_rel_id');
 

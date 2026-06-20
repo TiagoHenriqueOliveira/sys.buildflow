@@ -21,9 +21,9 @@
                         <tr>
                             <th>Ações</th>
                             <th>Data</th>
-                            <th>Obra</th>
+                            <th>Cliente</th>
                             <th>Natureza</th>
-                            <th>Setor</th>
+                            <th>Técnico</th>
                             <th>Status</th>
                         </tr>
                     </thead>

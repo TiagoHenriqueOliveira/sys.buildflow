@@ -63,13 +63,17 @@ class AtendimentosRelatoriosController extends Controller
                     orderable:  [
                         'acoes'    => null,
                         'data'     => 'atendimentos_relatorios.aten_rel_data',
+                        'cliente'  => 'clientes.cli_nome',
                         'natureza' => 'naturezas_atendimentos.nat_aten_descricao',
+                        'tecnico'  => 'usuarios.user_nome',
                         'status'   => 'atendimentos_relatorios.aten_rel_status',
                     ],
                     mapper: fn($r) => [
                         'acoes'   => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
                         'data'    => optional($r->aten_rel_data)->format('d/m/Y'),
+                        'cliente' => e($r->atendimento?->cliente?->cli_nome ?? '-'),
                         'natureza'=> $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
+                        'tecnico' => e($r->atendimento?->usuario?->user_nome ?? '-'),
                         'status'  => ($s = AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status))
                             ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
                             : '-',

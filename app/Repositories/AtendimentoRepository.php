@@ -14,7 +14,7 @@ class AtendimentoRepository implements CrudRepositoryInterface
      */
     public function query(?int $usuarioId = null): Builder
     {
-        return Atendimento::with(['natureza.tipoAtendimento', 'cliente', 'usuario'])
+        return Atendimento::with(['natureza', 'cliente', 'usuario'])
             ->join('usuarios', 'usuarios.user_id', '=', 'atendimentos.aten_usuario_id')
             ->when($usuarioId, fn($q) => $q->where('atendimentos.aten_usuario_id', $usuarioId))
             ->select('atendimentos.*');

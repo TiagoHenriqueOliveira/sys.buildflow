@@ -29,16 +29,6 @@ $(document).ready(function () {
 
     setupAutocomplete("#aten_cliente_nome", "#aten_cliente_id", baseURL + "/clientes/autocomplete");
 
-    $(document).on("change", "#aten_tp_atendimento_id", function () {
-        const tipoId = $(this).val();
-
-        if (!$("#aten_id").val()) {
-            atualizarSelectNaturezas(tipoId, null, false);
-        }
-
-        syncHiddenFromSelects();
-    });
-
     $(document).on("change", "#aten_nat_atendimento_id, #aten_natureza_id, #aten_natureza_select", function () {
         syncHiddenFromSelects();
     });
@@ -75,17 +65,22 @@ function configDataTableAtendimentos() {
         processing: true,
         columns: [
             { data: "acoes" },
-            { data: "tipo" },
             { data: "natureza" },
             { data: "usuario" },
             { data: "cliente" },
-            { data: "obra" },
             { data: "periodo" },
             { data: "status" }
         ],
         columnDefs: [{ width: "5%", targets: 0 }],
         createdRow: function (row) {
             $("td", row).eq(0).addClass("text-center");
+        },
+        fnRowCallback: function (nRow, aData) {
+            const concluida = 3;
+            const hoje = new Date().toISOString().slice(0, 10);
+            if (aData.aten_status !== concluida && aData.aten_dt_fim < hoje) {
+                $(nRow).addClass("row-atrasado");
+            }
         }
     });
 }
@@ -121,10 +116,6 @@ function getNaturezaSelect() {
     return $();
 }
 
-function getTipoSelect() {
-    return $("#aten_tp_atendimento_id");
-}
-
 function ensureHiddenInputs() {
     const form = $("#form_atendimento");
     if (!form.length) return;
@@ -143,64 +134,10 @@ function syncHiddenFromSelects() {
     $("#aten_natureza_id_hidden").val(naturezaVal);
 }
 
-function atualizarSelectNaturezas(tipoId, selectedNaturezaId, lockAfter) {
-    const select = getNaturezaSelect();
-
-    if (!select.length) {
-        console.warn("Select de natureza não encontrado (#aten_nat_atendimento_id / #aten_natureza_id / #aten_natureza_select).");
-        return;
-    }
-
-    select.prop("disabled", true).html('<option value="" selected disabled hidden>Selecione...</option>');
-
-    syncHiddenFromSelects();
-
-    if (!tipoId) return;
-
-    $.ajax({
-        url: baseURL + "/atendimentos/naturezas-por-tipo",
-        type: "GET",
-        dataType: "json",
-        data: { tipo_id: tipoId },
-        success: function (data) {
-            if (data && !Array.isArray(data)) data = [data];
-
-            if (Array.isArray(data) && data.length) {
-                data.forEach(n => {
-                    select.append(`<option value="${n.id}">${n.label}</option>`);
-                });
-
-                select.prop("disabled", false);
-
-                if (selectedNaturezaId !== null && selectedNaturezaId !== undefined && String(selectedNaturezaId) !== "") {
-                    select.val(String(selectedNaturezaId));
-                }
-
-                syncHiddenFromSelects();
-
-                if (lockAfter) {
-                    select.prop("disabled", true);
-                }
-            } else {
-                select.prop("disabled", true).html('<option value="" selected disabled hidden>Nenhuma natureza vinculada</option>');
-
-                syncHiddenFromSelects();
-            }
-        },
-        error: function (xhr) {
-            console.error("Erro ao carregar naturezas:", xhr.status, xhr.responseText);
-            select.prop("disabled", true).html('<option value="" selected disabled hidden>Erro ao carregar naturezas</option>');
-
-            syncHiddenFromSelects();
-        }
-    });
-}
-
 function abrirModalAtendimento(data) {
     $("#form_atendimento button[type='submit']").prop("disabled", false);
     $("#modal_atendimento").modal({ backdrop: "static", focus: true });
 
-    const tipoSelect = getTipoSelect();
     const naturezaSelect = getNaturezaSelect();
 
     $("#aten_id").val(data.aten_id || "");
@@ -226,10 +163,8 @@ function abrirModalAtendimento(data) {
             $("#aten_method").val("POST");
             $("#form_atendimento").attr("action", baseURL + "/atendimentos");
 
-            tipoSelect.prop("disabled", false).val("").trigger("change");
-
             if (naturezaSelect.length) {
-                naturezaSelect.prop("disabled", true).html('<option value="" selected disabled hidden>Selecione...</option>');
+                naturezaSelect.prop("disabled", false).val("");
             }
 
             syncHiddenFromSelects();
@@ -239,13 +174,11 @@ function abrirModalAtendimento(data) {
             $("#aten_method").val("PUT");
             $("#form_atendimento").attr("action", baseURL + "/atendimentos/" + data.aten_id);
 
-            tipoSelect.val(String(data.aten_tp_atendimento_id)).prop("disabled", true);
+            if (naturezaSelect.length) {
+                naturezaSelect.val(String(data.aten_natureza_id)).prop("disabled", false);
+            }
 
-            atualizarSelectNaturezas(
-                data.aten_tp_atendimento_id,
-                data.aten_natureza_id,
-                true
-            );
+            syncHiddenFromSelects();
 
             // Habilitar aba de equipamentos
             $("#tab-equipamentos-tab").removeClass("disabled").prop("disabled", false);
