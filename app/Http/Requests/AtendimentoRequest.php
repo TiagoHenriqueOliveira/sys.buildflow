@@ -14,7 +14,7 @@ class AtendimentoRequest extends FormRequest
             'aten_usuario_id' => ['required', 'integer'],
             'aten_status' => ['required', 'integer', 'in:0,1,2,3'],
             'aten_nr_proposta' => ['nullable', 'string', 'max:20'],
-            'aten_descricao' => ['required', 'string', 'max:50'],
+            'aten_descricao' => ['nullable', 'string', 'max:50'],
             'aten_responsavel' => ['nullable', 'string', 'max:50'],
             'aten_endereco' => ['nullable', 'string', 'max:100'],
             'aten_dt_inicio' => ['required', 'date'],

@@ -53,8 +53,6 @@
 
                     <x-switch-entrega-tecnica />
 
-                    <x-checkbox-itens-relatorio />
-
                     <div class="form-group row d-none mt-3" id="div_mod_rel_ativo">
                         <label for="mod_rel_ativo" class="col-sm-2 col-form-label font-weight-bold">Ativo:</label>
                         <div class="col-sm-10">

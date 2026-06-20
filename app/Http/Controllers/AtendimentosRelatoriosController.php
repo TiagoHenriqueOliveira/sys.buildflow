@@ -6,26 +6,18 @@ use App\Enums\AtendimentoRelatorioStatus;
 use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
 use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
-use App\Http\Requests\AtendimentoRelatorioAtividadeRequest;
 use App\Http\Requests\AtendimentoRelatorioStoreRequest;
-use App\Http\Requests\AtendimentoRelatorioComentarioRequest;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
-use App\Http\Requests\AtendimentoRelatorioEquipamentoRequest;
 use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
-use App\Http\Requests\AtendimentoRelatorioMaoObraRequest;
 use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\AtendimentoRelatorioAtividade;
-use App\Models\AtendimentoRelatorioComentario;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
-use App\Models\Equipamento;
 use App\Models\Ocorrencia;
-use App\Models\Ocupacao;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\AtendimentoRelatorioAnexo;
@@ -71,17 +63,13 @@ class AtendimentosRelatoriosController extends Controller
                     orderable:  [
                         'acoes'    => null,
                         'data'     => 'atendimentos_relatorios.aten_rel_data',
-                        'obra'     => 'atendimentos.aten_descricao',
                         'natureza' => 'naturezas_atendimentos.nat_aten_descricao',
-                        'setor'    => 'tipos_atendimentos.tp_aten_descricao',
                         'status'   => 'atendimentos_relatorios.aten_rel_status',
                     ],
                     mapper: fn($r) => [
                         'acoes'   => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
                         'data'    => optional($r->aten_rel_data)->format('d/m/Y'),
-                        'obra'    => $r->atendimento?->aten_descricao ?? '-',
                         'natureza'=> $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
-                        'setor'   => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao ?? '-',
                         'status'  => ($s = AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status))
                             ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
                             : '-',
@@ -155,7 +143,7 @@ class AtendimentosRelatoriosController extends Controller
             'fotos',
             'videos',
             'anexos',
-            'assinaturas'
+            'assinaturas',
         ]);
 
         if (!$atendimentoRelatorio->modeloRelatorio) {
@@ -182,7 +170,6 @@ class AtendimentosRelatoriosController extends Controller
             'data'    => $rel,
         ]);
     }
-
 
     public function updateDados(AtendimentoRelatorioDadosRequest $request, int $id)
     {
@@ -316,198 +303,6 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function storeMaoObra(AtendimentoRelatorioMaoObraRequest $request, int $id)
-    {
-        try {
-            $ocupId = (int) $request->ocup_id;
-            $qtd    = (int) $request->qtd;
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $exists = $relatorio->ocupacoes()
-                ->where('ocupacoes.ocup_id', $ocupId)
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'message' => 'Essa mão de obra já foi adicionada neste relatório.'
-                ], 422);
-            }
-
-            $ocup = Ocupacao::with('tipoOcupacao')->findOrFail($ocupId);
-
-            $relatorio->ocupacoes()->attach($ocupId, [
-                'aten_rel_ocup_quantidade' => $qtd,
-            ]);
-
-            return response()->json([
-                'message' => 'Mão de obra adicionada!',
-                'data' => [
-                    'ocup_id'  => $ocup->ocup_id,
-                    'ocup'     => $ocup->ocup_descricao,
-                    'tp_id'    => $ocup->ocup_tp_ocupacao_id,
-                    'tp_label' => optional($ocup->tipoOcupacao)->tp_ocup_descricao,
-                    'qtd'      => $qtd,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar mão de obra.'
-            ], 500);
-        }
-    }
-
-    public function destroyMaoObra(int $id, int $ocupId)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $relatorio->ocupacoes()->detach($ocupId);
-
-            return response()->json([
-                'message' => 'Mão de obra removida!'
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao remover mão de obra.'
-            ], 500);
-        }
-    }
-
-    public function storeEquipamento(AtendimentoRelatorioEquipamentoRequest $request, int $id)
-    {
-        try {
-            $equipId = (int) $request->equip_id;
-            $qtd     = (int) $request->qtd;
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $exists = $relatorio->equipamentos()
-                ->where('equipamentos.equip_id', $equipId)
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'message' => 'Esse equipamento já foi adicionado neste relatório.'
-                ], 422);
-            }
-
-            $equip = Equipamento::findOrFail($equipId);
-
-            $relatorio->equipamentos()->attach($equipId, [
-                'aten_rel_equip_quantidade' => $qtd,
-            ]);
-
-            return response()->json([
-                'message' => 'Equipamento adicionado!',
-                'data' => [
-                    'equip_id' => (int) $equip->equip_id,
-                    'equip'    => (string) $equip->equip_descricao,
-                    'qtd'      => $qtd,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar equipamento.'
-            ], 500);
-        }
-    }
-
-    public function destroyEquipamento(int $id, int $equipId)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-            $relatorio->equipamentos()->detach($equipId);
-
-            return response()->json([
-                'message' => 'Equipamento removido!'
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao remover equipamento.'
-            ], 500);
-        }
-    }
-
-    public function storeAtividade(AtendimentoRelatorioAtividadeRequest $request, int $id)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioAtividade::create([
-                'aten_rel_ativ_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_ativ_descricao'    => $request->aten_rel_ativ_descricao,
-                'aten_rel_ativ_status'       => (int) $request->aten_rel_ativ_status,
-            ]);
-
-            return response()->json([
-                'message' => 'Atividade adicionada!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_ativ_id,
-                    'descricao' => (string) $row->aten_rel_ativ_descricao,
-                    'status'    => (int) $row->aten_rel_ativ_status,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao adicionar atividade.'], 500);
-        }
-    }
-
-    public function updateAtividade(AtendimentoRelatorioAtividadeRequest $request, int $id, int $ativId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-                ->where('aten_rel_ativ_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->update([
-                'aten_rel_ativ_descricao' => $request->aten_rel_ativ_descricao,
-                'aten_rel_ativ_status'    => (int) $request->aten_rel_ativ_status,
-            ]);
-
-            return response()->json([
-                'message' => 'Atividade atualizada!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_ativ_id,
-                    'descricao' => (string) $row->aten_rel_ativ_descricao,
-                    'status'    => (int) $row->aten_rel_ativ_status,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar atividade.'], 500);
-        }
-    }
-
-    public function destroyAtividade(int $id, int $ativId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-                ->where('aten_rel_ativ_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->delete();
-
-            return response()->json(['message' => 'Atividade removida!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao remover atividade.'], 500);
-        }
-    }
-
     public function storeOcorrencia(AtendimentoRelatorioOcorrenciaRequest $request, int $id)
     {
         try {
@@ -568,95 +363,13 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function storeComentario(AtendimentoRelatorioComentarioRequest $request, int $id)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioComentario::create([
-                'aten_rel_com_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_com_descricao'    => $request->aten_rel_com_descricao,
-            ]);
-
-            return response()->json([
-                'message' => 'Comentário adicionado!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_com_id,
-                    'descricao' => (string) $row->aten_rel_com_descricao,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar comentário.'
-            ], 500);
-        }
-    }
-
-    public function updateComentario(AtendimentoRelatorioComentarioRequest $request, int $id, int $comentarioId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioComentario::where('aten_rel_com_id', $comentarioId)
-                ->where('aten_rel_com_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->update([
-                'aten_rel_com_descricao' => $request->aten_rel_com_descricao,
-            ]);
-
-            return response()->json([
-                'message' => 'Comentário atualizado!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_com_id,
-                    'descricao' => (string) $row->aten_rel_com_descricao,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao atualizar comentário.'
-            ], 500);
-        }
-    }
-
-    public function destroyComentario(int $id, int $comentarioId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioComentario::where('aten_rel_com_id', $comentarioId)
-                ->where('aten_rel_com_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->delete();
-
-            return response()->json([
-                'message' => 'Comentário removido!'
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao remover comentário.'
-            ], 500);
-        }
-    }
-
     public function getData(int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
             'atendimento',
             'horarios',
             'climas',
-            'ocupacoes.tipoOcupacao',
-            'equipamentos',
-            'atividades',
             'ocorrencias',
-            'comentarios',
         ])->findOrFail($id);
 
         $prazo = $relatorio->calcularPrazo();
@@ -674,34 +387,6 @@ class AtendimentosRelatoriosController extends Controller
             if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $label;
         }
 
-        $maoObra = $relatorio->ocupacoes->map(function ($o) {
-            return [
-                'ocup_id'  => $o->ocup_id,
-                'ocup'     => $o->ocup_descricao,
-                'tp_id'    => $o->ocup_tp_ocupacao_id,
-                'tp_label' => optional($o->tipoOcupacao)->tp_ocup_descricao,
-                'qtd'      => (int) $o->pivot->aten_rel_ocup_quantidade,
-            ];
-        })->values();
-
-        $equipamentos = $relatorio->equipamentos->map(function ($e) {
-            return [
-                'equip_id' => $e->equip_id,
-                'equip'    => $e->equip_descricao,
-                'qtd'      => (int) $e->pivot->aten_rel_equip_quantidade,
-            ];
-        })->values();
-
-        $atividades = $relatorio->atividades
-            ->sortBy('aten_rel_ativ_id')
-            ->map(function ($a) {
-                return [
-                    'id'        => (int) $a->aten_rel_ativ_id,
-                    'descricao' => (string) $a->aten_rel_ativ_descricao,
-                    'status'    => (int) $a->aten_rel_ativ_status,
-                ];
-            })->values();
-
         $ocorrencias = $relatorio->ocorrencias->map(function ($o) {
             return [
                 'ocorrencia_id' => (int) $o->ocor_id,
@@ -709,15 +394,6 @@ class AtendimentosRelatoriosController extends Controller
                 'observacao'    => (string) ($o->pivot->aten_rel_ocor_observacao ?? ''),
             ];
         })->values();
-
-        $comentarios = $relatorio->comentarios
-            ->sortBy('aten_rel_com_id')
-            ->map(function ($c) {
-                return [
-                    'id'        => (int) $c->aten_rel_com_id,
-                    'descricao' => (string) $c->aten_rel_com_descricao,
-                ];
-            })->values();
 
         $assinaturas = [
             'responsavel' => optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path
@@ -745,13 +421,9 @@ class AtendimentosRelatoriosController extends Controller
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
 
-            'clima'         => $climaPorPeriodo,
-            'mao_obra'      => $maoObra,
-            'equipamentos'  => $equipamentos,
-            'atividades'    => $atividades,
+            'clima'       => $climaPorPeriodo,
             'ocorrencias' => $ocorrencias,
-            'comentarios' => $comentarios,
-            'status' => $relatorio->aten_rel_status,
+            'status'      => $relatorio->aten_rel_status,
             'assinaturas' => $assinaturas,
         ]);
     }
@@ -764,11 +436,7 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento.natureza.tipoAtendimento',
             'horarios',
             'climas',
-            'ocupacoes.tipoOcupacao',
-            'equipamentos',
-            'atividades',
             'ocorrencias',
-            'comentarios',
             'assinaturas',
         ])->findOrFail($id);
 
@@ -782,10 +450,10 @@ class AtendimentosRelatoriosController extends Controller
         ])
         ->setPaper('a4', 'portrait')
         ->setOptions([
-            'defaultFont'       => 'DejaVu Sans',
+            'defaultFont'          => 'DejaVu Sans',
             'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled'   => true,
-            'dpi'               => 150,
+            'isRemoteEnabled'      => true,
+            'dpi'                  => 150,
         ]);
 
         $filename = 'relatorio_' . $relatorio->aten_rel_id . '_' . $relatorio->aten_rel_data->format('Y-m-d') . '.pdf';
@@ -825,10 +493,10 @@ class AtendimentosRelatoriosController extends Controller
                     ]);
 
                     $saved['arquivos'][] = [
-                        'id' => $anexo->aten_rel_anexo_id,
+                        'id'   => $anexo->aten_rel_anexo_id,
                         'name' => $file->getClientOriginalName(),
                         'path' => $path,
-                        'url' => asset('storage/' . $path),
+                        'url'  => asset('storage/' . $path),
                     ];
                 }
             }
@@ -849,21 +517,19 @@ class AtendimentosRelatoriosController extends Controller
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
 
-                    // Gerar thumbnail de forma assíncrona (queue)
                     ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
                     $foto = AtendimentoRelatorioFoto::create([
                         'aten_rel_foto_relatorio_id' => $id,
-                        'aten_rel_foto_path' => $path,
+                        'aten_rel_foto_path'         => $path,
                     ]);
 
                     $saved['fotos'][] = [
-                        'id'       => $foto->aten_rel_foto_id,
-                        'name'     => $file->getClientOriginalName(),
-                        'path'     => $path,
-                        'url'      => asset('storage/' . $path),
-                        // thumb_url usa o path esperado; o arquivo aparece quando o job processar
-                        'thumb_url'=> asset('storage/' . $thumbPath),
+                        'id'        => $foto->aten_rel_foto_id,
+                        'name'      => $file->getClientOriginalName(),
+                        'path'      => $path,
+                        'url'       => asset('storage/' . $path),
+                        'thumb_url' => asset('storage/' . $thumbPath),
                     ];
                 }
             }
@@ -884,21 +550,19 @@ class AtendimentosRelatoriosController extends Controller
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
 
-                    // Gerar thumbnail de forma assíncrona (queue)
                     ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
 
                     $video = AtendimentoRelatorioVideo::create([
                         'aten_rel_vid_relatorio_id' => $id,
-                        'aten_rel_vid_path' => $path,
+                        'aten_rel_vid_path'         => $path,
                     ]);
 
                     $saved['videos'][] = [
-                        'id'       => $video->aten_rel_vid_id,
-                        'name'     => $file->getClientOriginalName(),
-                        'path'     => $path,
-                        'url'      => asset('storage/' . $path),
-                        // thumb_url usa o path esperado; o arquivo aparece quando o job processar
-                        'thumb_url'=> asset('storage/' . $thumbPath),
+                        'id'        => $video->aten_rel_vid_id,
+                        'name'      => $file->getClientOriginalName(),
+                        'path'      => $path,
+                        'url'       => asset('storage/' . $path),
+                        'thumb_url' => asset('storage/' . $thumbPath),
                     ];
                 }
             }
@@ -906,7 +570,7 @@ class AtendimentosRelatoriosController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Uploads processados com sucesso.',
-                'data' => $saved,
+                'data'    => $saved,
             ]);
         } catch (\Throwable $e) {
             report($e);
@@ -920,47 +584,47 @@ class AtendimentosRelatoriosController extends Controller
 
         $arquivos = $relatorio->anexos->map(function ($anexo) {
             return [
-                'id' => $anexo->aten_rel_anexo_id,
+                'id'   => $anexo->aten_rel_anexo_id,
                 'name' => basename($anexo->aten_rel_anexo_path),
                 'path' => $anexo->aten_rel_anexo_path,
-                'url' => asset('storage/' . $anexo->aten_rel_anexo_path),
+                'url'  => asset('storage/' . $anexo->aten_rel_anexo_path),
             ];
         });
 
         $fotos = $relatorio->fotos->map(function ($foto) {
             $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
-            $thumbUrl = Storage::disk('public')->exists($thumbPath)
+            $thumbUrl  = Storage::disk('public')->exists($thumbPath)
                 ? asset('storage/' . $thumbPath)
                 : asset('storage/' . $foto->aten_rel_foto_path);
 
             return [
-                'id' => $foto->aten_rel_foto_id,
-                'name' => basename($foto->aten_rel_foto_path),
-                'path' => $foto->aten_rel_foto_path,
-                'url' => asset('storage/' . $foto->aten_rel_foto_path),
+                'id'        => $foto->aten_rel_foto_id,
+                'name'      => basename($foto->aten_rel_foto_path),
+                'path'      => $foto->aten_rel_foto_path,
+                'url'       => asset('storage/' . $foto->aten_rel_foto_path),
                 'thumb_url' => $thumbUrl,
             ];
         });
 
         $videos = $relatorio->videos->map(function ($video) {
             $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
-            $thumbUrl = Storage::disk('public')->exists($thumbPath)
+            $thumbUrl  = Storage::disk('public')->exists($thumbPath)
                 ? asset('storage/' . $thumbPath)
                 : asset('img/video-placeholder.svg');
 
             return [
-                'id' => $video->aten_rel_vid_id,
-                'name' => basename($video->aten_rel_vid_path),
-                'path' => $video->aten_rel_vid_path,
-                'url' => asset('storage/' . $video->aten_rel_vid_path),
+                'id'        => $video->aten_rel_vid_id,
+                'name'      => basename($video->aten_rel_vid_path),
+                'path'      => $video->aten_rel_vid_path,
+                'url'       => asset('storage/' . $video->aten_rel_vid_path),
                 'thumb_url' => $thumbUrl,
             ];
         });
 
         return response()->json([
             'arquivos' => $arquivos,
-            'fotos' => $fotos,
-            'videos' => $videos,
+            'fotos'    => $fotos,
+            'videos'   => $videos,
         ]);
     }
 
@@ -978,14 +642,14 @@ class AtendimentosRelatoriosController extends Controller
                     $item = AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)
                         ->where('aten_rel_foto_relatorio_id', $id)
                         ->firstOrFail();
-                    $path = $item->aten_rel_foto_path;
+                    $path      = $item->aten_rel_foto_path;
                     $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $path);
                     break;
                 case 'video':
                     $item = AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)
                         ->where('aten_rel_vid_relatorio_id', $id)
                         ->firstOrFail();
-                    $path = $item->aten_rel_vid_path;
+                    $path      = $item->aten_rel_vid_path;
                     $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $path) . '.jpg';
                     break;
                 default:
@@ -1036,8 +700,7 @@ class AtendimentosRelatoriosController extends Controller
         $payload = $rows->map(function ($r) {
             $cliente = $r->cli_nome ?: 'Sem cliente';
             $obra    = $r->aten_descricao ?: 'Sem descrição';
-
-            $text = "{$cliente} ({$obra})";
+            $text    = "{$cliente} ({$obra})";
 
             return [
                 'id'    => $r->aten_id,

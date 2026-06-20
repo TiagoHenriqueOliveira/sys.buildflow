@@ -35,17 +35,7 @@
                             <input type="hidden" name="_method" id="aten_method" value="POST">
                             <input type="hidden" name="aten_id" id="aten_id">
 
-                            <x-select-tipo-atendimento :tipos="$tiposAtendimentos" />
-
                             <x-select-natureza-atendimento :naturezas="$naturezasAtendimentos" />
-
-                            <div class="form-group row">
-                                <label class="col-sm-3 col-form-label font-weight-bold">Obra:</label>
-                                <div class="col-sm-9">
-                                    <input type="text" class="form-control" id="aten_descricao" name="aten_descricao" maxlength="50"
-                                        placeholder="Ex.: Nestlé Purina">
-                                </div>
-                            </div>
 
                             <x-select-usuario :usuarios="$usuarios" />
                             <x-autocomplete-cliente />
@@ -118,7 +108,6 @@
                                     <tr>
                                         <th class="text-center" style="width: 50px;">Ações</th>
                                         <th>Descrição</th>
-                                        <th>Observações</th>
                                     </tr>
                                 </thead>
                                 <tbody>

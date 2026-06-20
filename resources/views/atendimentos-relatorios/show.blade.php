@@ -20,19 +20,7 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-clima">Clima</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-mao-obra">Mão de Obra</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-ferramentas">Ferramentas</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-atividades">Atividades</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">Ocorrências</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-comentarios">Comentários</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-anexos">Anexos</a>
@@ -46,11 +34,7 @@
                 @include('atendimentos-relatorios.tabs.dados')
                 @include('atendimentos-relatorios.tabs.horarios')
                 @include('atendimentos-relatorios.tabs.clima')
-                @include('atendimentos-relatorios.tabs.mao-obra')
-                @include('atendimentos-relatorios.tabs.ferramentas')
-                @include('atendimentos-relatorios.tabs.atividades')
                 @include('atendimentos-relatorios.tabs.ocorrencias')
-                @include('atendimentos-relatorios.tabs.comentarios')
                 @include('atendimentos-relatorios.tabs.anexos')
                 @include('atendimentos-relatorios.tabs.assinaturas')
             </div>

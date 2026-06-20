@@ -66,38 +66,6 @@ class AtendimentoRelatorio extends Model
         );
     }
 
-    public function ocupacoes()
-    {
-        return $this->belongsToMany(
-            Ocupacao::class,
-            'atendimentos_relatorios_ocupacoes',
-            'aten_rel_ocup_relatorio_id',
-            'aten_rel_ocup_ocupacao_id'
-        )->withPivot([
-            'aten_rel_ocup_quantidade',
-            'aten_rel_ocup_id',
-        ]);
-    }
-
-    public function equipamentos()
-    {
-        return $this->belongsToMany(
-            Equipamento::class,
-            'atendimentos_relatorios_equipamentos',
-            'aten_rel_equip_relatorio_id',
-            'aten_rel_equip_equipamento_id'
-        )->withPivot(['aten_rel_equip_quantidade', 'aten_rel_equip_id']);
-    }
-
-    public function atividades()
-    {
-        return $this->hasMany(
-            AtendimentoRelatorioAtividade::class,
-            'aten_rel_ativ_relatorio_id',
-            'aten_rel_id'
-        );
-    }
-
     public function fotos()
     {
         return $this->hasMany(
@@ -178,12 +146,4 @@ class AtendimentoRelatorio extends Model
         ]);
     }
 
-    public function comentarios()
-    {
-        return $this->hasMany(
-            AtendimentoRelatorioComentario::class,
-            'aten_rel_com_relatorio_id',
-            'aten_rel_id'
-        );
-    }
 }

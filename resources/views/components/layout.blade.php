@@ -59,31 +59,8 @@
                     </a>
                 </li>
 
-                <!-- Nav Item - Equipamentos -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/equipamentos') }}">
-                        <i class="fas fa-tools fa-fw fa-lg"></i>
-                        <span>Ferramentas</span>
-                    </a>
-                </li>
-
-                <!-- Nav Item - Ocorrências -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/ocorrencias') }}">
-                        <i class="fas fa-exclamation-triangle fa-fw fa-lg"></i>
-                        <span>Ocorrências</span>
-                    </a>
-                </li>
-
-                <!-- Nav Item - Mão de Obra -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/mao-de-obra') }}">
-                        <i class="fas fa-people-carry fa-fw fa-lg"></i>
-                        <span>Mão de Obra</span>
-                    </a>
-                </li>
                 @endif
-                
+
                 <!-- Nav Item - Relatórios -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/atendimentos-relatorios') }}">
@@ -91,16 +68,6 @@
                         <span>Relatórios</span>
                     </a>
                 </li>
-
-                <!-- Nav Item - Usuários -->
-                @if(Auth::user()->user_nivel_acesso === 0)
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/usuarios') }}">
-                        <i class="fas fa-users fa-fw fa-lg"></i>
-                        <span>Usuários</span>
-                    </a>
-                </li>
-                @endif
 
                 <!-- Nav Item - Configurações Collapse Menu -->
                 @if(Auth::user()->user_nivel_acesso === 0)
@@ -117,11 +84,11 @@
                         <a class="collapse-item" href="{{ url('/naturezas-dos-atendimentos') }}">
                             <i class="fas fa-tags fa-fw fa-lg mr-2"></i>Naturezas de Atendimentos
                         </a>
-                        <a class="collapse-item" href="{{ url('/setores') }}">
-                            <i class="fas fa-clipboard-list fa-fw fa-lg mr-2"></i>Setores
+                        <a class="collapse-item" href="{{ url('/ocorrencias') }}">
+                            <i class="fas fa-exclamation-triangle fa-fw fa-lg mr-2"></i>Ocorrências
                         </a>
-                        <a class="collapse-item" href="{{ url('tipos-de-mao-de-obra') }}">
-                            <i class="fas fa-briefcase fa-fw fa-lg mr-2"></i>Tipos de Mão de Obra
+                        <a class="collapse-item" href="{{ url('/usuarios') }}">
+                            <i class="fas fa-users fa-fw fa-lg mr-2"></i>Usuários
                         </a>
                         </div>
                     </div>

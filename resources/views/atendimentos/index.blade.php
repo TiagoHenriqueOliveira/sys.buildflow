@@ -20,11 +20,9 @@
                     <thead>
                         <tr>
                             <th>Ações</th>
-                            <th>Setor</th>
                             <th>Natureza</th>
                             <th>Técnico</th>
                             <th>Cliente</th>
-                            <th>Obra</th>
                             <th>Período</th>
                             <th>Status</th>
                         </tr>

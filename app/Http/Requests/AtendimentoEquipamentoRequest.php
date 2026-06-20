@@ -9,8 +9,7 @@ class AtendimentoEquipamentoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'aten_equip_descricao'   => ['required', 'string', 'max:255'],
-            'aten_equip_observacoes' => ['nullable', 'string'],
+            'aten_equip_descricao' => ['required', 'string', 'max:255'],
         ];
     }
 
