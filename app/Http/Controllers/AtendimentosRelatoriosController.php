@@ -61,19 +61,21 @@ class AtendimentosRelatoriosController extends Controller
                         'atendimentos_relatorios.aten_rel_data',
                     ],
                     orderable:  [
-                        'acoes'    => null,
-                        'data'     => 'atendimentos_relatorios.aten_rel_data',
-                        'cliente'  => 'clientes.cli_nome',
-                        'natureza' => 'naturezas_atendimentos.nat_aten_descricao',
-                        'tecnico'  => 'usuarios.user_nome',
-                        'status'   => 'atendimentos_relatorios.aten_rel_status',
+                        'acoes'       => null,
+                        'data'        => 'atendimentos_relatorios.aten_rel_data',
+                        'cliente'     => 'clientes.cli_nome',
+                        'nr_proposta' => 'atendimentos.aten_nr_proposta',
+                        'natureza'    => 'naturezas_atendimentos.nat_aten_descricao',
+                        'tecnico'     => 'usuarios.user_nome',
+                        'status'      => 'atendimentos_relatorios.aten_rel_status',
                     ],
                     mapper: fn($r) => [
-                        'acoes'   => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
-                        'data'    => optional($r->aten_rel_data)->format('d/m/Y'),
-                        'cliente' => e($r->atendimento?->cliente?->cli_nome ?? '-'),
-                        'natureza'=> $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
-                        'tecnico' => e($r->atendimento?->usuario?->user_nome ?? '-'),
+                        'acoes'       => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
+                        'data'        => optional($r->aten_rel_data)->format('d/m/Y'),
+                        'cliente'     => e($r->atendimento?->cliente?->cli_nome ?? '-'),
+                        'nr_proposta' => e($r->atendimento?->aten_nr_proposta ?? ''),
+                        'natureza'    => $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
+                        'tecnico'     => e($r->atendimento?->usuario?->user_nome ?? '-'),
                         'status'  => ($s = AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status))
                             ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
                             : '-',
@@ -551,6 +553,16 @@ class AtendimentosRelatoriosController extends Controller
             'fotos.*'    => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
             'videos'     => ['nullable', 'array'],
             'videos.*'   => ['file', 'max:102400', 'mimes:mp4,mov,avi,mkv,webm'],
+        ], [
+            'arquivos.*.file'  => 'O arquivo enviado é inválido.',
+            'arquivos.*.max'   => 'Cada arquivo não pode ultrapassar 20 MB.',
+            'arquivos.*.mimes' => 'Tipo de arquivo não permitido. Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV.',
+            'fotos.*.file'     => 'A foto enviada é inválida.',
+            'fotos.*.max'      => 'Cada foto não pode ultrapassar 10 MB.',
+            'fotos.*.mimes'    => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+            'videos.*.file'    => 'O vídeo enviado é inválido.',
+            'videos.*.max'     => 'Cada vídeo não pode ultrapassar 100 MB.',
+            'videos.*.mimes'   => 'Tipo de vídeo não permitido. Formatos aceitos: MP4, MOV, AVI, MKV, WEBM.',
         ]);
 
         try {

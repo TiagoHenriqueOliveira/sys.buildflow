@@ -1,9 +1,37 @@
+{{-- PEÇAS SUBSTITUÍDAS --}}
 <div class="tab-pane fade" id="tab-pecas" role="tabpanel">
-    <form id="form_pecas_substituidas">
-        <div class="form-group">
-            <label class="font-weight-bold">Peças Substituídas:</label>
-            <textarea class="form-control" id="aten_rel_pecas_substituidas" name="valor" rows="8"
-                placeholder="Liste as peças substituídas...">{{ $atendimentoRelatorio->aten_rel_pecas_substituidas }}</textarea>
+    <div class="mb-3">
+        <div class="form-row align-items-end">
+            <div class="col-md-10">
+                <label for="peca_descricao" class="font-weight-bold mb-1">Descrição da Peça</label>
+                <input type="text"
+                    id="peca_descricao"
+                    class="form-control"
+                    maxlength="255"
+                    placeholder="Descreva a peça substituída">
+            </div>
+            <div class="col-md-2">
+                <button type="button" id="btnAddPeca" class="btn btn-primary btn-icon-split w-100">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span class="text">Adicionar</span>
+                </button>
+            </div>
         </div>
-    </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-striped" id="tablePecas">
+            <thead>
+                <tr>
+                    <th style="width:10%;">Ações</th>
+                    <th>Peça</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <input type="hidden" id="pecas_data" value="{{ e($atendimentoRelatorio->aten_rel_pecas_substituidas ?? '') }}">
 </div>

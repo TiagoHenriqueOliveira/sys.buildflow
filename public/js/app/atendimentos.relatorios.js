@@ -10,6 +10,8 @@ $(document).ready(function () {
     initSubmitRelatorio();
     initAtualizarRelatorio();
     initOcorrenciasTab();
+    initServicosTab();
+    initPecasTab();
     initAssinaturasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
@@ -133,6 +135,7 @@ function configDataTableAtendimentosRelatorios() {
             { data: "acoes" },
             { data: "data" },
             { data: "cliente" },
+            { data: "nr_proposta" },
             { data: "natureza" },
             { data: "tecnico" },
             { data: "status" }
@@ -232,20 +235,14 @@ function initAtualizarRelatorio() {
                 form = $('#form_descricao');
                 break;
 
-            case 'tab-servicos':
-                form = $('#form_servicos_prestados');
-                break;
-
-            case 'tab-pecas':
-                form = $('#form_pecas_substituidas');
-                break;
-
             case 'tab-info-adicionais':
                 form = $('#form_informacoes_adicionais');
                 break;
 
+            case 'tab-servicos':
+            case 'tab-pecas':
             case 'tab-ocorrencias':
-                showNotification('fas fa-info-circle', 'Use os botões específicos nesta aba.', 'info', 2000);
+                showNotification('fas fa-info-circle', 'Use os botões para adicionar e remover itens nesta aba.', 'info', 2500);
                 return;
 
             case 'tab-anexos':
@@ -368,7 +365,7 @@ function initAtualizarRelatorio() {
         }
 
         // Tabs de texto têm handler próprio via initTextosTab()
-        const textTabForms = ['form_descricao', 'form_servicos_prestados', 'form_pecas_substituidas', 'form_informacoes_adicionais'];
+        const textTabForms = ['form_descricao', 'form_informacoes_adicionais'];
         if (textTabForms.includes(form.attr('id'))) {
             form.trigger('submit');
             return;
@@ -857,14 +854,12 @@ function initAssinaturasTab() {
 
 function initTextosTab() {
     const mapa = {
-        'form_descricao':             'aten_rel_descricao',
-        'form_servicos_prestados':    'aten_rel_servicos_prestados',
-        'form_pecas_substituidas':    'aten_rel_pecas_substituidas',
-        'form_informacoes_adicionais':'aten_rel_informacoes_adicionais',
+        'form_descricao':             { campo: 'aten_rel_descricao',              label: 'Descrição' },
+        'form_informacoes_adicionais':{ campo: 'aten_rel_informacoes_adicionais', label: 'Informações Adicionais' },
     };
 
     Object.keys(mapa).forEach(function (formId) {
-        const campo = mapa[formId];
+        const config = mapa[formId];
         $(document).off('submit', '#' + formId).on('submit', '#' + formId, function (e) {
             e.preventDefault();
             const relatorioId = getRelatorioIdAtual();
@@ -873,15 +868,15 @@ function initTextosTab() {
                 return;
             }
 
-            const valor = $('#' + campo).val();
+            const valor = $('#' + config.campo).val();
             $.ajax({
-                url: baseURL + `/atendimentos-relatorios/${relatorioId}/texto/${campo}`,
+                url: baseURL + `/atendimentos-relatorios/${relatorioId}/texto/${config.campo}`,
                 type: 'POST',
                 data: { valor: valor },
                 dataType: 'json',
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-                success: function (r) {
-                    showNotification('fas fa-check-double', r.message, 'success', 2000);
+                success: function () {
+                    showNotification('fas fa-check-double', config.label + ' salvo com sucesso.', 'success', 2000);
                 },
                 error: function (xhr) {
                     handleAjaxError(xhr);
@@ -890,6 +885,131 @@ function initTextosTab() {
         });
     });
 }
+
+// ─── Serviços / Peças ─────────────────────────────────────────────────────────
+
+function parseItemsJson(raw) {
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (e) {}
+    return raw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+function salvarItemsTexto(relatorioId, campo, items, callback) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/texto/' + campo,
+        type: 'POST',
+        data: { valor: JSON.stringify(items) },
+        dataType: 'json',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        success: function () {
+            if (callback) callback();
+        },
+        error: function (xhr) {
+            handleAjaxError(xhr);
+        }
+    });
+}
+
+function renderItemsTabela(items, tbodySelector, btnRemoveClass, label) {
+    const tbody = $(tbodySelector);
+    tbody.empty();
+    if (!items.length) {
+        tbody.append('<tr><td colspan="2" class="text-center text-muted">Nenhum ' + label + ' cadastrado.</td></tr>');
+        return;
+    }
+    items.forEach(function (item, idx) {
+        const tr = $('<tr style="display:none;">' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-danger btn-sm btn-icon-split ' + btnRemoveClass + '" data-idx="' + idx + '">' +
+                    '<span class="icon text-white-50"><i class="fas fa-trash"></i></span>' +
+                    '<span class="text">Excluir</span>' +
+                '</button>' +
+            '</td>' +
+            '<td>' + escapeHtml(item) + '</td>' +
+        '</tr>');
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
+
+function initServicosTab() {
+    let items = parseItemsJson($('#servicos_data').val());
+    renderItemsTabela(items, '#tableServicos tbody', 'btnRemoveServico', 'serviço');
+
+    $(document).off('click', '#btnAddServico').on('click', '#btnAddServico', function () {
+        const relatorioId = getRelatorioIdAtual();
+        if (!relatorioId) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar serviços.', 'warning', 3500);
+            return;
+        }
+        const descricao = $('#servico_descricao').val().trim();
+        if (!descricao) {
+            showNotification('fas fa-exclamation-triangle', 'Informe a descrição do serviço.', 'warning', 3000);
+            return;
+        }
+        const btn = $(this);
+        btn.prop('disabled', true);
+        items.push(descricao);
+        salvarItemsTexto(relatorioId, 'aten_rel_servicos_prestados', items, function () {
+            $('#servico_descricao').val('');
+            renderItemsTabela(items, '#tableServicos tbody', 'btnRemoveServico', 'serviço');
+            showNotification('fas fa-check-double', 'Serviço adicionado com sucesso.', 'success', 2000);
+            btn.prop('disabled', false);
+        });
+    });
+
+    $(document).off('click', '.btnRemoveServico').on('click', '.btnRemoveServico', function () {
+        const relatorioId = getRelatorioIdAtual();
+        const idx = parseInt($(this).data('idx'), 10);
+        items.splice(idx, 1);
+        salvarItemsTexto(relatorioId, 'aten_rel_servicos_prestados', items, function () {
+            renderItemsTabela(items, '#tableServicos tbody', 'btnRemoveServico', 'serviço');
+            showNotification('fas fa-check', 'Serviço removido.', 'success', 2000);
+        });
+    });
+}
+
+function initPecasTab() {
+    let items = parseItemsJson($('#pecas_data').val());
+    renderItemsTabela(items, '#tablePecas tbody', 'btnRemovePeca', 'peça');
+
+    $(document).off('click', '#btnAddPeca').on('click', '#btnAddPeca', function () {
+        const relatorioId = getRelatorioIdAtual();
+        if (!relatorioId) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar peças.', 'warning', 3500);
+            return;
+        }
+        const descricao = $('#peca_descricao').val().trim();
+        if (!descricao) {
+            showNotification('fas fa-exclamation-triangle', 'Informe a descrição da peça.', 'warning', 3000);
+            return;
+        }
+        const btn = $(this);
+        btn.prop('disabled', true);
+        items.push(descricao);
+        salvarItemsTexto(relatorioId, 'aten_rel_pecas_substituidas', items, function () {
+            $('#peca_descricao').val('');
+            renderItemsTabela(items, '#tablePecas tbody', 'btnRemovePeca', 'peça');
+            showNotification('fas fa-check-double', 'Peça adicionada com sucesso.', 'success', 2000);
+            btn.prop('disabled', false);
+        });
+    });
+
+    $(document).off('click', '.btnRemovePeca').on('click', '.btnRemovePeca', function () {
+        const relatorioId = getRelatorioIdAtual();
+        const idx = parseInt($(this).data('idx'), 10);
+        items.splice(idx, 1);
+        salvarItemsTexto(relatorioId, 'aten_rel_pecas_substituidas', items, function () {
+            renderItemsTabela(items, '#tablePecas tbody', 'btnRemovePeca', 'peça');
+            showNotification('fas fa-check', 'Peça removida.', 'success', 2000);
+        });
+    });
+}
+
+// ─── Ocorrências ──────────────────────────────────────────────────────────────
 
 function applyOcorrencias(lista) {
     const tbody = $('#tableOcorrencias tbody');

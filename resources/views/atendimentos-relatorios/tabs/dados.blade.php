@@ -63,12 +63,24 @@
             </div>
         </div>
 
-        {{-- LINHA: Endereço --}}
+        {{-- LINHA: Endereço | Cidade | UF --}}
         <div class="row mb-3">
-            <div class="col-md-12">
+            <div class="col-md-6">
                 <label class="font-weight-bold">Endereço</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_endereco }}
+                </span>
+            </div>
+            <div class="col-md-4">
+                <label class="font-weight-bold">Cidade</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->cliente->cli_cidade }}
+                </span>
+            </div>
+            <div class="col-md-2">
+                <label class="font-weight-bold">UF</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->cliente->cli_uf }}
                 </span>
             </div>
         </div>

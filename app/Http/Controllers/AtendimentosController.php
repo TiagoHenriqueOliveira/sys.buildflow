@@ -39,18 +39,20 @@ class AtendimentosController extends Controller
                     $this->repository->query($filtroUsuarioId),
                     searchable: ['clientes.cli_nome'],
                     orderable:  [
-                        'acoes'    => null,
-                        'natureza' => null,
-                        'usuario'  => 'usuarios.user_nome',
-                        'cliente'  => null,
-                        'periodo'  => 'aten_dt_inicio',
-                        'status'   => 'aten_status',
+                        'acoes'       => null,
+                        'natureza'    => null,
+                        'usuario'     => 'usuarios.user_nome',
+                        'cliente'     => null,
+                        'nr_proposta' => 'aten_nr_proposta',
+                        'periodo'     => 'aten_dt_inicio',
+                        'status'      => 'aten_status',
                     ],
                     mapper: fn($a) => [
                         'acoes'        => view('atendimentos.partials.acoes', compact('a'))->render(),
                         'natureza'     => e(optional($a->natureza)->nat_aten_descricao),
                         'usuario'      => e(optional($a->usuario)->user_nome),
                         'cliente'      => e(optional($a->cliente)->cli_nome),
+                        'nr_proposta'  => e($a->aten_nr_proposta ?? ''),
                         'periodo'      => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
                         'status'       => ($s = AtendimentoStatus::tryFrom($a->aten_status))
                             ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'

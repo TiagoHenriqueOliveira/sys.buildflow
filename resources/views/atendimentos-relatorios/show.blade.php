@@ -1,4 +1,4 @@
-﻿<x-layout title="Visualizar RelatÃ³rio">
+﻿<x-layout title="Visualizar Relatório">
     <div class="card shadow mb-4">
         {{-- HEADER --}}
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -13,22 +13,22 @@
                     <a class="nav-link active" data-toggle="tab" href="#tab-dados">Dados</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-horarios">HorÃ¡rio</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-horarios">Horário</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-clima">Clima</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-descricao">DescriÃ§Ã£o</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-descricao">Descrição</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-servicos">ServiÃ§os Prestados</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-servicos">Serviços Prestados</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-pecas">PeÃ§as SubstituÃ­das</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-pecas">Peças Substituídas</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">OcorrÃªncias</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">Ocorrências</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-info-adicionais">Inf. Adicionais</a>

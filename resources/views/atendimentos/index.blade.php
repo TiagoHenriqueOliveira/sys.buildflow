@@ -21,11 +21,12 @@
                     width="100%">
                     <thead>
                         <tr>
-                            <th>AÃ§Ãµes</th>
+                            <th>Ações</th>
                             <th>Natureza</th>
-                            <th>TÃ©cnico</th>
+                            <th>Técnico</th>
                             <th>Cliente</th>
-                            <th>PerÃ­odo</th>
+                            <th>Nº Proposta</th>
+                            <th>Período</th>
                             <th>Status</th>
                         </tr>
                     </thead>

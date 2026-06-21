@@ -34,8 +34,11 @@ $(document).ready(function () {
 
     $("#modal_atendimento").on("hidden.bs.modal", function () {
         $("#form_atendimento button[type='submit']").prop("disabled", false);
-        $("#form_equip_atendimento")[0].reset();
+        $("#aten_equip_descricao").val("");
         $("#table_equipamentos tbody").empty();
+        $("#aten_obs_tecnica, #aten_obs_cliente").val("");
+        $("#aten_anexos_lista").empty();
+        $("#aten_usuario_id").val("");
         $("#tab-equipamentos-tab, #tab-observacoes-tab, #tab-anexos-aten-tab").addClass("disabled").prop("disabled", true);
         $("#tab-dados-tab").tab("show");
     });
@@ -68,6 +71,7 @@ function configDataTableAtendimentos() {
             { data: "natureza" },
             { data: "usuario" },
             { data: "cliente" },
+            { data: "nr_proposta" },
             { data: "periodo" },
             { data: "status" }
         ],
@@ -181,7 +185,7 @@ function abrirModalAtendimento(data) {
 
             // Habilitar aba de equipamentos
             $("#tab-equipamentos-tab").removeClass("disabled").prop("disabled", false);
-            $("#form_equip_aten_id").val(data.aten_id);
+            // form_equip_aten_id was removed; aten_id is read directly from #aten_id
         }
 
         if (isEdit) {
@@ -448,7 +452,7 @@ function renderizarEquipamentos(equipamentos, atenId) {
     tbody.empty();
 
     if (!equipamentos || equipamentos.length === 0) {
-        tbody.append("<tr><td colspan='3' class='text-center text-muted'>Nenhum equipamento cadastrado</td></tr>");
+        tbody.append("<tr><td colspan='2' class='text-center text-muted'>Nenhum equipamento cadastrado</td></tr>");
         return;
     }
 
@@ -461,7 +465,6 @@ function renderizarEquipamentos(equipamentos, atenId) {
                     </button>
                 </td>
                 <td>${e(equip.aten_equip_descricao)}</td>
-                <td>${equip.aten_equip_observacoes ? e(equip.aten_equip_observacoes) : "-"}</td>
             </tr>
         `;
         tbody.append(row);
