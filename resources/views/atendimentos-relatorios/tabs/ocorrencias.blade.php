@@ -2,7 +2,7 @@
 <div class="tab-pane fade" id="tab-ocorrencias">
     <div class="mb-3">
         <div class="form-row align-items-end">
-            <div class="col-md-7">
+            <div class="col-md-6">
                 <label for="ocorrencia_id" class="font-weight-bold mb-1">Ocorrência</label>
                 <select id="ocorrencia_id" class="form-control">
                     <option value="">Selecione...</option>
@@ -12,7 +12,7 @@
                 </select>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label for="ocorrencia_observacao" class="font-weight-bold mb-1">Observação</label>
                 <input type="text"
                     id="ocorrencia_observacao"
