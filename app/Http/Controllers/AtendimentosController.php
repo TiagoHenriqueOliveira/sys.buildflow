@@ -82,7 +82,26 @@ class AtendimentosController extends Controller
         try {
             $atendimento = $this->repository->create($request->validated());
             AuditService::log('Atendimentos', 'CRIAR', $atendimento->aten_id, [], $request->validated());
-            return response()->json(['message' => 'Atendimento cadastrado com sucesso!']);
+
+            $atendimento->load('cliente', 'usuario', 'natureza');
+
+            return response()->json([
+                'message'     => 'Atendimento cadastrado com sucesso!',
+                'aten_id'     => $atendimento->aten_id,
+                'atendimento' => [
+                    'aten_id'          => $atendimento->aten_id,
+                    'aten_natureza_id' => $atendimento->aten_natureza_id,
+                    'aten_cliente_id'  => $atendimento->aten_cliente_id,
+                    'aten_cliente_nome'=> optional($atendimento->cliente)->cli_nome ?? '',
+                    'aten_usuario_id'  => $atendimento->aten_usuario_id,
+                    'aten_status'      => $atendimento->aten_status,
+                    'aten_nr_proposta' => $atendimento->aten_nr_proposta ?? '',
+                    'aten_responsavel' => $atendimento->aten_responsavel ?? '',
+                    'aten_endereco'    => $atendimento->aten_endereco ?? '',
+                    'aten_dt_inicio'   => $atendimento->aten_dt_inicio->format('Y-m-d'),
+                    'aten_dt_fim'      => $atendimento->aten_dt_fim->format('Y-m-d'),
+                ],
+            ]);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao cadastrar atendimento.'], 500);

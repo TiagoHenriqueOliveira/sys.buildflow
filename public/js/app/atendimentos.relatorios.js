@@ -954,7 +954,7 @@ function initServicosTab() {
         btn.prop('disabled', true);
         items.push(descricao);
         salvarItemsTexto(relatorioId, 'aten_rel_servicos_prestados', items, function () {
-            $('#servico_descricao').val('');
+            $('#servico_descricao').val('').focus();
             renderItemsTabela(items, '#tableServicos tbody', 'btnRemoveServico', 'serviço');
             showNotification('fas fa-check-double', 'Serviço adicionado com sucesso.', 'success', 2000);
             btn.prop('disabled', false);
@@ -991,7 +991,7 @@ function initPecasTab() {
         btn.prop('disabled', true);
         items.push(descricao);
         salvarItemsTexto(relatorioId, 'aten_rel_pecas_substituidas', items, function () {
-            $('#peca_descricao').val('');
+            $('#peca_descricao').val('').focus();
             renderItemsTabela(items, '#tablePecas tbody', 'btnRemovePeca', 'peça');
             showNotification('fas fa-check-double', 'Peça adicionada com sucesso.', 'success', 2000);
             btn.prop('disabled', false);

@@ -782,6 +782,10 @@ class AtendimentosRelatoriosController extends Controller
             ])
             ->leftJoin('clientes', 'clientes.cli_id', '=', 'atendimentos.aten_cliente_id')
             ->where('clientes.cli_nome', 'like', "%{$term}%")
+            ->whereNotIn('atendimentos.aten_status', [
+                \App\Enums\AtendimentoStatus::Concluida->value,
+                \App\Enums\AtendimentoStatus::Paralisada->value,
+            ])
             ->orderBy('clientes.cli_nome')
             ->orderBy('atendimentos.aten_id', 'desc')
             ->limit(20)

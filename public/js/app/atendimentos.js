@@ -156,7 +156,7 @@ function abrirModalAtendimento(data) {
     $("input[name='aten_status']").prop("checked", false);
     $(`#aten_status_${data.aten_status ?? 0}`).prop("checked", true);
 
-    $("#modal_atendimento").off("shown.bs.modal").on("shown.bs.modal", function () {
+    function setupModal() {
         const isEdit = !!data.aten_id;
 
         if (!isEdit) {
@@ -185,7 +185,6 @@ function abrirModalAtendimento(data) {
 
             // Habilitar aba de equipamentos
             $("#tab-equipamentos-tab").removeClass("disabled").prop("disabled", false);
-            // form_equip_aten_id was removed; aten_id is read directly from #aten_id
         }
 
         if (isEdit) {
@@ -208,7 +207,15 @@ function abrirModalAtendimento(data) {
 
         // Inicializar o submit do formulário de equipamentos
         initSubmitEquipamento();
-    });
+    }
+
+    const modalEl = $("#modal_atendimento");
+    modalEl.off("shown.bs.modal").on("shown.bs.modal", setupModal);
+
+    // Se o modal já está visível (transição de novo → edição), executa setup direto
+    if (modalEl.hasClass("show")) {
+        setupModal();
+    }
 }
 
 function carregarObservacoes(atenId) {
@@ -329,10 +336,16 @@ function initSubmitAtendimento() {
             dataType: "json",
             headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
             success: function (response) {
-                $("#modal_atendimento").modal("hide");
-                $("#dataTableAtendimentos").DataTable().ajax.reload(null, false);
                 showNotification("fas fa-check-double", response.message, "success", 2000);
                 btnSubmit.prop("disabled", false);
+                $("#dataTableAtendimentos").DataTable().ajax.reload(null, false);
+
+                if (response.aten_id && response.atendimento) {
+                    // Novo atendimento: reabre em modo edição sem fechar o modal
+                    abrirModalAtendimento(response.atendimento);
+                } else {
+                    $("#modal_atendimento").modal("hide");
+                }
             },
             error: function (xhr) {
                 btnSubmit.prop("disabled", false);
