@@ -34,5 +34,5 @@
         </table>
     </div>
 
-    <input type="hidden" id="pecas_data" value="{{ e($atendimentoRelatorio->aten_rel_pecas_substituidas ?? '') }}">
+
 </div>

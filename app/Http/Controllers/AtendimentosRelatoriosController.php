@@ -24,6 +24,8 @@ use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Models\AtendimentoRelatorioServico;
+use App\Models\AtendimentoRelatorioPeca;
 use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
 use App\Services\DataTableService;
@@ -368,7 +370,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateTexto(Request $request, int $id, string $campo): \Illuminate\Http\JsonResponse
     {
-        $campos = ['aten_rel_descricao', 'aten_rel_servicos_prestados', 'aten_rel_pecas_substituidas', 'aten_rel_informacoes_adicionais'];
+        $campos = ['aten_rel_descricao', 'aten_rel_informacoes_adicionais'];
         if (!in_array($campo, $campos)) {
             return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
         }
@@ -442,72 +444,145 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function getData(int $id)
+    public function getServicos(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::with([
-            'atendimento',
-            'horarios',
-            'climas',
-            'ocorrencias',
-        ])->findOrFail($id);
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        return response()->json([
+            'data' => $relatorio->servicos()->orderBy('aten_rel_serv_id')->get(['aten_rel_serv_id', 'aten_rel_serv_descricao']),
+        ]);
+    }
 
+    public function storeServico(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['descricao' => 'required|string|max:255']);
+        try {
+            $serv = AtendimentoRelatorioServico::create([
+                'aten_rel_serv_relatorio_id' => $id,
+                'aten_rel_serv_descricao'    => $request->input('descricao'),
+            ]);
+            return response()->json(['message' => 'Serviço adicionado!', 'item' => $serv]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar serviço.'], 500);
+        }
+    }
+
+    public function destroyServico(int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        try {
+            AtendimentoRelatorioServico::where('aten_rel_serv_id', $itemId)
+                ->where('aten_rel_serv_relatorio_id', $id)
+                ->delete();
+            return response()->json(['message' => 'Serviço removido!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover serviço.'], 500);
+        }
+    }
+
+    public function getPecas(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        return response()->json([
+            'data' => $relatorio->pecas()->orderBy('aten_rel_peca_id')->get(['aten_rel_peca_id', 'aten_rel_peca_descricao']),
+        ]);
+    }
+
+    public function storePeca(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['descricao' => 'required|string|max:255']);
+        try {
+            $peca = AtendimentoRelatorioPeca::create([
+                'aten_rel_peca_relatorio_id' => $id,
+                'aten_rel_peca_descricao'    => $request->input('descricao'),
+            ]);
+            return response()->json(['message' => 'Peça adicionada!', 'item' => $peca]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar peça.'], 500);
+        }
+    }
+
+    public function destroyPeca(int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        try {
+            AtendimentoRelatorioPeca::where('aten_rel_peca_id', $itemId)
+                ->where('aten_rel_peca_relatorio_id', $id)
+                ->delete();
+            return response()->json(['message' => 'Peça removida!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover peça.'], 500);
+        }
+    }
+
+    public function getDados(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::with('atendimento.cliente')->findOrFail($id);
         $prazo = $relatorio->calcularPrazo();
 
-        $climaPorPeriodo = [
-            'manha' => null,
-            'tarde' => null,
-            'noite' => null,
-        ];
+        return response()->json([
+            'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
+            'dia_semana'        => getFormatDiaSemana($relatorio->aten_rel_data),
+            'prazo_total'       => $prazo['prazo_total'],
+            'prazo_decorrido'   => $prazo['prazo_decorrido'],
+            'prazo_vencer'      => $prazo['prazo_a_vencer'],
+        ]);
+    }
 
-        foreach ($relatorio->climas as $c) {
-            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
-            if ($c->aten_rel_clima_periodo === 1) $climaPorPeriodo['manha'] = $label;
-            if ($c->aten_rel_clima_periodo === 2) $climaPorPeriodo['tarde'] = $label;
-            if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $label;
-        }
-
-        $ocorrencias = $relatorio->ocorrencias->map(function ($o) {
-            return [
-                'ocorrencia_id' => (int) $o->ocor_id,
-                'ocorrencia'    => (string) $o->ocor_descricao,
-                'observacao'    => (string) ($o->pivot->aten_rel_ocor_observacao ?? ''),
-            ];
-        })->values();
-
-        $assinaturas = [
-            'responsavel' => optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
-                : null,
-            'cliente' => optional($relatorio->assinaturaCliente())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
-                : null,
-        ];
+    public function getHorarios(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::with('horarios')->findOrFail($id);
+        $h = $relatorio->horarios;
 
         return response()->json([
-            'dados' => [
-                'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
-                'aten_rel_data_fmt' => $relatorio->aten_rel_data->format('d/m/Y'),
-                'dia_semana'        => getFormatDiaSemana($relatorio->aten_rel_data),
-                'prazo_total'       => $prazo['prazo_total'],
-                'prazo_decorrido'   => $prazo['prazo_decorrido'],
-                'prazo_vencer'      => $prazo['prazo_a_vencer'],
-            ],
+            'entrada'          => $h?->aten_rel_hora_entrada          ? substr($h->aten_rel_hora_entrada, 0, 5)          : '',
+            'inicio_intervalo' => $h?->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '',
+            'fim_intervalo'    => $h?->aten_rel_hora_fim_intervalo    ? substr($h->aten_rel_hora_fim_intervalo, 0, 5)    : '',
+            'saida'            => $h?->aten_rel_hora_saida            ? substr($h->aten_rel_hora_saida, 0, 5)            : '',
+        ]);
+    }
 
-            'horarios' => [
-                'entrada'          => optional($relatorio->horarios)->aten_rel_hora_entrada,
-                'inicio_intervalo' => optional($relatorio->horarios)->aten_rel_hora_inicio_intervalo,
-                'fim_intervalo'    => optional($relatorio->horarios)->aten_rel_hora_fim_intervalo,
-                'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
-            ],
+    public function getClimaData(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::with('climas')->findOrFail($id);
 
-            'clima'                      => $climaPorPeriodo,
-            'ocorrencias'                => $ocorrencias,
-            'status'                     => $relatorio->aten_rel_status,
-            'assinaturas'                => $assinaturas,
-            'aten_rel_descricao'         => $relatorio->aten_rel_descricao,
-            'aten_rel_servicos_prestados'=> $relatorio->aten_rel_servicos_prestados,
-            'aten_rel_pecas_substituidas'=> $relatorio->aten_rel_pecas_substituidas,
-            'aten_rel_informacoes_adicionais' => $relatorio->aten_rel_informacoes_adicionais,
+        $clima = ['manha' => null, 'tarde' => null, 'noite' => null];
+        foreach ($relatorio->climas as $c) {
+            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
+            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $label;
+            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $label;
+            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $label;
+        }
+
+        return response()->json($clima);
+    }
+
+    public function getOcorrenciasData(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::with('ocorrencias')->findOrFail($id);
+
+        $ocorrencias = $relatorio->ocorrencias->map(fn($o) => [
+            'ocorrencia_id' => (int) $o->ocor_id,
+            'ocorrencia'    => (string) $o->ocor_descricao,
+            'observacao'    => (string) ($o->pivot->aten_rel_ocor_observacao ?? ''),
+        ])->values();
+
+        return response()->json(['data' => $ocorrencias]);
+    }
+
+    public function getAssinaturasData(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $resp = $relatorio->assinaturaResponsavel();
+        $cli  = $relatorio->assinaturaCliente();
+
+        return response()->json([
+            'status' => $relatorio->aten_rel_status,
+            'assinaturas' => [
+                'responsavel' => $resp?->aten_rel_ass_path ? asset('storage/' . $resp->aten_rel_ass_path) : null,
+                'cliente'     => $cli?->aten_rel_ass_path  ? asset('storage/' . $cli->aten_rel_ass_path)  : null,
+            ],
         ]);
     }
 

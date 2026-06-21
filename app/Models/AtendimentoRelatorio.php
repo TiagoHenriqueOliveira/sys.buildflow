@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Models\AtendimentoRelatorioServico;
+use App\Models\AtendimentoRelatorioPeca;
 use App\Models\ModeloRelatorio;
 
 class AtendimentoRelatorio extends Model
@@ -24,8 +26,6 @@ class AtendimentoRelatorio extends Model
         'aten_rel_data',
         'aten_rel_status',
         'aten_rel_descricao',
-        'aten_rel_servicos_prestados',
-        'aten_rel_pecas_substituidas',
         'aten_rel_informacoes_adicionais',
         'aten_rel_dt_fim',
     ];
@@ -136,6 +136,24 @@ class AtendimentoRelatorio extends Model
             'prazo_decorrido'  => $decorrido,
             'prazo_a_vencer'   => $aVencer,
         ];
+    }
+
+    public function servicos()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioServico::class,
+            'aten_rel_serv_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
+    public function pecas()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioPeca::class,
+            'aten_rel_peca_relatorio_id',
+            'aten_rel_id'
+        );
     }
 
     public function ocorrencias()
