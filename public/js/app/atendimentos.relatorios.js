@@ -53,6 +53,8 @@ $(document).ready(function () {
         getData(relatorioId, 'tab-assinatura');
     }
 
+    initTextosTab();
+
     $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
         const relatorioId = getRelatorioIdAtual();
         if (!relatorioId) return;
@@ -144,21 +146,20 @@ function configDataTableAtendimentosRelatorios() {
 
 function handleAjaxError(xhr) {
     if (xhr.status === 422) {
-        const errors = xhr.responseJSON?.errors || {};
-        let msg = "<ul>";
+        const resp   = xhr.responseJSON || {};
+        const errors = resp.errors || {};
+        const keys   = Object.keys(errors);
 
-        Object.values(errors).flat().forEach(m => {
-            msg += `<li>${m}</li>`;
-        });
+        let msg;
+        if (keys.length) {
+            msg = "Ocorreram erros:<br><ul>" +
+                Object.values(errors).flat().map(m => `<li>${m}</li>`).join('') +
+                "</ul>";
+        } else {
+            msg = resp.message || "Erro de validação.";
+        }
 
-        msg += "</ul>";
-
-        showNotification(
-            "fas fa-bug",
-            "Ocorreram erros:<br>" + msg,
-            "danger",
-            5000
-        );
+        showNotification("fas fa-bug", msg, "danger", 5000);
     } else {
         showNotification(
             "fas fa-bug",
@@ -189,20 +190,12 @@ function initSubmitRelatorio() {
                 "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
             },
             success: function (response) {
-                $("#modal_relatorio").modal("hide");
-
-                $("#dataTableAtendimentosRelatorios")
-                    .DataTable()
-                    .ajax.reload(null, false);
-
-                showNotification(
-                    "fas fa-check-double",
-                    response.message,
-                    "success",
-                    2000
-                );
-
-                btnSubmit.prop("disabled", false);
+                if (response.redirect_url) {
+                    window.location.href = response.redirect_url;
+                } else {
+                    $("#modal_relatorio").modal("hide");
+                    btnSubmit.prop("disabled", false);
+                }
             },
             error: function (xhr) {
                 btnSubmit.prop("disabled", false);
@@ -234,6 +227,26 @@ function initAtualizarRelatorio() {
             case 'tab-assinatura':
                 form = $('#form_relatorio_assinaturas');
                 break;
+
+            case 'tab-descricao':
+                form = $('#form_descricao');
+                break;
+
+            case 'tab-servicos':
+                form = $('#form_servicos_prestados');
+                break;
+
+            case 'tab-pecas':
+                form = $('#form_pecas_substituidas');
+                break;
+
+            case 'tab-info-adicionais':
+                form = $('#form_informacoes_adicionais');
+                break;
+
+            case 'tab-ocorrencias':
+                showNotification('fas fa-info-circle', 'Use os botões específicos nesta aba.', 'info', 2000);
+                return;
 
             case 'tab-anexos':
                 // handled specially below (no HTML form); mark form as a dummy jQuery object
@@ -351,6 +364,13 @@ function initAtualizarRelatorio() {
                 'warning',
                 3000
             );
+            return;
+        }
+
+        // Tabs de texto têm handler próprio via initTextosTab()
+        const textTabForms = ['form_descricao', 'form_servicos_prestados', 'form_pecas_substituidas', 'form_informacoes_adicionais'];
+        if (textTabForms.includes(form.attr('id'))) {
+            form.trigger('submit');
             return;
         }
 
@@ -478,23 +498,6 @@ $(document).on('click', '.btn-delete-anexo', function (e) {
 });
 
 function initOcorrenciasTab() {
-    if ($.ui && $.ui.autocomplete && $('#ocorrencia_label').length) {
-        setupAutocomplete(
-            '#ocorrencia_label',
-            '#ocorrencia_id',
-            baseURL + '/ocorrencias/autocomplete',
-            function (item) {
-                $('#ocorrencia_label').data('selectedItem', item);
-            }
-        );
-    }
-
-    $(document).off('change', '#ocorrencia_label').on('change', '#ocorrencia_label', function () {
-        if (!$('#ocorrencia_id').val()) {
-            $('#ocorrencia_label').removeData('selectedItem');
-        }
-    });
-
     $(document).off('click', '#btnAddOcorrencia').on('click', '#btnAddOcorrencia', function () {
         const relatorioId = getRelatorioIdAtual();
 
@@ -508,14 +511,14 @@ function initOcorrenciasTab() {
             return;
         }
 
-        const ocorrenciaId = $('#ocorrencia_id').val();
-        const item = $('#ocorrencia_label').data('selectedItem');
+        const selectEl = $('#ocorrencia_id');
+        const ocorrenciaId = selectEl.val();
         const observacao = $('#ocorrencia_observacao').val();
 
-        if (!ocorrenciaId || !item) {
+        if (!ocorrenciaId) {
             showNotification(
                 'fas fa-exclamation-triangle',
-                'Selecione uma ocorrência válida na lista.',
+                'Selecione uma ocorrência.',
                 'warning',
                 3000
             );
@@ -577,10 +580,8 @@ function initOcorrenciasTab() {
                     2000
                 );
 
-                $('#ocorrencia_label').val('').removeData('selectedItem');
                 $('#ocorrencia_id').val('');
                 $('#ocorrencia_observacao').val('');
-                $('#ocorrencia_label').focus();
             },
             error: function (xhr) {
                 if (xhr.status === 422) {
@@ -850,6 +851,42 @@ function initAssinaturasTab() {
             error: function (xhr) {
                 handleAjaxError(xhr);
             }
+        });
+    });
+}
+
+function initTextosTab() {
+    const mapa = {
+        'form_descricao':             'aten_rel_descricao',
+        'form_servicos_prestados':    'aten_rel_servicos_prestados',
+        'form_pecas_substituidas':    'aten_rel_pecas_substituidas',
+        'form_informacoes_adicionais':'aten_rel_informacoes_adicionais',
+    };
+
+    Object.keys(mapa).forEach(function (formId) {
+        const campo = mapa[formId];
+        $(document).off('submit', '#' + formId).on('submit', '#' + formId, function (e) {
+            e.preventDefault();
+            const relatorioId = getRelatorioIdAtual();
+            if (!relatorioId) {
+                showNotification('fas fa-exclamation-triangle', 'Relatório não identificado.', 'warning', 3000);
+                return;
+            }
+
+            const valor = $('#' + campo).val();
+            $.ajax({
+                url: baseURL + `/atendimentos-relatorios/${relatorioId}/texto/${campo}`,
+                type: 'POST',
+                data: { valor: valor },
+                dataType: 'json',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function (r) {
+                    showNotification('fas fa-check-double', r.message, 'success', 2000);
+                },
+                error: function (xhr) {
+                    handleAjaxError(xhr);
+                }
+            });
         });
     });
 }

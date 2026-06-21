@@ -16,6 +16,7 @@ class AtendimentoRepository implements CrudRepositoryInterface
     {
         return Atendimento::with(['natureza', 'cliente', 'usuario'])
             ->join('usuarios', 'usuarios.user_id', '=', 'atendimentos.aten_usuario_id')
+            ->leftJoin('clientes', 'clientes.cli_id', '=', 'atendimentos.aten_cliente_id')
             ->when($usuarioId, fn($q) => $q->where('atendimentos.aten_usuario_id', $usuarioId))
             ->select('atendimentos.*');
     }

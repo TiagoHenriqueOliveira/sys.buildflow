@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AssinaturaTipo;
 use App\Enums\AtendimentoRelatorioStatus;
 use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
+use App\Services\AuditService;
 use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
 use App\Http\Requests\AtendimentoRelatorioStoreRequest;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
@@ -55,9 +57,7 @@ class AtendimentosRelatoriosController extends Controller
                     $this->repo->query($filters),
                     searchable: [
                         'clientes.cli_nome',
-                        'atendimentos.aten_descricao',
                         'naturezas_atendimentos.nat_aten_descricao',
-                        'tipos_atendimentos.tp_aten_descricao',
                         'atendimentos_relatorios.aten_rel_data',
                     ],
                     orderable:  [
@@ -104,12 +104,41 @@ class AtendimentosRelatoriosController extends Controller
                 ], 422);
             }
 
+            $modelo = $atendimento->natureza->modeloRelatorio;
+
+            // REL-02: Bloquear se atendimento está Paralisado ou Concluído
+            if (in_array($atendimento->aten_status, [
+                AtendimentoStatus::Paralisada->value,
+                AtendimentoStatus::Concluida->value,
+            ])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não é possível criar relatório para atendimentos Paralisados ou Concluídos.',
+                ], 422);
+            }
+
+            // REL-03: Bloquear > 1 relatório de período por atendimento
+            if ((int) $modelo->mod_rel_tp_data === 1) {
+                $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
+                    ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
+                    ->exists();
+
+                if ($existe) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Este atendimento já possui relatório de período cadastrado.',
+                    ], 422);
+                }
+            }
+
             $rel = $this->repo->create([
                 'aten_rel_atendimento_id'      => $atendimento->aten_id,
-                'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio->mod_rel_id,
+                'aten_rel_modelo_relatorio_id' => $modelo->mod_rel_id,
                 'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
                 'aten_rel_status'              => 0,
             ]);
+
+            AuditService::log('Relatorios', 'CRIAR', $rel->aten_rel_id);
 
             // Avança o atendimento para "Em andamento" somente se ainda não chegou lá
             if (!in_array($atendimento->aten_status, [
@@ -120,9 +149,9 @@ class AtendimentosRelatoriosController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Relatório criado com sucesso.',
-                'data'    => $rel,
+                'success'      => true,
+                'message'      => 'Relatório criado com sucesso.',
+                'redirect_url' => route('atendimentos-relatorios.show', $rel->aten_rel_id),
             ], 201);
         } catch (\Throwable $e) {
             report($e);
@@ -161,6 +190,7 @@ class AtendimentosRelatoriosController extends Controller
             'prazoTotal'           => $prazo['prazo_total'],
             'prazoDecorrido'       => $prazo['prazo_decorrido'],
             'prazoAVencer'         => $prazo['prazo_a_vencer'],
+            'ocorrencias'          => \App\Models\Ocorrencia::where('ocor_ativo', true)->orderBy('ocor_descricao')->get(),
         ]);
     }
 
@@ -267,9 +297,36 @@ class AtendimentosRelatoriosController extends Controller
     public function updateAssinaturas(AtendimentoRelatorioAssinaturasRequest $request, int $id)
     {
         try {
+            $relatorio = AtendimentoRelatorio::with(['modeloRelatorio', 'assinaturas'])->findOrFail($id);
+            $novoStatus = (int) $request->aten_rel_status;
 
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-            $relatorio->update(['aten_rel_status' => $request->aten_rel_status]);
+            // REL-05: Exigir assinaturas do técnico e do cliente para aprovar
+            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value) {
+                $temResponsavel = $relatorio->assinaturaResponsavel() || $request->filled('assinatura_responsavel');
+                $temCliente     = $relatorio->assinaturaCliente()     || $request->filled('assinatura_cliente');
+
+                if (!$temResponsavel || !$temCliente) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Assinaturas do técnico e do cliente são obrigatórias para concluir o relatório.',
+                    ], 422);
+                }
+            }
+
+            $statusAnterior = $relatorio->aten_rel_status;
+            $relatorio->update(['aten_rel_status' => $novoStatus]);
+
+            // REL-04: Preencher aten_rel_dt_fim automaticamente ao aprovar relatório de período
+            if (
+                $novoStatus === AtendimentoRelatorioStatus::Aprovado->value &&
+                $statusAnterior !== AtendimentoRelatorioStatus::Aprovado->value &&
+                $relatorio->modeloRelatorio &&
+                (int) $relatorio->modeloRelatorio->mod_rel_tp_data === 1
+            ) {
+                $relatorio->update(['aten_rel_dt_fim' => now()->toDateString()]);
+            }
+
+            AuditService::log('Relatorios', 'APROVAR', $id, ['status' => $statusAnterior], ['status' => $novoStatus]);
 
             $assinaturas = [];
 
@@ -293,7 +350,7 @@ class AtendimentosRelatoriosController extends Controller
                 'success' => true,
                 'message' => 'Status e assinaturas atualizados com sucesso.',
                 'data' => [
-                    'status' => $relatorio->aten_rel_status,
+                    'status'      => $relatorio->aten_rel_status,
                     'assinaturas' => $assinaturas,
                 ],
             ]);
@@ -304,6 +361,22 @@ class AtendimentosRelatoriosController extends Controller
                 'success' => false,
                 'message' => 'Erro ao atualizar assinaturas.',
             ], 500);
+        }
+    }
+
+    public function updateTexto(Request $request, int $id, string $campo): \Illuminate\Http\JsonResponse
+    {
+        $campos = ['aten_rel_descricao', 'aten_rel_servicos_prestados', 'aten_rel_pecas_substituidas', 'aten_rel_informacoes_adicionais'];
+        if (!in_array($campo, $campos)) {
+            return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
+        }
+        try {
+            $relatorio = AtendimentoRelatorio::findOrFail($id);
+            $relatorio->update([$campo => $request->input('valor')]);
+            return response()->json(['success' => true, 'message' => 'Salvo com sucesso.']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['success' => false, 'message' => 'Erro ao salvar.'], 500);
         }
     }
 
@@ -425,10 +498,14 @@ class AtendimentosRelatoriosController extends Controller
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
 
-            'clima'       => $climaPorPeriodo,
-            'ocorrencias' => $ocorrencias,
-            'status'      => $relatorio->aten_rel_status,
-            'assinaturas' => $assinaturas,
+            'clima'                      => $climaPorPeriodo,
+            'ocorrencias'                => $ocorrencias,
+            'status'                     => $relatorio->aten_rel_status,
+            'assinaturas'                => $assinaturas,
+            'aten_rel_descricao'         => $relatorio->aten_rel_descricao,
+            'aten_rel_servicos_prestados'=> $relatorio->aten_rel_servicos_prestados,
+            'aten_rel_pecas_substituidas'=> $relatorio->aten_rel_pecas_substituidas,
+            'aten_rel_informacoes_adicionais' => $relatorio->aten_rel_informacoes_adicionais,
         ]);
     }
 
@@ -688,23 +765,20 @@ class AtendimentosRelatoriosController extends Controller
         $rows = Atendimento::query()
             ->select([
                 'atendimentos.aten_id',
-                'atendimentos.aten_descricao',
+                'atendimentos.aten_nr_proposta',
                 'clientes.cli_nome',
             ])
             ->leftJoin('clientes', 'clientes.cli_id', '=', 'atendimentos.aten_cliente_id')
-            ->where(function ($q) use ($term) {
-                $q->where('clientes.cli_nome', 'like', "%{$term}%")
-                    ->orWhere('atendimentos.aten_descricao', 'like', "%{$term}%");
-            })
+            ->where('clientes.cli_nome', 'like', "%{$term}%")
             ->orderBy('clientes.cli_nome')
             ->orderBy('atendimentos.aten_id', 'desc')
             ->limit(20)
             ->get();
 
         $payload = $rows->map(function ($r) {
-            $cliente = $r->cli_nome ?: 'Sem cliente';
-            $obra    = $r->aten_descricao ?: 'Sem descrição';
-            $text    = "{$cliente} ({$obra})";
+            $nome  = $r->cli_nome ?: 'Sem cliente';
+            $prop  = $r->aten_nr_proposta ? " - {$r->aten_nr_proposta}" : '';
+            $text  = $nome . $prop;
 
             return [
                 'id'    => $r->aten_id,

@@ -54,7 +54,6 @@ class RelatoriosController extends Controller
             'status'         => $r->aten_rel_status,
             'status_label'   => AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status)?->label() ?? '-',
             'atendimento_id' => $r->aten_rel_atendimento_id,
-            'obra'           => $r->atendimento?->aten_descricao,
             'natureza'       => $r->atendimento?->natureza?->nat_aten_descricao,
             'cliente'        => $r->atendimento?->cliente?->cli_nome,
         ];
@@ -195,7 +194,6 @@ class RelatoriosController extends Controller
 
                 'atendimento' => [
                     'id'          => $relatorio->atendimento->aten_id,
-                    'descricao'   => $relatorio->atendimento->aten_descricao,
                     'responsavel' => $relatorio->atendimento->aten_responsavel,
                     'endereco'    => $relatorio->atendimento->aten_endereco,
                     'dt_inicio'   => $relatorio->atendimento->aten_dt_inicio?->format('Y-m-d'),

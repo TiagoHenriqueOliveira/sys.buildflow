@@ -3,19 +3,20 @@
     <div class="mb-3">
         <div class="form-row align-items-end">
             <div class="col-md-7">
-                <label for="ocorrencia_label" class="font-weight-bold mb-1">Pesquisar</label>
-                <input type="text"
-                    id="ocorrencia_label"
-                    class="form-control request"
-                    placeholder="Digite ao menos 3 caracteres">
-                <input type="hidden" id="ocorrencia_id" class="request">
+                <label for="ocorrencia_id" class="font-weight-bold mb-1">Ocorrência</label>
+                <select id="ocorrencia_id" class="form-control">
+                    <option value="">Selecione...</option>
+                    @foreach($ocorrencias as $ocorrencia)
+                        <option value="{{ $ocorrencia->ocor_id }}">{{ $ocorrencia->ocor_descricao }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="col-md-3">
                 <label for="ocorrencia_observacao" class="font-weight-bold mb-1">Observação</label>
                 <input type="text"
                     id="ocorrencia_observacao"
-                    class="form-control request"
+                    class="form-control"
                     maxlength="255"
                     placeholder="Opcional">
             </div>

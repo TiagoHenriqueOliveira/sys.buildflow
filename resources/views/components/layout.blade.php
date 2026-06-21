@@ -90,6 +90,9 @@
                         <a class="collapse-item" href="{{ url('/usuarios') }}">
                             <i class="fas fa-users fa-fw fa-lg mr-2"></i>Usuários
                         </a>
+                        <a class="collapse-item" href="{{ url('/logs-auditoria') }}">
+                            <i class="fas fa-history fa-fw fa-lg mr-2"></i>Logs de Auditoria
+                        </a>
                         </div>
                     </div>
                 </li>

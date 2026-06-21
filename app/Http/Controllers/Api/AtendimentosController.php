@@ -17,7 +17,7 @@ class AtendimentosController extends Controller
      * GET /api/v1/atendimentos
      * Query params opcionais:
      *   status  = 0|1|2|3
-     *   search  = string (busca em aten_descricao e nome do cliente)
+     *   search  = string (busca por nome do cliente)
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,10 +38,7 @@ class AtendimentosController extends Controller
 
         if ($request->filled('search')) {
             $term = $request->search;
-            $query->where(function ($q) use ($term) {
-                $q->where('aten_descricao', 'like', "%{$term}%")
-                  ->orWhereHas('cliente', fn($c) => $c->where('cli_nome', 'like', "%{$term}%"));
-            });
+            $query->whereHas('cliente', fn($c) => $c->where('cli_nome', 'like', "%{$term}%"));
         }
 
         $atendimentos = $query->get()->map(fn($a) => $this->formatAtendimento($a));
@@ -80,7 +77,6 @@ class AtendimentosController extends Controller
 
         $data = [
             'id'          => $a->aten_id,
-            'descricao'   => $a->aten_descricao,
             'responsavel' => $a->aten_responsavel,
             'endereco'    => $a->aten_endereco,
             'nr_proposta' => $a->aten_nr_proposta,

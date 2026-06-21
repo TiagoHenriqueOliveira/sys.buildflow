@@ -39,23 +39,6 @@
             </div>
         </div>
 
-        {{-- LINHA: Obra | Endereço --}}
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="font-weight-bold">Obra</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_descricao }}
-                </span>
-            </div>
-
-            <div class="col-md-6">
-                <label class="font-weight-bold">Endereço</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_endereco }}
-                </span>
-            </div>
-        </div>
-
         {{-- LINHA: Cliente | Responsável | Nº Proposta --}}
         <div class="row mb-3">
             <div class="col-md-6">
@@ -76,6 +59,16 @@
                 <label class="font-weight-bold">Nº Proposta</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_nr_proposta }}
+                </span>
+            </div>
+        </div>
+
+        {{-- LINHA: Endereço --}}
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label class="font-weight-bold">Endereço</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_endereco }}
                 </span>
             </div>
         </div>

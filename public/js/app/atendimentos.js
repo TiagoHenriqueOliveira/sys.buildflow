@@ -19,7 +19,6 @@ $(document).ready(function () {
             aten_usuario_id: "",
             aten_status: 0,
             aten_nr_proposta: "",
-            aten_descricao: "",
             aten_responsavel: "",
             aten_endereco: "",
             aten_dt_inicio: "",
@@ -37,7 +36,8 @@ $(document).ready(function () {
         $("#form_atendimento button[type='submit']").prop("disabled", false);
         $("#form_equip_atendimento")[0].reset();
         $("#table_equipamentos tbody").empty();
-        $("#tab-equipamentos-tab").addClass("disabled").prop("disabled", true);
+        $("#tab-equipamentos-tab, #tab-observacoes-tab, #tab-anexos-aten-tab").addClass("disabled").prop("disabled", true);
+        $("#tab-dados-tab").tab("show");
     });
 });
 
@@ -95,7 +95,6 @@ $(document).on("click", ".btn-modal-atendimento", function () {
         aten_usuario_id: $(this).data("usuario-id"),
         aten_status: $(this).data("status"),
         aten_nr_proposta: $(this).data("nr-proposta"),
-        aten_descricao: $(this).data("obra"),
         aten_responsavel: $(this).data("responsavel"),
         aten_endereco: $(this).data("endereco"),
         aten_dt_inicio: $(this).data("dt-inicio"),
@@ -145,7 +144,6 @@ function abrirModalAtendimento(data) {
     $("#aten_cliente_id").val(data.aten_cliente_id || "");
     $("#aten_cliente_nome").val(data.aten_cliente_nome || "");
     $("#aten_nr_proposta").val(data.aten_nr_proposta || "");
-    $("#aten_descricao").val(data.aten_descricao || "");
     $("#aten_responsavel").val(data.aten_responsavel || "");
     $("#aten_endereco").val(data.aten_endereco || "");
     $("#aten_dt_inicio").val(data.aten_dt_inicio || "");
@@ -186,6 +184,19 @@ function abrirModalAtendimento(data) {
             $("#form_equip_aten_id").val(data.aten_id);
         }
 
+        if (isEdit) {
+            // Habilitar abas de edição
+            $("#tab-observacoes-tab, #tab-anexos-aten-tab").removeClass("disabled").prop("disabled", false);
+
+            // Carregar observações uma única vez ao abrir o modal
+            carregarObservacoes(data.aten_id);
+
+            // Carregar anexos ao abrir a aba
+            $("#tab-anexos-aten-tab").off("click.anx").on("click.anx", function () {
+                carregarAnexosAtendimento(data.aten_id);
+            });
+        }
+
         // Carregar equipamentos quando a aba é selecionada
         $("#tab-equipamentos-tab").off("click").on("click", function () {
             carregarEquipamentos(data.aten_id);
@@ -195,6 +206,104 @@ function abrirModalAtendimento(data) {
         initSubmitEquipamento();
     });
 }
+
+function carregarObservacoes(atenId) {
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/observacoes",
+        type: "GET",
+        dataType: "json",
+        success: function (data) {
+            $("#aten_obs_tecnica").val(data.aten_obs_tecnica || "");
+            $("#aten_obs_cliente").val(data.aten_obs_cliente || "");
+        }
+    });
+}
+
+function carregarAnexosAtendimento(atenId) {
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/anexos",
+        type: "GET",
+        dataType: "json",
+        success: function (r) {
+            renderizarAnexosAtendimento(r.anexos, atenId);
+        }
+    });
+}
+
+function renderizarAnexosAtendimento(anexos, atenId) {
+    const container = $("#aten_anexos_lista");
+    container.empty();
+
+    if (!anexos || !anexos.length) {
+        container.html('<p class="text-muted text-center">Nenhum anexo cadastrado.</p>');
+        return;
+    }
+
+    let html = '<ul class="list-group">';
+    anexos.forEach(function (a) {
+        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="/storage/${e(a.aten_anexo_path)}" target="_blank">${e(a.aten_anexo_nome_original)}</a>
+            <button type="button" class="btn btn-danger btn-sm btn-delete-anexo-aten"
+                data-id="${a.aten_anexo_id}" data-aten-id="${atenId}">
+                <i class="fas fa-trash"></i>
+            </button>
+        </li>`;
+    });
+    html += '</ul>';
+    container.html(html);
+}
+
+$("#aten_anexo_file").on("change", function () {
+    const names = Array.from(this.files).map(f => f.name).join(", ");
+    $("#aten_anexo_nome").text(names || "Selecione arquivos para upload");
+});
+
+$("#btnUploadAnexoAten").on("click", function () {
+    const atenId = $("#aten_id").val();
+    const files = $("#aten_anexo_file")[0].files;
+    if (!atenId || !files.length) return;
+
+    const formData = new FormData();
+    Array.from(files).forEach(f => formData.append("arquivos[]", f));
+
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/upload-anexos",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json",
+        headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
+        success: function (r) {
+            showNotification("fas fa-check-double", r.message, "success", 2000);
+            $("#aten_anexo_file").val("");
+            $("#aten_anexo_nome").text("Selecione arquivos para upload");
+            carregarAnexosAtendimento(atenId);
+        },
+        error: function (xhr) {
+            showNotification("fas fa-bug", "Erro ao enviar arquivo(s). Código: " + xhr.status, "danger", 4000);
+        }
+    });
+});
+
+$(document).on("click", ".btn-delete-anexo-aten", function () {
+    const id = $(this).data("id");
+    const atenId = $(this).data("aten-id");
+
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/anexos/" + id,
+        type: "DELETE",
+        dataType: "json",
+        headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
+        success: function (r) {
+            showNotification("fas fa-check-double", r.message, "success", 2000);
+            carregarAnexosAtendimento(atenId);
+        },
+        error: function (xhr) {
+            showNotification("fas fa-bug", "Erro ao remover anexo. Código: " + xhr.status, "danger", 4000);
+        }
+    });
+});
 
 function initSubmitAtendimento() {
     $(document).off("submit", "#form_atendimento").on("submit", "#form_atendimento", function (event) {
@@ -255,27 +364,26 @@ function initSubmitAtendimento() {
 }
 
 function initSubmitEquipamento() {
-    $(document).off("submit", "#form_equip_atendimento").on("submit", "#form_equip_atendimento", function (event) {
-        event.preventDefault();
-
-        const form = $(this);
+    $(document).off("click", "#btnAdicionarEquipamento").on("click", "#btnAdicionarEquipamento", function () {
         const atenId = $("#aten_id").val();
         const actionUrl = baseURL + "/atendimentos/" + atenId + "/equipamentos";
-        const formData = new FormData(this);
 
-        const btnSubmit = form.find("button[type='submit']");
+        const fd = new FormData();
+        fd.append('aten_equip_descricao', $('#aten_equip_descricao').val() || '');
+
+        const btnSubmit = $(this);
         btnSubmit.prop("disabled", true);
 
         $.ajax({
             url: actionUrl,
             type: "POST",
-            data: formData,
+            data: fd,
             processData: false,
             contentType: false,
             dataType: "json",
             headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
             success: function (response) {
-                form[0].reset();
+                $('#aten_equip_descricao').val('');
                 carregarEquipamentos(atenId);
                 showNotification("fas fa-check-double", response.message, "success", 2000);
                 btnSubmit.prop("disabled", false);

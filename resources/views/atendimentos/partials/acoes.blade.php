@@ -8,7 +8,6 @@
     data-usuario-id="{{ $a->aten_usuario_id }}"
     data-status="{{ (int)$a->aten_status }}"
     data-nr-proposta="{{ e($a->aten_nr_proposta) }}"
-    data-obra="{{ e($a->aten_descricao) }}"
     data-responsavel="{{ e($a->aten_responsavel) }}"
     data-endereco="{{ e($a->aten_endereco) }}"
     data-dt-inicio="{{ $a->aten_dt_inicio->format('Y-m-d') }}"

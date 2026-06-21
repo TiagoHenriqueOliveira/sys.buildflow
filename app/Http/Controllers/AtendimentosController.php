@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use App\Enums\AtendimentoStatus;
 use App\Http\Requests\AtendimentoEquipamentoRequest;
 use App\Http\Requests\AtendimentoRequest;
+use App\Models\Atendimento;
+use App\Models\AtendimentoAnexo;
 use App\Models\NaturezaAtendimento;
 use App\Models\Usuario;
 use App\Repositories\AtendimentoRepository;
 use App\Repositories\AtendimentoEquipamentoRepository;
+use App\Services\AuditService;
 use App\Services\DataTableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AtendimentosController extends Controller
 {
@@ -25,6 +29,7 @@ class AtendimentosController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
+            try {
             $usuario = Auth::user();
             $filtroUsuarioId = $usuario->user_nivel_acesso === 1 ? $usuario->user_id : null;
 
@@ -32,7 +37,7 @@ class AtendimentosController extends Controller
                 $this->dataTable->process(
                     $request,
                     $this->repository->query($filtroUsuarioId),
-                    searchable: ['aten_descricao'],
+                    searchable: ['clientes.cli_nome'],
                     orderable:  [
                         'acoes'    => null,
                         'natureza' => null,
@@ -55,6 +60,10 @@ class AtendimentosController extends Controller
                     ],
                 )
             );
+            } catch (\Throwable $e) {
+                report($e);
+                return response()->json(['message' => 'DataTable error: ' . $e->getMessage()], 500);
+            }
         }
 
         return view('atendimentos.index', [
@@ -69,7 +78,8 @@ class AtendimentosController extends Controller
     public function store(AtendimentoRequest $request)
     {
         try {
-            $this->repository->create($request->validated());
+            $atendimento = $this->repository->create($request->validated());
+            AuditService::log('Atendimentos', 'CRIAR', $atendimento->aten_id, [], $request->validated());
             return response()->json(['message' => 'Atendimento cadastrado com sucesso!']);
         } catch (\Throwable $e) {
             report($e);
@@ -80,11 +90,81 @@ class AtendimentosController extends Controller
     public function update(AtendimentoRequest $request, int $id)
     {
         try {
+            $anterior = Atendimento::findOrFail($id)->toArray();
             $this->repository->update($id, $request->validated());
+            AuditService::log('Atendimentos', 'EDITAR', $id, $anterior, $request->validated());
             return response()->json(['message' => 'Atendimento atualizado com sucesso!']);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao atualizar atendimento.'], 500);
+        }
+    }
+
+    public function getObservacoes(int $id): JsonResponse
+    {
+        $atendimento = Atendimento::findOrFail($id);
+        return response()->json([
+            'aten_obs_tecnica' => $atendimento->aten_obs_tecnica,
+            'aten_obs_cliente' => $atendimento->aten_obs_cliente,
+        ]);
+    }
+
+    public function updateObservacoes(Request $request, int $id): JsonResponse
+    {
+        try {
+            $atendimento = Atendimento::findOrFail($id);
+            $atendimento->update([
+                'aten_obs_tecnica' => $request->input('aten_obs_tecnica'),
+                'aten_obs_cliente' => $request->input('aten_obs_cliente'),
+            ]);
+            return response()->json(['message' => 'Observações salvas com sucesso!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao salvar observações.'], 500);
+        }
+    }
+
+    public function getAnexos(int $id): JsonResponse
+    {
+        $anexos = AtendimentoAnexo::where('aten_anexo_atendimento_id', $id)->orderByDesc('aten_anexo_id')->get();
+        return response()->json(['anexos' => $anexos]);
+    }
+
+    public function uploadAnexos(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['arquivos.*' => ['required', 'file', 'max:20480']]);
+
+        try {
+            $criados = [];
+            foreach ($request->file('arquivos', []) as $file) {
+                $path = $file->store("atendimentos/{$id}/anexos", 'public');
+                $criados[] = AtendimentoAnexo::create([
+                    'aten_anexo_atendimento_id' => $id,
+                    'aten_anexo_path'           => $path,
+                    'aten_anexo_nome_original'  => $file->getClientOriginalName(),
+                ]);
+            }
+            return response()->json(['message' => count($criados) . ' arquivo(s) enviado(s) com sucesso!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao enviar arquivo(s).'], 500);
+        }
+    }
+
+    public function destroyAnexo(int $id, int $itemId): JsonResponse
+    {
+        try {
+            $anexo = AtendimentoAnexo::where('aten_anexo_id', $itemId)
+                ->where('aten_anexo_atendimento_id', $id)
+                ->firstOrFail();
+
+            Storage::disk('public')->delete($anexo->aten_anexo_path);
+            $anexo->delete();
+
+            return response()->json(['message' => 'Anexo removido com sucesso!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover anexo.'], 500);
         }
     }
 

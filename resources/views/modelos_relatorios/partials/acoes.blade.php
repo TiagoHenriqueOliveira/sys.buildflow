@@ -4,17 +4,6 @@
     data-descricao="{{ e($m->mod_rel_descricao) }}"
     data-tp-data="{{ (int)$m->mod_rel_tp_data }}"
     data-ativo="{{ (int)$m->mod_rel_ativo }}"
-    data-entrega-tecnica="{{ (int)$m->mod_rel_entrega_tecnica }}"
-    data-anexo="{{ (int)$m->mod_rel_anexo }}"
-    data-atividade="{{ (int)$m->mod_rel_atividade }}"
-    data-comentario="{{ (int)$m->mod_rel_comentario }}"
-    data-cond-clima="{{ (int)$m->mod_rel_cond_clima }}"
-    data-controle-material="{{ (int)$m->mod_rel_controle_material }}"
-    data-equipamento="{{ (int)$m->mod_rel_equipamento }}"
-    data-foto="{{ (int)$m->mod_rel_foto }}"
-    data-horarios="{{ (int)$m->mod_rel_horarios }}"
-    data-ocorrencia="{{ (int)$m->mod_rel_ocorrencia }}"
-    data-ocupacao="{{ (int)$m->mod_rel_ocupacao }}"
-    data-video="{{ (int)$m->mod_rel_video }}">
+    data-entrega-tecnica="{{ (int)$m->mod_rel_entrega_tecnica }}">
     <i class="fas fa-edit"></i>
 </button>

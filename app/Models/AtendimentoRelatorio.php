@@ -23,6 +23,11 @@ class AtendimentoRelatorio extends Model
         'aten_rel_modelo_relatorio_id',
         'aten_rel_data',
         'aten_rel_status',
+        'aten_rel_descricao',
+        'aten_rel_servicos_prestados',
+        'aten_rel_pecas_substituidas',
+        'aten_rel_informacoes_adicionais',
+        'aten_rel_dt_fim',
     ];
 
     protected $casts = [

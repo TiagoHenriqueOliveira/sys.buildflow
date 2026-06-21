@@ -24,17 +24,27 @@
                             Equipamentos
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link disabled" id="tab-observacoes-tab" data-toggle="tab" href="#tab-observacoes" role="tab">
+                            Observações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link disabled" id="tab-anexos-aten-tab" data-toggle="tab" href="#tab-anexos-aten" role="tab">
+                            Anexos
+                        </a>
+                    </li>
                 </ul>
 
-                <!-- Tab content -->
-                <div class="tab-content" id="modalAbaAtendimentoContent">
-                    <!-- Tab Dados -->
-                    <div class="tab-pane fade show active" id="tab-dados" role="tabpanel">
-                        <form id="form_atendimento" method="POST">
-                            @csrf
-                            <input type="hidden" name="_method" id="aten_method" value="POST">
-                            <input type="hidden" name="aten_id" id="aten_id">
+                {{-- Formulário envolve Dados + Observações para compartilhar o mesmo submit --}}
+                <form id="form_atendimento" method="POST">
+                    @csrf
+                    <input type="hidden" name="_method" id="aten_method" value="POST">
+                    <input type="hidden" name="aten_id" id="aten_id">
 
+                    <div class="tab-content" id="modalAbaAtendimentoContent">
+                        <!-- Tab Dados -->
+                        <div class="tab-pane fade show active" id="tab-dados" role="tabpanel">
                             <x-select-natureza-atendimento :naturezas="$naturezasAtendimentos" />
 
                             <x-select-usuario :usuarios="$usuarios" />
@@ -72,50 +82,75 @@
                             </div>
 
                             <x-radio-status-atendimento />
+                        </div>
 
-                            <x-modal-footer />
-                        </form>
-                    </div>
+                        <!-- Tab Observações (A-04) — dentro do mesmo form -->
+                        <div class="tab-pane fade" id="tab-observacoes" role="tabpanel">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Observações Técnicas:</label>
+                                <textarea class="form-control" id="aten_obs_tecnica" name="aten_obs_tecnica" rows="5"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="font-weight-bold">Observações do Cliente:</label>
+                                <textarea class="form-control" id="aten_obs_cliente" name="aten_obs_cliente" rows="5"></textarea>
+                            </div>
+                        </div>
 
-                    <!-- Tab Equipamentos -->
-                    <div class="tab-pane fade" id="tab-equipamentos" role="tabpanel">
-                        <form id="form_equip_atendimento" method="POST">
-                            @csrf
-                            <input type="hidden" name="aten_id" id="form_equip_aten_id">
+                        <!-- Tab Anexos (A-05) -->
+                        <div class="tab-pane fade" id="tab-anexos-aten" role="tabpanel">
+                            <div class="file-upload-box mb-3">
+                                <div class="file-upload-group">
+                                    <label class="btn btn-primary btn-sm file-upload-button mb-0">
+                                        <i class="fas fa-upload"></i>
+                                        <input type="file" class="file-upload-input" id="aten_anexo_file" multiple accept="*/*">
+                                    </label>
+                                    <span class="file-upload-text" id="aten_anexo_nome">Selecione arquivos para upload</span>
+                                    <button type="button" class="btn btn-success btn-sm" id="btnUploadAnexoAten">
+                                        <i class="fas fa-cloud-upload-alt"></i> Enviar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="aten_anexos_lista"></div>
+                        </div>
 
+                        <!-- Tab Equipamentos -->
+                        <div class="tab-pane fade" id="tab-equipamentos" role="tabpanel">
                             @include('atendimentos.components.form-equipamento')
 
                             <div class="form-group row">
                                 <div class="col-sm-9 ml-auto">
-                                    <button type="submit" class="btn btn-success btn-sm">
+                                    <button type="button" id="btnAdicionarEquipamento" class="btn btn-success btn-sm">
                                         <i class="fas fa-plus"></i> Adicionar
                                     </button>
                                 </div>
                             </div>
-                        </form>
 
-                        <hr>
+                            <hr>
 
-                        <div class="row">
-                            <div class="col-12">
-                                <h6 class="font-weight-bold">Equipamentos Cadastrados</h6>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="font-weight-bold">Equipamentos Cadastrados</h6>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped table-hover" id="table_equipamentos">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th class="text-center" style="width: 50px;">Ações</th>
+                                            <th>Descrição</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped table-hover" id="table_equipamentos">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th class="text-center" style="width: 50px;">Ações</th>
-                                        <th>Descrição</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
-                </div>
+
+                    {{-- Botão compartilhado entre Dados e Observações --}}
+                    <x-modal-footer />
+                </form>
             </div>
         </div>
     </div>

@@ -25,12 +25,13 @@ class ModelosRelatoriosController extends Controller
                     searchable: ['mod_rel_descricao'],
                     orderable:  ['acoes' => null, 'mod_rel_descricao' => 'mod_rel_descricao', 'tipo_data' => 'mod_rel_tp_data', 'status' => 'mod_rel_ativo'],
                     mapper: fn($m) => [
-                        'acoes'             => view('modelos_relatorios.partials.acoes', compact('m'))->render(),
-                        'mod_rel_descricao' => e($m->mod_rel_descricao),
-                        'mod_rel_tp_data'   => (int) $m->mod_rel_tp_data,
-                        'tipo_data'         => ((int) $m->mod_rel_tp_data === 0) ? 'Relatório Diário' : 'Relatório Período',
-                        'mod_rel_ativo'     => (int) $m->mod_rel_ativo,
-                        'status'            => $m->mod_rel_ativo ? 'Ativo' : 'Desativado',
+                        'acoes'                          => view('modelos_relatorios.partials.acoes', compact('m'))->render(),
+                        'mod_rel_descricao'              => e($m->mod_rel_descricao),
+                        'mod_rel_tp_data'                => (int) $m->mod_rel_tp_data,
+                        'tipo_data'                      => ((int) $m->mod_rel_tp_data === 0) ? 'Relatório Diário' : 'Relatório Período',
+                        'mod_rel_ativo'                  => (int) $m->mod_rel_ativo,
+                        'status'                         => $m->mod_rel_ativo ? 'Ativo' : 'Desativado',
+                        'mod_rel_entrega_tecnica' => (int) $m->mod_rel_entrega_tecnica,
                     ],
                 )
             );

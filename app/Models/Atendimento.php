@@ -23,11 +23,12 @@ class Atendimento extends Model
         'aten_usuario_id',
         'aten_status',
         'aten_nr_proposta',
-        'aten_descricao',
         'aten_responsavel',
         'aten_endereco',
         'aten_dt_inicio',
         'aten_dt_fim',
+        'aten_obs_tecnica',
+        'aten_obs_cliente',
     ];
 
     protected $casts = [

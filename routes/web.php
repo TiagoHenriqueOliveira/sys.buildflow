@@ -5,6 +5,7 @@ use App\Http\Controllers\AtendimentosRelatoriosController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientesController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
@@ -42,6 +43,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/atendimentos', [AtendimentosController::class, 'index'])->name('atendimentos.index');
     Route::get('/atendimentos/{id}/equipamentos', [AtendimentosController::class, 'getEquipamentos'])->name('atendimentos.get-equipamentos');
 
+    // Atendimentos — Observações e Anexos (disponíveis para todos autenticados)
+    Route::get('/atendimentos/{id}/observacoes', [AtendimentosController::class, 'getObservacoes'])->name('atendimentos.get-observacoes');
+    Route::post('/atendimentos/{id}/observacoes', [AtendimentosController::class, 'updateObservacoes'])->name('atendimentos.update-observacoes');
+    Route::get('/atendimentos/{id}/anexos', [AtendimentosController::class, 'getAnexos'])->name('atendimentos.get-anexos');
+    Route::post('/atendimentos/{id}/upload-anexos', [AtendimentosController::class, 'uploadAnexos'])->name('atendimentos.upload-anexos');
+    Route::delete('/atendimentos/{id}/anexos/{itemId}', [AtendimentosController::class, 'destroyAnexo'])->name('atendimentos.destroy-anexo');
+
     // Atendimentos Relatórios
     Route::get('/atendimentos-relatorios/autocomplete', [AtendimentosRelatoriosController::class, 'autoComplete'])->name('atendimentos_relatorios.autocomplete');
     Route::resource('atendimentos-relatorios', AtendimentosRelatoriosController::class)->except(['create', 'edit', 'destroy']);
@@ -51,6 +59,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->name('atendimentos-relatorios.update-horarios');
     Route::post('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'updateClima'])->name('atendimentos-relatorios.update-clima');
     Route::post('/atendimentos-relatorios/{id}/assinaturas', [AtendimentosRelatoriosController::class, 'updateAssinaturas'])->name('atendimentos-relatorios.update-assinaturas');
+    Route::post('/atendimentos-relatorios/{id}/texto/{campo}', [AtendimentosRelatoriosController::class, 'updateTexto'])->name('atendimentos-relatorios.update-texto');
     Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->name('atendimentos-relatorios.store-ocorrencia');
     Route::delete('/atendimentos-relatorios/{id}/ocorrencias/{ocorrenciaId}', [AtendimentosRelatoriosController::class, 'destroyOcorrencia'])->name('atendimentos-relatorios.destroy-ocorrencia');
     Route::post('/atendimentos-relatorios/{id}/upload-anexos', [AtendimentosRelatoriosController::class, 'uploadAnexos'])->name('atendimentos-relatorios.upload-anexos');
@@ -79,6 +88,9 @@ Route::middleware('auth')->group(function () {
 
         // Usuários
         Route::resource('usuarios', UsuariosController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // Logs de Auditoria
+        Route::get('/logs-auditoria', [LogsAuditoriaController::class, 'index'])->name('logs-auditoria.index');
     });
 
 });

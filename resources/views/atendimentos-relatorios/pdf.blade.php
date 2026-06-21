@@ -265,10 +265,8 @@
             <td class="field-value">{{ $prazoAVencer }} dias</td>
         </tr>
         <tr>
-            <td class="field-label">Obra</td>
-            <td class="field-value" colspan="3">{{ $relatorio->atendimento->aten_descricao }}</td>
             <td class="field-label">Nº Proposta</td>
-            <td class="field-value">{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Endereço</td>
