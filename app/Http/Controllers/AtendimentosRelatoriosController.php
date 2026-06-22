@@ -130,7 +130,7 @@ class AtendimentosRelatoriosController extends Controller
                 if ($existe) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Este atendimento já possui relatório de período cadastrado.',
+                        'message' => 'Não é possível criar outro relatório, seu atendimento só permite um!',
                     ], 422);
                 }
             }
@@ -317,15 +317,25 @@ class AtendimentosRelatoriosController extends Controller
                 }
             }
 
+            // REL-05: Exigir assinaturas do técnico e do cliente para aprovar
+            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value) {
+                $temResponsavel = $relatorio->assinaturaResponsavel() || $request->filled('assinatura_responsavel');
+                $temCliente     = $relatorio->assinaturaCliente()     || $request->filled('assinatura_cliente');
+
+                if (!$temResponsavel || !$temCliente) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Assinaturas do técnico e do cliente são obrigatórias para concluir o relatório.',
+                    ], 422);
+                }
+            }
+
             $statusAnterior = $relatorio->aten_rel_status;
             $relatorio->update(['aten_rel_status' => $novoStatus]);
 
-            // REL-04: Preencher aten_rel_dt_fim automaticamente ao aprovar relatório de período
             if (
                 $novoStatus === AtendimentoRelatorioStatus::Aprovado->value &&
-                $statusAnterior !== AtendimentoRelatorioStatus::Aprovado->value &&
-                $relatorio->modeloRelatorio &&
-                (int) $relatorio->modeloRelatorio->mod_rel_tp_data === 1
+                $statusAnterior !== AtendimentoRelatorioStatus::Aprovado->value
             ) {
                 $relatorio->update(['aten_rel_dt_fim' => now()->toDateString()]);
             }
