@@ -28,6 +28,22 @@ $(document).ready(function () {
 
     setupAutocomplete("#aten_cliente_nome", "#aten_cliente_id", baseURL + "/clientes/autocomplete");
 
+    // Máscara de telefone
+    $('#aten_telefone').mask('(00) 00000-0000');
+
+    // Switch entrega técnica
+    $(document).on('change', '#aten_entrega_tecnica', function () {
+        $('#aten_entrega_tecnica_badge')
+            .text(this.checked ? 'Sim' : 'Não')
+            .toggleClass('badge-success', this.checked)
+            .toggleClass('badge-secondary', !this.checked);
+    });
+
+    // WhatsApp
+    $(document).on('input', '#aten_telefone', function () {
+        atualizarLinkWhatsapp();
+    });
+
     $(document).on("change", "#aten_nat_atendimento_id, #aten_natureza_id, #aten_natureza_select", function () {
         syncHiddenFromSelects();
     });
@@ -36,10 +52,16 @@ $(document).ready(function () {
         $("#form_atendimento button[type='submit']").prop("disabled", false);
         $("#aten_equip_descricao").val("");
         $("#table_equipamentos tbody").empty();
-        $("#aten_obs_tecnica, #aten_obs_cliente").val("");
+        $("#aten_obs_tecnica, #aten_obs_cliente, #aten_obs_manutencao").val("");
         $("#aten_anexos_lista").empty();
         $("#aten_usuario_id").val("");
+        $("#aten_telefone").val("");
+        $("#aten_entrega_tecnica").prop("checked", false);
+        $("#aten_entrega_tecnica_badge").text("Não").removeClass("badge-success").addClass("badge-secondary");
         $("#tab-equipamentos-tab, #tab-observacoes-tab, #tab-anexos-aten-tab").addClass("disabled").prop("disabled", true);
+        atualizarIconeAba("tab-equipamentos-tab", false);
+        atualizarIconeAba("tab-observacoes-tab", false);
+        atualizarIconeAba("tab-anexos-aten-tab", false);
         $("#tab-dados-tab").tab("show");
     });
 });
@@ -98,9 +120,11 @@ $(document).on("click", ".btn-modal-atendimento", function () {
         aten_cliente_nome: $(this).data("cliente"),
         aten_usuario_id: $(this).data("usuario-id"),
         aten_status: $(this).data("status"),
-        aten_nr_proposta: $(this).data("nr-proposta"),
-        aten_responsavel: $(this).data("responsavel"),
-        aten_endereco: $(this).data("endereco"),
+        aten_nr_proposta:     $(this).data("nr-proposta"),
+        aten_responsavel:     $(this).data("responsavel"),
+        aten_telefone:        $(this).data("telefone"),
+        aten_entrega_tecnica: $(this).data("entrega-tecnica"),
+        aten_endereco:        $(this).data("endereco"),
         aten_dt_inicio: $(this).data("dt-inicio"),
         aten_dt_fim: $(this).data("dt-fim")
     });
@@ -149,6 +173,15 @@ function abrirModalAtendimento(data) {
     $("#aten_cliente_nome").val(data.aten_cliente_nome || "");
     $("#aten_nr_proposta").val(data.aten_nr_proposta || "");
     $("#aten_responsavel").val(data.aten_responsavel || "");
+    const tel = data.aten_telefone || "";
+    $("#aten_telefone").val(tel);
+    atualizarLinkWhatsapp(tel);
+    const entrega = !!data.aten_entrega_tecnica;
+    $("#aten_entrega_tecnica").prop("checked", entrega);
+    $("#aten_entrega_tecnica_badge")
+        .text(entrega ? "Sim" : "Não")
+        .toggleClass("badge-success", entrega)
+        .toggleClass("badge-secondary", !entrega);
     $("#aten_endereco").val(data.aten_endereco || "");
     $("#aten_dt_inicio").val(data.aten_dt_inicio || "");
     $("#aten_dt_fim").val(data.aten_dt_fim || "");
@@ -191,10 +224,12 @@ function abrirModalAtendimento(data) {
             // Habilitar abas de edição
             $("#tab-observacoes-tab, #tab-anexos-aten-tab").removeClass("disabled").prop("disabled", false);
 
-            // Carregar observações uma única vez ao abrir o modal
+            // Carregar observações, equipamentos e anexos ao abrir o modal (para exibir check icons)
             carregarObservacoes(data.aten_id);
+            carregarEquipamentos(data.aten_id);
+            carregarAnexosAtendimento(data.aten_id);
 
-            // Carregar anexos ao abrir a aba
+            // Recarregar ao clicar nas abas
             $("#tab-anexos-aten-tab").off("click.anx").on("click.anx", function () {
                 carregarAnexosAtendimento(data.aten_id);
             });
@@ -218,6 +253,18 @@ function abrirModalAtendimento(data) {
     }
 }
 
+function atualizarLinkWhatsapp(tel) {
+    const numero = (tel !== undefined ? tel : $("#aten_telefone").val()).replace(/\D/g, "");
+    const link = numero.length >= 10 ? "https://wa.me/55" + numero : "#";
+    $("#btnWhatsapp").attr("href", link);
+}
+
+function atualizarIconeAba(tabId, temDados) {
+    const tab = $("#" + tabId);
+    const texto = tab.text().replace(/\s*✔.*$/, "").trim();
+    tab.text(temDados ? texto + " ✔" : texto);
+}
+
 function carregarObservacoes(atenId) {
     $.ajax({
         url: baseURL + "/atendimentos/" + atenId + "/observacoes",
@@ -226,6 +273,9 @@ function carregarObservacoes(atenId) {
         success: function (data) {
             $("#aten_obs_tecnica").val(data.aten_obs_tecnica || "");
             $("#aten_obs_cliente").val(data.aten_obs_cliente || "");
+            $("#aten_obs_manutencao").val(data.aten_obs_manutencao || "");
+            const temObs = !!(data.aten_obs_tecnica || data.aten_obs_cliente || data.aten_obs_manutencao);
+            atualizarIconeAba("tab-observacoes-tab", temObs);
         }
     });
 }
@@ -242,6 +292,7 @@ function carregarAnexosAtendimento(atenId) {
 }
 
 function renderizarAnexosAtendimento(anexos, atenId) {
+    atualizarIconeAba("tab-anexos-aten-tab", anexos && anexos.length > 0);
     const container = $("#aten_anexos_lista");
     container.empty();
 
@@ -343,9 +394,8 @@ function initSubmitAtendimento() {
                 if (response.aten_id && response.atendimento) {
                     // Novo atendimento: reabre em modo edição sem fechar o modal
                     abrirModalAtendimento(response.atendimento);
-                } else {
-                    $("#modal_atendimento").modal("hide");
                 }
+                // Edição: modal permanece aberto
             },
             error: function (xhr) {
                 btnSubmit.prop("disabled", false);
@@ -461,6 +511,7 @@ function carregarEquipamentos(atenId) {
 }
 
 function renderizarEquipamentos(equipamentos, atenId) {
+    atualizarIconeAba("tab-equipamentos-tab", equipamentos && equipamentos.length > 0);
     const tbody = $("#table_equipamentos tbody");
     tbody.empty();
 

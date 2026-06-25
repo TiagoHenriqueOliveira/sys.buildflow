@@ -9,6 +9,8 @@
     data-status="{{ (int)$a->aten_status }}"
     data-nr-proposta="{{ e($a->aten_nr_proposta) }}"
     data-responsavel="{{ e($a->aten_responsavel) }}"
+    data-telefone="{{ e($a->aten_telefone) }}"
+    data-entrega-tecnica="{{ (int)$a->aten_entrega_tecnica }}"
     data-endereco="{{ e($a->aten_endereco) }}"
     data-dt-inicio="{{ $a->aten_dt_inicio->format('Y-m-d') }}"
     data-dt-fim="{{ $a->aten_dt_fim->format('Y-m-d') }}">

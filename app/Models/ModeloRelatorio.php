@@ -17,7 +17,6 @@ class ModeloRelatorio extends Model
         'mod_rel_tp_data',
         'mod_rel_descricao',
         'mod_rel_ativo',
-        'mod_rel_entrega_tecnica',
         'mod_rel_descricao_secao',
         'mod_rel_servicos_prestados',
         'mod_rel_pecas_substituidas',
@@ -30,7 +29,6 @@ class ModeloRelatorio extends Model
     protected $casts = [
         'mod_rel_tp_data'                => 'integer',
         'mod_rel_ativo'                  => 'boolean',
-        'mod_rel_entrega_tecnica'        => 'boolean',
         'mod_rel_descricao_secao'        => 'boolean',
         'mod_rel_servicos_prestados'     => 'boolean',
         'mod_rel_pecas_substituidas'     => 'boolean',

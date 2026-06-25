@@ -31,7 +31,6 @@ class ModelosRelatoriosController extends Controller
                         'tipo_data'                      => ((int) $m->mod_rel_tp_data === 0) ? 'Relatório Diário' : 'Relatório Período',
                         'mod_rel_ativo'                  => (int) $m->mod_rel_ativo,
                         'status'                         => $m->mod_rel_ativo ? 'Ativo' : 'Desativado',
-                        'mod_rel_entrega_tecnica' => (int) $m->mod_rel_entrega_tecnica,
                     ],
                 )
             );

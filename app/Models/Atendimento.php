@@ -24,15 +24,19 @@ class Atendimento extends Model
         'aten_status',
         'aten_nr_proposta',
         'aten_responsavel',
+        'aten_telefone',
+        'aten_entrega_tecnica',
         'aten_endereco',
         'aten_dt_inicio',
         'aten_dt_fim',
         'aten_obs_tecnica',
         'aten_obs_cliente',
+        'aten_obs_manutencao',
     ];
 
     protected $casts = [
-        'aten_status'    => 'integer',
+        'aten_status'          => 'integer',
+        'aten_entrega_tecnica' => 'boolean',
         'aten_dt_inicio' => 'date',
         'aten_dt_fim'    => 'date',
     ];

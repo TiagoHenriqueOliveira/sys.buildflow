@@ -95,11 +95,13 @@ class AtendimentosController extends Controller
                     'aten_cliente_nome'=> optional($atendimento->cliente)->cli_nome ?? '',
                     'aten_usuario_id'  => $atendimento->aten_usuario_id,
                     'aten_status'      => $atendimento->aten_status,
-                    'aten_nr_proposta' => $atendimento->aten_nr_proposta ?? '',
-                    'aten_responsavel' => $atendimento->aten_responsavel ?? '',
-                    'aten_endereco'    => $atendimento->aten_endereco ?? '',
-                    'aten_dt_inicio'   => $atendimento->aten_dt_inicio->format('Y-m-d'),
-                    'aten_dt_fim'      => $atendimento->aten_dt_fim->format('Y-m-d'),
+                    'aten_nr_proposta'     => $atendimento->aten_nr_proposta ?? '',
+                    'aten_responsavel'     => $atendimento->aten_responsavel ?? '',
+                    'aten_telefone'        => $atendimento->aten_telefone ?? '',
+                    'aten_entrega_tecnica' => (int) ($atendimento->aten_entrega_tecnica ?? 0),
+                    'aten_endereco'        => $atendimento->aten_endereco ?? '',
+                    'aten_dt_inicio'       => $atendimento->aten_dt_inicio->format('Y-m-d'),
+                    'aten_dt_fim'          => $atendimento->aten_dt_fim->format('Y-m-d'),
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -125,8 +127,9 @@ class AtendimentosController extends Controller
     {
         $atendimento = Atendimento::findOrFail($id);
         return response()->json([
-            'aten_obs_tecnica' => $atendimento->aten_obs_tecnica,
-            'aten_obs_cliente' => $atendimento->aten_obs_cliente,
+            'aten_obs_tecnica'    => $atendimento->aten_obs_tecnica,
+            'aten_obs_cliente'    => $atendimento->aten_obs_cliente,
+            'aten_obs_manutencao' => $atendimento->aten_obs_manutencao,
         ]);
     }
 
@@ -135,8 +138,9 @@ class AtendimentosController extends Controller
         try {
             $atendimento = Atendimento::findOrFail($id);
             $atendimento->update([
-                'aten_obs_tecnica' => $request->input('aten_obs_tecnica'),
-                'aten_obs_cliente' => $request->input('aten_obs_cliente'),
+                'aten_obs_tecnica'    => $request->input('aten_obs_tecnica'),
+                'aten_obs_cliente'    => $request->input('aten_obs_cliente'),
+                'aten_obs_manutencao' => $request->input('aten_obs_manutencao'),
             ]);
             return response()->json(['message' => 'Observações salvas com sucesso!']);
         } catch (\Throwable $e) {

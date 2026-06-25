@@ -20,13 +20,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="tab-equipamentos-tab" data-toggle="tab" href="#tab-equipamentos" role="tab" disabled>
-                            Equipamentos
+                        <a class="nav-link disabled" id="tab-observacoes-tab" data-toggle="tab" href="#tab-observacoes" role="tab">
+                            Observações
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link disabled" id="tab-observacoes-tab" data-toggle="tab" href="#tab-observacoes" role="tab">
-                            Observações
+                        <a class="nav-link" id="tab-equipamentos-tab" data-toggle="tab" href="#tab-equipamentos" role="tab" disabled>
+                            Equipamentos
                         </a>
                     </li>
                     <li class="nav-item">
@@ -64,10 +64,37 @@
                                 </div>
                             </div>
 
+                            <div class="form-group row align-items-center">
+                                <label class="col-sm-3 col-form-label font-weight-bold">Telefone:</label>
+                                <div class="col-sm-5">
+                                    <input type="text" class="form-control" id="aten_telefone" name="aten_telefone" maxlength="20" placeholder="(00) 00000-0000">
+                                </div>
+                                <div class="col-sm-2">
+                                    <a id="btnWhatsapp" href="#" target="_blank" class="btn btn-success" title="Abrir WhatsApp">
+                                        <i class="fab fa-whatsapp fa-lg"></i>
+                                    </a>
+                                </div>
+                            </div>
+
                             <div class="form-group row">
                                 <label class="col-sm-3 col-form-label font-weight-bold">Endereço:</label>
                                 <div class="col-sm-9">
                                     <input type="text" class="form-control" id="aten_endereco" name="aten_endereco" maxlength="100">
+                                </div>
+                            </div>
+
+                            <div class="form-group row align-items-center">
+                                <label class="col-sm-3 col-form-label font-weight-bold">Entrega Téc.:</label>
+                                <div class="col-sm-9 d-flex align-items-center">
+                                    <div class="custom-control custom-switch mr-3">
+                                        <input type="checkbox"
+                                            class="custom-control-input"
+                                            id="aten_entrega_tecnica"
+                                            name="aten_entrega_tecnica"
+                                            value="1">
+                                        <label class="custom-control-label" for="aten_entrega_tecnica"></label>
+                                    </div>
+                                    <span class="badge badge-secondary" id="aten_entrega_tecnica_badge">Não</span>
                                 </div>
                             </div>
 
@@ -84,33 +111,20 @@
                             <x-radio-status-atendimento />
                         </div>
 
-                        <!-- Tab Observações (A-04) — dentro do mesmo form -->
+                        <!-- Tab Observações -->
                         <div class="tab-pane fade" id="tab-observacoes" role="tabpanel">
                             <div class="form-group">
-                                <label class="font-weight-bold">Observações Técnicas:</label>
-                                <textarea class="form-control" id="aten_obs_tecnica" name="aten_obs_tecnica" rows="5"></textarea>
+                                <label class="font-weight-bold">Técnicas:</label>
+                                <textarea class="form-control" id="aten_obs_tecnica" name="aten_obs_tecnica" rows="4"></textarea>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold">Observações do Cliente:</label>
-                                <textarea class="form-control" id="aten_obs_cliente" name="aten_obs_cliente" rows="5"></textarea>
+                                <label class="font-weight-bold">Cliente:</label>
+                                <textarea class="form-control" id="aten_obs_cliente" name="aten_obs_cliente" rows="4"></textarea>
                             </div>
-                        </div>
-
-                        <!-- Tab Anexos (A-05) -->
-                        <div class="tab-pane fade" id="tab-anexos-aten" role="tabpanel">
-                            <div class="file-upload-box mb-3">
-                                <div class="file-upload-group">
-                                    <label class="btn btn-primary btn-sm file-upload-button mb-0">
-                                        <i class="fas fa-upload"></i>
-                                        <input type="file" class="file-upload-input" id="aten_anexo_file" multiple accept="*/*">
-                                    </label>
-                                    <span class="file-upload-text" id="aten_anexo_nome">Selecione arquivos para upload</span>
-                                    <button type="button" class="btn btn-success btn-sm" id="btnUploadAnexoAten">
-                                        <i class="fas fa-cloud-upload-alt"></i> Enviar
-                                    </button>
-                                </div>
+                            <div class="form-group">
+                                <label class="font-weight-bold">Manutenção:</label>
+                                <textarea class="form-control" id="aten_obs_manutencao" name="aten_obs_manutencao" rows="4"></textarea>
                             </div>
-                            <div id="aten_anexos_lista"></div>
                         </div>
 
                         <!-- Tab Equipamentos -->
@@ -145,6 +159,23 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        <!-- Tab Anexos -->
+                        <div class="tab-pane fade" id="tab-anexos-aten" role="tabpanel">
+                            <div class="file-upload-box mb-3">
+                                <div class="file-upload-group">
+                                    <label class="btn btn-primary btn-sm file-upload-button mb-0">
+                                        <i class="fas fa-upload"></i>
+                                        <input type="file" class="file-upload-input" id="aten_anexo_file" multiple accept="*/*">
+                                    </label>
+                                    <span class="file-upload-text" id="aten_anexo_nome">Selecione arquivos para upload</span>
+                                    <button type="button" class="btn btn-success btn-sm" id="btnUploadAnexoAten">
+                                        <i class="fas fa-cloud-upload-alt"></i> Enviar
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="aten_anexos_lista"></div>
                         </div>
                     </div>
 

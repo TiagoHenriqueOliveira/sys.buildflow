@@ -15,7 +15,7 @@ class ModeloRelatorioRepository implements CrudRepositoryInterface
     private function flags(array $data, array $defaults = []): array
     {
         $fields = [
-            'mod_rel_entrega_tecnica', 'mod_rel_descricao_secao',
+            'mod_rel_descricao_secao',
             'mod_rel_servicos_prestados', 'mod_rel_pecas_substituidas',
             'mod_rel_informacoes_adicionais', 'mod_rel_horarios',
             'mod_rel_cond_clima', 'mod_rel_ocorrencia',

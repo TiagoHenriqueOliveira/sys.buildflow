@@ -13,13 +13,16 @@ class AtendimentoRequest extends FormRequest
             'aten_cliente_id' => ['required', 'integer'],
             'aten_usuario_id' => ['required', 'integer'],
             'aten_status' => ['required', 'integer', 'in:0,1,2,3'],
-            'aten_nr_proposta' => ['nullable', 'string', 'max:20'],
-            'aten_responsavel' => ['nullable', 'string', 'max:50'],
-            'aten_endereco' => ['nullable', 'string', 'max:100'],
-            'aten_dt_inicio'   => ['required', 'date'],
-            'aten_dt_fim'      => ['required', 'date', 'after_or_equal:aten_dt_inicio'],
-            'aten_obs_tecnica' => ['nullable', 'string'],
-            'aten_obs_cliente' => ['nullable', 'string'],
+            'aten_nr_proposta'     => ['nullable', 'string', 'max:20'],
+            'aten_responsavel'     => ['nullable', 'string', 'max:50'],
+            'aten_telefone'        => ['nullable', 'string', 'max:20'],
+            'aten_entrega_tecnica' => ['nullable', 'boolean'],
+            'aten_endereco'        => ['nullable', 'string', 'max:100'],
+            'aten_dt_inicio'       => ['required', 'date'],
+            'aten_dt_fim'          => ['required', 'date', 'after_or_equal:aten_dt_inicio'],
+            'aten_obs_tecnica'     => ['nullable', 'string'],
+            'aten_obs_cliente'     => ['nullable', 'string'],
+            'aten_obs_manutencao'  => ['nullable', 'string'],
         ];
     }
 
