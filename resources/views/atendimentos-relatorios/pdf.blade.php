@@ -20,7 +20,7 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            font-size: 10px;
+            font-size: 18px;
             color: #222;
             background: #fff;
         }
@@ -41,7 +41,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            font-size: 8px;
+            font-size: 10px;
             color: #999;
             border-top: 1px solid #ddd;
             padding: 4px 20px;
@@ -49,21 +49,21 @@
         }
 
         /* CABEÇALHO */
-        .header { width: 100%; border-collapse: collapse; margin-bottom: 14px; border-bottom: 2px solid #1a3c6e; padding-bottom: 10px; }
-        .header-logo { width: 140px; vertical-align: middle; }
+        .header { width: 100%; border-collapse: collapse; margin-bottom: 20px; border-bottom: 2px solid #00552a; padding-bottom: 18px; }
+        .header-logo { width: 140px; vertical-align: middle; padding-bottom: 10px; }
         .header-logo img { height: 60px; }
         .header-info { vertical-align: middle; text-align: center; }
-        .header-titulo { font-size: 13px; font-weight: bold; color: #1a3c6e; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-titulo { font-size: 20px; font-weight: bold; color: #00552a; text-transform: uppercase; letter-spacing: 0.5px; }
         .header-nr { width: 100px; vertical-align: middle; text-align: right; }
-        .header-nr .nr-label { font-size: 8px; color: #888; text-transform: uppercase; }
-        .header-nr .nr-valor { font-size: 14px; font-weight: bold; color: #1a3c6e; }
+        .header-nr .nr-label { font-size: 10px; color: #888; text-transform: uppercase; }
+        .header-nr .nr-valor { font-size: 12px; font-weight: bold; color: #00552a; }
 
         /* SEÇÕES */
         .section { margin-bottom: 14px; }
         .section-title {
-            background-color: #1a3c6e;
+            background-color: #00552a;
             color: #fff;
-            font-size: 9px;
+            font-size: 18px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -74,40 +74,40 @@
         /* GRID DE CAMPOS */
         .field-grid { width: 100%; border-collapse: collapse; }
         .field-grid td { padding: 3px 7px; vertical-align: top; }
-        .field-label { font-weight: bold; color: #555; font-size: 8px; text-transform: uppercase; white-space: nowrap; width: 1%; }
-        .field-value { color: #222; font-size: 10px; border-bottom: 1px solid #eee; }
+        .field-label { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; white-space: nowrap; width: 1%; }
+        .field-value { color: #222; font-size: 20px; border-bottom: 1px solid #eee; }
 
         /* TABELAS */
-        .data-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 20px; }
         .data-table thead tr { background-color: #eef2f8; }
-        .data-table th { padding: 4px 8px; text-align: left; font-weight: bold; color: #1a3c6e; border: 1px solid #cdd6e8; font-size: 8px; text-transform: uppercase; }
+        .data-table th { padding: 4px 8px; text-align: left; font-weight: bold; color: #00552a; border: 1px solid #cdd6e8; font-size: 20px; text-transform: uppercase; }
         .data-table td { padding: 4px 8px; border: 1px solid #e0e0e0; vertical-align: top; }
         .data-table tbody tr:nth-child(even) { background-color: #f8f9fb; }
 
         /* TEXTO LIVRE */
-        .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 10px; color: #333; min-height: 30px; white-space: pre-wrap; }
+        .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 20px; color: #333; min-height: 30px; white-space: pre-wrap; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
         .fotos-grid td { padding: 4px; text-align: center; vertical-align: top; width: 33.33%; }
         .fotos-grid img { max-width: 100%; max-height: 160px; border: 1px solid #ddd; }
-        .foto-legenda { font-size: 8px; color: #888; margin-top: 3px; }
+        .foto-legenda { font-size: 10px; color: #888; margin-top: 3px; }
 
         /* ASSINATURAS */
         .assinaturas-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
         .assinatura-cell { width: 50%; border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: top; }
-        .assinatura-title { font-weight: bold; font-size: 8px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
+        .assinatura-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
         .assinatura-cell img { max-width: 100%; max-height: 80px; }
-        .sem-assinatura { color: #bbb; font-size: 9px; height: 60px; line-height: 60px; }
-        .assinatura-nome { border-top: 1px solid #333; margin-top: 8px; padding-top: 4px; font-size: 8px; color: #555; }
+        .sem-assinatura { color: #bbb; font-size: 10px; height: 60px; line-height: 60px; }
+        .assinatura-nome { border-top: 1px solid #333; margin-top: 8px; padding-top: 4px; font-size: 10px; color: #555; }
 
         /* UTILITÁRIOS */
-        .text-muted { color: #aaa; font-style: italic; font-size: 9px; }
+        .text-muted { color: #aaa; font-style: italic; font-size: 14px; }
         .page-break  { page-break-before: always; }
     </style>
 </head>
 @php
-    $logoBase64  = base64_encode(file_get_contents(public_path('img/mcl_logo.jpeg')));
+    $logoBase64  = base64_encode(file_get_contents(public_path('img/mcl_logo.png')));
     $marcaBase64 = base64_encode(file_get_contents(public_path('img/mcl_marca.jpg')));
 
     $climaOrg = $relatorio->climas->keyBy('aten_rel_clima_periodo');
@@ -123,7 +123,7 @@
         return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
     };
 @endphp
-<body style="padding: 20px 20px 40px 20px;">
+<body style="padding: 45px 80px 45px 80px;">
 
 {{-- MARCA D'ÁGUA --}}
 <div class="watermark">
