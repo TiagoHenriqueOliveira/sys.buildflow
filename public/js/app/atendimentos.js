@@ -74,7 +74,8 @@ function configDataTableAtendimentos() {
         return tableEl.DataTable();
     }
 
-    const url = tableEl.data("url");
+    const url     = tableEl.data("url");
+    const isAdmin = tableEl.data("admin") === 1 || tableEl.data("admin") === "1";
 
     return tableEl.DataTable({
         ajax: {
@@ -97,9 +98,11 @@ function configDataTableAtendimentos() {
             { data: "periodo" },
             { data: "status" }
         ],
-        columnDefs: [{ width: "5%", targets: 0 }],
+        columnDefs: [
+            { width: "5%", targets: 0, className: "text-center" },
+            { visible: isAdmin, targets: 0 },
+        ],
         createdRow: function (row) {
-            $("td", row).eq(0).addClass("text-center");
         },
         fnRowCallback: function (nRow, aData) {
             const concluida = 3;

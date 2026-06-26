@@ -18,6 +18,7 @@
                 <table id="dataTableAtendimentos"
                     class="table table-translate dt-responsive"
                     data-url="{{ route('atendimentos.index') }}"
+                    data-admin="{{ auth()->user()->user_nivel_acesso === 0 ? '1' : '0' }}"
                     width="100%">
                     <thead>
                         <tr>

@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Http\Controllers\Api\Mcl;
+
+use App\Enums\AtendimentoStatus;
+use App\Http\Controllers\Controller;
+use App\Models\Atendimento;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class AtendimentosController extends Controller
+{
+    /**
+     * Lista atendimentos do técnico autenticado.
+     * Admin (nivel_acesso === 0) vê todos.
+     *
+     * GET /api/mcl/v1/atendimentos
+     * Query params: status (0|1|2|3), search (string)
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $usuario = $request->user();
+
+        $query = Atendimento::query()
+            ->with(['natureza', 'cliente', 'usuario'])
+            ->orderBy('aten_dt_inicio', 'desc');
+
+        if ($usuario->user_nivel_acesso !== 0) {
+            $query->where('aten_usuario_id', $usuario->user_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('aten_status', (int) $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->whereHas('cliente', fn($c) => $c->where('cli_nome', 'like', "%{$term}%"));
+        }
+
+        return response()->json(['data' => $query->get()->map(fn($a) => $this->format($a))]);
+    }
+
+    /**
+     * Detalhe de um atendimento.
+     *
+     * GET /api/mcl/v1/atendimentos/{id}
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $usuario     = $request->user();
+        $atendimento = Atendimento::with(['natureza', 'cliente', 'usuario', 'equipamentos'])->findOrFail($id);
+
+        if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        return response()->json(['data' => $this->format($atendimento, true)]);
+    }
+
+    private function format(Atendimento $a, bool $detalhes = false): array
+    {
+        $data = [
+            'id'               => $a->aten_id,
+            'responsavel'      => $a->aten_responsavel,
+            'telefone'         => $a->aten_telefone,
+            'endereco'         => $a->aten_endereco,
+            'nr_proposta'      => $a->aten_nr_proposta,
+            'entrega_tecnica'  => (bool) $a->aten_entrega_tecnica,
+            'status'           => $a->aten_status,
+            'status_label'     => AtendimentoStatus::tryFrom($a->aten_status)?->label() ?? '-',
+            'dt_inicio'        => $a->aten_dt_inicio?->format('Y-m-d'),
+            'dt_fim'           => $a->aten_dt_fim?->format('Y-m-d'),
+            'natureza'         => [
+                'id'        => optional($a->natureza)->nat_aten_id,
+                'descricao' => optional($a->natureza)->nat_aten_descricao,
+            ],
+            'cliente' => [
+                'id'   => optional($a->cliente)->cli_id,
+                'nome' => optional($a->cliente)->cli_nome,
+            ],
+            'tecnico' => [
+                'id'   => optional($a->usuario)->user_id,
+                'nome' => optional($a->usuario)->user_nome,
+            ],
+        ];
+
+        if ($detalhes) {
+            $data['obs_cliente']    = $a->aten_obs_cliente;
+            $data['obs_tecnica']    = $a->aten_obs_tecnica;
+            $data['obs_manutencao'] = $a->aten_obs_manutencao;
+            $data['equipamentos']   = $a->relationLoaded('equipamentos')
+                ? $a->equipamentos->map(fn($e) => [
+                    'id'          => $e->aten_equip_id,
+                    'descricao'   => $e->aten_equip_descricao,
+                    'observacoes' => $e->aten_equip_observacoes,
+                ])->values()
+                : [];
+        }
+
+        return $data;
+    }
+}

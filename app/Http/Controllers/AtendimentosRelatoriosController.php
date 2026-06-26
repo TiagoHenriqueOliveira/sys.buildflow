@@ -304,21 +304,8 @@ class AtendimentosRelatoriosController extends Controller
             $relatorio = AtendimentoRelatorio::with(['modeloRelatorio', 'assinaturas'])->findOrFail($id);
             $novoStatus = (int) $request->aten_rel_status;
 
-            // REL-05: Exigir assinaturas do técnico e do cliente para aprovar
-            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value) {
-                $temResponsavel = $relatorio->assinaturaResponsavel() || $request->filled('assinatura_responsavel');
-                $temCliente     = $relatorio->assinaturaCliente()     || $request->filled('assinatura_cliente');
-
-                if (!$temResponsavel || !$temCliente) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Assinaturas do técnico e do cliente são obrigatórias para concluir o relatório.',
-                    ], 422);
-                }
-            }
-
-            // REL-05: Exigir assinaturas do técnico e do cliente para aprovar
-            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value) {
+            // REL-05: Técnicos precisam de assinaturas para aprovar; administradores podem dispensar
+            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value && auth()->user()->user_nivel_acesso !== 0) {
                 $temResponsavel = $relatorio->assinaturaResponsavel() || $request->filled('assinatura_responsavel');
                 $temCliente     = $relatorio->assinaturaCliente()     || $request->filled('assinatura_cliente');
 
@@ -602,9 +589,14 @@ class AtendimentosRelatoriosController extends Controller
             'modeloRelatorio',
             'atendimento.cliente',
             'atendimento.natureza',
+            'atendimento.usuario',
+            'atendimento.equipamentos',
             'horarios',
             'climas',
             'ocorrencias',
+            'servicos',
+            'pecas',
+            'fotos',
             'assinaturas',
         ])->findOrFail($id);
 

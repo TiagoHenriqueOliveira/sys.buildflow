@@ -9,25 +9,23 @@
             font-family: 'Poppins';
             src: url('{{ str_replace("\\", "/", public_path("fonts/Poppins/Poppins-Regular.ttf")) }}') format('truetype');
             font-weight: normal;
-            font-style: normal;
         }
         @font-face {
             font-family: 'Poppins';
             src: url('{{ str_replace("\\", "/", public_path("fonts/Poppins/Poppins-Bold.ttf")) }}') format('truetype');
             font-weight: bold;
-            font-style: normal;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Poppins', sans-serif;
-            font-size: 11px;
+            font-size: 10px;
             color: #222;
             background: #fff;
         }
 
-        /* ── MARCA D'ÁGUA ── */
+        /* MARCA D'ÁGUA */
         .watermark {
             position: fixed;
             top: 50%;
@@ -37,257 +35,202 @@
         }
         .watermark img { width: 700px; }
 
-        /* ── CABEÇALHO ── */
-        .header {
-            text-align: center;
-            margin-bottom: 18px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #1a3c6e;
-        }
-        .header img.logo { height: 70px; }
-        .header .titulo {
-            margin-top: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            color: #1a3c6e;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .header .subtitulo {
-            font-size: 10px;
-            color: #555;
-            margin-top: 2px;
-        }
-
-        /* ── RODAPÉ ── */
+        /* RODAPÉ */
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            font-size: 9px;
-            color: #888;
+            font-size: 8px;
+            color: #999;
             border-top: 1px solid #ddd;
-            padding: 5px 20px;
+            padding: 4px 20px;
             text-align: center;
         }
 
-        /* ── SEÇÕES ── */
-        .section {
-            margin-bottom: 16px;
-        }
+        /* CABEÇALHO */
+        .header { width: 100%; border-collapse: collapse; margin-bottom: 14px; border-bottom: 2px solid #1a3c6e; padding-bottom: 10px; }
+        .header-logo { width: 140px; vertical-align: middle; }
+        .header-logo img { height: 60px; }
+        .header-info { vertical-align: middle; text-align: center; }
+        .header-titulo { font-size: 13px; font-weight: bold; color: #1a3c6e; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-nr { width: 100px; vertical-align: middle; text-align: right; }
+        .header-nr .nr-label { font-size: 8px; color: #888; text-transform: uppercase; }
+        .header-nr .nr-valor { font-size: 14px; font-weight: bold; color: #1a3c6e; }
+
+        /* SEÇÕES */
+        .section { margin-bottom: 14px; }
         .section-title {
             background-color: #1a3c6e;
             color: #fff;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 5px 10px;
-            margin-bottom: 8px;
+            padding: 4px 10px;
+            margin-bottom: 7px;
         }
 
-        /* ── GRID DE CAMPOS ── */
-        .field-grid {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .field-grid td {
-            padding: 4px 8px;
-            vertical-align: top;
-        }
-        .field-label {
-            font-weight: bold;
-            color: #444;
-            font-size: 9px;
-            text-transform: uppercase;
-            white-space: nowrap;
-            width: 1%;
-        }
-        .field-value {
-            color: #222;
-            border-bottom: 1px solid #e0e0e0;
-        }
+        /* GRID DE CAMPOS */
+        .field-grid { width: 100%; border-collapse: collapse; }
+        .field-grid td { padding: 3px 7px; vertical-align: top; }
+        .field-label { font-weight: bold; color: #555; font-size: 8px; text-transform: uppercase; white-space: nowrap; width: 1%; }
+        .field-value { color: #222; font-size: 10px; border-bottom: 1px solid #eee; }
 
-        /* ── TABELAS ── */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10px;
-        }
-        .data-table thead tr {
-            background-color: #eef2f8;
-        }
-        .data-table th {
-            padding: 5px 8px;
-            text-align: left;
-            font-weight: bold;
-            color: #1a3c6e;
-            border: 1px solid #cdd6e8;
-            font-size: 9px;
-            text-transform: uppercase;
-        }
-        .data-table td {
-            padding: 5px 8px;
-            border: 1px solid #e0e0e0;
-            vertical-align: top;
-        }
+        /* TABELAS */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .data-table thead tr { background-color: #eef2f8; }
+        .data-table th { padding: 4px 8px; text-align: left; font-weight: bold; color: #1a3c6e; border: 1px solid #cdd6e8; font-size: 8px; text-transform: uppercase; }
+        .data-table td { padding: 4px 8px; border: 1px solid #e0e0e0; vertical-align: top; }
         .data-table tbody tr:nth-child(even) { background-color: #f8f9fb; }
 
-        /* ── CLIMA ── */
-        .clima-grid {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .clima-grid td {
-            width: 33.33%;
-            padding: 8px;
-            border: 1px solid #e0e0e0;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .clima-periodo {
-            font-weight: bold;
-            color: #1a3c6e;
-            font-size: 10px;
-            margin-bottom: 4px;
-        }
-        .clima-cond {
-            font-size: 11px;
-        }
+        /* TEXTO LIVRE */
+        .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 10px; color: #333; min-height: 30px; white-space: pre-wrap; }
 
-        /* ── STATUS BADGES ── */
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: bold;
-        }
-        .badge-info    { background-color: #17a2b8; color: #fff; }
-        .badge-warning { background-color: #ffc107; color: #000; }
-        .badge-success { background-color: #28a745; color: #fff; }
+        /* FOTOS */
+        .fotos-grid { width: 100%; border-collapse: collapse; }
+        .fotos-grid td { padding: 4px; text-align: center; vertical-align: top; width: 33.33%; }
+        .fotos-grid img { max-width: 100%; max-height: 160px; border: 1px solid #ddd; }
+        .foto-legenda { font-size: 8px; color: #888; margin-top: 3px; }
 
-        /* ── ATIVIDADE STATUS ── */
-        .status-0  { color: #888; }
-        .status-1  { color: #17a2b8; }
-        .status-2  { color: #007bff; }
-        .status-3  { color: #28a745; }
-        .status-4  { color: #dc3545; }
-        .status-5  { color: #6c757d; }
+        /* ASSINATURAS */
+        .assinaturas-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .assinatura-cell { width: 50%; border: 1px solid #ccc; padding: 10px; text-align: center; vertical-align: top; }
+        .assinatura-title { font-weight: bold; font-size: 8px; text-transform: uppercase; color: #444; margin-bottom: 8px; }
+        .assinatura-cell img { max-width: 100%; max-height: 80px; }
+        .sem-assinatura { color: #bbb; font-size: 9px; height: 60px; line-height: 60px; }
+        .assinatura-nome { border-top: 1px solid #333; margin-top: 8px; padding-top: 4px; font-size: 8px; color: #555; }
 
-        /* ── ASSINATURAS ── */
-        .assinatura-box {
-            width: 48%;
-            display: inline-block;
-            border: 1px solid #ccc;
-            padding: 8px;
-            margin: 4px;
-            text-align: center;
-            vertical-align: top;
-        }
-        .assinatura-box img {
-            max-width: 100%;
-            max-height: 80px;
-        }
-        .assinatura-title {
-            font-weight: bold;
-            font-size: 9px;
-            text-transform: uppercase;
-            color: #444;
-            margin-bottom: 6px;
-        }
-        .sem-assinatura {
-            color: #aaa;
-            font-size: 9px;
-            height: 60px;
-            line-height: 60px;
-        }
-
-        /* ── UTILITÁRIOS ── */
-        .text-muted { color: #888; font-style: italic; }
-        .pb-line    { border-bottom: 1px dashed #ccc; padding-bottom: 4px; margin-bottom: 4px; }
-        .page-break { page-break-before: always; }
+        /* UTILITÁRIOS */
+        .text-muted { color: #aaa; font-style: italic; font-size: 9px; }
+        .page-break  { page-break-before: always; }
     </style>
 </head>
 @php
-    $logoBase64   = base64_encode(file_get_contents(public_path('img/mcl_logo.jpeg')));
-    $logoMime     = 'image/jpeg';
-    $marcaBase64  = base64_encode(file_get_contents(public_path('img/mcl_marca.jpg')));
-    $marcaMime    = 'image/jpeg';
+    $logoBase64  = base64_encode(file_get_contents(public_path('img/mcl_logo.jpeg')));
+    $marcaBase64 = base64_encode(file_get_contents(public_path('img/mcl_marca.jpg')));
+
+    $climaOrg = $relatorio->climas->keyBy('aten_rel_clima_periodo');
+    $condMap  = [1 => 'Ensolarado', 2 => 'Nublado', 3 => 'Chuvoso'];
+
+    $assResp = $relatorio->assinaturas->first(fn($a) => $a->aten_rel_ass_tipo->value === 'responsavel');
+    $assCli  = $relatorio->assinaturas->first(fn($a) => $a->aten_rel_ass_tipo->value === 'cliente');
+
+    $imgBase64 = function(string $path): string {
+        $full = storage_path('app/public/' . ltrim($path, '/'));
+        if (!file_exists($full)) return '';
+        $mime = mime_content_type($full) ?: 'image/jpeg';
+        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
+    };
 @endphp
-<body style="padding: 10px;">
+<body style="padding: 20px 20px 40px 20px;">
 
 {{-- MARCA D'ÁGUA --}}
 <div class="watermark">
-    <img src="data:{{ $marcaMime }};base64,{{ $marcaBase64 }}" alt="">
+    <img src="data:image/jpeg;base64,{{ $marcaBase64 }}" alt="">
 </div>
 
 {{-- RODAPÉ --}}
 <div class="footer">
-    Relatório gerado em {{ now()->format('d/m/Y H:i') }} &nbsp;|&nbsp;
-    {{ $relatorio->modeloRelatorio->mod_rel_descricao }} &nbsp;|&nbsp;
-    Nº {{ $relatorio->aten_rel_id }}
+    Gerado em {{ now()->format('d/m/Y \à\s H:i') }}
+    &nbsp;|&nbsp; {{ $relatorio->modeloRelatorio->mod_rel_descricao }}
+    &nbsp;|&nbsp; Nº {{ $relatorio->aten_rel_id }}
 </div>
 
 {{-- CABEÇALHO --}}
-<div class="header">
-    <img class="logo" src="data:{{ $logoMime }};base64,{{ $logoBase64 }}" alt="Logo">
-    <div class="titulo">{{ $relatorio->modeloRelatorio->mod_rel_descricao }}</div>
-    <div class="subtitulo">
-        Relatório de Atendimento &nbsp;|&nbsp; Nº {{ $relatorio->aten_rel_id }}
-    </div>
-</div>
+<table class="header" width="100%">
+    <tr>
+        <td class="header-logo">
+            <img src="data:image/jpeg;base64,{{ $logoBase64 }}" alt="Logo MCL">
+        </td>
+        <td class="header-info">
+            <div class="header-titulo">{{ $relatorio->modeloRelatorio->mod_rel_descricao }}</div>
+        </td>
+        <td class="header-nr">
+            <div class="nr-label">Nº Relatório</div>
+            <div class="nr-valor">#{{ $relatorio->aten_rel_id }}</div>
+        </td>
+    </tr>
+</table>
 
-{{-- ═══════════════ 1. DADOS ═══════════════ --}}
+{{-- 1. DADOS DO ATENDIMENTO --}}
 <div class="section">
-    <div class="section-title">1. Dados Gerais</div>
+    <div class="section-title">1. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-label">Data</td>
-            <td class="field-value">{{ $relatorio->aten_rel_data->format('d/m/Y') }}</td>
-            <td class="field-label">Dia da Semana</td>
-            <td class="field-value">{{ getFormatDiaSemana($relatorio->aten_rel_data) }}</td>
-            <td class="field-label">Status</td>
-            <td class="field-value">
-                @php $statusLabels = [0 => ['Preenchendo','info'], 1 => ['Revisar','warning'], 2 => ['Aprovado','success']]; @endphp
-                <span class="badge badge-{{ $statusLabels[$relatorio->aten_rel_status][1] ?? 'info' }}">
-                    {{ $statusLabels[$relatorio->aten_rel_status][0] ?? '-' }}
-                </span>
-            </td>
-        </tr>
-        <tr>
-            <td class="field-label">Prazo Total</td>
-            <td class="field-value">{{ $prazoTotal }} dias</td>
-            <td class="field-label">Prazo Decorrido</td>
-            <td class="field-value">{{ $prazoDecorrido }} dias</td>
-            <td class="field-label">Prazo à Vencer</td>
-            <td class="field-value">{{ $prazoAVencer }} dias</td>
-        </tr>
-        <tr>
+            <td class="field-label">Cliente</td>
+            <td class="field-value" colspan="3">{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
             <td class="field-label">Nº Proposta</td>
-            <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value">{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td class="field-label">Natureza</td>
+            <td class="field-value" colspan="3">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-label">Técnico</td>
+            <td class="field-value">{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Endereço</td>
             <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label">Cliente</td>
-            <td class="field-value" colspan="3">{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
             <td class="field-label">Responsável</td>
-            <td class="field-value">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
+            <td class="field-value" colspan="3">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
+            <td class="field-label">Telefone</td>
+            <td class="field-value">{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label">Natureza</td>
-            <td class="field-value" colspan="4">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-label">Período</td>
+            <td class="field-value">
+                {{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}
+                &nbsp;–&nbsp;
+                {{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}
+            </td>
+            <td class="field-label">Data do Relatório</td>
+            <td class="field-value">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-label">Prazo Restante</td>
+            <td class="field-value">{{ $prazoAVencer }} dias</td>
         </tr>
     </table>
 </div>
 
-{{-- ═══════════════ 2. HORÁRIOS ═══════════════ --}}
+{{-- 2. OBSERVAÇÕES --}}
+@if($relatorio->atendimento->aten_obs_cliente)
 <div class="section">
-    <div class="section-title">2. Horários</div>
+    <div class="section-title">2. Observações</div>
+    <div class="text-block">{{ $relatorio->atendimento->aten_obs_cliente }}</div>
+</div>
+@endif
+
+{{-- 3. EQUIPAMENTOS --}}
+<div class="section">
+    <div class="section-title">3. Equipamentos</div>
+    @php $equips = $relatorio->atendimento->equipamentos; @endphp
+    @if($equips->isNotEmpty())
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($equips as $i => $eq)
+                <tr>
+                    <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
+                    <td>{{ $eq->aten_equip_descricao }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <span class="text-muted">Nenhum equipamento registrado.</span>
+    @endif
+</div>
+
+{{-- 4. HORÁRIO --}}
+<div class="section">
+    <div class="section-title">4. Horário</div>
     @php $h = $relatorio->horarios; @endphp
     @if($h)
         <table class="field-grid">
@@ -307,126 +250,67 @@
     @endif
 </div>
 
-{{-- ═══════════════ 3. CONDIÇÕES CLIMÁTICAS ═══════════════ --}}
+{{-- 5. DESCRIÇÃO --}}
+@if($relatorio->aten_rel_descricao)
 <div class="section">
-    <div class="section-title">3. Condições Climáticas</div>
-    @php
-        $condMap    = [1 => 'Ensolarado', 2 => 'Nublado', 3 => 'Chuvoso'];
-        $periodoMap = [1 => 'Manhã', 2 => 'Tarde', 3 => 'Noite'];
-        $climaOrg   = $relatorio->climas->keyBy('aten_rel_clima_periodo');
-    @endphp
-    <table class="clima-grid">
-        <tr>
-            @foreach([1, 2, 3] as $periodo)
-            <td>
-                <div class="clima-periodo">{{ $periodoMap[$periodo] }}</div>
-                <div class="clima-cond">
-                    @if(isset($climaOrg[$periodo]))
-                        {{ $condMap[$climaOrg[$periodo]->aten_rel_clima_condicao] ?? '-' }}
-                    @else
-                        <span class="text-muted">Não informado</span>
-                    @endif
-                </div>
-            </td>
-            @endforeach
-        </tr>
-    </table>
+    <div class="section-title">5. Descrição</div>
+    <div class="text-block">{{ $relatorio->aten_rel_descricao }}</div>
 </div>
+@endif
 
-{{-- ═══════════════ 4. MÃO DE OBRA ═══════════════ --}}
+{{-- 6. SERVIÇOS PRESTADOS --}}
 <div class="section">
-    <div class="section-title">4. Mão de Obra</div>
-    @if($relatorio->ocupacoes->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Tipo</th>
-                    <th>Mão de Obra</th>
-                    <th style="width:80px; text-align:center;">Qtd</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($relatorio->ocupacoes as $oc)
-                <tr>
-                    <td>{{ optional($oc->tipoOcupacao)->tp_ocup_descricao ?? '-' }}</td>
-                    <td>{{ $oc->ocup_descricao }}</td>
-                    <td style="text-align:center;">{{ $oc->pivot->aten_rel_ocup_quantidade }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhuma mão de obra registrada.</span>
-    @endif
-</div>
-
-{{-- ═══════════════ 5. FERRAMENTAS / EQUIPAMENTOS ═══════════════ --}}
-<div class="section">
-    <div class="section-title">5. Ferramentas e Equipamentos</div>
-    @if($relatorio->equipamentos->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Ferramenta / Equipamento</th>
-                    <th style="width:80px; text-align:center;">Qtd</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($relatorio->equipamentos as $eq)
-                <tr>
-                    <td>{{ $eq->equip_descricao }}</td>
-                    <td style="text-align:center;">{{ $eq->pivot->aten_rel_equip_quantidade }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhum equipamento registrado.</span>
-    @endif
-</div>
-
-{{-- ═══════════════ 6. ATIVIDADES ═══════════════ --}}
-<div class="section">
-    <div class="section-title">6. Atividades</div>
-    @php
-        $atividadeStatus = [
-            0 => 'Não iniciada',
-            1 => 'Iniciada',
-            2 => 'Em andamento',
-            3 => 'Concluída',
-            4 => 'Paralisada',
-            5 => 'Não executada',
-        ];
-    @endphp
-    @if($relatorio->atividades->isNotEmpty())
+    <div class="section-title">6. Serviços Prestados</div>
+    @if($relatorio->servicos->isNotEmpty())
         <table class="data-table">
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Descrição</th>
-                    <th style="width:120px;">Status</th>
+                    <th>Serviço</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($relatorio->atividades->sortBy('aten_rel_ativ_id') as $i => $atv)
+                @foreach($relatorio->servicos as $i => $s)
                 <tr>
                     <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
-                    <td>{{ $atv->aten_rel_ativ_descricao }}</td>
-                    <td class="status-{{ $atv->aten_rel_ativ_status }}">
-                        {{ $atividadeStatus[$atv->aten_rel_ativ_status] ?? '-' }}
-                    </td>
+                    <td>{{ $s->aten_rel_serv_descricao }}</td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
     @else
-        <span class="text-muted">Nenhuma atividade registrada.</span>
+        <span class="text-muted">Nenhum serviço registrado.</span>
     @endif
 </div>
 
-{{-- ═══════════════ 7. OCORRÊNCIAS ═══════════════ --}}
+{{-- 7. PEÇAS SUBSTITUÍDAS --}}
 <div class="section">
-    <div class="section-title">7. Ocorrências</div>
+    <div class="section-title">7. Peças Substituídas</div>
+    @if($relatorio->pecas->isNotEmpty())
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Peça</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($relatorio->pecas as $i => $p)
+                <tr>
+                    <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
+                    <td>{{ $p->aten_rel_peca_descricao }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <span class="text-muted">Nenhuma peça registrada.</span>
+    @endif
+</div>
+
+{{-- 8. OCORRÊNCIAS --}}
+<div class="section">
+    <div class="section-title">8. Ocorrências</div>
     @if($relatorio->ocorrencias->isNotEmpty())
         <table class="data-table">
             <thead>
@@ -449,63 +333,89 @@
     @endif
 </div>
 
-{{-- ═══════════════ 8. COMENTÁRIOS ═══════════════ --}}
+{{-- 9. INFORMAÇÕES ADICIONAIS --}}
+@if($relatorio->aten_rel_informacoes_adicionais)
 <div class="section">
-    <div class="section-title">8. Comentários</div>
-    @if($relatorio->comentarios->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Comentário</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($relatorio->comentarios->sortBy('aten_rel_com_id') as $i => $com)
-                <tr>
-                    <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
-                    <td>{{ $com->aten_rel_com_descricao }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhum comentário registrado.</span>
-    @endif
+    <div class="section-title">9. Informações Adicionais</div>
+    <div class="text-block">{{ $relatorio->aten_rel_informacoes_adicionais }}</div>
 </div>
+@endif
 
-{{-- ═══════════════ 9. ASSINATURAS ═══════════════ --}}
-<div class="section page-break">
-    <div class="section-title">9. Assinaturas</div>
-    <div style="width:100%;">
-        {{-- Responsável --}}
-        <div class="assinatura-box">
-            <div class="assinatura-title">Responsável</div>
-            @php $assResp = $relatorio->assinaturaResponsavel(); @endphp
-            @if($assResp && $assResp->aten_rel_ass_path)
-                <img src="{{ storage_path('app/public/' . $assResp->aten_rel_ass_path) }}" alt="Assinatura Responsável">
-            @else
-                <div class="sem-assinatura">Não assinado</div>
-            @endif
-            <div style="border-top:1px solid #333; margin-top:8px; padding-top:4px; font-size:9px;">
-                {{ $relatorio->atendimento->aten_responsavel ?? '' }}
-            </div>
-        </div>
+{{-- 10. FOTOS --}}
+@if($relatorio->fotos->isNotEmpty())
+<div class="section">
+    <div class="section-title">10. Fotos</div>
+    @php $fotos = $relatorio->fotos->values(); @endphp
+    <table class="fotos-grid">
+        @foreach($fotos->chunk(3) as $linha)
+        <tr>
+            @foreach($linha as $foto)
+            <td>
+                @php $fotoSrc = $imgBase64($foto->aten_rel_foto_path); @endphp
+                @if($fotoSrc)
+                    <img src="{{ $fotoSrc }}" alt="Foto">
+                @endif
+                @if($foto->aten_rel_foto_legenda)
+                    <div class="foto-legenda">{{ $foto->aten_rel_foto_legenda }}</div>
+                @endif
+            </td>
+            @endforeach
+            @for($i = $linha->count(); $i < 3; $i++)
+            <td></td>
+            @endfor
+        </tr>
+        @endforeach
+    </table>
+</div>
+@endif
 
-        {{-- Cliente --}}
-        <div class="assinatura-box">
-            <div class="assinatura-title">Cliente</div>
-            @php $assCli = $relatorio->assinaturaCliente(); @endphp
-            @if($assCli && $assCli->aten_rel_ass_path)
-                <img src="{{ storage_path('app/public/' . $assCli->aten_rel_ass_path) }}" alt="Assinatura Cliente">
-            @else
-                <div class="sem-assinatura">Não assinado</div>
-            @endif
-            <div style="border-top:1px solid #333; margin-top:8px; padding-top:4px; font-size:9px;">
-                {{ $relatorio->atendimento->cliente->cli_nome ?? '' }}
-            </div>
-        </div>
-    </div>
+{{-- 11. ENTREGA TÉCNICA (condicional) --}}
+@if($relatorio->atendimento->aten_entrega_tecnica)
+@php
+    $equipNomes = $relatorio->atendimento->equipamentos->pluck('aten_equip_descricao');
+    $equipStr   = $equipNomes->count()
+        ? $equipNomes->slice(0, -1)->implode(' ; ')
+            . ($equipNomes->count() > 1 ? ' ; ' : '')
+            . $equipNomes->last() . '.'
+        : '-';
+@endphp
+<div class="section">
+    <div class="section-title">11. Entrega Técnica</div>
+    <p style="font-weight:bold; margin-bottom:6px;">Entrega Técnica de Equipamentos</p>
+    <p style="margin-bottom:6px;"><strong>Equipamento instalado:</strong> {{ $equipStr }}</p>
+    <p style="margin-bottom:4px;">A MCLvale, neste ato representado pelo técnico abaixo assinado, coloca em início a operação e funcionamento do(s) equipamento(s) adquirido(s).</p>
+    <p style="margin-bottom:4px;">A equipe operacional foi devidamente instruída, tendo recebido todas as informações necessárias para o correto funcionamento dos equipamentos/instalação.</p>
+    <p style="margin-bottom:4px;">Além dessas informações, é indispensável a leitura do manual de Fabricação do Equipamento.</p>
+    <p style="margin-bottom:4px;"><em>OBS: Esse registro é utilizado para controle técnico.</em></p>
+    <p>A garantia dos equipamentos permanece em vigor, de acordo com as "condições gerais de venda".</p>
+</div>
+@endif
+
+{{-- 12. ASSINATURAS --}}
+<div class="section">
+    <div class="section-title">12. Assinaturas</div>
+    <table class="assinaturas-table">
+        <tr>
+            <td class="assinatura-cell">
+                <div class="assinatura-title">Técnico</div>
+                @if($assResp && $assResp->aten_rel_ass_path)
+                    <img src="{{ $imgBase64($assResp->aten_rel_ass_path) }}" alt="Assinatura Técnico">
+                @else
+                    <div class="sem-assinatura">Não assinado</div>
+                @endif
+                <div class="assinatura-nome">{{ $relatorio->atendimento->aten_responsavel ?? '' }}</div>
+            </td>
+            <td class="assinatura-cell">
+                <div class="assinatura-title">Cliente</div>
+                @if($assCli && $assCli->aten_rel_ass_path)
+                    <img src="{{ $imgBase64($assCli->aten_rel_ass_path) }}" alt="Assinatura Cliente">
+                @else
+                    <div class="sem-assinatura">Não assinado</div>
+                @endif
+                <div class="assinatura-nome">{{ $relatorio->atendimento->cliente->cli_nome ?? '' }}</div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 </body>

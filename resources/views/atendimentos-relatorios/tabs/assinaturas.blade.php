@@ -18,7 +18,7 @@
         <div class="row mt-4">
             <div class="col-md-6 mb-3">
                 <div class="card h-100">
-                    <div class="card-header font-weight-bold">Assinatura Responsável</div>
+                    <div class="card-header font-weight-bold">Assinatura Técnico</div>
                     <div class="card-body">
                         <canvas id="assinaturaResponsavelCanvas" class="border rounded w-100" width="600" height="220"></canvas>
                         <div class="mt-2 d-flex justify-content-between">
@@ -29,7 +29,7 @@
                             <p class="mb-1 font-weight-bold">Preview atual</p>
                             <div id="assinaturaResponsavelPreview">
                                 @if(optional($atendimentoRelatorio->assinaturaResponsavel())->aten_rel_ass_path)
-                                    <img src="{{ asset('storage/' . $atendimentoRelatorio->assinaturaResponsavel()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Responsável">
+                                    <img src="{{ asset('storage/' . $atendimentoRelatorio->assinaturaResponsavel()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Técnico">
                                 @else
                                     <span class="text-muted">Nenhuma assinatura registrada.</span>
                                 @endif
