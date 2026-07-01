@@ -31,7 +31,8 @@ class DataTableService
         Builder  $query,
         array    $searchable,
         array    $orderable,
-        callable $mapper
+        callable $mapper,
+        array    $searchableRaw = []
     ): array {
         $draw   = (int) $request->input('draw', 1);
         $start  = (int) $request->input('start', 0);
@@ -42,9 +43,12 @@ class DataTableService
 
         // Busca global
         if ($search !== '') {
-            $query->where(function (Builder $q) use ($searchable, $search) {
+            $query->where(function (Builder $q) use ($searchable, $searchableRaw, $search) {
                 foreach ($searchable as $col) {
                     $q->orWhere($col, 'like', '%' . $search . '%');
+                }
+                foreach ($searchableRaw as $expr) {
+                    $q->orWhereRaw($expr . ' LIKE ?', ['%' . $search . '%']);
                 }
             });
         }

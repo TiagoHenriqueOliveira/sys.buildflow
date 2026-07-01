@@ -37,7 +37,15 @@ class AtendimentosController extends Controller
                 $this->dataTable->process(
                     $request,
                     $this->repository->query($filtroUsuarioId),
-                    searchable: ['clientes.cli_nome'],
+                    searchable: [
+                        'clientes.cli_nome',
+                        'usuarios.user_nome',
+                        'atendimentos.aten_nr_proposta',
+                        'naturezas_atendimentos.nat_aten_descricao',
+                    ],
+                    searchableRaw: [
+                        "CASE atendimentos.aten_status WHEN 0 THEN 'Não iniciada' WHEN 1 THEN 'Paralisada' WHEN 2 THEN 'Em andamento' WHEN 3 THEN 'Concluída' END",
+                    ],
                     orderable:  [
                         'acoes'       => null,
                         'natureza'    => null,

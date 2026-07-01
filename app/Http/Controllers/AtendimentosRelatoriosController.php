@@ -60,7 +60,12 @@ class AtendimentosRelatoriosController extends Controller
                     searchable: [
                         'clientes.cli_nome',
                         'naturezas_atendimentos.nat_aten_descricao',
+                        'usuarios.user_nome',
+                        'atendimentos.aten_nr_proposta',
                         'atendimentos_relatorios.aten_rel_data',
+                    ],
+                    searchableRaw: [
+                        "CASE atendimentos_relatorios.aten_rel_status WHEN 0 THEN 'Preenchendo' WHEN 1 THEN 'Revisar' WHEN 2 THEN 'Aprovado' END",
                     ],
                     orderable:  [
                         'acoes'       => null,

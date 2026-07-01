@@ -60,8 +60,13 @@ class AtendimentosController extends Controller
 
     private function format(Atendimento $a, bool $detalhes = false): array
     {
+        $naturezaDesc = optional($a->natureza)->nat_aten_descricao ?? '';
+        $clienteNome  = optional($a->cliente)->cli_nome ?? '';
+        $descricao    = implode(' – ', array_filter([$naturezaDesc, $clienteNome]));
+
         $data = [
             'id'               => $a->aten_id,
+            'descricao'        => $descricao,
             'responsavel'      => $a->aten_responsavel,
             'telefone'         => $a->aten_telefone,
             'endereco'         => $a->aten_endereco,
@@ -76,8 +81,10 @@ class AtendimentosController extends Controller
                 'descricao' => optional($a->natureza)->nat_aten_descricao,
             ],
             'cliente' => [
-                'id'   => optional($a->cliente)->cli_id,
-                'nome' => optional($a->cliente)->cli_nome,
+                'id'     => optional($a->cliente)->cli_id,
+                'nome'   => optional($a->cliente)->cli_nome,
+                'cidade' => optional($a->cliente)->cli_cidade,
+                'uf'     => optional($a->cliente)->cli_uf,
             ],
             'tecnico' => [
                 'id'   => optional($a->usuario)->user_id,

@@ -141,6 +141,19 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Natureza do atendimento sem modelo de relatório.'], 422);
         }
 
+        $modelo = $atendimento->natureza->modeloRelatorio;
+        if ((int) $modelo->mod_rel_tp_data === 1) {
+            $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
+                ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
+                ->exists();
+
+            if ($existe) {
+                return response()->json([
+                    'message' => 'Não é possível criar outro relatório, seu atendimento só permite um!',
+                ], 422);
+            }
+        }
+
         $rel = AtendimentoRelatorio::create([
             'aten_rel_atendimento_id'      => $atendimento->aten_id,
             'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio->mod_rel_id,
@@ -199,6 +212,10 @@ class RelatoriosController extends Controller
             'prazo'                    => $prazo,
             'atendimento' => [
                 'id'              => $relatorio->atendimento->aten_id,
+                'descricao'       => implode(' – ', array_filter([
+                    optional($relatorio->atendimento->natureza)->nat_aten_descricao ?? '',
+                    optional($relatorio->atendimento->cliente)->cli_nome ?? '',
+                ])),
                 'responsavel'     => $relatorio->atendimento->aten_responsavel,
                 'telefone'        => $relatorio->atendimento->aten_telefone,
                 'endereco'        => $relatorio->atendimento->aten_endereco,
@@ -210,6 +227,8 @@ class RelatoriosController extends Controller
                 'dt_inicio'       => $relatorio->atendimento->aten_dt_inicio?->format('Y-m-d'),
                 'dt_fim'          => $relatorio->atendimento->aten_dt_fim?->format('Y-m-d'),
                 'cliente'         => optional($relatorio->atendimento->cliente)->cli_nome,
+                'cidade'          => optional($relatorio->atendimento->cliente)->cli_cidade,
+                'uf'              => optional($relatorio->atendimento->cliente)->cli_uf,
                 'natureza'        => optional($relatorio->atendimento->natureza)->nat_aten_descricao,
                 'equipamentos'    => $relatorio->atendimento->equipamentos->map(fn($e) => [
                     'id'        => $e->aten_equip_id,
