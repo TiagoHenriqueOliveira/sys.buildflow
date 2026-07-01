@@ -72,6 +72,23 @@ class RelatoriosController extends Controller
         return asset('storage/' . $path);
     }
 
+    private function safeFilename(string $originalName, string $dir): string
+    {
+        $ext  = pathinfo($originalName, PATHINFO_EXTENSION);
+        $base = pathinfo($originalName, PATHINFO_FILENAME);
+        // Mantém nome original mas remove caracteres perigosos
+        $safe = preg_replace('/[^a-zA-Z0-9._\-]/', '_', $base);
+        $safe = trim($safe, '_') ?: 'arquivo';
+        $name = $safe . '.' . $ext;
+        // Evita conflitos adicionando sufixo numérico
+        $counter = 0;
+        while (\Illuminate\Support\Facades\Storage::disk('public')->exists("$dir/$name")) {
+            $counter++;
+            $name = "{$safe}_{$counter}.{$ext}";
+        }
+        return $name;
+    }
+
     // ─── Relatório CRUD ───────────────────────────────────────────────────────
 
     /**
@@ -185,6 +202,7 @@ class RelatoriosController extends Controller
                 'responsavel'     => $relatorio->atendimento->aten_responsavel,
                 'telefone'        => $relatorio->atendimento->aten_telefone,
                 'endereco'        => $relatorio->atendimento->aten_endereco,
+                'nr_proposta'     => $relatorio->atendimento->aten_nr_proposta,
                 'entrega_tecnica' => (bool) $relatorio->atendimento->aten_entrega_tecnica,
                 'obs_cliente'     => $relatorio->atendimento->aten_obs_cliente,
                 'obs_tecnica'     => $relatorio->atendimento->aten_obs_tecnica,
@@ -565,34 +583,37 @@ class RelatoriosController extends Controller
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $i => $file) {
                 if (! $file->isValid()) continue;
-                $safeName = Str::random(12) . '.' . $file->getClientOriginalExtension();
-                $path     = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
-                $foto     = AtendimentoRelatorioFoto::create([
+                $originalName = $file->getClientOriginalName();
+                $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/fotos");
+                $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
+                $foto         = AtendimentoRelatorioFoto::create([
                     'aten_rel_foto_relatorio_id' => $id,
                     'aten_rel_foto_path'         => $path,
                     'aten_rel_foto_legenda'      => $legendas[$i] ?? null,
                 ]);
-                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('storage/' . $path), 'legenda' => $foto->aten_rel_foto_legenda];
+                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('storage/' . $path), 'nome' => $originalName, 'legenda' => $foto->aten_rel_foto_legenda];
             }
         }
 
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $file) {
                 if (! $file->isValid()) continue;
-                $safeName = Str::random(12) . '.' . $file->getClientOriginalExtension();
-                $path     = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
-                $video    = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
-                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path)];
+                $originalName = $file->getClientOriginalName();
+                $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/videos");
+                $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
+                $video        = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
+                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path), 'nome' => $originalName];
             }
         }
 
         if ($request->hasFile('arquivos')) {
             foreach ($request->file('arquivos') as $file) {
                 if (! $file->isValid()) continue;
-                $safeName = Str::random(12) . '.' . $file->getClientOriginalExtension();
-                $path     = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
-                $anexo    = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
-                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path)];
+                $originalName = $file->getClientOriginalName();
+                $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/arquivos");
+                $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
+                $anexo        = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
+                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path), 'nome' => $originalName];
             }
         }
 
