@@ -20,6 +20,7 @@ function configDataTableNaturezasAtendimentos() {
         ajax: { url: url, type: "GET", dataSrc: "data" },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "nat_aten_descricao" },

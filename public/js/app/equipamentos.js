@@ -26,6 +26,7 @@ function configDataTableEquipamentos() {
         },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "equip_descricao" },

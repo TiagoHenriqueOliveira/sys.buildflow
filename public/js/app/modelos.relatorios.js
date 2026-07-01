@@ -28,6 +28,7 @@ function configDataTableModelosRelatorios() {
         },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "mod_rel_descricao" },

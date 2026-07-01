@@ -89,6 +89,7 @@ function configDataTableAtendimentos() {
         },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "natureza" },

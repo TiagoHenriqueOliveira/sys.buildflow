@@ -25,6 +25,7 @@ function configDataTableTiposOcupacoes() {
         },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "tp_ocup_descricao" },

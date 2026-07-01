@@ -53,6 +53,7 @@ function configDataTableClientes() {
         },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "cli_nome" },

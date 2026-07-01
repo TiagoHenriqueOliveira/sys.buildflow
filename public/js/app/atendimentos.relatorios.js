@@ -119,6 +119,7 @@ function configDataTableAtendimentosRelatorios() {
         },
         serverSide: true,
         processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "data" },
