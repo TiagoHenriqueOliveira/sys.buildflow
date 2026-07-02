@@ -161,6 +161,11 @@ class RelatoriosController extends Controller
             'aten_rel_status'              => 0,
         ]);
 
+        // Muda atendimento para "em andamento" ao criar o primeiro relatório
+        if ($atendimento->aten_status !== 2) {
+            $atendimento->update(['aten_status' => 2]);
+        }
+
         return response()->json([
             'message' => 'Relatório criado.',
             'data'    => ['id' => $rel->aten_rel_id],
