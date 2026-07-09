@@ -587,15 +587,29 @@ class RelatoriosController extends Controller
      */
     public function uploadAnexos(Request $request, int $id): JsonResponse
     {
+        // Verifica se PHP descartou arquivos por exceder upload_max_filesize antes do script rodar
+        if (
+            $request->header('Content-Length') > 0 &&
+            ! $request->hasFile('fotos') &&
+            ! $request->hasFile('videos') &&
+            ! $request->hasFile('arquivos') &&
+            $request->header('Content-Type') &&
+            str_contains($request->header('Content-Type'), 'multipart')
+        ) {
+            return response()->json([
+                'message' => 'Arquivo rejeitado pelo servidor. Verifique se o tamanho não excede 500 MB.',
+            ], 422);
+        }
+
         $request->validate([
             'fotos'      => 'nullable|array',
             'fotos.*'    => 'file|max:10240|mimes:jpg,jpeg,png,webp',
             'legendas'   => 'nullable|array',
             'legendas.*' => 'nullable|string|max:255',
             'videos'     => 'nullable|array',
-            'videos.*'   => 'file|max:204800|mimes:mp4,mov,avi,mkv,webm',
+            'videos.*'   => 'file|max:524288|mimes:mp4,mov,avi,mkv,webm',
             'arquivos'   => 'nullable|array',
-            'arquivos.*' => 'file|max:20480|mimes:pdf,doc,docx,xls,xlsx,txt,csv',
+            'arquivos.*' => 'file|max:524288|mimes:pdf,doc,docx,xls,xlsx,txt,csv',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Atendimento;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AtendimentosController extends Controller
 {
@@ -22,7 +23,7 @@ class AtendimentosController extends Controller
         $usuario = $request->user();
 
         $query = Atendimento::query()
-            ->with(['natureza', 'cliente', 'usuario'])
+            ->with(['natureza.modeloRelatorio', 'cliente', 'usuario'])
             ->orderBy('aten_dt_inicio', 'desc');
 
         if ($usuario->user_nivel_acesso !== 0) {
@@ -49,13 +50,39 @@ class AtendimentosController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $usuario     = $request->user();
-        $atendimento = Atendimento::with(['natureza', 'cliente', 'usuario', 'equipamentos'])->findOrFail($id);
+        $atendimento = Atendimento::with(['natureza.modeloRelatorio', 'cliente', 'usuario', 'equipamentos'])->findOrFail($id);
 
         if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
         return response()->json(['data' => $this->format($atendimento, true)]);
+    }
+
+    /**
+     * Altera o status de um atendimento.
+     *
+     * PUT /api/mcl/v1/atendimentos/{id}/status
+     * Body: { status: 0|1|2|3 }
+     */
+    public function updateStatus(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'status' => ['required', 'integer', Rule::in([0, 1, 2, 3])],
+        ]);
+
+        $usuario     = $request->user();
+        $atendimento = Atendimento::findOrFail($id);
+
+        if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        $atendimento->update(['aten_status' => $request->status]);
+
+        $label = AtendimentoStatus::tryFrom($request->status)?->label() ?? '-';
+
+        return response()->json(['message' => "Status alterado para: {$label}."]);
     }
 
     private function format(Atendimento $a, bool $detalhes = false): array
@@ -77,8 +104,9 @@ class AtendimentosController extends Controller
             'dt_inicio'        => $a->aten_dt_inicio?->format('Y-m-d'),
             'dt_fim'           => $a->aten_dt_fim?->format('Y-m-d'),
             'natureza'         => [
-                'id'        => optional($a->natureza)->nat_aten_id,
-                'descricao' => optional($a->natureza)->nat_aten_descricao,
+                'id'            => optional($a->natureza)->nat_aten_id,
+                'descricao'     => optional($a->natureza)->nat_aten_descricao,
+                'relatorio_unico' => (int) (optional($a->natureza?->modeloRelatorio)->mod_rel_tp_data ?? 0) === 1,
             ],
             'cliente' => [
                 'id'     => optional($a->cliente)->cli_id,
