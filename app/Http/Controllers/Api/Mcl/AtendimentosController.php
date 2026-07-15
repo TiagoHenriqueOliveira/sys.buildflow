@@ -126,9 +126,15 @@ class AtendimentosController extends Controller
             $data['obs_manutencao'] = $a->aten_obs_manutencao;
             $data['equipamentos']   = $a->relationLoaded('equipamentos')
                 ? $a->equipamentos->map(fn($e) => [
-                    'id'          => $e->aten_equip_id,
-                    'descricao'   => $e->aten_equip_descricao,
-                    'observacoes' => $e->aten_equip_observacoes,
+                    'id'       => $e->aten_equip_id,
+                    'descricao' => $e->aten_equip_descricao,
+                ])->values()
+                : [];
+            $data['anexos'] = $a->relationLoaded('anexos')
+                ? $a->anexos->map(fn($x) => [
+                    'id'            => $x->aten_anexo_id,
+                    'nome_original' => $x->aten_anexo_nome_original,
+                    'url'           => asset('storage/' . $x->aten_anexo_path),
                 ])->values()
                 : [];
         }

@@ -398,8 +398,11 @@ function initSubmitAtendimento() {
                 if (response.aten_id && response.atendimento) {
                     // Novo atendimento: reabre em modo edição sem fechar o modal
                     abrirModalAtendimento(response.atendimento);
+                } else {
+                    // Edição: atualiza ícone da aba observações imediatamente
+                    const atenId = $("#aten_id").val();
+                    if (atenId) carregarObservacoes(atenId);
                 }
-                // Edição: modal permanece aberto
             },
             error: function (xhr) {
                 btnSubmit.prop("disabled", false);

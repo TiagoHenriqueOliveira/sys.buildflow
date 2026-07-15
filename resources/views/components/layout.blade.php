@@ -160,7 +160,7 @@
                 <footer class="sticky-footer bg-white">
                     <div class="container my-auto">
                         <div class="copyright text-center my-auto">
-                            <span>Sys.Buildflow - Copyright &copy; <?php echo date('Y'); ?></span>
+                            <span>Sys.Buildflow - Copyright &copy; <?php echo date('Y'); ?> - v{{ config('app.version') }}</span>
                         </div>
                     </div>
                 </footer>
