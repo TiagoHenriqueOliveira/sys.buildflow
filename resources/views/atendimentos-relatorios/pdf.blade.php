@@ -400,6 +400,9 @@
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
                 <div class="assinatura-nome">{{ $relatorio->atendimento->aten_responsavel ?? '' }}</div>
+                @if($assResp && $assResp->aten_rel_ass_assinado_em)
+                    <div class="assinatura-data">{{ $assResp->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
+                @endif
             </td>
             <td class="assinatura-cell">
                 <div class="assinatura-title">Cliente</div>
