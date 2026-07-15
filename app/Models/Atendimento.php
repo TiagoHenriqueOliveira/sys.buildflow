@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\NaturezaAtendimento;
+use App\Models\AtendimentoAnexo;
 use App\Models\AtendimentoEquipamento;
 use App\Models\Cliente;
 use App\Models\Usuario;
@@ -59,5 +60,10 @@ class Atendimento extends Model
     public function equipamentos()
     {
         return $this->hasMany(AtendimentoEquipamento::class, 'aten_equip_atendimento_id', 'aten_id');
+    }
+
+    public function anexos()
+    {
+        return $this->hasMany(AtendimentoAnexo::class, 'aten_anexo_atendimento_id', 'aten_id');
     }
 }

@@ -50,7 +50,7 @@ class AtendimentosController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $usuario     = $request->user();
-        $atendimento = Atendimento::with(['natureza.modeloRelatorio', 'cliente', 'usuario', 'equipamentos'])->findOrFail($id);
+        $atendimento = Atendimento::with(['natureza.modeloRelatorio', 'cliente', 'usuario', 'equipamentos', 'anexos'])->findOrFail($id);
 
         if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
             return response()->json(['message' => 'Acesso negado.'], 403);

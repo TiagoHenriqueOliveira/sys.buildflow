@@ -89,9 +89,9 @@
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
-        .fotos-grid td { padding: 4px; text-align: center; vertical-align: top; width: 33.33%; }
-        .fotos-grid img { max-width: 100%; max-height: 160px; border: 1px solid #ddd; }
-        .foto-legenda { font-size: 10px; color: #888; margin-top: 3px; }
+        .fotos-grid td { padding: 8px 0; text-align: center; vertical-align: top; width: 100%; }
+        .fotos-grid img { max-width: 100%; max-height: 420px; border: 1px solid #ddd; }
+        .foto-legenda { font-size: 10px; color: #888; margin-top: 4px; }
 
         /* ASSINATURAS */
         .assinaturas-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
@@ -100,6 +100,7 @@
         .assinatura-cell img { max-width: 100%; max-height: 80px; }
         .sem-assinatura { color: #bbb; font-size: 10px; height: 60px; line-height: 60px; }
         .assinatura-nome { border-top: 1px solid #333; margin-top: 8px; padding-top: 4px; font-size: 10px; color: #555; }
+        .assinatura-data { font-size: 10px; color: #888; margin-top: 3px; }
 
         /* UTILITÁRIOS */
         .text-muted { color: #aaa; font-style: italic; font-size: 14px; }
@@ -347,9 +348,8 @@
     <div class="section-title">10. Fotos</div>
     @php $fotos = $relatorio->fotos->values(); @endphp
     <table class="fotos-grid">
-        @foreach($fotos->chunk(3) as $linha)
+        @foreach($fotos as $foto)
         <tr>
-            @foreach($linha as $foto)
             <td>
                 @php $fotoSrc = $imgBase64($foto->aten_rel_foto_path); @endphp
                 @if($fotoSrc)
@@ -359,10 +359,6 @@
                     <div class="foto-legenda">{{ $foto->aten_rel_foto_legenda }}</div>
                 @endif
             </td>
-            @endforeach
-            @for($i = $linha->count(); $i < 3; $i++)
-            <td></td>
-            @endfor
         </tr>
         @endforeach
     </table>
@@ -413,6 +409,9 @@
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
                 <div class="assinatura-nome">{{ $relatorio->atendimento->cliente->cli_nome ?? '' }}</div>
+                @if($assCli && $assCli->aten_rel_ass_assinado_em)
+                    <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
+                @endif
             </td>
         </tr>
     </table>

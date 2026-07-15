@@ -59,13 +59,15 @@ class RelatoriosController extends Controller
             ->where('aten_rel_ass_tipo', $tipo)
             ->first();
 
+        $now = now()->format('Y-m-d H:i:s');
         if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path]);
+            $existing->update(['aten_rel_ass_path' => $path, 'aten_rel_ass_assinado_em' => $now]);
         } else {
             AtendimentoRelatorioAssinatura::create([
                 'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
                 'aten_rel_ass_path'         => $path,
                 'aten_rel_ass_tipo'         => $tipo,
+                'aten_rel_ass_assinado_em'  => $now,
             ]);
         }
 
@@ -183,6 +185,7 @@ class RelatoriosController extends Controller
             'atendimento.cliente',
             'atendimento.natureza',
             'atendimento.equipamentos',
+            'atendimento.anexos',
             'horarios',
             'climas',
             'servicos',
@@ -236,8 +239,14 @@ class RelatoriosController extends Controller
                 'uf'              => optional($relatorio->atendimento->cliente)->cli_uf,
                 'natureza'        => optional($relatorio->atendimento->natureza)->nat_aten_descricao,
                 'equipamentos'    => $relatorio->atendimento->equipamentos->map(fn($e) => [
-                    'id'        => $e->aten_equip_id,
-                    'descricao' => $e->aten_equip_descricao,
+                    'id'          => $e->aten_equip_id,
+                    'descricao'   => $e->aten_equip_descricao,
+                    'observacoes' => $e->aten_equip_observacoes,
+                ])->values(),
+                'anexos' => $relatorio->atendimento->anexos->map(fn($a) => [
+                    'id'   => $a->aten_anexo_id,
+                    'nome' => $a->aten_anexo_nome_original,
+                    'url'  => url('storage/' . $a->aten_anexo_path),
                 ])->values(),
             ],
             'horarios' => [
@@ -261,8 +270,14 @@ class RelatoriosController extends Controller
                 'observacao'    => $o->pivot->aten_rel_ocor_observacao ?? '',
             ])->values(),
             'assinaturas' => [
-                'tecnico'  => $assResp?->aten_rel_ass_path ? asset('storage/' . $assResp->aten_rel_ass_path) : null,
-                'cliente'  => $assCli?->aten_rel_ass_path  ? asset('storage/' . $assCli->aten_rel_ass_path)  : null,
+                'tecnico' => $assResp?->aten_rel_ass_path ? [
+                    'url'         => asset('storage/' . $assResp->aten_rel_ass_path),
+                    'assinado_em' => $assResp->aten_rel_ass_assinado_em,
+                ] : null,
+                'cliente' => $assCli?->aten_rel_ass_path ? [
+                    'url'         => asset('storage/' . $assCli->aten_rel_ass_path),
+                    'assinado_em' => $assCli->aten_rel_ass_assinado_em,
+                ] : null,
             ],
         ]]);
     }

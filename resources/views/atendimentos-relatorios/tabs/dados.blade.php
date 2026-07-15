@@ -85,4 +85,43 @@
             </div>
         </div>
     </form>
+
+    {{-- Equipamentos do atendimento --}}
+    @php $equipamentos = $atendimentoRelatorio->atendimento->equipamentos; @endphp
+    @if($equipamentos->isNotEmpty())
+    <hr class="my-3">
+    <h6 class="font-weight-bold mb-2"><i class="fas fa-tools mr-1 text-secondary"></i> Equipamentos</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($equipamentos as $eq)
+                <tr>
+                    <td>{{ $eq->aten_equip_descricao }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    {{-- Anexos do atendimento --}}
+    @php $anexosAten = $atendimentoRelatorio->atendimento->anexos; @endphp
+    @if($anexosAten->isNotEmpty())
+    <hr class="my-3">
+    <h6 class="font-weight-bold mb-2"><i class="fas fa-paperclip mr-1 text-secondary"></i> Anexos do Atendimento</h6>
+    <ul class="list-unstyled mb-0">
+        @foreach($anexosAten as $anx)
+        <li class="mb-1">
+            <a href="{{ asset('storage/' . $anx->aten_anexo_path) }}" target="_blank" class="text-primary">
+                <i class="fas fa-file mr-1"></i>{{ $anx->aten_anexo_nome_original }}
+            </a>
+        </li>
+        @endforeach
+    </ul>
+    @endif
 </div>

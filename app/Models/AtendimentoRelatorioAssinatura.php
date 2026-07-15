@@ -15,9 +15,11 @@ class AtendimentoRelatorioAssinatura extends Model
         'aten_rel_ass_relatorio_id',
         'aten_rel_ass_path',
         'aten_rel_ass_tipo',
+        'aten_rel_ass_assinado_em',
     ];
 
     protected $casts = [
-        'aten_rel_ass_tipo' => AssinaturaTipo::class,
+        'aten_rel_ass_tipo'        => AssinaturaTipo::class,
+        'aten_rel_ass_assinado_em' => 'datetime',
     ];
 }

@@ -181,6 +181,8 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento',
             'atendimento.cliente',
             'atendimento.natureza',
+            'atendimento.equipamentos',
+            'atendimento.anexos',
             'horarios',
             'fotos',
             'videos',
