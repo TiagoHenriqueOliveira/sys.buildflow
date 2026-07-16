@@ -1,4 +1,4 @@
-﻿<x-layout title="Atendimentos">
+<x-layout title="Atendimentos">
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             @if(auth()->user()->user_nivel_acesso === 0)

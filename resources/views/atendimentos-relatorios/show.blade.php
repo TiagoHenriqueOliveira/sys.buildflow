@@ -1,4 +1,4 @@
-﻿<x-layout title="Visualizar Relatório">
+<x-layout title="Visualizar Relatório">
     <div class="card shadow mb-4">
         {{-- HEADER --}}
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
@@ -56,7 +56,7 @@
 
         </div>
 
-        {{-- FOOTER DA PÃGINA --}}
+        {{-- FOOTER DA PÁGINA --}}
         <x-page-footer :showSave="true" saveText="Atualizar" :relatorioId="$atendimentoRelatorio->aten_rel_id" :backRoute="route('atendimentos-relatorios.index')" />
     </div>
 
