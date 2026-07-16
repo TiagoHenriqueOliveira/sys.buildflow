@@ -89,8 +89,8 @@
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
-        .fotos-grid td { padding: 8px 0; text-align: center; vertical-align: top; width: 100%; }
-        .fotos-grid img { max-width: 100%; max-height: 420px; border: 1px solid #ddd; }
+        .fotos-grid td { padding: 8px; text-align: center; vertical-align: top; width: 50%; }
+        .fotos-grid img { width: 380px; height: 500px; border: 1px solid #ddd; }
         .foto-legenda { font-size: 10px; color: #888; margin-top: 4px; }
 
         /* ASSINATURAS */
@@ -123,6 +123,74 @@
         $mime = mime_content_type($full) ?: 'image/jpeg';
         return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
     };
+
+    // Corrige a orientação (fotos tiradas em retrato mas gravadas em paisagem) e
+    // padroniza todas as fotos para o mesmo tamanho de exibição na grade do relatório.
+    $fotoBase64 = function(string $path): string {
+        $full = storage_path('app/public/' . ltrim($path, '/'));
+        if (!file_exists($full)) return '';
+
+        $info = @getimagesize($full);
+        if (!$info) return '';
+
+        $src = match ($info['mime'] ?? null) {
+            'image/jpeg' => @imagecreatefromjpeg($full),
+            'image/png'  => @imagecreatefrompng($full),
+            'image/gif'  => @imagecreatefromgif($full),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($full) : null,
+            default      => null,
+        };
+        if (!$src) return '';
+
+        // Respeita a orientação EXIF (comum em fotos de celular) quando disponível.
+        $rotated = false;
+        if (($info['mime'] ?? null) === 'image/jpeg' && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($full);
+            $orientation = $exif['Orientation'] ?? 1;
+            if (in_array($orientation, [3, 6, 8], true)) {
+                $src = imagerotate($src, match ($orientation) {
+                    3       => 180,
+                    6       => -90,
+                    8       => 90,
+                    default => 0,
+                }, 0);
+                $rotated = true;
+            }
+        }
+
+        // Sem EXIF de orientação: se a imagem ficou em paisagem, força retrato.
+        if (!$rotated && imagesx($src) > imagesy($src)) {
+            $src = imagerotate($src, -90, 0);
+        }
+
+        $srcW = imagesx($src);
+        $srcH = imagesy($src);
+
+        // Corta (cover) para um tamanho fixo, garantindo que todas as fotos
+        // fiquem com a mesma largura/altura na grade, mesmo com proporções diferentes.
+        $targetW = 380;
+        $targetH = 500;
+        $scale   = max($targetW / $srcW, $targetH / $srcH);
+        $cropW   = (int) round($targetW / $scale);
+        $cropH   = (int) round($targetH / $scale);
+        $cropX   = (int) (($srcW - $cropW) / 2);
+        $cropY   = (int) (($srcH - $cropH) / 2);
+
+        $dst = imagecreatetruecolor($targetW, $targetH);
+        imagecopyresampled($dst, $src, 0, 0, $cropX, $cropY, $targetW, $targetH, $cropW, $cropH);
+        imagedestroy($src);
+
+        ob_start();
+        imagejpeg($dst, null, 85);
+        $data = ob_get_clean();
+        imagedestroy($dst);
+
+        return 'data:image/jpeg;base64,' . base64_encode($data);
+    };
+
+    // Numeração sequencial das seções: só conta as que realmente aparecem no relatório.
+    $secCount = 0;
+    $secNum   = function() use (&$secCount) { return ++$secCount; };
 @endphp
 <body style="padding: 45px 80px 45px 80px;">
 
@@ -156,7 +224,7 @@
 
 {{-- 1. DADOS DO ATENDIMENTO --}}
 <div class="section">
-    <div class="section-title">1. Dados do Atendimento</div>
+    <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
             <td class="field-label">Cliente</td>
@@ -198,14 +266,14 @@
 {{-- 2. OBSERVAÇÕES --}}
 @if($relatorio->atendimento->aten_obs_cliente)
 <div class="section">
-    <div class="section-title">2. Observações</div>
+    <div class="section-title">{{ $secNum() }}. Observações</div>
     <div class="text-block">{{ $relatorio->atendimento->aten_obs_cliente }}</div>
 </div>
 @endif
 
 {{-- 3. EQUIPAMENTOS --}}
 <div class="section">
-    <div class="section-title">3. Equipamentos</div>
+    <div class="section-title">{{ $secNum() }}. Equipamentos</div>
     @php $equips = $relatorio->atendimento->equipamentos; @endphp
     @if($equips->isNotEmpty())
         <table class="data-table">
@@ -231,7 +299,7 @@
 
 {{-- 4. HORÁRIO --}}
 <div class="section">
-    <div class="section-title">4. Horário</div>
+    <div class="section-title">{{ $secNum() }}. Horário</div>
     @php $h = $relatorio->horarios; @endphp
     @if($h)
         <table class="field-grid">
@@ -254,14 +322,14 @@
 {{-- 5. DESCRIÇÃO --}}
 @if($relatorio->aten_rel_descricao)
 <div class="section">
-    <div class="section-title">5. Descrição</div>
+    <div class="section-title">{{ $secNum() }}. Descrição</div>
     <div class="text-block">{{ $relatorio->aten_rel_descricao }}</div>
 </div>
 @endif
 
 {{-- 6. SERVIÇOS PRESTADOS --}}
 <div class="section">
-    <div class="section-title">6. Serviços Prestados</div>
+    <div class="section-title">{{ $secNum() }}. Serviços Prestados</div>
     @if($relatorio->servicos->isNotEmpty())
         <table class="data-table">
             <thead>
@@ -286,7 +354,7 @@
 
 {{-- 7. PEÇAS SUBSTITUÍDAS --}}
 <div class="section">
-    <div class="section-title">7. Peças Substituídas</div>
+    <div class="section-title">{{ $secNum() }}. Peças Substituídas</div>
     @if($relatorio->pecas->isNotEmpty())
         <table class="data-table">
             <thead>
@@ -311,7 +379,7 @@
 
 {{-- 8. OCORRÊNCIAS --}}
 <div class="section">
-    <div class="section-title">8. Ocorrências</div>
+    <div class="section-title">{{ $secNum() }}. Ocorrências</div>
     @if($relatorio->ocorrencias->isNotEmpty())
         <table class="data-table">
             <thead>
@@ -337,35 +405,12 @@
 {{-- 9. INFORMAÇÕES ADICIONAIS --}}
 @if($relatorio->aten_rel_informacoes_adicionais)
 <div class="section">
-    <div class="section-title">9. Informações Adicionais</div>
+    <div class="section-title">{{ $secNum() }}. Informações Adicionais</div>
     <div class="text-block">{{ $relatorio->aten_rel_informacoes_adicionais }}</div>
 </div>
 @endif
 
-{{-- 10. FOTOS --}}
-@if($relatorio->fotos->isNotEmpty())
-<div class="section">
-    <div class="section-title">10. Fotos</div>
-    @php $fotos = $relatorio->fotos->values(); @endphp
-    <table class="fotos-grid">
-        @foreach($fotos as $foto)
-        <tr>
-            <td>
-                @php $fotoSrc = $imgBase64($foto->aten_rel_foto_path); @endphp
-                @if($fotoSrc)
-                    <img src="{{ $fotoSrc }}" alt="Foto">
-                @endif
-                @if($foto->aten_rel_foto_legenda)
-                    <div class="foto-legenda">{{ $foto->aten_rel_foto_legenda }}</div>
-                @endif
-            </td>
-        </tr>
-        @endforeach
-    </table>
-</div>
-@endif
-
-{{-- 11. ENTREGA TÉCNICA (condicional) --}}
+{{-- ENTREGA TÉCNICA (condicional) --}}
 @if($relatorio->atendimento->aten_entrega_tecnica)
 @php
     $equipNomes = $relatorio->atendimento->equipamentos->pluck('aten_equip_descricao');
@@ -376,7 +421,7 @@
         : '-';
 @endphp
 <div class="section">
-    <div class="section-title">11. Entrega Técnica</div>
+    <div class="section-title">{{ $secNum() }}. Entrega Técnica</div>
     <p style="font-weight:bold; margin-bottom:6px;">Entrega Técnica de Equipamentos</p>
     <p style="margin-bottom:6px;"><strong>Equipamento instalado:</strong> {{ $equipStr }}</p>
     <p style="margin-bottom:4px;">A MCLvale, neste ato representado pelo técnico abaixo assinado, coloca em início a operação e funcionamento do(s) equipamento(s) adquirido(s).</p>
@@ -387,9 +432,9 @@
 </div>
 @endif
 
-{{-- 12. ASSINATURAS --}}
+{{-- ASSINATURAS --}}
 <div class="section">
-    <div class="section-title">12. Assinaturas</div>
+    <div class="section-title">{{ $secNum() }}. Assinaturas</div>
     <table class="assinaturas-table">
         <tr>
             <td class="assinatura-cell">
@@ -419,6 +464,31 @@
         </tr>
     </table>
 </div>
+
+{{-- FOTOS --}}
+@if($relatorio->fotos->isNotEmpty())
+<div class="section page-break">
+    <div class="section-title">{{ $secNum() }}. Fotos</div>
+    @php $fotos = $relatorio->fotos->values()->chunk(2); @endphp
+    <table class="fotos-grid">
+        @foreach($fotos as $par)
+        <tr>
+            @foreach($par as $foto)
+            <td @if($par->count() < 2) colspan="2" @endif>
+                @php $fotoSrc = $fotoBase64($foto->aten_rel_foto_path); @endphp
+                @if($fotoSrc)
+                    <img src="{{ $fotoSrc }}" alt="Foto">
+                @endif
+                @if($foto->aten_rel_foto_legenda)
+                    <div class="foto-legenda">{{ $foto->aten_rel_foto_legenda }}</div>
+                @endif
+            </td>
+            @endforeach
+        </tr>
+        @endforeach
+    </table>
+</div>
+@endif
 
 </body>
 </html>
