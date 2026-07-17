@@ -40,7 +40,7 @@ class RelatoriosController extends Controller
 
         $data = base64_decode($m[2]);
         $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir  = dirname(storage_path('app/public/' . $path));
+        $dir  = dirname(public_path('storage/' . $path));
 
         if (! is_dir($dir)) mkdir($dir, 0755, true);
 
@@ -51,9 +51,13 @@ class RelatoriosController extends Controller
         $white = imagecolorallocate($bg, 255, 255, 255);
         imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
         imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        imagepng($bg, storage_path('app/public/' . $path));
+        $saved = imagepng($bg, public_path('storage/' . $path));
         imagedestroy($image);
         imagedestroy($bg);
+
+        if (! $saved) {
+            throw new \RuntimeException("Não foi possível gravar a assinatura em disco ({$dir}). Verifique as permissões de escrita.");
+        }
 
         $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
             ->where('aten_rel_ass_tipo', $tipo)

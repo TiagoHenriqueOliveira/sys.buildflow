@@ -652,7 +652,7 @@ class AtendimentosRelatoriosController extends Controller
         try {
             $relatorio = AtendimentoRelatorio::findOrFail($id);
 
-            $saved = ['arquivos' => [], 'fotos' => [], 'videos' => []];
+            $saved = ['arquivos' => [], 'fotos' => [], 'videos' => [], 'erros' => []];
 
             // arquivos gerais
             if ($request->hasFile('arquivos')) {
@@ -663,6 +663,10 @@ class AtendimentosRelatoriosController extends Controller
                     $ext          = $file->getClientOriginalExtension();
                     $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                     $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                        continue;
+                    }
 
                     $anexo = AtendimentoRelatorioAnexo::create([
                         'aten_rel_anexo_relatorio_id' => $id,
@@ -687,12 +691,16 @@ class AtendimentosRelatoriosController extends Controller
                     $ext          = $file->getClientOriginalExtension();
                     $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                     $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                        continue;
+                    }
 
-                    $full      = storage_path('app/public/' . $path);
+                    $full      = public_path('storage/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/fotos/thumbs";
                     $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = storage_path('app/public/' . $thumbPath);
+                    $thumbFull = public_path('storage/' . $thumbPath);
 
                     ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
@@ -720,12 +728,16 @@ class AtendimentosRelatoriosController extends Controller
                     $ext          = $file->getClientOriginalExtension();
                     $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                     $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                        continue;
+                    }
 
-                    $full      = storage_path('app/public/' . $path);
+                    $full      = public_path('storage/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/videos/thumbs";
                     $thumbName = $safeName . '.jpg';
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = storage_path('app/public/' . $thumbPath);
+                    $thumbFull = public_path('storage/' . $thumbPath);
 
                     ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
 
