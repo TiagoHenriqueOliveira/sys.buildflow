@@ -630,7 +630,7 @@ class RelatoriosController extends Controller
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
-        $saved    = ['fotos' => [], 'videos' => [], 'arquivos' => []];
+        $saved    = ['fotos' => [], 'videos' => [], 'arquivos' => [], 'erros' => []];
         $legendas = $request->input('legendas', []);
 
         if ($request->hasFile('fotos')) {
@@ -639,6 +639,10 @@ class RelatoriosController extends Controller
                 $originalName = $file->getClientOriginalName();
                 $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/fotos");
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
+                if ($path === false) {
+                    $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
+                    continue;
+                }
                 $foto         = AtendimentoRelatorioFoto::create([
                     'aten_rel_foto_relatorio_id' => $id,
                     'aten_rel_foto_path'         => $path,
@@ -654,6 +658,10 @@ class RelatoriosController extends Controller
                 $originalName = $file->getClientOriginalName();
                 $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/videos");
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
+                if ($path === false) {
+                    $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
+                    continue;
+                }
                 $video        = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
                 $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path), 'nome' => $originalName];
             }
@@ -665,6 +673,10 @@ class RelatoriosController extends Controller
                 $originalName = $file->getClientOriginalName();
                 $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/arquivos");
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
+                if ($path === false) {
+                    $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
+                    continue;
+                }
                 $anexo        = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
                 $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path), 'nome' => $originalName];
             }

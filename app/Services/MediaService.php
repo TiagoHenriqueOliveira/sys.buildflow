@@ -49,9 +49,13 @@ class MediaService
             mkdir($dir, 0755, true);
         }
 
-        imagepng($bg, storage_path('app/public/' . $path));
+        $saved = imagepng($bg, storage_path('app/public/' . $path));
         imagedestroy($image);
         imagedestroy($bg);
+
+        if (!$saved) {
+            throw new \RuntimeException("Não foi possível gravar a assinatura em disco ({$dir}). Verifique as permissões de escrita.");
+        }
 
         $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
             ->where('aten_rel_ass_tipo', $tipoEnum)
