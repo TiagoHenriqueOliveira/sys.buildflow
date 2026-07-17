@@ -38,9 +38,7 @@ return [
 
         'public' => [
             'driver' => 'local',
-            // Aponta direto para public/storage (sem link simbólico) porque o Plesk deste
-            // ambiente não consegue criar/manter o link public/storage -> storage/app/public.
-            'root' => public_path('storage'),
+            'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -71,8 +69,11 @@ return [
     |
     */
 
-    // Sem entradas: o disco 'public' já grava direto em public/storage (ver acima),
-    // então não há link simbólico para o `storage:link` criar.
-    'links' => [],
+    // Observação: as URLs de storage/app/public são servidas pela rota
+    // GET /storage/{path} (StorageController), não pelo link simbólico abaixo —
+    // este ambiente de hospedagem não consegue criar/manter esse link sem SSH.
+    'links' => [
+        public_path('storage') => storage_path('app/public'),
+    ],
 
 ];

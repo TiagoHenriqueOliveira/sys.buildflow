@@ -9,6 +9,7 @@ use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
+use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UsuariosController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,12 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
     Route::get('/', 'mostrarLogin')->name('login');
     Route::post('/login', 'login')->name('login.post');
 });
+
+// Serve storage/app/public sem depender do link simbólico public/storage
+// (este ambiente de hospedagem não consegue criar/manter esse link sem SSH).
+Route::get('/storage/{path}', [StorageController::class, 'show'])
+    ->where('path', '.*')
+    ->name('storage.show');
 
 // Rotas protegidas
 Route::middleware('auth')->group(function () {
