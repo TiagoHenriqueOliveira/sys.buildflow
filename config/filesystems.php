@@ -38,7 +38,11 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            // Aponta direto para public/storage (diretório real, não symlink):
+            // este ambiente de hospedagem (Plesk) não consegue criar/manter o
+            // link simbólico public/storage -> storage/app/public sem SSH.
+            // Local único e real para todos os anexos/assinaturas/fotos.
+            'root' => public_path('storage'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -69,11 +73,11 @@ return [
     |
     */
 
-    // Observação: as URLs de storage/app/public são servidas pela rota
-    // GET /storage/{path} (StorageController), não pelo link simbólico abaixo —
-    // este ambiente de hospedagem não consegue criar/manter esse link sem SSH.
-    'links' => [
-        public_path('storage') => storage_path('app/public'),
-    ],
+    // Sem link simbólico: o disco 'public' já grava e lê direto em
+    // public/storage (ver acima) — não há nada para o `storage:link` linkar.
+    // Acesso público a public/storage é bloqueado por .htaccess
+    // (Require all denied); a única forma de servir esses arquivos é a rota
+    // GET /storage/{path} (StorageController), que exige autenticação.
+    'links' => [],
 
 ];

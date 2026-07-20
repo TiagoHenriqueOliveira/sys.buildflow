@@ -19,9 +19,14 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
     Route::post('/login', 'login')->name('login.post');
 });
 
-// Serve storage/app/public sem depender do link simbólico public/storage
-// (este ambiente de hospedagem não consegue criar/manter esse link sem SSH).
-Route::get('/storage/{path}', [StorageController::class, 'show'])
+// Serve os arquivos gravados em public/storage (disco 'public', ver
+// config/filesystems.php). O acesso estático direto pelo Apache a essa pasta
+// é bloqueado por public/storage/.htaccess (Require all denied), então toda
+// requisição passa por aqui e exige autenticação: sessão web (painel, via
+// cookie automático no <img>) OU token Sanctum (app mobile, via header
+// Authorization: Bearer) — sem isso, assinatura e foto de qualquer cliente
+// eram enumeráveis por ID sequencial sem login.
+Route::middleware('auth:web,sanctum')->get('/storage/{path}', [StorageController::class, 'show'])
     ->where('path', '.*')
     ->name('storage.show');
 

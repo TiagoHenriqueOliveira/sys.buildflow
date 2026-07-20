@@ -8,9 +8,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class StorageController extends Controller
 {
     /**
-     * Serve arquivos do disco 'public' (storage/app/public) via PHP, sem depender
-     * do link simbólico public/storage -> storage/app/public. Este ambiente de
-     * hospedagem não consegue criar/manter esse link sem acesso SSH.
+     * Serve arquivos do disco 'public' (public/storage, ver
+     * config/filesystems.php) via PHP, com autenticação (ver middleware da
+     * rota em routes/web.php). O acesso estático direto pelo Apache a
+     * public/storage é bloqueado por um .htaccess (Require all denied) —
+     * esta é a única forma de acessar esses arquivos.
      */
     public function show(string $path): StreamedResponse
     {
