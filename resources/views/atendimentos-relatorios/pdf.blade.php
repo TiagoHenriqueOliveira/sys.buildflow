@@ -118,7 +118,7 @@
     $assCli  = $relatorio->assinaturas->first(fn($a) => $a->aten_rel_ass_tipo->value === 'cliente');
 
     $imgBase64 = function(string $path): string {
-        $full = public_path('midia/' . ltrim($path, '/'));
+        $full = storage_path('app/public/' . ltrim($path, '/'));
         if (!file_exists($full)) return '';
         $mime = mime_content_type($full) ?: 'image/jpeg';
         return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($full));
@@ -127,7 +127,7 @@
     // Corrige a orientação (fotos tiradas em retrato mas gravadas em paisagem) e
     // padroniza todas as fotos para o mesmo tamanho de exibição na grade do relatório.
     $fotoBase64 = function(string $path): string {
-        $full = public_path('midia/' . ltrim($path, '/'));
+        $full = storage_path('app/public/' . ltrim($path, '/'));
         if (!file_exists($full)) return '';
 
         $info = @getimagesize($full);

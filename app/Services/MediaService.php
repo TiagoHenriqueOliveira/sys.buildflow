@@ -44,12 +44,12 @@ class MediaService
 
         imagecopy($bg, $image, 0, 0, 0, 0, $width, $height);
 
-        $dir = dirname(public_path('midia/' . $path));
+        $dir = dirname(storage_path('app/public/' . $path));
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $saved = imagepng($bg, public_path('midia/' . $path));
+        $saved = imagepng($bg, storage_path('app/public/' . $path));
         imagedestroy($image);
         imagedestroy($bg);
 

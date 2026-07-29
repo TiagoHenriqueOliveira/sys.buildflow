@@ -696,11 +696,11 @@ class AtendimentosRelatoriosController extends Controller
                         continue;
                     }
 
-                    $full      = public_path('midia/' . $path);
+                    $full      = storage_path('app/public/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/fotos/thumbs";
                     $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = public_path('midia/' . $thumbPath);
+                    $thumbFull = storage_path('app/public/' . $thumbPath);
 
                     ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
@@ -733,11 +733,11 @@ class AtendimentosRelatoriosController extends Controller
                         continue;
                     }
 
-                    $full      = public_path('midia/' . $path);
+                    $full      = storage_path('app/public/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/videos/thumbs";
                     $thumbName = $safeName . '.jpg';
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = public_path('midia/' . $thumbPath);
+                    $thumbFull = storage_path('app/public/' . $thumbPath);
 
                     ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
 

@@ -40,7 +40,7 @@ class RelatoriosController extends Controller
 
         $data = base64_decode($m[2]);
         $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir  = dirname(public_path('midia/' . $path));
+        $dir  = dirname(storage_path('app/public/' . $path));
 
         if (! is_dir($dir)) mkdir($dir, 0755, true);
 
@@ -51,7 +51,7 @@ class RelatoriosController extends Controller
         $white = imagecolorallocate($bg, 255, 255, 255);
         imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
         imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        $saved = imagepng($bg, public_path('midia/' . $path));
+        $saved = imagepng($bg, storage_path('app/public/' . $path));
         imagedestroy($image);
         imagedestroy($bg);
 
