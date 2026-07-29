@@ -444,7 +444,7 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
-                <div class="assinatura-nome">{{ $relatorio->atendimento->aten_responsavel ?? '' }}</div>
+                <div class="assinatura-nome">{{ $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
                 @if($assResp && $assResp->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assResp->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif
@@ -456,7 +456,7 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
-                <div class="assinatura-nome">{{ $relatorio->atendimento->cliente->cli_nome ?? '' }}</div>
+                <div class="assinatura-nome">{{ collect([$relatorio->atendimento->aten_responsavel, $relatorio->atendimento->cliente->cli_nome ?? null])->filter()->implode(' - ') }}</div>
                 @if($assCli && $assCli->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif
