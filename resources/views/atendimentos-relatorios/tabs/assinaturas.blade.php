@@ -29,7 +29,7 @@
                             <p class="mb-1 font-weight-bold">Preview atual</p>
                             <div id="assinaturaResponsavelPreview">
                                 @if(optional($atendimentoRelatorio->assinaturaResponsavel())->aten_rel_ass_path)
-                                    <img src="{{ asset('storage/' . $atendimentoRelatorio->assinaturaResponsavel()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Técnico">
+                                    <img src="{{ asset('midia/' . $atendimentoRelatorio->assinaturaResponsavel()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Técnico">
                                 @else
                                     <span class="text-muted">Nenhuma assinatura registrada.</span>
                                 @endif
@@ -52,7 +52,7 @@
                             <p class="mb-1 font-weight-bold">Preview atual</p>
                             <div id="assinaturaClientePreview">
                                 @if(optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_path)
-                                    <img src="{{ asset('storage/' . $atendimentoRelatorio->assinaturaCliente()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Cliente">
+                                    <img src="{{ asset('midia/' . $atendimentoRelatorio->assinaturaCliente()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Cliente">
                                 @else
                                     <span class="text-muted">Nenhuma assinatura registrada.</span>
                                 @endif

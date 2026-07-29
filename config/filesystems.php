@@ -38,12 +38,14 @@ return [
 
         'public' => [
             'driver' => 'local',
-            // Aponta direto para public/storage (diretório real, não symlink):
-            // este ambiente de hospedagem (Plesk) não consegue criar/manter o
-            // link simbólico public/storage -> storage/app/public sem SSH.
+            // Aponta para public/midia (diretório real, não symlink): este
+            // ambiente de hospedagem (Plesk) não consegue criar/manter o link
+            // simbólico public/storage -> storage/app/public sem SSH, E ALÉM
+            // DISSO bloqueia no nível do servidor (fora do .htaccess) qualquer
+            // pasta chamada literalmente "storage" — por isso o nome "midia".
             // Local único e real para todos os anexos/assinaturas/fotos.
-            'root' => public_path('storage'),
-            'url' => env('APP_URL').'/storage',
+            'root' => public_path('midia'),
+            'url' => env('APP_URL').'/midia',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -74,10 +76,10 @@ return [
     */
 
     // Sem link simbólico: o disco 'public' já grava e lê direto em
-    // public/storage (ver acima) — não há nada para o `storage:link` linkar.
-    // Acesso público a public/storage é bloqueado por .htaccess
+    // public/midia (ver acima) — não há nada para o `storage:link` linkar.
+    // Acesso público a public/midia é bloqueado por .htaccess
     // (Require all denied); a única forma de servir esses arquivos é a rota
-    // GET /storage/{path} (StorageController), que exige autenticação.
+    // GET /midia/{path} (StorageController), que exige autenticação.
     'links' => [],
 
 ];

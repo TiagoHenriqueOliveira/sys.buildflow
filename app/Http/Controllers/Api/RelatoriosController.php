@@ -173,10 +173,10 @@ class RelatoriosController extends Controller
 
         $assinaturas = [
             'responsavel' => optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
+                ? asset('midia/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
                 : null,
             'cliente' => optional($relatorio->assinaturaCliente())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
+                ? asset('midia/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
                 : null,
         ];
 
@@ -635,17 +635,17 @@ class RelatoriosController extends Controller
 
         $fotos = $relatorio->fotos->map(fn($f) => [
             'id'  => $f->aten_rel_foto_id,
-            'url' => url('storage/' . $f->aten_rel_foto_path),
+            'url' => url('midia/' . $f->aten_rel_foto_path),
         ]);
 
         $videos = $relatorio->videos->map(fn($v) => [
             'id'  => $v->aten_rel_vid_id,
-            'url' => url('storage/' . $v->aten_rel_vid_path),
+            'url' => url('midia/' . $v->aten_rel_vid_path),
         ]);
 
         $arquivos = $relatorio->anexos->map(fn($a) => [
             'id'  => $a->aten_rel_anexo_id,
-            'url' => url('storage/' . $a->aten_rel_anexo_path),
+            'url' => url('midia/' . $a->aten_rel_anexo_path),
         ]);
 
         return response()->json(['data' => compact('fotos', 'videos', 'arquivos')]);
@@ -688,7 +688,7 @@ class RelatoriosController extends Controller
                     continue;
                 }
                 $foto     = AtendimentoRelatorioFoto::create(['aten_rel_foto_relatorio_id' => $id, 'aten_rel_foto_path' => $path]);
-                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('storage/' . $path)];
+                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('midia/' . $path)];
             }
         }
 
@@ -702,7 +702,7 @@ class RelatoriosController extends Controller
                     continue;
                 }
                 $video    = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
-                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path)];
+                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('midia/' . $path)];
             }
         }
 
@@ -716,7 +716,7 @@ class RelatoriosController extends Controller
                     continue;
                 }
                 $anexo    = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
-                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path)];
+                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('midia/' . $path)];
             }
         }
 
@@ -763,7 +763,7 @@ class RelatoriosController extends Controller
 
         $data  = base64_decode($m[2]);
         $path  = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir   = dirname(public_path('storage/' . $path));
+        $dir   = dirname(public_path('midia/' . $path));
 
         if (! is_dir($dir)) mkdir($dir, 0755, true);
 
@@ -774,7 +774,7 @@ class RelatoriosController extends Controller
         $white = imagecolorallocate($bg, 255, 255, 255);
         imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
         imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        $saved = imagepng($bg, public_path('storage/' . $path));
+        $saved = imagepng($bg, public_path('midia/' . $path));
         imagedestroy($image);
         imagedestroy($bg);
 
@@ -792,6 +792,6 @@ class RelatoriosController extends Controller
             AtendimentoRelatorioAssinatura::create(['aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_ass_path' => $path, 'aten_rel_ass_tipo' => $tipo]);
         }
 
-        return asset('storage/' . $path);
+        return asset('midia/' . $path);
     }
 }

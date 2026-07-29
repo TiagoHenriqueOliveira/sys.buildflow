@@ -134,7 +134,7 @@ class AtendimentosController extends Controller
                 ? $a->anexos->map(fn($x) => [
                     'id'            => $x->aten_anexo_id,
                     'nome_original' => $x->aten_anexo_nome_original,
-                    'url'           => asset('storage/' . $x->aten_anexo_path),
+                    'url'           => asset('midia/' . $x->aten_anexo_path),
                 ])->values()
                 : [];
         }

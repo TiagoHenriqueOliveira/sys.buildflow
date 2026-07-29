@@ -27,11 +27,11 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Força /storage/* sempre pelo Laravel (StorageController exige login),
-    # mesmo quando o arquivo existe fisicamente em public/storage. Sem esta
+    # Força /midia/* sempre pelo Laravel (StorageController exige login),
+    # mesmo quando o arquivo existe fisicamente em public/midia. Sem esta
     # regra, o Apache serve/bloqueia o arquivo direto (via .htaccess daquela
     # pasta) e a rota autenticada nunca chega a ser executada.
-    RewriteRule ^storage/ index.php [L]
+    RewriteRule ^midia/ index.php [L]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

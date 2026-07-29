@@ -117,7 +117,7 @@
     <ul class="list-unstyled mb-0">
         @foreach($anexosAten as $anx)
         <li class="mb-1">
-            <a href="{{ asset('storage/' . $anx->aten_anexo_path) }}" target="_blank" class="text-primary">
+            <a href="{{ asset('midia/' . $anx->aten_anexo_path) }}" target="_blank" class="text-primary">
                 <i class="fas fa-file mr-1"></i>{{ $anx->aten_anexo_nome_original }}
             </a>
         </li>

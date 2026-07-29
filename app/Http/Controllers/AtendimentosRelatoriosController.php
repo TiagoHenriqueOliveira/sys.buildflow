@@ -584,8 +584,8 @@ class AtendimentosRelatoriosController extends Controller
         return response()->json([
             'status' => $relatorio->aten_rel_status,
             'assinaturas' => [
-                'responsavel' => $resp?->aten_rel_ass_path ? asset('storage/' . $resp->aten_rel_ass_path) : null,
-                'cliente'     => $cli?->aten_rel_ass_path  ? asset('storage/' . $cli->aten_rel_ass_path)  : null,
+                'responsavel' => $resp?->aten_rel_ass_path ? asset('midia/' . $resp->aten_rel_ass_path) : null,
+                'cliente'     => $cli?->aten_rel_ass_path  ? asset('midia/' . $cli->aten_rel_ass_path)  : null,
             ],
         ]);
     }
@@ -677,7 +677,7 @@ class AtendimentosRelatoriosController extends Controller
                         'id'   => $anexo->aten_rel_anexo_id,
                         'name' => $file->getClientOriginalName(),
                         'path' => $path,
-                        'url'  => asset('storage/' . $path),
+                        'url'  => asset('midia/' . $path),
                     ];
                 }
             }
@@ -696,11 +696,11 @@ class AtendimentosRelatoriosController extends Controller
                         continue;
                     }
 
-                    $full      = public_path('storage/' . $path);
+                    $full      = public_path('midia/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/fotos/thumbs";
                     $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = public_path('storage/' . $thumbPath);
+                    $thumbFull = public_path('midia/' . $thumbPath);
 
                     ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
@@ -713,8 +713,8 @@ class AtendimentosRelatoriosController extends Controller
                         'id'        => $foto->aten_rel_foto_id,
                         'name'      => $file->getClientOriginalName(),
                         'path'      => $path,
-                        'url'       => asset('storage/' . $path),
-                        'thumb_url' => asset('storage/' . $thumbPath),
+                        'url'       => asset('midia/' . $path),
+                        'thumb_url' => asset('midia/' . $thumbPath),
                     ];
                 }
             }
@@ -733,11 +733,11 @@ class AtendimentosRelatoriosController extends Controller
                         continue;
                     }
 
-                    $full      = public_path('storage/' . $path);
+                    $full      = public_path('midia/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/videos/thumbs";
                     $thumbName = $safeName . '.jpg';
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = public_path('storage/' . $thumbPath);
+                    $thumbFull = public_path('midia/' . $thumbPath);
 
                     ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
 
@@ -750,8 +750,8 @@ class AtendimentosRelatoriosController extends Controller
                         'id'        => $video->aten_rel_vid_id,
                         'name'      => $file->getClientOriginalName(),
                         'path'      => $path,
-                        'url'       => asset('storage/' . $path),
-                        'thumb_url' => asset('storage/' . $thumbPath),
+                        'url'       => asset('midia/' . $path),
+                        'thumb_url' => asset('midia/' . $thumbPath),
                     ];
                 }
             }
@@ -776,21 +776,21 @@ class AtendimentosRelatoriosController extends Controller
                 'id'   => $anexo->aten_rel_anexo_id,
                 'name' => basename($anexo->aten_rel_anexo_path),
                 'path' => $anexo->aten_rel_anexo_path,
-                'url'  => asset('storage/' . $anexo->aten_rel_anexo_path),
+                'url'  => asset('midia/' . $anexo->aten_rel_anexo_path),
             ];
         });
 
         $fotos = $relatorio->fotos->map(function ($foto) {
             $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
             $thumbUrl  = Storage::disk('public')->exists($thumbPath)
-                ? asset('storage/' . $thumbPath)
-                : asset('storage/' . $foto->aten_rel_foto_path);
+                ? asset('midia/' . $thumbPath)
+                : asset('midia/' . $foto->aten_rel_foto_path);
 
             return [
                 'id'        => $foto->aten_rel_foto_id,
                 'name'      => basename($foto->aten_rel_foto_path),
                 'path'      => $foto->aten_rel_foto_path,
-                'url'       => asset('storage/' . $foto->aten_rel_foto_path),
+                'url'       => asset('midia/' . $foto->aten_rel_foto_path),
                 'thumb_url' => $thumbUrl,
             ];
         });
@@ -798,14 +798,14 @@ class AtendimentosRelatoriosController extends Controller
         $videos = $relatorio->videos->map(function ($video) {
             $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
             $thumbUrl  = Storage::disk('public')->exists($thumbPath)
-                ? asset('storage/' . $thumbPath)
+                ? asset('midia/' . $thumbPath)
                 : asset('img/video-placeholder.svg');
 
             return [
                 'id'        => $video->aten_rel_vid_id,
                 'name'      => basename($video->aten_rel_vid_path),
                 'path'      => $video->aten_rel_vid_path,
-                'url'       => asset('storage/' . $video->aten_rel_vid_path),
+                'url'       => asset('midia/' . $video->aten_rel_vid_path),
                 'thumb_url' => $thumbUrl,
             ];
         });

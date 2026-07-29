@@ -40,7 +40,7 @@ class RelatoriosController extends Controller
 
         $data = base64_decode($m[2]);
         $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir  = dirname(public_path('storage/' . $path));
+        $dir  = dirname(public_path('midia/' . $path));
 
         if (! is_dir($dir)) mkdir($dir, 0755, true);
 
@@ -51,7 +51,7 @@ class RelatoriosController extends Controller
         $white = imagecolorallocate($bg, 255, 255, 255);
         imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
         imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        $saved = imagepng($bg, public_path('storage/' . $path));
+        $saved = imagepng($bg, public_path('midia/' . $path));
         imagedestroy($image);
         imagedestroy($bg);
 
@@ -75,7 +75,7 @@ class RelatoriosController extends Controller
             ]);
         }
 
-        return asset('storage/' . $path);
+        return asset('midia/' . $path);
     }
 
     private function safeFilename(string $originalName, string $dir): string
@@ -250,7 +250,7 @@ class RelatoriosController extends Controller
                 'anexos' => $relatorio->atendimento->anexos->map(fn($a) => [
                     'id'   => $a->aten_anexo_id,
                     'nome' => $a->aten_anexo_nome_original,
-                    'url'  => url('storage/' . $a->aten_anexo_path),
+                    'url'  => url('midia/' . $a->aten_anexo_path),
                 ])->values(),
             ],
             'horarios' => [
@@ -275,11 +275,11 @@ class RelatoriosController extends Controller
             ])->values(),
             'assinaturas' => [
                 'tecnico' => $assResp?->aten_rel_ass_path ? [
-                    'url'         => asset('storage/' . $assResp->aten_rel_ass_path),
+                    'url'         => asset('midia/' . $assResp->aten_rel_ass_path),
                     'assinado_em' => $assResp->aten_rel_ass_assinado_em,
                 ] : null,
                 'cliente' => $assCli?->aten_rel_ass_path ? [
-                    'url'         => asset('storage/' . $assCli->aten_rel_ass_path),
+                    'url'         => asset('midia/' . $assCli->aten_rel_ass_path),
                     'assinado_em' => $assCli->aten_rel_ass_assinado_em,
                 ] : null,
             ],
@@ -580,16 +580,16 @@ class RelatoriosController extends Controller
         return response()->json(['data' => [
             'fotos'    => $relatorio->fotos->map(fn($f) => [
                 'id'       => $f->aten_rel_foto_id,
-                'url'      => url('storage/' . $f->aten_rel_foto_path),
+                'url'      => url('midia/' . $f->aten_rel_foto_path),
                 'legenda'  => $f->aten_rel_foto_legenda ?? null,
             ])->values(),
             'videos'   => $relatorio->videos->map(fn($v) => [
                 'id'  => $v->aten_rel_vid_id,
-                'url' => url('storage/' . $v->aten_rel_vid_path),
+                'url' => url('midia/' . $v->aten_rel_vid_path),
             ])->values(),
             'arquivos' => $relatorio->anexos->map(fn($a) => [
                 'id'  => $a->aten_rel_anexo_id,
-                'url' => url('storage/' . $a->aten_rel_anexo_path),
+                'url' => url('midia/' . $a->aten_rel_anexo_path),
             ])->values(),
         ]]);
     }
@@ -652,7 +652,7 @@ class RelatoriosController extends Controller
                     'aten_rel_foto_path'         => $path,
                     'aten_rel_foto_legenda'      => $legendas[$i] ?? null,
                 ]);
-                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('storage/' . $path), 'nome' => $originalName, 'legenda' => $foto->aten_rel_foto_legenda];
+                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('midia/' . $path), 'nome' => $originalName, 'legenda' => $foto->aten_rel_foto_legenda];
             }
         }
 
@@ -667,7 +667,7 @@ class RelatoriosController extends Controller
                     continue;
                 }
                 $video        = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
-                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path), 'nome' => $originalName];
+                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('midia/' . $path), 'nome' => $originalName];
             }
         }
 
@@ -682,7 +682,7 @@ class RelatoriosController extends Controller
                     continue;
                 }
                 $anexo        = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
-                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path), 'nome' => $originalName];
+                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('midia/' . $path), 'nome' => $originalName];
             }
         }
 

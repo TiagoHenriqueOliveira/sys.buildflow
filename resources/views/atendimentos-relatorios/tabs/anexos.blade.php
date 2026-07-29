@@ -28,7 +28,7 @@
                                 <ul class="list-unstyled">
                                     @foreach($atendimentoRelatorio->anexos as $anexo)
                                         <li class="d-flex align-items-center justify-content-between mb-1">
-                                            <a href="{{ asset('storage/' . $anexo->aten_rel_anexo_path) }}" target="_blank">{{ basename($anexo->aten_rel_anexo_path) }}</a>
+                                            <a href="{{ asset('midia/' . $anexo->aten_rel_anexo_path) }}" target="_blank">{{ basename($anexo->aten_rel_anexo_path) }}</a>
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-delete-anexo" data-type="arquivo" data-id="{{ $anexo->aten_rel_anexo_id }}" aria-label="Excluir anexo">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -69,14 +69,14 @@
                                 @if(!empty($atendimentoRelatorio->fotos) && $atendimentoRelatorio->fotos->count())
                                     @foreach($atendimentoRelatorio->fotos as $foto)
                                     @php
-                                        $thumb = 'storage/' . preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
+                                        $thumb = 'midia/' . preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
                                         $src = asset($thumb);
                                         if (!file_exists(public_path($thumb))) {
-                                            $src = asset('storage/' . $foto->aten_rel_foto_path);
+                                            $src = asset('midia/' . $foto->aten_rel_foto_path);
                                         }
                                     @endphp
                                     <div class="m-1 position-relative" style="width:120px;">
-                                        <a href="#" class="anexo-thumb" data-type="image" data-src="{{ asset('storage/' . $foto->aten_rel_foto_path) }}">
+                                        <a href="#" class="anexo-thumb" data-type="image" data-src="{{ asset('midia/' . $foto->aten_rel_foto_path) }}">
                                             <img src="{{ $src }}" style="width:120px;height:80px;object-fit:cover;border-radius:.35rem;" alt="foto">
                                         </a>
                                         <button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="foto" data-id="{{ $foto->aten_rel_foto_id }}" aria-label="Excluir foto">
@@ -119,14 +119,14 @@
                                 @if(!empty($atendimentoRelatorio->videos) && $atendimentoRelatorio->videos->count())
                                     @foreach($atendimentoRelatorio->videos as $video)
                                     @php
-                                        $thumb = 'storage/' . preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
+                                        $thumb = 'midia/' . preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
                                         $thumbUrl = asset($thumb);
                                         if (!file_exists(public_path($thumb))) {
                                             $thumbUrl = asset('img/video-placeholder.svg');
                                         }
                                     @endphp
                                     <div class="m-1 position-relative" style="width:160px;">
-                                        <a href="#" class="anexo-thumb" data-type="video" data-src="{{ asset('storage/' . $video->aten_rel_vid_path) }}">
+                                        <a href="#" class="anexo-thumb" data-type="video" data-src="{{ asset('midia/' . $video->aten_rel_vid_path) }}">
                                             <img src="{{ $thumbUrl }}" style="width:160px;height:90px;object-fit:cover;border-radius:.35rem;" alt="video">
                                         </a>
                                         <button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="video" data-id="{{ $video->aten_rel_vid_id }}" aria-label="Excluir vídeo">
