@@ -113,6 +113,14 @@ Route::middleware('auth')->group(function () {
 
         // Logs de Auditoria
         Route::get('/logs-auditoria', [LogsAuditoriaController::class, 'index'])->name('logs-auditoria.index');
+
+        // Manutenção — roda o comando midia:diagnosticar sem precisar de SSH/console
+        // (?fix=1 aplica a correção; sem o parâmetro, só relata)
+        Route::get('/admin/midia/diagnosticar', function (\Illuminate\Http\Request $request) {
+            \Illuminate\Support\Facades\Artisan::call('midia:diagnosticar', $request->boolean('fix') ? ['--fix' => true] : []);
+            return response(\Illuminate\Support\Facades\Artisan::output())
+                ->header('Content-Type', 'text/plain; charset=UTF-8');
+        })->name('admin.midia.diagnosticar');
     });
 
 });
