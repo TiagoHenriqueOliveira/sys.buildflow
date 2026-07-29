@@ -308,7 +308,7 @@ function renderizarAnexosAtendimento(anexos, atenId) {
     let html = '<ul class="list-group">';
     anexos.forEach(function (a) {
         html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-            <a href="/storage/${e(a.aten_anexo_path)}" target="_blank">${e(a.aten_anexo_nome_original)}</a>
+            <a href="/midia/${e(a.aten_anexo_path)}" target="_blank">${e(a.aten_anexo_nome_original)}</a>
             <button type="button" class="btn btn-danger btn-sm btn-delete-anexo-aten"
                 data-id="${a.aten_anexo_id}" data-aten-id="${atenId}">
                 <i class="fas fa-trash"></i>
