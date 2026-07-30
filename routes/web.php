@@ -123,6 +123,14 @@ Route::middleware('auth')->group(function () {
             return response(\Illuminate\Support\Facades\Artisan::output())
                 ->header('Content-Type', 'text/plain; charset=UTF-8');
         })->name('admin.midia.diagnosticar');
+
+        // Manutenção — roda o comando midia:remover-bom sem precisar de SSH/console
+        // (?fix=1 aplica a correção; sem o parâmetro, só relata)
+        Route::get('/admin/midia/remover-bom', function (\Illuminate\Http\Request $request) {
+            \Illuminate\Support\Facades\Artisan::call('midia:remover-bom', $request->boolean('fix') ? ['--fix' => true] : []);
+            return response(\Illuminate\Support\Facades\Artisan::output())
+                ->header('Content-Type', 'text/plain; charset=UTF-8');
+        })->name('admin.midia.remover-bom');
     });
 
 });
