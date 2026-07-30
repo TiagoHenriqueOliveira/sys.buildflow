@@ -131,6 +131,14 @@ Route::middleware('auth')->group(function () {
             return response(\Illuminate\Support\Facades\Artisan::output())
                 ->header('Content-Type', 'text/plain; charset=UTF-8');
         })->name('admin.midia.remover-bom');
+
+        // Manutenção — roda o comando codigo:remover-bom sem precisar de SSH/console
+        // (?fix=1 aplica a correção; sem o parâmetro, só relata)
+        Route::get('/admin/codigo/remover-bom', function (\Illuminate\Http\Request $request) {
+            \Illuminate\Support\Facades\Artisan::call('codigo:remover-bom', $request->boolean('fix') ? ['--fix' => true] : []);
+            return response(\Illuminate\Support\Facades\Artisan::output())
+                ->header('Content-Type', 'text/plain; charset=UTF-8');
+        })->name('admin.codigo.remover-bom');
     });
 
 });
