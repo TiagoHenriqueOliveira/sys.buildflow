@@ -69,11 +69,10 @@
                                 @if(!empty($atendimentoRelatorio->fotos) && $atendimentoRelatorio->fotos->count())
                                     @foreach($atendimentoRelatorio->fotos as $foto)
                                     @php
-                                        $thumb = 'midia/' . preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
-                                        $src = asset($thumb);
-                                        if (!file_exists(public_path($thumb))) {
-                                            $src = asset('midia/' . $foto->aten_rel_foto_path);
-                                        }
+                                        $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
+                                        $src = \Illuminate\Support\Facades\Storage::disk('public')->exists($thumbPath)
+                                            ? asset('midia/' . $thumbPath)
+                                            : asset('midia/' . $foto->aten_rel_foto_path);
                                     @endphp
                                     <div class="m-1 position-relative" style="width:120px;">
                                         <a href="#" class="anexo-thumb" data-type="image" data-src="{{ asset('midia/' . $foto->aten_rel_foto_path) }}">
@@ -119,11 +118,10 @@
                                 @if(!empty($atendimentoRelatorio->videos) && $atendimentoRelatorio->videos->count())
                                     @foreach($atendimentoRelatorio->videos as $video)
                                     @php
-                                        $thumb = 'midia/' . preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
-                                        $thumbUrl = asset($thumb);
-                                        if (!file_exists(public_path($thumb))) {
-                                            $thumbUrl = asset('img/video-placeholder.svg');
-                                        }
+                                        $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
+                                        $thumbUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists($thumbPath)
+                                            ? asset('midia/' . $thumbPath)
+                                            : asset('img/video-placeholder.svg');
                                     @endphp
                                     <div class="m-1 position-relative" style="width:160px;">
                                         <a href="#" class="anexo-thumb" data-type="video" data-src="{{ asset('midia/' . $video->aten_rel_vid_path) }}">
