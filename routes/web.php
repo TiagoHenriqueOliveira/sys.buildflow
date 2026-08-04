@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppUpdateController;
 use App\Http\Controllers\AtendimentosController;
 use App\Http\Controllers\AtendimentosRelatoriosController;
 use App\Http\Controllers\AuthController;
@@ -31,6 +32,14 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
 Route::middleware('auth:web,sanctum')->get('/midia/{path}', [StorageController::class, 'show'])
     ->where('path', '.*')
     ->name('midia.show');
+
+// Instalador do app móvel (.apk) — pública de propósito, ver AppUpdateController.
+// Fica fora de public/ (storage/app/apks/), mesmo motivo do disco 'public':
+// este Plesk bloqueia no servidor qualquer pasta com arquivo real dentro de
+// public/, então o download precisa passar pelo Laravel.
+Route::get('/apk/{arquivo}', [AppUpdateController::class, 'baixar'])
+    ->where('arquivo', '.*\.apk$')
+    ->name('apk.baixar');
 
 // Rotas protegidas
 Route::middleware('auth')->group(function () {

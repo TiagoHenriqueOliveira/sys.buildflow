@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AtendimentosController;
 use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\RelatoriosController;
+use App\Http\Controllers\Api\Mcl\AppController as MclAppController;
 use App\Http\Controllers\Api\Mcl\AtendimentosController as MclAtendimentosController;
 use App\Http\Controllers\Api\Mcl\RelatoriosController as MclRelatoriosController;
 use App\Http\Controllers\Api\Mcl\CatalogoController as MclCatalogoController;
@@ -88,6 +89,7 @@ Route::prefix('mcl/v1')->group(function () {
 
     // PÃºblica
     Route::post('/login',  [AuthController::class, 'login']);
+    Route::get('/app/versao', [MclAppController::class, 'versao']);
 
     // Protegidas
     Route::middleware('auth:sanctum')->group(function () {
