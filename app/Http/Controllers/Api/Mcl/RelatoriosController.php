@@ -11,6 +11,7 @@ use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
+use App\Models\AtendimentoRelatorioDescricaoItem;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioHorario;
 use App\Models\AtendimentoRelatorioPeca;
@@ -196,11 +197,19 @@ class RelatoriosController extends Controller
             'pecas',
             'ocorrencias',
             'assinaturas',
+            'itensDescricao',
         ])->findOrFail($id);
 
         if (! $this->checkAcesso($request, $relatorio)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
+
+        // RF004 — retrocompatibilidade: um relatório usa OU o campo legado de
+        // texto único, OU a lista nova de itens — nunca os dois juntos. O
+        // critério é a existência de registro na tabela nova (não a data de
+        // criação do relatório), então mesmo um relatório antigo que nunca
+        // recebeu item novo continua mostrando só o campo legado.
+        $usaDescricaoNova = $relatorio->itensDescricao->isNotEmpty();
 
         $prazo = $relatorio->calcularPrazo();
 
@@ -219,7 +228,16 @@ class RelatoriosController extends Controller
             'data'                     => $relatorio->aten_rel_data?->format('Y-m-d'),
             'status'                   => $relatorio->aten_rel_status,
             'status_label'             => AtendimentoRelatorioStatus::tryFrom($relatorio->aten_rel_status)?->label() ?? '-',
-            'descricao'                => $relatorio->aten_rel_descricao,
+            // RF001/RF004: exatamente um dos dois é populado — ver
+            // $usaDescricaoNova acima. O app decide qual seção renderizar
+            // conforme qual dos dois vem preenchido.
+            'descricao'                => $usaDescricaoNova ? null : $relatorio->aten_rel_descricao,
+            'descricao_itens'          => $usaDescricaoNova ? $relatorio->itensDescricao->map(fn($it) => [
+                'id'        => $it->aten_rel_desc_id,
+                'texto'     => $it->aten_rel_desc_texto,
+                'foto_url'  => $it->aten_rel_desc_foto_path ? url('midia/' . $it->aten_rel_desc_foto_path) : null,
+                'criado_em' => optional($it->aten_rel_desc_criado_em)->format('Y-m-d H:i:s'),
+            ])->values() : [],
             'informacoes_adicionais'   => $relatorio->aten_rel_informacoes_adicionais,
             'prazo'                    => $prazo,
             'atendimento' => [
@@ -466,6 +484,73 @@ class RelatoriosController extends Controller
             ->delete();
 
         return response()->json(['message' => 'Peça removida.']);
+    }
+
+    /**
+     * Adiciona item de descrição (texto + foto opcional) — RF001.
+     * Texto e foto vão numa única requisição multipart: evita item órfão
+     * (sem foto) se uma segunda etapa de upload falhasse separadamente.
+     *
+     * POST /api/mcl/v1/relatorios/{id}/descricao-itens
+     */
+    public function storeDescricaoItem(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'texto' => 'required|string',
+            'foto'  => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp',
+        ]);
+
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        $path = null;
+        if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+            $file     = $request->file('foto');
+            $safeName = $this->safeFilename($file->getClientOriginalName(), "atendimentos_relatorios/{$id}/descricao");
+            $path     = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
+            if ($path === false) {
+                return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
+            }
+        }
+
+        $item = AtendimentoRelatorioDescricaoItem::create([
+            'aten_rel_desc_relatorio_id' => $id,
+            'aten_rel_desc_texto'        => $request->input('texto'),
+            'aten_rel_desc_foto_path'    => $path,
+            'aten_rel_desc_criado_em'    => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Item adicionado.',
+            'data'    => [
+                'id'        => $item->aten_rel_desc_id,
+                'texto'     => $item->aten_rel_desc_texto,
+                'foto_url'  => $path ? url('midia/' . $path) : null,
+                'criado_em' => $item->aten_rel_desc_criado_em->format('Y-m-d H:i:s'),
+            ],
+        ], 201);
+    }
+
+    /**
+     * Remove item de descrição — RF001.
+     *
+     * DELETE /api/mcl/v1/relatorios/{id}/descricao-itens/{item_id}
+     */
+    public function destroyDescricaoItem(Request $request, int $id, int $itemId): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
+            ->where('aten_rel_desc_relatorio_id', $id)
+            ->firstOrFail()
+            ->delete();
+
+        return response()->json(['message' => 'Item removido.']);
     }
 
     /**

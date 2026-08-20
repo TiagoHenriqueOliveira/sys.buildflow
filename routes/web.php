@@ -41,6 +41,16 @@ Route::get('/apk/{arquivo}', [AppUpdateController::class, 'baixar'])
     ->where('arquivo', '.*\.apk$')
     ->name('apk.baixar');
 
+// PDF do relatório (RF003/RF005) — mesmo motivo do /midia acima: precisa
+// aceitar tanto sessão web (painel) quanto token Sanctum (app), para o
+// técnico poder baixar/abrir o PDF autenticado só com o app, sem sessão no
+// painel. Fica fora do grupo `auth` geral (só sessão web) por isso. A
+// checagem de que o relatório pertence ao usuário fica dentro do próprio
+// AtendimentosRelatoriosController::pdf() (RNF004).
+Route::middleware('auth:web,sanctum')
+    ->get('/atendimentos-relatorios/{id}/pdf', [AtendimentosRelatoriosController::class, 'pdf'])
+    ->name('atendimentos-relatorios.pdf');
+
 // Rotas protegidas
 Route::middleware('auth')->group(function () {
 
@@ -81,7 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'getClimaData'])->name('atendimentos-relatorios.get-clima');
     Route::get('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'getOcorrenciasData'])->name('atendimentos-relatorios.get-ocorrencias');
     Route::get('/atendimentos-relatorios/{id}/assinaturas', [AtendimentosRelatoriosController::class, 'getAssinaturasData'])->name('atendimentos-relatorios.get-assinaturas');
-    Route::get('/atendimentos-relatorios/{id}/pdf', [AtendimentosRelatoriosController::class, 'pdf'])->name('atendimentos-relatorios.pdf');
+    // Rota do PDF movida para fora deste grupo — ver auth:web,sanctum acima (RF005).
     Route::post('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'updateDados'])->name('atendimentos-relatorios.update-dados');
     Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->name('atendimentos-relatorios.update-horarios');
     Route::post('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'updateClima'])->name('atendimentos-relatorios.update-clima');

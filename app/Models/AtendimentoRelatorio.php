@@ -169,4 +169,19 @@ class AtendimentoRelatorio extends Model
         ]);
     }
 
+    /**
+     * RF001 — lista de itens de descrição (texto + foto opcional). Convive
+     * com a coluna legada aten_rel_descricao sem migração de dado — ver
+     * RF004: um relatório usa ou o campo legado, ou esta lista, nunca os
+     * dois (decidido por qual dos dois tem registro).
+     */
+    public function itensDescricao()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioDescricaoItem::class,
+            'aten_rel_desc_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
 }

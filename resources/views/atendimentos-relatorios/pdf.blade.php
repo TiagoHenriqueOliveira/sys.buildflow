@@ -87,6 +87,10 @@
         /* TEXTO LIVRE */
         .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 20px; color: #333; min-height: 30px; white-space: pre-wrap; }
 
+        /* DESCRIÇÃO — itens (RF001) */
+        .descricao-item { margin-bottom: 12px; }
+        .descricao-item-foto { display: block; margin-top: 6px; max-width: 380px; max-height: 500px; border: 1px solid #ddd; }
+
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
         .fotos-grid td { padding: 8px; text-align: center; vertical-align: top; width: 50%; }
@@ -319,8 +323,25 @@
     @endif
 </div>
 
-{{-- 5. DESCRIÇÃO --}}
-@if($relatorio->aten_rel_descricao)
+{{-- 5. DESCRIÇÃO — RF001/RF004: relatório usa OU a lista nova de itens
+     (texto + foto opcional), OU o campo legado de texto único; nunca os
+     dois juntos. O critério é a existência de item na tabela nova. --}}
+@if($relatorio->itensDescricao->isNotEmpty())
+<div class="section">
+    <div class="section-title">{{ $secNum() }}. Descrição</div>
+    @foreach($relatorio->itensDescricao as $item)
+    <div class="descricao-item">
+        <div class="text-block">{{ $item->aten_rel_desc_texto }}</div>
+        @if($item->aten_rel_desc_foto_path)
+            @php $itemFotoSrc = $fotoBase64($item->aten_rel_desc_foto_path); @endphp
+            @if($itemFotoSrc)
+                <img class="descricao-item-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
+            @endif
+        @endif
+    </div>
+    @endforeach
+</div>
+@elseif($relatorio->aten_rel_descricao)
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
     <div class="text-block">{{ $relatorio->aten_rel_descricao }}</div>

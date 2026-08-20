@@ -590,7 +590,7 @@ class AtendimentosRelatoriosController extends Controller
         ]);
     }
 
-    public function pdf(int $id)
+    public function pdf(Request $request, int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
             'modeloRelatorio',
@@ -605,7 +605,19 @@ class AtendimentosRelatoriosController extends Controller
             'pecas',
             'fotos',
             'assinaturas',
+            'itensDescricao',
         ])->findOrFail($id);
+
+        // RF005/RNF004 — a rota agora aceita token do app (Sanctum), além da
+        // sessão do painel; sem essa checagem, qualquer técnico autenticado
+        // conseguiria baixar o PDF de um atendimento de outro técnico só
+        // trocando o ID na URL. Mesmo critério já usado em
+        // Api\Mcl\RelatoriosController::checkAcesso().
+        $usuario = $request->user();
+        $ehAdmin = (int) $usuario->user_nivel_acesso === 0;
+        if (! $ehAdmin && $relatorio->atendimento?->aten_usuario_id !== $usuario->user_id) {
+            abort(403, 'Você não tem acesso a este relatório.');
+        }
 
         $prazo = $relatorio->calcularPrazo();
 
