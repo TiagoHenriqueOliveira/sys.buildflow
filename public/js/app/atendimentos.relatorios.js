@@ -1110,10 +1110,14 @@ function renderDescricaoItens(items, legado) {
 
     (items || []).forEach(function (item) {
         const fotos = item.fotos || [];
+        // Mesmo modal de preview (#anexoPreviewModal) já usado na aba Anexos —
+        // clicar na miniatura abre a foto em tamanho maior.
         const fotoHtml = fotos.length
             ? '<div class="d-flex flex-wrap p-2" style="gap:6px;">' +
                 fotos.map(function (url) {
-                    return '<img src="' + url + '" style="width:70px;height:70px;object-fit:cover;border-radius:.35rem;" alt="Foto do item">';
+                    return '<a href="#" class="anexo-thumb" data-type="image" data-src="' + url + '">' +
+                        '<img src="' + url + '" style="width:70px;height:70px;object-fit:cover;border-radius:.35rem;" alt="Foto do item">' +
+                    '</a>';
                 }).join('') +
               '</div>'
             : '';
