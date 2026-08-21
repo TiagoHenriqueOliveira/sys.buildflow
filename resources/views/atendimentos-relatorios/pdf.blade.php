@@ -88,9 +88,9 @@
         .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 20px; color: #333; min-height: 30px; white-space: pre-wrap; }
 
         /* DESCRIÇÃO — itens (RF001) */
-        .descricao-item { margin-bottom: 12px; }
-        .descricao-item-fotos { margin-top: 6px; }
-        .descricao-item-foto { display: inline-block; max-width: 250px; max-height: 300px; border: 1px solid #ddd; margin: 0 6px 6px 0; }
+        .section-descricao .section-title { margin-bottom: 18px; }
+        .descricao-item { margin-bottom: 16px; }
+        .descricao-item-caption { padding: 4px 2px; font-size: 20px; color: #333; white-space: pre-wrap; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
@@ -328,21 +328,30 @@
      (texto + foto opcional), OU o campo legado de texto único; nunca os
      dois juntos. O critério é a existência de item na tabela nova. --}}
 @if($relatorio->itensDescricao->isNotEmpty())
-<div class="section">
+<div class="section section-descricao">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
     @foreach($relatorio->itensDescricao as $item)
     <div class="descricao-item">
-        <div class="text-block">{{ $item->aten_rel_desc_texto }}</div>
         @if($item->fotos->isNotEmpty())
-            <div class="descricao-item-fotos">
-                @foreach($item->fotos as $foto)
-                    @php $itemFotoSrc = $fotoBase64($foto->aten_rel_desc_foto_path); @endphp
-                    @if($itemFotoSrc)
-                        <img class="descricao-item-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
-                    @endif
+            {{-- Mesma grade 2-por-linha das Fotos gerais (evita sobreposição
+                 do layout inline-block anterior com fotos de proporções diferentes). --}}
+            @php $fotosItem = $item->fotos->values()->chunk(2); @endphp
+            <table class="fotos-grid">
+                @foreach($fotosItem as $par)
+                <tr>
+                    @foreach($par as $foto)
+                    <td @if($par->count() < 2) colspan="2" @endif>
+                        @php $itemFotoSrc = $fotoBase64($foto->aten_rel_desc_foto_path); @endphp
+                        @if($itemFotoSrc)
+                            <img src="{{ $itemFotoSrc }}" alt="Foto do item">
+                        @endif
+                    </td>
+                    @endforeach
+                </tr>
                 @endforeach
-            </div>
+            </table>
         @endif
+        <div class="descricao-item-caption">{{ $item->aten_rel_desc_texto }}</div>
     </div>
     @endforeach
 </div>
@@ -470,15 +479,15 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
+                @if($assResp && $assResp->aten_rel_ass_assinado_em)
+                    <div class="assinatura-data">{{ $assResp->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
+                @endif
                 {{-- RF006: nome de quem assinou, capturado no momento da assinatura;
                      relatórios antigos (sem o campo novo) caem no nome do técnico
                      responsável pelo atendimento, como antes. --}}
-                <div class="assinatura-nome">{{ $assResp->aten_rel_ass_nome ?? $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
+                <div class="assinatura-nome">{{ optional($assResp)->aten_rel_ass_nome ?? $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
                 @if($assResp && $assResp->aten_rel_ass_cpf)
                     <div class="assinatura-data">CPF: {{ $assResp->aten_rel_ass_cpf }}</div>
-                @endif
-                @if($assResp && $assResp->aten_rel_ass_assinado_em)
-                    <div class="assinatura-data">{{ $assResp->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif
             </td>
             <td class="assinatura-cell">
@@ -488,12 +497,14 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
-                <div class="assinatura-nome">{{ $assCli->aten_rel_ass_nome ?? collect([$relatorio->atendimento->aten_responsavel, $relatorio->atendimento->cliente->cli_nome ?? null])->filter()->implode(' - ') }}</div>
-                @if($assCli && $assCli->aten_rel_ass_cpf)
-                    <div class="assinatura-data">CPF: {{ $assCli->aten_rel_ass_cpf }}</div>
-                @endif
                 @if($assCli && $assCli->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
+                @endif
+                {{-- RF006: só o nome informado na própria assinatura — não cai
+                     mais no responsável cadastrado no atendimento. --}}
+                <div class="assinatura-nome">{{ optional($assCli)->aten_rel_ass_nome }}</div>
+                @if($assCli && $assCli->aten_rel_ass_cpf)
+                    <div class="assinatura-data">CPF: {{ $assCli->aten_rel_ass_cpf }}</div>
                 @endif
             </td>
         </tr>
