@@ -1,23 +1,28 @@
 {{-- DESCRIÇÃO — RF001: lista de itens (texto + foto opcional), mesmo padrão de Peças Substituídas --}}
 <div class="tab-pane fade" id="tab-descricao" role="tabpanel">
-    <div class="mb-3">
-        <div class="form-row">
-            <div class="col-md-8">
-                <label for="descricao_item_texto" class="font-weight-bold mb-1">Descrição do item</label>
-                <textarea id="descricao_item_texto" class="form-control" rows="2"
-                    placeholder="Descreva o item..."></textarea>
-            </div>
-            <div class="col-md-3">
-                <label for="descricao_item_foto" class="font-weight-bold mb-1">Foto (opcional)</label>
-                <input type="file" id="descricao_item_foto" class="form-control-file" accept=".jpg,.jpeg,.png,.webp,.gif">
-            </div>
-            <div class="col-md-1 d-flex align-items-end">
-                <button type="button" id="btnAddDescricaoItem" class="btn btn-primary btn-block" title="Adicionar">
-                    <i class="fas fa-plus"></i>
+    <div id="descricaoFormNovo" class="mb-3">
+        <textarea id="descricao_item_texto" class="form-control mb-2" rows="2"
+            placeholder="Descreva o item..."></textarea>
+
+        <div class="file-upload-box">
+            <div class="file-upload-group">
+                <label class="btn btn-primary btn-sm file-upload-button mb-0">
+                    <i class="fas fa-upload"></i>
+                    <input type="file" class="file-upload-input" id="descricao_item_foto" accept=".jpg,.jpeg,.png,.webp,.gif">
+                </label>
+                <span class="file-upload-text">Nenhuma foto selecionada</span>
+                <button type="button" id="btnAddDescricaoItem" class="btn btn-primary btn-icon-split">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span class="text">Adicionar</span>
                 </button>
             </div>
         </div>
     </div>
+
+    {{-- RF004: retrocompatibilidade — relatório antigo (sem itens novos) mostra o texto legado, somente leitura --}}
+    <div id="descricaoLegadoBox" class="readonly-field" style="display:none; white-space:pre-wrap;"></div>
 
     <div id="listaDescricaoItens" class="row"></div>
     <div id="descricaoItensVazio" class="text-muted" style="display:none;">Nenhum item de descrição adicionado.</div>

@@ -13,7 +13,7 @@ class MediaService
      * Salva a imagem de assinatura (base64) no storage e persiste o registro.
      * Retorna a URL pública da assinatura salva.
      */
-    public function saveSignatureImage(AtendimentoRelatorio $relatorio, string $base64, string|AssinaturaTipo $tipo): string
+    public function saveSignatureImage(AtendimentoRelatorio $relatorio, string $base64, string|AssinaturaTipo $tipo, ?string $nome = null, ?string $cpf = null): string
     {
         $tipoEnum  = $tipo instanceof AssinaturaTipo ? $tipo : AssinaturaTipo::from($tipo);
         $tipoValue = $tipoEnum->value;
@@ -62,12 +62,18 @@ class MediaService
             ->first();
 
         if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path]);
+            $existing->update([
+                'aten_rel_ass_path' => $path,
+                'aten_rel_ass_nome' => $nome,
+                'aten_rel_ass_cpf'  => $cpf,
+            ]);
         } else {
             AtendimentoRelatorioAssinatura::create([
                 'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
                 'aten_rel_ass_path'         => $path,
                 'aten_rel_ass_tipo'         => $tipoEnum,
+                'aten_rel_ass_nome'         => $nome,
+                'aten_rel_ass_cpf'          => $cpf,
             ]);
         }
 

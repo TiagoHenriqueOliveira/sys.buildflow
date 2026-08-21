@@ -39,16 +39,23 @@
             </div>
         </div>
 
-        {{-- LINHA: Cliente | Responsável | Nº Proposta --}}
+        {{-- LINHA: Cliente | Contato | Responsável | Nº Proposta --}}
         <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="font-weight-bold">Cliente</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->cliente->cli_nome }}
                 </span>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label class="font-weight-bold">Contato</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_contato }}
+                </span>
+            </div>
+
+            <div class="col-md-3">
                 <label class="font-weight-bold">Responsável</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_responsavel }}

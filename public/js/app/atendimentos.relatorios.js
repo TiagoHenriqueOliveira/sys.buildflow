@@ -259,13 +259,27 @@ function initAtualizarRelatorio() {
             const assinaturaResponsavel = window.signatureData?.responsavel || '';
             const assinaturaCliente = window.signatureData?.cliente || '';
 
+            // RF006: nome de quem assinou é obrigatório junto de cada assinatura nova.
+            if (assinaturaResponsavel && !$('#assinatura_responsavel_nome').val().trim()) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem assinou como Técnico.', 'warning', 3500);
+                return;
+            }
+            if (assinaturaCliente && !$('#assinatura_cliente_nome').val().trim()) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem assinou como Cliente.', 'warning', 3500);
+                return;
+            }
+
             $.ajax({
                 url: baseURL + `/atendimentos-relatorios/${relatorioId}/assinaturas`,
                 type: 'POST',
                 data: {
                     aten_rel_status: status,
                     assinatura_responsavel: assinaturaResponsavel,
+                    assinatura_responsavel_nome: $('#assinatura_responsavel_nome').val().trim(),
+                    assinatura_responsavel_cpf: $('#assinatura_responsavel_cpf').val().trim(),
                     assinatura_cliente: assinaturaCliente,
+                    assinatura_cliente_nome: $('#assinatura_cliente_nome').val().trim(),
+                    assinatura_cliente_cpf: $('#assinatura_cliente_cpf').val().trim(),
                 },
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (response) {
@@ -785,6 +799,14 @@ function initAssinaturasTab() {
             return;
         }
 
+        // RF006: nome de quem assinou é obrigatório junto de cada assinatura nova.
+        const nome = $(`#assinatura_${signatureType}_nome`).val().trim();
+        if (!nome) {
+            showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem está assinando.', 'warning', 3500);
+            return;
+        }
+        const cpf = $(`#assinatura_${signatureType}_cpf`).val().trim();
+
         const dataUrl = canvasObj.getDataUrl();
         window.signatureData = window.signatureData || {};
         window.signatureData[signatureType] = dataUrl;
@@ -795,6 +817,8 @@ function initAssinaturasTab() {
             data: {
                 aten_rel_status: $('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked').val(),
                 [`assinatura_${signatureType}`]: dataUrl,
+                [`assinatura_${signatureType}_nome`]: nome,
+                [`assinatura_${signatureType}_cpf`]: cpf,
             },
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (response) {
@@ -1060,12 +1084,23 @@ function carregarDescricaoItens(relatorioId) {
         url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/descricao-itens',
         type: 'GET',
         dataType: 'json',
-        success: function (r) { renderDescricaoItens(r.data); },
+        success: function (r) { renderDescricaoItens(r.data, r.legado); },
         error: function () { showNotification('fas fa-bug', 'Erro ao carregar itens de descrição.', 'danger', 3000); }
     });
 }
 
-function renderDescricaoItens(items) {
+function renderDescricaoItens(items, legado) {
+    // RF001/RF004: retrocompatibilidade — relatório antigo (texto único) x
+    // relatório novo (lista de itens), nunca os dois juntos na tela.
+    const temLegado = !!(legado && legado.trim().length);
+    $('#descricaoFormNovo').toggle(!temLegado);
+    $('#descricaoLegadoBox').toggle(temLegado).text(legado || '');
+    if (temLegado) {
+        $('#listaDescricaoItens').empty();
+        $('#descricaoItensVazio').hide();
+        return;
+    }
+
     const container = $('#listaDescricaoItens');
     container.empty();
     $('#descricaoItensVazio').toggle(!items || !items.length);
@@ -1127,6 +1162,7 @@ function initDescricaoTab() {
             success: function (r) {
                 $('#descricao_item_texto').val('');
                 if (fotoInput) fotoInput.value = '';
+                $('#descricao_item_foto').closest('.file-upload-group').find('.file-upload-text').text('Nenhuma foto selecionada');
                 carregarDescricaoItens(rid);
                 showNotification('fas fa-check-double', r.message, 'success', 2000);
                 btn.prop('disabled', false);

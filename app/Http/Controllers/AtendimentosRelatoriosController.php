@@ -343,7 +343,9 @@ class AtendimentosRelatoriosController extends Controller
                 $assinaturas['responsavel'] = $this->media->saveSignatureImage(
                     $relatorio,
                     $request->assinatura_responsavel,
-                    'responsavel'
+                    'responsavel',
+                    $request->input('assinatura_responsavel_nome'),
+                    $request->input('assinatura_responsavel_cpf'),
                 );
             }
 
@@ -351,7 +353,9 @@ class AtendimentosRelatoriosController extends Controller
                 $assinaturas['cliente'] = $this->media->saveSignatureImage(
                     $relatorio,
                     $request->assinatura_cliente,
-                    'cliente'
+                    'cliente',
+                    $request->input('assinatura_cliente_nome'),
+                    $request->input('assinatura_cliente_cpf'),
                 );
             }
 
@@ -529,13 +533,19 @@ class AtendimentosRelatoriosController extends Controller
     public function getDescricaoItens(int $id): \Illuminate\Http\JsonResponse
     {
         $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $itens = $relatorio->itensDescricao()->orderBy('aten_rel_desc_id')->get();
+        $usaDescricaoNova = $itens->isNotEmpty();
+
+        // RF001/RF004: retrocompatibilidade — um relatório usa OU o campo
+        // legado de texto único, OU a lista nova de itens, nunca os dois. O
+        // critério é a existência de item novo, não a data do relatório.
         return response()->json([
-            'data' => $relatorio->itensDescricao()->orderBy('aten_rel_desc_id')->get()
-                ->map(fn($it) => [
-                    'id'       => $it->aten_rel_desc_id,
-                    'texto'    => $it->aten_rel_desc_texto,
-                    'foto_url' => $it->aten_rel_desc_foto_path ? asset('midia/' . $it->aten_rel_desc_foto_path) : null,
-                ]),
+            'legado' => $usaDescricaoNova ? null : $relatorio->aten_rel_descricao,
+            'data'   => $usaDescricaoNova ? $itens->map(fn($it) => [
+                'id'       => $it->aten_rel_desc_id,
+                'texto'    => $it->aten_rel_desc_texto,
+                'foto_url' => $it->aten_rel_desc_foto_path ? asset('midia/' . $it->aten_rel_desc_foto_path) : null,
+            ]) : [],
         ]);
     }
 
