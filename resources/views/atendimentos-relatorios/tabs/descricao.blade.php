@@ -8,7 +8,7 @@
             <div class="file-upload-group">
                 <label class="btn btn-primary btn-sm file-upload-button mb-0">
                     <i class="fas fa-upload"></i>
-                    <input type="file" class="file-upload-input" id="descricao_item_foto" accept=".jpg,.jpeg,.png,.webp,.gif">
+                    <input type="file" class="file-upload-input" id="descricao_item_foto" accept=".jpg,.jpeg,.png,.webp,.gif" multiple>
                 </label>
                 <span class="file-upload-text">Nenhuma foto selecionada</span>
                 <button type="button" id="btnAddDescricaoItem" class="btn btn-primary btn-icon-split">

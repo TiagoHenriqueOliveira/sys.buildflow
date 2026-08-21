@@ -694,6 +694,9 @@ function carregarAssinaturas(relatorioId) {
 function initAssinaturasTab() {
     window.signatureData = window.signatureData || {};
 
+    // RF006: máscara de CPF nos campos de quem assinou.
+    $('#assinatura_responsavel_cpf, #assinatura_cliente_cpf').mask('000.000.000-00');
+
     function setupCanvas(canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return null;
@@ -1106,8 +1109,13 @@ function renderDescricaoItens(items, legado) {
     $('#descricaoItensVazio').toggle(!items || !items.length);
 
     (items || []).forEach(function (item) {
-        const fotoHtml = item.foto_url
-            ? '<img src="' + item.foto_url + '" class="card-img-top" style="max-height:220px; object-fit:cover;" alt="Foto do item">'
+        const fotos = item.fotos || [];
+        const fotoHtml = fotos.length
+            ? '<div class="d-flex flex-wrap p-2" style="gap:6px;">' +
+                fotos.map(function (url) {
+                    return '<img src="' + url + '" style="width:70px;height:70px;object-fit:cover;border-radius:.35rem;" alt="Foto do item">';
+                }).join('') +
+              '</div>'
             : '';
         const card = $(
             '<div class="col-md-4 mb-3" style="display:none;">' +
@@ -1147,7 +1155,7 @@ function initDescricaoTab() {
         fd.append('texto', texto);
         const fotoInput = document.getElementById('descricao_item_foto');
         if (fotoInput && fotoInput.files.length) {
-            fd.append('foto', fotoInput.files[0]);
+            Array.from(fotoInput.files).forEach(function (file) { fd.append('foto[]', file); });
         }
 
         const btn = $(this);

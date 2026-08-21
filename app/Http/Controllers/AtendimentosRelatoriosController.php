@@ -533,7 +533,7 @@ class AtendimentosRelatoriosController extends Controller
     public function getDescricaoItens(int $id): \Illuminate\Http\JsonResponse
     {
         $relatorio = AtendimentoRelatorio::findOrFail($id);
-        $itens = $relatorio->itensDescricao()->orderBy('aten_rel_desc_id')->get();
+        $itens = $relatorio->itensDescricao()->with('fotos')->orderBy('aten_rel_desc_id')->get();
         $usaDescricaoNova = $itens->isNotEmpty();
 
         // RF001/RF004: retrocompatibilidade — um relatório usa OU o campo
@@ -542,9 +542,9 @@ class AtendimentosRelatoriosController extends Controller
         return response()->json([
             'legado' => $usaDescricaoNova ? null : $relatorio->aten_rel_descricao,
             'data'   => $usaDescricaoNova ? $itens->map(fn($it) => [
-                'id'       => $it->aten_rel_desc_id,
-                'texto'    => $it->aten_rel_desc_texto,
-                'foto_url' => $it->aten_rel_desc_foto_path ? asset('midia/' . $it->aten_rel_desc_foto_path) : null,
+                'id'    => $it->aten_rel_desc_id,
+                'texto' => $it->aten_rel_desc_texto,
+                'fotos' => $it->fotos->map(fn($f) => asset('midia/' . $f->aten_rel_desc_foto_path))->values(),
             ]) : [],
         ]);
     }
@@ -552,41 +552,41 @@ class AtendimentosRelatoriosController extends Controller
     public function storeDescricaoItem(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'texto' => ['required', 'string'],
-            'foto'  => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
+            'texto'  => ['required', 'string'],
+            'foto'   => ['nullable', 'array'],
+            'foto.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
         ], [
             'texto.required' => 'Descreva o item antes de adicionar.',
-            'foto.file'      => 'A foto enviada é inválida.',
-            'foto.max'       => 'A foto não pode ultrapassar 10 MB.',
-            'foto.mimes'     => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+            'foto.*.file'    => 'A foto enviada é inválida.',
+            'foto.*.max'     => 'A foto não pode ultrapassar 10 MB.',
+            'foto.*.mimes'   => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
         ]);
 
         try {
-            $path = null;
-            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
-                $file         = $request->file('foto');
+            $item = AtendimentoRelatorioDescricaoItem::create([
+                'aten_rel_desc_relatorio_id' => $id,
+                'aten_rel_desc_texto'        => $request->input('texto'),
+                'aten_rel_desc_criado_em'    => now(),
+            ]);
+
+            foreach ($request->file('foto', []) as $file) {
+                if (! $file->isValid()) continue;
                 $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $ext          = $file->getClientOriginalExtension();
                 $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
                 if ($path === false) {
-                    return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
+                    return response()->json(['message' => 'Falha ao gravar uma das fotos em disco.'], 500);
                 }
+                $item->fotos()->create(['aten_rel_desc_foto_path' => $path]);
             }
-
-            $item = AtendimentoRelatorioDescricaoItem::create([
-                'aten_rel_desc_relatorio_id' => $id,
-                'aten_rel_desc_texto'        => $request->input('texto'),
-                'aten_rel_desc_foto_path'    => $path,
-                'aten_rel_desc_criado_em'    => now(),
-            ]);
 
             return response()->json([
                 'message' => 'Item adicionado!',
                 'item'    => [
-                    'id'       => $item->aten_rel_desc_id,
-                    'texto'    => $item->aten_rel_desc_texto,
-                    'foto_url' => $path ? asset('midia/' . $path) : null,
+                    'id'    => $item->aten_rel_desc_id,
+                    'texto' => $item->aten_rel_desc_texto,
+                    'fotos' => $item->fotos->map(fn($f) => asset('midia/' . $f->aten_rel_desc_foto_path))->values(),
                 ],
             ]);
         } catch (\Throwable $e) {
@@ -598,11 +598,12 @@ class AtendimentosRelatoriosController extends Controller
     public function destroyDescricaoItem(int $id, int $itemId): \Illuminate\Http\JsonResponse
     {
         try {
-            $item = AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
+            $item = AtendimentoRelatorioDescricaoItem::with('fotos')
+                ->where('aten_rel_desc_id', $itemId)
                 ->where('aten_rel_desc_relatorio_id', $id)
                 ->first();
-            if ($item?->aten_rel_desc_foto_path) {
-                Storage::disk('public')->delete($item->aten_rel_desc_foto_path);
+            foreach ($item?->fotos ?? [] as $foto) {
+                Storage::disk('public')->delete($foto->aten_rel_desc_foto_path);
             }
             $item?->delete();
             return response()->json(['message' => 'Item removido!']);
@@ -697,7 +698,7 @@ class AtendimentosRelatoriosController extends Controller
             'pecas',
             'fotos',
             'assinaturas',
-            'itensDescricao',
+            'itensDescricao.fotos',
         ])->findOrFail($id);
 
         // RF005/RNF004 — a rota agora aceita token do app (Sanctum), além da

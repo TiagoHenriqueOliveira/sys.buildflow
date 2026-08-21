@@ -13,7 +13,6 @@ class AtendimentoRelatorioDescricaoItem extends Model
     protected $fillable = [
         'aten_rel_desc_relatorio_id',
         'aten_rel_desc_texto',
-        'aten_rel_desc_foto_path',
         'aten_rel_desc_criado_em',
     ];
 
@@ -23,4 +22,9 @@ class AtendimentoRelatorioDescricaoItem extends Model
     protected $casts = [
         'aten_rel_desc_criado_em' => 'datetime',
     ];
+
+    public function fotos()
+    {
+        return $this->hasMany(AtendimentoRelatorioDescricaoItemFoto::class, 'aten_rel_desc_foto_item_id', 'aten_rel_desc_id');
+    }
 }

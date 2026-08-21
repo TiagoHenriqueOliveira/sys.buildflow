@@ -89,7 +89,8 @@
 
         /* DESCRIÇÃO — itens (RF001) */
         .descricao-item { margin-bottom: 12px; }
-        .descricao-item-foto { display: block; margin-top: 6px; max-width: 380px; max-height: 500px; border: 1px solid #ddd; }
+        .descricao-item-fotos { margin-top: 6px; }
+        .descricao-item-foto { display: inline-block; max-width: 250px; max-height: 300px; border: 1px solid #ddd; margin: 0 6px 6px 0; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
@@ -332,11 +333,15 @@
     @foreach($relatorio->itensDescricao as $item)
     <div class="descricao-item">
         <div class="text-block">{{ $item->aten_rel_desc_texto }}</div>
-        @if($item->aten_rel_desc_foto_path)
-            @php $itemFotoSrc = $fotoBase64($item->aten_rel_desc_foto_path); @endphp
-            @if($itemFotoSrc)
-                <img class="descricao-item-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
-            @endif
+        @if($item->fotos->isNotEmpty())
+            <div class="descricao-item-fotos">
+                @foreach($item->fotos as $foto)
+                    @php $itemFotoSrc = $fotoBase64($foto->aten_rel_desc_foto_path); @endphp
+                    @if($itemFotoSrc)
+                        <img class="descricao-item-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
+                    @endif
+                @endforeach
+            </div>
         @endif
     </div>
     @endforeach
