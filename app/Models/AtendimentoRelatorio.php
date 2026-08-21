@@ -177,11 +177,13 @@ class AtendimentoRelatorio extends Model
      */
     public function itensDescricao()
     {
+        // Ordena por ID de criação — a numeração do PDF ("1. ...", "2. ...")
+        // depende da ordem de inclusão ser sempre a mesma em qualquer consumidor.
         return $this->hasMany(
             AtendimentoRelatorioDescricaoItem::class,
             'aten_rel_desc_relatorio_id',
             'aten_rel_id'
-        );
+        )->orderBy('aten_rel_desc_id');
     }
 
 }

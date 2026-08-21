@@ -90,7 +90,10 @@
         /* DESCRIÇÃO — itens (RF001) */
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-item { margin-bottom: 16px; }
-        .descricao-item-caption { padding: 4px 2px; font-size: 20px; color: #333; white-space: pre-wrap; }
+        .descricao-item-caption { padding: 4px 2px; font-size: 26px; color: #333; white-space: pre-wrap; }
+        .descricao-fotos-grid { width: 100%; border-collapse: collapse; }
+        .descricao-fotos-grid td { padding: 6px; text-align: center; vertical-align: top; width: 33.33%; }
+        .descricao-fotos-grid img { width: 240px; height: 316px; border: 1px solid #ddd; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
@@ -333,14 +336,15 @@
     @foreach($relatorio->itensDescricao as $item)
     <div class="descricao-item">
         @if($item->fotos->isNotEmpty())
-            {{-- Mesma grade 2-por-linha das Fotos gerais (evita sobreposição
-                 do layout inline-block anterior com fotos de proporções diferentes). --}}
-            @php $fotosItem = $item->fotos->values()->chunk(2); @endphp
-            <table class="fotos-grid">
-                @foreach($fotosItem as $par)
+            {{-- Grade em tabela (evita a sobreposição do layout inline-block
+                 anterior), 3 por linha, tamanho uniforme — sem colspan
+                 esticando a última foto da linha. --}}
+            @php $fotosItem = $item->fotos->values()->chunk(3); @endphp
+            <table class="descricao-fotos-grid">
+                @foreach($fotosItem as $trio)
                 <tr>
-                    @foreach($par as $foto)
-                    <td @if($par->count() < 2) colspan="2" @endif>
+                    @foreach($trio as $foto)
+                    <td>
                         @php $itemFotoSrc = $fotoBase64($foto->aten_rel_desc_foto_path); @endphp
                         @if($itemFotoSrc)
                             <img src="{{ $itemFotoSrc }}" alt="Foto do item">
@@ -351,7 +355,7 @@
                 @endforeach
             </table>
         @endif
-        <div class="descricao-item-caption">{{ $item->aten_rel_desc_texto }}</div>
+        <div class="descricao-item-caption">{{ $loop->iteration }}. {{ $item->aten_rel_desc_texto }};</div>
     </div>
     @endforeach
 </div>
@@ -500,9 +504,9 @@
                 @if($assCli && $assCli->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif
-                {{-- RF006: só o nome informado na própria assinatura — não cai
-                     mais no responsável cadastrado no atendimento. --}}
-                <div class="assinatura-nome">{{ optional($assCli)->aten_rel_ass_nome }}</div>
+                {{-- RF006: nome informado na própria assinatura; sem isso, cai só
+                     no nome do cliente (não mais no responsável do atendimento). --}}
+                <div class="assinatura-nome">{{ optional($assCli)->aten_rel_ass_nome ?? optional($relatorio->atendimento->cliente)->cli_nome }}</div>
                 @if($assCli && $assCli->aten_rel_ass_cpf)
                     <div class="assinatura-data">CPF: {{ $assCli->aten_rel_ass_cpf }}</div>
                 @endif
