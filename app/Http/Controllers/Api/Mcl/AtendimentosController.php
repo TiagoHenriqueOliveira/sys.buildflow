@@ -94,6 +94,7 @@ class AtendimentosController extends Controller
         $data = [
             'id'               => $a->aten_id,
             'descricao'        => $descricao,
+            'contato'          => $a->aten_contato,
             'responsavel'      => $a->aten_responsavel,
             'telefone'         => $a->aten_telefone,
             'endereco'         => $a->aten_endereco,

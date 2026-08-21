@@ -253,6 +253,7 @@ class RelatoriosController extends Controller
                     optional($relatorio->atendimento->natureza)->nat_aten_descricao ?? '',
                     optional($relatorio->atendimento->cliente)->cli_nome ?? '',
                 ])),
+                'contato'         => $relatorio->atendimento->aten_contato,
                 'responsavel'     => $relatorio->atendimento->aten_responsavel,
                 'telefone'        => $relatorio->atendimento->aten_telefone,
                 'endereco'        => $relatorio->atendimento->aten_endereco,
