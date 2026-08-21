@@ -113,7 +113,6 @@ Route::prefix('mcl/v1')->group(function () {
         Route::get('/relatorios/{id}', [MclRelatoriosController::class, 'show']);
 
         // RelatÃ³rio â€” seÃ§Ãµes de escrita
-        Route::put('/relatorios/{id}/descricao',               [MclRelatoriosController::class, 'updateDescricao']);
         Route::put('/relatorios/{id}/informacoes-adicionais',  [MclRelatoriosController::class, 'updateInformacoesAdicionais']);
         Route::put('/relatorios/{id}/horarios',                [MclRelatoriosController::class, 'updateHorarios']);
         Route::put('/relatorios/{id}/clima',                   [MclRelatoriosController::class, 'updateClima']);

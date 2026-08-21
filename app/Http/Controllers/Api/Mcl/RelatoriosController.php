@@ -312,17 +312,11 @@ class RelatoriosController extends Controller
      * PUT /api/mcl/v1/relatorios/{id}/descricao
      * Body: { descricao: string }
      */
-    public function updateDescricao(Request $request, int $id): JsonResponse
-    {
-        $request->validate(['descricao' => 'nullable|string']);
-
-        $relatorio = AtendimentoRelatorio::findOrFail($id);
-        if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
-
-        $relatorio->update(['aten_rel_descricao' => $request->descricao]);
-
-        return response()->json(['message' => 'Descrição atualizada.']);
-    }
+    // updateDescricao() removido (RF001/RF004): o campo legado
+    // aten_rel_descricao agora é somente leitura — escrever nele deixaria de
+    // fazer sentido (novo relatório usa itensDescricao) e poderia criar um
+    // estado inconsistente num relatório legado. Ver
+    // storeDescricaoItem/destroyDescricaoItem acima.
 
     /**
      * Atualiza as informações adicionais.
