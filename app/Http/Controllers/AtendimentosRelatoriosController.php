@@ -26,6 +26,7 @@ use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\AtendimentoRelatorioServico;
 use App\Models\AtendimentoRelatorioPeca;
+use App\Models\AtendimentoRelatorioDescricaoItem;
 use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
 use App\Services\DataTableService;
@@ -374,7 +375,10 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateTexto(Request $request, int $id, string $campo): \Illuminate\Http\JsonResponse
     {
-        $campos = ['aten_rel_descricao', 'aten_rel_informacoes_adicionais'];
+        // aten_rel_descricao removido da lista (RF001): agora só é editável
+        // via storeDescricaoItem/destroyDescricaoItem, para não contornar a
+        // regra de retrocompatibilidade do RF004 (legado x itens novos).
+        $campos = ['aten_rel_informacoes_adicionais'];
         if (!in_array($campo, $campos)) {
             return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
         }
@@ -517,6 +521,84 @@ class AtendimentosRelatoriosController extends Controller
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao remover peça.'], 500);
+        }
+    }
+
+    // ─── Itens de descrição (texto + foto opcional) — RF001 ────────────────
+
+    public function getDescricaoItens(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        return response()->json([
+            'data' => $relatorio->itensDescricao()->orderBy('aten_rel_desc_id')->get()
+                ->map(fn($it) => [
+                    'id'       => $it->aten_rel_desc_id,
+                    'texto'    => $it->aten_rel_desc_texto,
+                    'foto_url' => $it->aten_rel_desc_foto_path ? asset('midia/' . $it->aten_rel_desc_foto_path) : null,
+                ]),
+        ]);
+    }
+
+    public function storeDescricaoItem(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'texto' => ['required', 'string'],
+            'foto'  => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
+        ], [
+            'texto.required' => 'Descreva o item antes de adicionar.',
+            'foto.file'      => 'A foto enviada é inválida.',
+            'foto.max'       => 'A foto não pode ultrapassar 10 MB.',
+            'foto.mimes'     => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+        ]);
+
+        try {
+            $path = null;
+            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+                $file         = $request->file('foto');
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $ext          = $file->getClientOriginalExtension();
+                $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
+                $path         = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
+                if ($path === false) {
+                    return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
+                }
+            }
+
+            $item = AtendimentoRelatorioDescricaoItem::create([
+                'aten_rel_desc_relatorio_id' => $id,
+                'aten_rel_desc_texto'        => $request->input('texto'),
+                'aten_rel_desc_foto_path'    => $path,
+                'aten_rel_desc_criado_em'    => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Item adicionado!',
+                'item'    => [
+                    'id'       => $item->aten_rel_desc_id,
+                    'texto'    => $item->aten_rel_desc_texto,
+                    'foto_url' => $path ? asset('midia/' . $path) : null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar item.'], 500);
+        }
+    }
+
+    public function destroyDescricaoItem(int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $item = AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
+                ->where('aten_rel_desc_relatorio_id', $id)
+                ->first();
+            if ($item?->aten_rel_desc_foto_path) {
+                Storage::disk('public')->delete($item->aten_rel_desc_foto_path);
+            }
+            $item?->delete();
+            return response()->json(['message' => 'Item removido!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover item.'], 500);
         }
     }
 

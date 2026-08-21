@@ -423,10 +423,10 @@
     @endif
 </div>
 
-{{-- 9. INFORMAÇÕES ADICIONAIS --}}
+{{-- 9. OBSERVAÇÕES GERAIS (RF002 — rótulo; campo/coluna inalterados) --}}
 @if($relatorio->aten_rel_informacoes_adicionais)
 <div class="section">
-    <div class="section-title">{{ $secNum() }}. Informações Adicionais</div>
+    <div class="section-title">{{ $secNum() }}. Observações Gerais</div>
     <div class="text-block">{{ $relatorio->aten_rel_informacoes_adicionais }}</div>
 </div>
 @endif

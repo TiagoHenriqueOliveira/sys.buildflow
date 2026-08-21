@@ -105,6 +105,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/atendimentos-relatorios/{id}/pecas', [AtendimentosRelatoriosController::class, 'getPecas'])->name('atendimentos-relatorios.get-pecas');
     Route::post('/atendimentos-relatorios/{id}/pecas', [AtendimentosRelatoriosController::class, 'storePeca'])->name('atendimentos-relatorios.store-peca');
     Route::delete('/atendimentos-relatorios/{id}/pecas/{itemId}', [AtendimentosRelatoriosController::class, 'destroyPeca'])->name('atendimentos-relatorios.destroy-peca');
+    Route::get('/atendimentos-relatorios/{id}/descricao-itens', [AtendimentosRelatoriosController::class, 'getDescricaoItens'])->name('atendimentos-relatorios.get-descricao-itens');
+    Route::post('/atendimentos-relatorios/{id}/descricao-itens', [AtendimentosRelatoriosController::class, 'storeDescricaoItem'])->name('atendimentos-relatorios.store-descricao-item');
+    Route::delete('/atendimentos-relatorios/{id}/descricao-itens/{itemId}', [AtendimentosRelatoriosController::class, 'destroyDescricaoItem'])->name('atendimentos-relatorios.destroy-descricao-item');
     Route::post('/atendimentos-relatorios/{id}/upload-anexos', [AtendimentosRelatoriosController::class, 'uploadAnexos'])->name('atendimentos-relatorios.upload-anexos');
     Route::get('/atendimentos-relatorios/{id}/anexos', [AtendimentosRelatoriosController::class, 'getAnexos'])->name('atendimentos-relatorios.get-anexos');
     Route::delete('/atendimentos-relatorios/{id}/anexos/{type}/{itemId}', [AtendimentosRelatoriosController::class, 'destroyAnexo'])->name('atendimentos-relatorios.destroy-anexo');

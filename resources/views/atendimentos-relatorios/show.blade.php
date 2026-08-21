@@ -31,7 +31,7 @@
                     <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">Ocorrências</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-info-adicionais">Inf. Adicionais</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-info-adicionais">Observações Gerais</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-anexos">Anexos</a>

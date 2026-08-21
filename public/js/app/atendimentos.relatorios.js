@@ -12,6 +12,7 @@ $(document).ready(function () {
     initOcorrenciasTab();
     initServicosTab();
     initPecasTab();
+    initDescricaoTab();
     initAssinaturasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
@@ -62,6 +63,7 @@ $(document).ready(function () {
             case 'tab-assinatura':  carregarAssinaturas(rid);         break;
             case 'tab-servicos':    carregarServicos(rid);            break;
             case 'tab-pecas':       carregarPecas(rid);               break;
+            case 'tab-descricao':   carregarDescricaoItens(rid);      break;
             case 'tab-anexos':      refreshAnexos(rid);               break;
         }
     });
@@ -220,16 +222,13 @@ function initAtualizarRelatorio() {
                 form = $('#form_relatorio_assinaturas');
                 break;
 
-            case 'tab-descricao':
-                form = $('#form_descricao');
-                break;
-
             case 'tab-info-adicionais':
                 form = $('#form_informacoes_adicionais');
                 break;
 
             case 'tab-servicos':
             case 'tab-pecas':
+            case 'tab-descricao':
             case 'tab-ocorrencias':
                 showNotification('fas fa-info-circle', 'Use os botões para adicionar e remover itens nesta aba.', 'info', 2500);
                 return;
@@ -354,7 +353,7 @@ function initAtualizarRelatorio() {
         }
 
         // Tabs de texto têm handler próprio via initTextosTab()
-        const textTabForms = ['form_descricao', 'form_informacoes_adicionais'];
+        const textTabForms = ['form_informacoes_adicionais'];
         if (textTabForms.includes(form.attr('id'))) {
             form.trigger('submit');
             return;
@@ -817,9 +816,10 @@ function initAssinaturasTab() {
 }
 
 function initTextosTab() {
+    // form_descricao removido (RF001): itens de descrição agora salvam
+    // individualmente via initDescricaoTab(), não por este form genérico.
     const mapa = {
-        'form_descricao':             { campo: 'aten_rel_descricao',              label: 'Descrição' },
-        'form_informacoes_adicionais':{ campo: 'aten_rel_informacoes_adicionais', label: 'Informações Adicionais' },
+        'form_informacoes_adicionais':{ campo: 'aten_rel_informacoes_adicionais', label: 'Observações Gerais' },
     };
 
     Object.keys(mapa).forEach(function (formId) {
@@ -1048,6 +1048,102 @@ function initPecasTab() {
             dataType: 'json',
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (r) { carregarPecas(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
+            error: function (xhr) { handleAjaxError(xhr); }
+        });
+    });
+}
+
+// ─── Descrição (itens: texto + foto opcional) — RF001 ──────────────────────────
+
+function carregarDescricaoItens(relatorioId) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/descricao-itens',
+        type: 'GET',
+        dataType: 'json',
+        success: function (r) { renderDescricaoItens(r.data); },
+        error: function () { showNotification('fas fa-bug', 'Erro ao carregar itens de descrição.', 'danger', 3000); }
+    });
+}
+
+function renderDescricaoItens(items) {
+    const container = $('#listaDescricaoItens');
+    container.empty();
+    $('#descricaoItensVazio').toggle(!items || !items.length);
+
+    (items || []).forEach(function (item) {
+        const fotoHtml = item.foto_url
+            ? '<img src="' + item.foto_url + '" class="card-img-top" style="max-height:220px; object-fit:cover;" alt="Foto do item">'
+            : '';
+        const card = $(
+            '<div class="col-md-4 mb-3" style="display:none;">' +
+                '<div class="card h-100">' +
+                    fotoHtml +
+                    '<div class="card-body">' +
+                        '<p class="card-text" style="white-space:pre-wrap;">' + escapeHtml(item.texto) + '</p>' +
+                    '</div>' +
+                    '<div class="card-footer text-right">' +
+                        '<button type="button" class="btn btn-danger btn-sm btnRemoveDescricaoItem" data-id="' + item.id + '">' +
+                            '<i class="fas fa-trash"></i> Excluir' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>'
+        );
+        container.append(card);
+        card.fadeIn(300);
+    });
+}
+
+function initDescricaoTab() {
+
+    $(document).off('click', '#btnAddDescricaoItem').on('click', '#btnAddDescricaoItem', function () {
+        const rid = getRelatorioIdAtual();
+        if (!rid) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar itens.', 'warning', 3500);
+            return;
+        }
+        const texto = $('#descricao_item_texto').val().trim();
+        if (!texto) {
+            showNotification('fas fa-exclamation-triangle', 'Descreva o item antes de adicionar.', 'warning', 3000);
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('texto', texto);
+        const fotoInput = document.getElementById('descricao_item_foto');
+        if (fotoInput && fotoInput.files.length) {
+            fd.append('foto', fotoInput.files[0]);
+        }
+
+        const btn = $(this);
+        btn.prop('disabled', true);
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens',
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                $('#descricao_item_texto').val('');
+                if (fotoInput) fotoInput.value = '';
+                carregarDescricaoItens(rid);
+                showNotification('fas fa-check-double', r.message, 'success', 2000);
+                btn.prop('disabled', false);
+            },
+            error: function (xhr) { btn.prop('disabled', false); handleAjaxError(xhr); }
+        });
+    });
+
+    $(document).off('click', '.btnRemoveDescricaoItem').on('click', '.btnRemoveDescricaoItem', function () {
+        const rid = getRelatorioIdAtual();
+        const itemId = $(this).data('id');
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens/' + itemId,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) { carregarDescricaoItens(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
             error: function (xhr) { handleAjaxError(xhr); }
         });
     });
