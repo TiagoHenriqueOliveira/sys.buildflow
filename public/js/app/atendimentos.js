@@ -19,6 +19,7 @@ $(document).ready(function () {
             aten_usuario_id: "",
             aten_status: 0,
             aten_nr_proposta: "",
+            aten_contato: "",
             aten_responsavel: "",
             aten_endereco: "",
             aten_dt_inicio: "",
@@ -125,6 +126,7 @@ $(document).on("click", ".btn-modal-atendimento", function () {
         aten_usuario_id: $(this).data("usuario-id"),
         aten_status: $(this).data("status"),
         aten_nr_proposta:     $(this).data("nr-proposta"),
+        aten_contato:         $(this).data("contato"),
         aten_responsavel:     $(this).data("responsavel"),
         aten_telefone:        $(this).data("telefone"),
         aten_entrega_tecnica: $(this).data("entrega-tecnica"),
@@ -176,6 +178,7 @@ function abrirModalAtendimento(data) {
     $("#aten_cliente_id").val(data.aten_cliente_id || "");
     $("#aten_cliente_nome").val(data.aten_cliente_nome || "");
     $("#aten_nr_proposta").val(data.aten_nr_proposta || "");
+    $("#aten_contato").val(data.aten_contato || "");
     $("#aten_responsavel").val(data.aten_responsavel || "");
     const tel = data.aten_telefone || "";
     $("#aten_telefone").val(tel);

@@ -104,6 +104,7 @@ class AtendimentosController extends Controller
                     'aten_usuario_id'  => $atendimento->aten_usuario_id,
                     'aten_status'      => $atendimento->aten_status,
                     'aten_nr_proposta'     => $atendimento->aten_nr_proposta ?? '',
+                    'aten_contato'         => $atendimento->aten_contato ?? '',
                     'aten_responsavel'     => $atendimento->aten_responsavel ?? '',
                     'aten_telefone'        => $atendimento->aten_telefone ?? '',
                     'aten_entrega_tecnica' => (int) ($atendimento->aten_entrega_tecnica ?? 0),

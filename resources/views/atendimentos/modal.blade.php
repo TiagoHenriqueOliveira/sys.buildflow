@@ -58,6 +58,13 @@
                             </div>
 
                             <div class="form-group row">
+                                <label class="col-sm-3 col-form-label font-weight-bold">Contato:</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="aten_contato" name="aten_contato" maxlength="50">
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
                                 <label class="col-sm-3 col-form-label font-weight-bold">Responsável:</label>
                                 <div class="col-sm-9">
                                     <input type="text" class="form-control" id="aten_responsavel" name="aten_responsavel" maxlength="50">

@@ -24,6 +24,7 @@ class Atendimento extends Model
         'aten_usuario_id',
         'aten_status',
         'aten_nr_proposta',
+        'aten_contato',
         'aten_responsavel',
         'aten_telefone',
         'aten_entrega_tecnica',

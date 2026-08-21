@@ -465,7 +465,13 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
-                <div class="assinatura-nome">{{ $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
+                {{-- RF006: nome de quem assinou, capturado no momento da assinatura;
+                     relatórios antigos (sem o campo novo) caem no nome do técnico
+                     responsável pelo atendimento, como antes. --}}
+                <div class="assinatura-nome">{{ $assResp->aten_rel_ass_nome ?? $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
+                @if($assResp && $assResp->aten_rel_ass_cpf)
+                    <div class="assinatura-data">CPF: {{ $assResp->aten_rel_ass_cpf }}</div>
+                @endif
                 @if($assResp && $assResp->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assResp->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif
@@ -477,7 +483,10 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
-                <div class="assinatura-nome">{{ collect([$relatorio->atendimento->aten_responsavel, $relatorio->atendimento->cliente->cli_nome ?? null])->filter()->implode(' - ') }}</div>
+                <div class="assinatura-nome">{{ $assCli->aten_rel_ass_nome ?? collect([$relatorio->atendimento->aten_responsavel, $relatorio->atendimento->cliente->cli_nome ?? null])->filter()->implode(' - ') }}</div>
+                @if($assCli && $assCli->aten_rel_ass_cpf)
+                    <div class="assinatura-data">CPF: {{ $assCli->aten_rel_ass_cpf }}</div>
+                @endif
                 @if($assCli && $assCli->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif

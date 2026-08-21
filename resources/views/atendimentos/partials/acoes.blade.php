@@ -8,6 +8,7 @@
     data-usuario-id="{{ $a->aten_usuario_id }}"
     data-status="{{ (int)$a->aten_status }}"
     data-nr-proposta="{{ e($a->aten_nr_proposta) }}"
+    data-contato="{{ e($a->aten_contato) }}"
     data-responsavel="{{ e($a->aten_responsavel) }}"
     data-telefone="{{ e($a->aten_telefone) }}"
     data-entrega-tecnica="{{ (int)$a->aten_entrega_tecnica }}"

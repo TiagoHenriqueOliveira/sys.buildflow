@@ -33,7 +33,7 @@ class RelatoriosController extends Controller
         return $relatorio->atendimento?->aten_usuario_id === $usuario->user_id;
     }
 
-    private function saveSignature(AtendimentoRelatorio $relatorio, string $base64, string $tipo): string
+    private function saveSignature(AtendimentoRelatorio $relatorio, string $base64, string $tipo, ?string $nome = null, ?string $cpf = null): string
     {
         if (! preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $m)) {
             throw new \RuntimeException('Formato de assinatura inválido.');
@@ -66,12 +66,19 @@ class RelatoriosController extends Controller
 
         $now = now()->format('Y-m-d H:i:s');
         if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path, 'aten_rel_ass_assinado_em' => $now]);
+            $existing->update([
+                'aten_rel_ass_path'        => $path,
+                'aten_rel_ass_nome'        => $nome,
+                'aten_rel_ass_cpf'         => $cpf,
+                'aten_rel_ass_assinado_em' => $now,
+            ]);
         } else {
             AtendimentoRelatorioAssinatura::create([
                 'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
                 'aten_rel_ass_path'         => $path,
                 'aten_rel_ass_tipo'         => $tipo,
+                'aten_rel_ass_nome'         => $nome,
+                'aten_rel_ass_cpf'          => $cpf,
                 'aten_rel_ass_assinado_em'  => $now,
             ]);
         }
@@ -294,10 +301,14 @@ class RelatoriosController extends Controller
             'assinaturas' => [
                 'tecnico' => $assResp?->aten_rel_ass_path ? [
                     'url'         => asset('midia/' . $assResp->aten_rel_ass_path),
+                    'nome'        => $assResp->aten_rel_ass_nome,
+                    'cpf'         => $assResp->aten_rel_ass_cpf,
                     'assinado_em' => $assResp->aten_rel_ass_assinado_em,
                 ] : null,
                 'cliente' => $assCli?->aten_rel_ass_path ? [
                     'url'         => asset('midia/' . $assCli->aten_rel_ass_path),
+                    'nome'        => $assCli->aten_rel_ass_nome,
+                    'cpf'         => $assCli->aten_rel_ass_cpf,
                     'assinado_em' => $assCli->aten_rel_ass_assinado_em,
                 ] : null,
             ],
@@ -622,15 +633,22 @@ class RelatoriosController extends Controller
      *
      * POST /api/mcl/v1/relatorios/{id}/assinaturas
      * Body: {
-     *   tecnico?: "data:image/png;base64,...",
-     *   cliente?: "data:image/png;base64,..."
+     *   tecnico?: "data:image/png;base64,...", tecnico_nome?, tecnico_cpf?,
+     *   cliente?: "data:image/png;base64,...", cliente_nome?, cliente_cpf?
      * }
+     * RF006 — nome de quem assinou é obrigatório junto de cada assinatura
+     * nova (em vez de assumir o responsável cadastrado no atendimento); CPF
+     * é opcional.
      */
     public function storeAssinaturas(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'tecnico'  => 'nullable|string',
-            'cliente'  => 'nullable|string',
+            'tecnico'      => 'nullable|string',
+            'tecnico_nome' => 'required_with:tecnico|nullable|string|max:100',
+            'tecnico_cpf'  => 'nullable|string|max:14',
+            'cliente'      => 'nullable|string',
+            'cliente_nome' => 'required_with:cliente|nullable|string|max:100',
+            'cliente_cpf'  => 'nullable|string|max:14',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
@@ -639,7 +657,13 @@ class RelatoriosController extends Controller
         $urls = [];
         foreach (['tecnico' => 'responsavel', 'cliente' => 'cliente'] as $campo => $tipo) {
             if ($request->filled($campo)) {
-                $urls[$campo] = $this->saveSignature($relatorio, $request->input($campo), $tipo);
+                $urls[$campo] = $this->saveSignature(
+                    $relatorio,
+                    $request->input($campo),
+                    $tipo,
+                    $request->input("{$campo}_nome"),
+                    $request->input("{$campo}_cpf"),
+                );
             }
         }
 

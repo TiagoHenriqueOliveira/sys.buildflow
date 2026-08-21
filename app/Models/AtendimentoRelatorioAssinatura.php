@@ -15,6 +15,8 @@ class AtendimentoRelatorioAssinatura extends Model
         'aten_rel_ass_relatorio_id',
         'aten_rel_ass_path',
         'aten_rel_ass_tipo',
+        'aten_rel_ass_nome',
+        'aten_rel_ass_cpf',
         'aten_rel_ass_assinado_em',
     ];
 
