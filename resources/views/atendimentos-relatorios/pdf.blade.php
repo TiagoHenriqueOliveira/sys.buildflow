@@ -91,9 +91,9 @@
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-item { margin-bottom: 16px; }
         .descricao-item-caption { padding: 4px 2px; font-size: 26px; color: #333; white-space: pre-wrap; }
-        .descricao-fotos-grid { width: 100%; border-collapse: collapse; }
-        .descricao-fotos-grid td { padding: 6px; text-align: center; vertical-align: top; width: 33.33%; }
-        .descricao-fotos-grid img { width: 240px; height: 316px; border: 1px solid #ddd; }
+        .descricao-fotos-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .descricao-fotos-grid td { padding: 3px; text-align: center; vertical-align: top; width: 33.33%; }
+        .descricao-fotos-grid img { width: 100%; max-width: 320px; height: 421px; border: 1px solid #ddd; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
