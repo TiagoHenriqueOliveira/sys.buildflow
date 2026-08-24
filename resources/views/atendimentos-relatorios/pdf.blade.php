@@ -94,7 +94,7 @@
         .descricao-grid { width: 100%; border-collapse: collapse; }
         .descricao-grid td { padding: 0 10px 26px 10px; text-align: center; vertical-align: top; width: 50%; }
         .descricao-foto { width: 100%; max-width: 420px; height: auto; border: 1px solid #ddd; display: block; margin: 0 auto; }
-        .descricao-comentario { margin: 6px auto 0; max-width: 420px; font-size: 20px; color: #333; white-space: pre-wrap; text-align: left; }
+        .descricao-comentario { margin: 6px auto 0; max-width: 420px; font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
         .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; margin-bottom: 26px; }
 
         /* FOTOS */
