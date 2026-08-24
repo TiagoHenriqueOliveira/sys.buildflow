@@ -281,53 +281,50 @@
 </div>
 @endif
 
-{{-- 3. EQUIPAMENTOS --}}
+{{-- 3. EQUIPAMENTOS — só aparece se houver equipamento (ajuste fora do escopo,
+     mudança geral: seção some inteira em vez de mostrar placeholder vazio). --}}
+@php $equips = $relatorio->atendimento->equipamentos; @endphp
+@if($equips->isNotEmpty())
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Equipamentos</div>
-    @php $equips = $relatorio->atendimento->equipamentos; @endphp
-    @if($equips->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Descrição</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($equips as $i => $eq)
-                <tr>
-                    <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
-                    <td>{{ $eq->aten_equip_descricao }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhum equipamento registrado.</span>
-    @endif
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Descrição</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($equips as $i => $eq)
+            <tr>
+                <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
+                <td>{{ $eq->aten_equip_descricao }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
+@endif
 
-{{-- 4. HORÁRIO --}}
+{{-- 4. HORÁRIO — só aparece se houver registro de horário. --}}
+@php $h = $relatorio->horarios; @endphp
+@if($h)
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Horário</div>
-    @php $h = $relatorio->horarios; @endphp
-    @if($h)
-        <table class="field-grid">
-            <tr>
-                <td class="field-label">Entrada</td>
-                <td class="field-value">{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
-                <td class="field-label">Início Intervalo</td>
-                <td class="field-value">{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
-                <td class="field-label">Fim Intervalo</td>
-                <td class="field-value">{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
-                <td class="field-label">Saída</td>
-                <td class="field-value">{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
-            </tr>
-        </table>
-    @else
-        <span class="text-muted">Nenhum horário registrado.</span>
-    @endif
+    <table class="field-grid">
+        <tr>
+            <td class="field-label">Entrada</td>
+            <td class="field-value">{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
+            <td class="field-label">Início Intervalo</td>
+            <td class="field-value">{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
+            <td class="field-label">Fim Intervalo</td>
+            <td class="field-value">{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
+            <td class="field-label">Saída</td>
+            <td class="field-value">{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
+        </tr>
+    </table>
 </div>
+@endif
 
 {{-- 5. DESCRIÇÃO — RF001/RF004: relatório usa OU a lista nova de itens
      (texto + foto opcional), OU o campo legado de texto único; nunca os
@@ -371,86 +368,97 @@
 </div>
 @endif
 
-{{-- 6. SERVIÇOS PRESTADOS --}}
+{{-- 6. SERVIÇOS PRESTADOS — só aparece se houver serviço. --}}
+@if($relatorio->servicos->isNotEmpty())
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Serviços Prestados</div>
-    @if($relatorio->servicos->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Serviço</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($relatorio->servicos as $i => $s)
-                <tr>
-                    <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
-                    <td>{{ $s->aten_rel_serv_descricao }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhum serviço registrado.</span>
-    @endif
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Serviço</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($relatorio->servicos as $i => $s)
+            <tr>
+                <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
+                <td>{{ $s->aten_rel_serv_descricao }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
+@endif
 
-{{-- 7. PEÇAS SUBSTITUÍDAS --}}
+{{-- 7. PEÇAS SUBSTITUÍDAS — só aparece se houver peça. --}}
+@if($relatorio->pecas->isNotEmpty())
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Peças Substituídas</div>
-    @if($relatorio->pecas->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Peça</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($relatorio->pecas as $i => $p)
-                <tr>
-                    <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
-                    <td>{{ $p->aten_rel_peca_descricao }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhuma peça registrada.</span>
-    @endif
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Peça</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($relatorio->pecas as $i => $p)
+            <tr>
+                <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
+                <td>{{ $p->aten_rel_peca_descricao }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
+@endif
 
-{{-- 8. OCORRÊNCIAS --}}
+{{-- 8. OCORRÊNCIAS — só aparece se houver ocorrência. --}}
+@if($relatorio->ocorrencias->isNotEmpty())
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Ocorrências</div>
-    @if($relatorio->ocorrencias->isNotEmpty())
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Ocorrência</th>
-                    <th style="width:40%;">Observação</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($relatorio->ocorrencias as $oc)
-                <tr>
-                    <td>{{ $oc->ocor_descricao }}</td>
-                    <td>{{ $oc->pivot->aten_rel_ocor_observacao ?: '-' }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <span class="text-muted">Nenhuma ocorrência registrada.</span>
-    @endif
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Ocorrência</th>
+                <th style="width:40%;">Observação</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($relatorio->ocorrencias as $oc)
+            <tr>
+                <td>{{ $oc->ocor_descricao }}</td>
+                <td>{{ $oc->pivot->aten_rel_ocor_observacao ?: '-' }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 </div>
+@endif
 
 {{-- 9. OBSERVAÇÕES GERAIS (RF002 — rótulo; campo/coluna inalterados) --}}
 @if($relatorio->aten_rel_informacoes_adicionais)
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Observações Gerais</div>
     <div class="text-block">{{ $relatorio->aten_rel_informacoes_adicionais }}</div>
+</div>
+@endif
+
+{{-- OBSERVAÇÕES TÉCNICAS E DE MANUTENÇÃO (fora do escopo original — ajuste
+     pontual pedido à parte). Campos do atendimento, só aparecem com
+     conteúdo, posicionados antes de Entrega Técnica. --}}
+@if($relatorio->atendimento->aten_obs_tecnica)
+<div class="section">
+    <div class="section-title">{{ $secNum() }}. Observações Técnicas</div>
+    <div class="text-block">{{ $relatorio->atendimento->aten_obs_tecnica }}</div>
+</div>
+@endif
+
+@if($relatorio->atendimento->aten_obs_manutencao)
+<div class="section">
+    <div class="section-title">{{ $secNum() }}. Observações de Manutenção</div>
+    <div class="text-block">{{ $relatorio->atendimento->aten_obs_manutencao }}</div>
 </div>
 @endif
 
