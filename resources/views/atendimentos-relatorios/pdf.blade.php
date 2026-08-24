@@ -92,10 +92,10 @@
            de texto vêm por último, ocupando a linha inteira. */
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-grid { width: 100%; border-collapse: collapse; }
-        .descricao-grid td { padding: 0 10px 26px 10px; vertical-align: top; width: 50%; }
-        .descricao-foto { width: 100%; max-width: 420px; height: auto; border: 1px solid #ddd; display: block; }
-        .descricao-comentario { margin-top: 6px; font-size: 12px; color: #333; white-space: pre-wrap; max-width: 420px; }
-        .descricao-texto-only { font-size: 12px; color: #333; white-space: pre-wrap; margin-bottom: 26px; }
+        .descricao-grid td { padding: 0 10px 26px 10px; text-align: center; vertical-align: top; width: 50%; }
+        .descricao-foto { width: 100%; max-width: 420px; height: auto; border: 1px solid #ddd; display: block; margin: 0 auto; }
+        .descricao-comentario { margin: 6px auto 0; max-width: 420px; font-size: 16px; color: #333; white-space: pre-wrap; text-align: left; }
+        .descricao-texto-only { font-size: 16px; color: #333; white-space: pre-wrap; margin-bottom: 26px; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
