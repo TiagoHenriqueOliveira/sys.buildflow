@@ -259,13 +259,13 @@ function initAtualizarRelatorio() {
             const assinaturaResponsavel = window.signatureData?.responsavel || '';
             const assinaturaCliente = window.signatureData?.cliente || '';
 
-            // RF006: nome de quem assinou é obrigatório junto de cada assinatura nova.
-            if (assinaturaResponsavel && !$('#assinatura_responsavel_nome').val().trim()) {
-                showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem assinou como Técnico.', 'warning', 3500);
-                return;
-            }
+            // Nome e CPF de quem assinou só são exigidos do cliente.
             if (assinaturaCliente && !$('#assinatura_cliente_nome').val().trim()) {
                 showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem assinou como Cliente.', 'warning', 3500);
+                return;
+            }
+            if (assinaturaCliente && !$('#assinatura_cliente_cpf').val().trim()) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o CPF de quem assinou como Cliente.', 'warning', 3500);
                 return;
             }
 
@@ -275,8 +275,6 @@ function initAtualizarRelatorio() {
                 data: {
                     aten_rel_status: status,
                     assinatura_responsavel: assinaturaResponsavel,
-                    assinatura_responsavel_nome: $('#assinatura_responsavel_nome').val().trim(),
-                    assinatura_responsavel_cpf: $('#assinatura_responsavel_cpf').val().trim(),
                     assinatura_cliente: assinaturaCliente,
                     assinatura_cliente_nome: $('#assinatura_cliente_nome').val().trim(),
                     assinatura_cliente_cpf: $('#assinatura_cliente_cpf').val().trim(),
@@ -694,8 +692,8 @@ function carregarAssinaturas(relatorioId) {
 function initAssinaturasTab() {
     window.signatureData = window.signatureData || {};
 
-    // RF006: máscara de CPF nos campos de quem assinou.
-    $('#assinatura_responsavel_cpf, #assinatura_cliente_cpf').mask('000.000.000-00');
+    // Nome/CPF de quem assinou só se aplicam ao cliente.
+    $('#assinatura_cliente_cpf').mask('000.000.000-00');
 
     function setupCanvas(canvasId) {
         const canvas = document.getElementById(canvasId);
@@ -802,13 +800,21 @@ function initAssinaturasTab() {
             return;
         }
 
-        // RF006: nome de quem assinou é obrigatório junto de cada assinatura nova.
-        const nome = $(`#assinatura_${signatureType}_nome`).val().trim();
-        if (!nome) {
-            showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem está assinando.', 'warning', 3500);
-            return;
+        // Nome e CPF de quem assinou só são exigidos do cliente — o técnico
+        // já é o usuário logado, identidade conhecida.
+        let nome = null, cpf = null;
+        if (signatureType === 'cliente') {
+            nome = $('#assinatura_cliente_nome').val().trim();
+            if (!nome) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem está assinando.', 'warning', 3500);
+                return;
+            }
+            cpf = $('#assinatura_cliente_cpf').val().trim();
+            if (!cpf) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o CPF de quem está assinando.', 'warning', 3500);
+                return;
+            }
         }
-        const cpf = $(`#assinatura_${signatureType}_cpf`).val().trim();
 
         const dataUrl = canvasObj.getDataUrl();
         window.signatureData = window.signatureData || {};
@@ -820,8 +826,10 @@ function initAssinaturasTab() {
             data: {
                 aten_rel_status: $('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked').val(),
                 [`assinatura_${signatureType}`]: dataUrl,
-                [`assinatura_${signatureType}_nome`]: nome,
-                [`assinatura_${signatureType}_cpf`]: cpf,
+                ...(signatureType === 'cliente' ? {
+                    assinatura_cliente_nome: nome,
+                    assinatura_cliente_cpf: cpf,
+                } : {}),
             },
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (response) {

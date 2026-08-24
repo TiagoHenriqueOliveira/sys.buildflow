@@ -25,19 +25,8 @@
                             <button type="button" class="btn btn-outline-secondary btn-sm btn-clear-signature" data-signature="responsavel">Limpar</button>
                             <button type="button" class="btn btn-primary btn-sm btn-save-signature" data-signature="responsavel">Salvar Assinatura</button>
                         </div>
-                        {{-- RF006: nome (obrigatório) e CPF (opcional) de quem assinou, em vez de assumir o responsável cadastrado no atendimento --}}
-                        <div class="form-row mt-3">
-                            <div class="col-md-8">
-                                <label class="font-weight-bold mb-1" for="assinatura_responsavel_nome">Nome de quem assinou</label>
-                                <input type="text" class="form-control form-control-sm" id="assinatura_responsavel_nome" maxlength="100"
-                                    placeholder="Nome completo" value="{{ optional($atendimentoRelatorio->assinaturaResponsavel())->aten_rel_ass_nome }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="font-weight-bold mb-1" for="assinatura_responsavel_cpf">CPF (opcional)</label>
-                                <input type="text" class="form-control form-control-sm" id="assinatura_responsavel_cpf" maxlength="14"
-                                    placeholder="000.000.000-00" value="{{ optional($atendimentoRelatorio->assinaturaResponsavel())->aten_rel_ass_cpf }}">
-                            </div>
-                        </div>
+                        {{-- Nome/CPF de quem assinou são exigidos só do cliente — o técnico já
+                             é o usuário logado, identidade conhecida. --}}
                         <div class="mt-3">
                             <p class="mb-1 font-weight-bold">Preview atual</p>
                             <div id="assinaturaResponsavelPreview">
@@ -61,15 +50,15 @@
                             <button type="button" class="btn btn-outline-secondary btn-sm btn-clear-signature" data-signature="cliente">Limpar</button>
                             <button type="button" class="btn btn-success btn-sm btn-save-signature" data-signature="cliente">Salvar Assinatura</button>
                         </div>
-                        {{-- RF006: nome (obrigatório) e CPF (opcional) de quem assinou, em vez de assumir o responsável cadastrado no atendimento --}}
+                        {{-- Nome e CPF de quem assinou são obrigatórios para o cliente. --}}
                         <div class="form-row mt-3">
                             <div class="col-md-8">
-                                <label class="font-weight-bold mb-1" for="assinatura_cliente_nome">Nome de quem assinou</label>
+                                <label class="font-weight-bold mb-1" for="assinatura_cliente_nome">Nome de quem assinou <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="assinatura_cliente_nome" maxlength="100"
                                     placeholder="Nome completo" value="{{ optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_nome }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="font-weight-bold mb-1" for="assinatura_cliente_cpf">CPF (opcional)</label>
+                                <label class="font-weight-bold mb-1" for="assinatura_cliente_cpf">CPF <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="assinatura_cliente_cpf" maxlength="14"
                                     placeholder="000.000.000-00" value="{{ optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_cpf }}">
                             </div>

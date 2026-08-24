@@ -652,22 +652,19 @@ class RelatoriosController extends Controller
      *
      * POST /api/mcl/v1/relatorios/{id}/assinaturas
      * Body: {
-     *   tecnico?: "data:image/png;base64,...", tecnico_nome?, tecnico_cpf?,
-     *   cliente?: "data:image/png;base64,...", cliente_nome?, cliente_cpf?
+     *   tecnico?: "data:image/png;base64,...",
+     *   cliente?: "data:image/png;base64,...", cliente_nome, cliente_cpf
      * }
-     * RF006 — nome de quem assinou é obrigatório junto de cada assinatura
-     * nova (em vez de assumir o responsável cadastrado no atendimento); CPF
-     * é opcional.
+     * RF006 — nome e CPF de quem assinou são obrigatórios, mas só para o
+     * cliente (o técnico já é o usuário logado, identidade conhecida).
      */
     public function storeAssinaturas(Request $request, int $id): JsonResponse
     {
         $request->validate([
             'tecnico'      => 'nullable|string',
-            'tecnico_nome' => 'required_with:tecnico|nullable|string|max:100',
-            'tecnico_cpf'  => 'nullable|string|max:14',
             'cliente'      => 'nullable|string',
-            'cliente_nome' => 'required_with:cliente|nullable|string|max:100',
-            'cliente_cpf'  => 'nullable|string|max:14',
+            'cliente_nome' => 'required_with:cliente|string|max:100',
+            'cliente_cpf'  => 'required_with:cliente|string|max:14',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
