@@ -89,8 +89,14 @@
 
         /* DESCRIÇÃO — itens (RF001) */
         .section-descricao .section-title { margin-bottom: 18px; }
-        .descricao-item { margin-bottom: 16px; }
-        .descricao-item-caption { padding: 4px 2px; font-size: 26px; color: #333; white-space: pre-wrap; }
+        .descricao-item { margin-bottom: 30px; }
+        .descricao-item-caption {
+            padding: 4px 2px 14px 2px;
+            font-size: 26px;
+            color: #333;
+            white-space: pre-wrap;
+            border-bottom: 1px solid #ccc;
+        }
         .descricao-fotos-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .descricao-fotos-grid td { padding: 3px; text-align: center; vertical-align: top; width: 33.33%; }
         .descricao-fotos-grid img { width: 100%; max-width: 320px; height: 421px; border: 1px solid #ddd; }
