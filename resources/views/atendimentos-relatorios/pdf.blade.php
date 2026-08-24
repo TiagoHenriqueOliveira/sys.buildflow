@@ -91,6 +91,7 @@
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-item { margin-bottom: 30px; }
         .descricao-item-caption {
+            margin-top: 14px;
             padding: 4px 2px 14px 2px;
             font-size: 26px;
             color: #333;
