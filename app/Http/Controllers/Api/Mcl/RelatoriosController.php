@@ -626,9 +626,23 @@ class RelatoriosController extends Controller
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
-        $relatorio->update(['aten_rel_status' => $request->status]);
+        $novoStatus = (int) $request->status;
 
-        $label = AtendimentoRelatorioStatus::tryFrom($request->status)?->label() ?? '-';
+        // REL-05: técnico precisa das duas assinaturas para aprovar; admin pode
+        // dispensar. Diferente da web (que rejeita com 422), aqui rebaixa
+        // silenciosamente para Revisar em vez de aprovar sem assinatura — o app
+        // não tem como pedir a assinatura na hora do jeito que a web pede.
+        if (
+            $novoStatus === AtendimentoRelatorioStatus::Aprovado->value
+            && $request->user()->user_nivel_acesso !== 0
+            && (! $relatorio->assinaturaResponsavel() || ! $relatorio->assinaturaCliente())
+        ) {
+            $novoStatus = AtendimentoRelatorioStatus::Revisar->value;
+        }
+
+        $relatorio->update(['aten_rel_status' => $novoStatus]);
+
+        $label = AtendimentoRelatorioStatus::tryFrom($novoStatus)?->label() ?? '-';
 
         return response()->json(['message' => "Status alterado para: {$label}."]);
     }
