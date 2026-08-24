@@ -110,6 +110,7 @@
         .assinatura-cell img { max-width: 100%; max-height: 80px; }
         .sem-assinatura { color: #bbb; font-size: 10px; height: 60px; line-height: 60px; }
         .assinatura-nome { border-top: 1px solid #333; margin-top: 8px; padding-top: 4px; font-size: 10px; color: #555; }
+        .assinatura-assinante { font-size: 10px; color: #555; margin-top: 3px; }
         .assinatura-data { font-size: 10px; color: #888; margin-top: 3px; }
 
         /* UTILITÁRIOS */
@@ -496,15 +497,11 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
+                {{-- Nome/CPF só são exigidos para o cliente; técnico usa o nome do
+                     usuário atribuído ao atendimento. Data/hora abaixo do nome. --}}
+                <div class="assinatura-nome">{{ optional($assResp)->aten_rel_ass_nome ?? $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
                 @if($assResp && $assResp->aten_rel_ass_assinado_em)
                     <div class="assinatura-data">{{ $assResp->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
-                @endif
-                {{-- RF006: nome de quem assinou, capturado no momento da assinatura;
-                     relatórios antigos (sem o campo novo) caem no nome do técnico
-                     responsável pelo atendimento, como antes. --}}
-                <div class="assinatura-nome">{{ optional($assResp)->aten_rel_ass_nome ?? $relatorio->atendimento->usuario?->user_nome ?? '' }}</div>
-                @if($assResp && $assResp->aten_rel_ass_cpf)
-                    <div class="assinatura-data">CPF: {{ $assResp->aten_rel_ass_cpf }}</div>
                 @endif
             </td>
             <td class="assinatura-cell">
@@ -514,14 +511,18 @@
                 @else
                     <div class="sem-assinatura">Não assinado</div>
                 @endif
-                @if($assCli && $assCli->aten_rel_ass_assinado_em)
-                    <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
+                {{-- Nome do cliente cadastrado (sempre) → nome e CPF de quem
+                     efetivamente assinou (só depois de assinado) → data/hora
+                     por último, abaixo do CPF. --}}
+                <div class="assinatura-nome">{{ optional($relatorio->atendimento->cliente)->cli_nome }}</div>
+                @if($assCli && $assCli->aten_rel_ass_nome)
+                    <div class="assinatura-assinante">{{ $assCli->aten_rel_ass_nome }}</div>
                 @endif
-                {{-- RF006: nome informado na própria assinatura; sem isso, cai só
-                     no nome do cliente (não mais no responsável do atendimento). --}}
-                <div class="assinatura-nome">{{ optional($assCli)->aten_rel_ass_nome ?? optional($relatorio->atendimento->cliente)->cli_nome }}</div>
                 @if($assCli && $assCli->aten_rel_ass_cpf)
                     <div class="assinatura-data">CPF: {{ $assCli->aten_rel_ass_cpf }}</div>
+                @endif
+                @if($assCli && $assCli->aten_rel_ass_assinado_em)
+                    <div class="assinatura-data">{{ $assCli->aten_rel_ass_assinado_em->format('d/m/Y H:i') }}</div>
                 @endif
             </td>
         </tr>
