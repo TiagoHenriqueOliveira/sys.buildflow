@@ -242,7 +242,9 @@ class RelatoriosController extends Controller
             'descricao_itens'          => $usaDescricaoNova ? $relatorio->itensDescricao->map(fn($it) => [
                 'id'        => $it->aten_rel_desc_id,
                 'texto'     => $it->aten_rel_desc_texto,
-                'fotos'     => $it->fotos->map(fn($f) => url('midia/' . $f->aten_rel_desc_foto_path))->values(),
+                'foto_url'  => optional($it->fotos->first())->aten_rel_desc_foto_path
+                    ? url('midia/' . $it->fotos->first()->aten_rel_desc_foto_path)
+                    : null,
                 'criado_em' => optional($it->aten_rel_desc_criado_em)->format('Y-m-d H:i:s'),
             ])->values() : [],
             'informacoes_adicionais'   => $relatorio->aten_rel_informacoes_adicionais,
@@ -493,8 +495,9 @@ class RelatoriosController extends Controller
     }
 
     /**
-     * Adiciona item de descrição (texto + fotos opcionais) — RF001.
-     * Texto e fotos vão numa única requisição multipart: evita item órfão
+     * Adiciona item de descrição (texto + foto opcional) — RF001. Cada item
+     * aceita no máximo uma foto: o texto funciona como um comentário dela.
+     * Texto e foto vão numa única requisição multipart: evita item órfão
      * (sem foto) se uma segunda etapa de upload falhasse separadamente.
      *
      * POST /api/mcl/v1/relatorios/{id}/descricao-itens
@@ -502,9 +505,8 @@ class RelatoriosController extends Controller
     public function storeDescricaoItem(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'texto'  => 'required|string',
-            'foto'   => 'nullable|array',
-            'foto.*' => 'file|max:10240|mimes:jpg,jpeg,png,webp',
+            'texto' => 'required|string',
+            'foto'  => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
@@ -518,14 +520,16 @@ class RelatoriosController extends Controller
             'aten_rel_desc_criado_em'    => now(),
         ]);
 
-        foreach ($request->file('foto', []) as $file) {
-            if (! $file->isValid()) continue;
+        $fotoUrl = null;
+        if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+            $file     = $request->file('foto');
             $safeName = $this->safeFilename($file->getClientOriginalName(), "atendimentos_relatorios/{$id}/descricao");
             $path     = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
             if ($path === false) {
-                return response()->json(['message' => 'Falha ao gravar uma das fotos em disco.'], 500);
+                return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
             }
             $item->fotos()->create(['aten_rel_desc_foto_path' => $path]);
+            $fotoUrl = url('midia/' . $path);
         }
 
         return response()->json([
@@ -533,7 +537,7 @@ class RelatoriosController extends Controller
             'data'    => [
                 'id'        => $item->aten_rel_desc_id,
                 'texto'     => $item->aten_rel_desc_texto,
-                'fotos'     => $item->fotos->map(fn($f) => url('midia/' . $f->aten_rel_desc_foto_path))->values(),
+                'foto_url'  => $fotoUrl,
                 'criado_em' => $item->aten_rel_desc_criado_em->format('Y-m-d H:i:s'),
             ],
         ], 201);

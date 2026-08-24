@@ -1109,17 +1109,12 @@ function renderDescricaoItens(items, legado) {
     $('#descricaoItensVazio').toggle(!items || !items.length);
 
     (items || []).forEach(function (item) {
-        const fotos = item.fotos || [];
         // Mesmo modal de preview (#anexoPreviewModal) já usado na aba Anexos —
-        // clicar na miniatura abre a foto em tamanho maior.
-        const fotoHtml = fotos.length
-            ? '<div class="d-flex flex-wrap p-2" style="gap:6px;">' +
-                fotos.map(function (url) {
-                    return '<a href="#" class="anexo-thumb" data-type="image" data-src="' + url + '">' +
-                        '<img src="' + url + '" style="width:70px;height:70px;object-fit:cover;border-radius:.35rem;" alt="Foto do item">' +
-                    '</a>';
-                }).join('') +
-              '</div>'
+        // clicar na foto abre ela em tamanho maior.
+        const fotoHtml = item.foto_url
+            ? '<a href="#" class="anexo-thumb" data-type="image" data-src="' + item.foto_url + '">' +
+                '<img src="' + item.foto_url + '" class="card-img-top" style="max-height:220px; object-fit:cover;" alt="Foto do item">' +
+              '</a>'
             : '';
         const card = $(
             '<div class="col-md-4 mb-3" style="display:none;">' +
@@ -1159,7 +1154,7 @@ function initDescricaoTab() {
         fd.append('texto', texto);
         const fotoInput = document.getElementById('descricao_item_foto');
         if (fotoInput && fotoInput.files.length) {
-            Array.from(fotoInput.files).forEach(function (file) { fd.append('foto[]', file); });
+            fd.append('foto', fotoInput.files[0]);
         }
 
         const btn = $(this);

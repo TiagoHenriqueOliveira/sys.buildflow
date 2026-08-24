@@ -87,20 +87,15 @@
         /* TEXTO LIVRE */
         .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 20px; color: #333; min-height: 30px; white-space: pre-wrap; }
 
-        /* DESCRIÇÃO — itens (RF001) */
+        /* DESCRIÇÃO — itens (RF001): no máximo 1 foto por item, o texto é um
+           comentário dela. Itens com foto vêm primeiro (2 por linha); itens só
+           de texto vêm por último, ocupando a linha inteira. */
         .section-descricao .section-title { margin-bottom: 18px; }
-        .descricao-item { margin-bottom: 30px; }
-        .descricao-item-caption {
-            margin-top: 14px;
-            padding: 4px 2px 14px 2px;
-            font-size: 26px;
-            color: #333;
-            white-space: pre-wrap;
-            border-bottom: 1px solid #ccc;
-        }
-        .descricao-fotos-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .descricao-fotos-grid td { padding: 3px; text-align: center; vertical-align: top; width: 33.33%; }
-        .descricao-fotos-grid img { width: 100%; max-width: 320px; height: 421px; border: 1px solid #ddd; }
+        .descricao-grid { width: 100%; border-collapse: collapse; }
+        .descricao-grid td { padding: 0 10px 26px 10px; vertical-align: top; width: 50%; }
+        .descricao-foto { width: 100%; max-width: 420px; height: auto; border: 1px solid #ddd; display: block; }
+        .descricao-comentario { margin-top: 6px; font-size: 12px; color: #333; white-space: pre-wrap; max-width: 420px; }
+        .descricao-texto-only { font-size: 12px; color: #333; white-space: pre-wrap; margin-bottom: 26px; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
@@ -340,30 +335,33 @@
 @if($relatorio->itensDescricao->isNotEmpty())
 <div class="section section-descricao">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
-    @foreach($relatorio->itensDescricao as $item)
-    <div class="descricao-item">
-        @if($item->fotos->isNotEmpty())
-            {{-- Grade em tabela (evita a sobreposição do layout inline-block
-                 anterior), 3 por linha, tamanho uniforme — sem colspan
-                 esticando a última foto da linha. --}}
-            @php $fotosItem = $item->fotos->values()->chunk(3); @endphp
-            <table class="descricao-fotos-grid">
-                @foreach($fotosItem as $trio)
-                <tr>
-                    @foreach($trio as $foto)
-                    <td>
-                        @php $itemFotoSrc = $fotoBase64($foto->aten_rel_desc_foto_path); @endphp
-                        @if($itemFotoSrc)
-                            <img src="{{ $itemFotoSrc }}" alt="Foto do item">
-                        @endif
-                    </td>
-                    @endforeach
-                </tr>
+    @php
+        // Cada item tem no máximo 1 foto; o texto funciona como comentário
+        // dela. Itens com foto aparecem primeiro (2 por linha); itens só de
+        // texto aparecem por último, ocupando a linha inteira.
+        $itensComFoto = $relatorio->itensDescricao->filter(fn($it) => $it->fotos->isNotEmpty())->values();
+        $itensSemFoto = $relatorio->itensDescricao->filter(fn($it) => $it->fotos->isEmpty())->values();
+    @endphp
+    @if($itensComFoto->isNotEmpty())
+        <table class="descricao-grid">
+            @foreach($itensComFoto->chunk(2) as $par)
+            <tr>
+                @foreach($par as $item)
+                <td>
+                    @php $itemFotoSrc = $fotoBase64($item->fotos->first()->aten_rel_desc_foto_path); @endphp
+                    @if($itemFotoSrc)
+                        <img class="descricao-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
+                    @endif
+                    <div class="descricao-comentario">{{ $item->aten_rel_desc_texto }}</div>
+                </td>
                 @endforeach
-            </table>
-        @endif
-        <div class="descricao-item-caption">{{ $loop->iteration }}. {{ $item->aten_rel_desc_texto }};</div>
-    </div>
+                @if($par->count() < 2)<td></td>@endif
+            </tr>
+            @endforeach
+        </table>
+    @endif
+    @foreach($itensSemFoto as $item)
+        <div class="descricao-texto-only">{{ $item->aten_rel_desc_texto }}</div>
     @endforeach
 </div>
 @elseif($relatorio->aten_rel_descricao)

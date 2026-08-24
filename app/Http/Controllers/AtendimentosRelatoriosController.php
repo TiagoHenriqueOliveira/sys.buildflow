@@ -542,9 +542,11 @@ class AtendimentosRelatoriosController extends Controller
         return response()->json([
             'legado' => $usaDescricaoNova ? null : $relatorio->aten_rel_descricao,
             'data'   => $usaDescricaoNova ? $itens->map(fn($it) => [
-                'id'    => $it->aten_rel_desc_id,
-                'texto' => $it->aten_rel_desc_texto,
-                'fotos' => $it->fotos->map(fn($f) => asset('midia/' . $f->aten_rel_desc_foto_path))->values(),
+                'id'       => $it->aten_rel_desc_id,
+                'texto'    => $it->aten_rel_desc_texto,
+                'foto_url' => optional($it->fotos->first())->aten_rel_desc_foto_path
+                    ? asset('midia/' . $it->fotos->first()->aten_rel_desc_foto_path)
+                    : null,
             ]) : [],
         ]);
     }
@@ -552,14 +554,13 @@ class AtendimentosRelatoriosController extends Controller
     public function storeDescricaoItem(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'texto'  => ['required', 'string'],
-            'foto'   => ['nullable', 'array'],
-            'foto.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
+            'texto' => ['required', 'string'],
+            'foto'  => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
         ], [
             'texto.required' => 'Descreva o item antes de adicionar.',
-            'foto.*.file'    => 'A foto enviada é inválida.',
-            'foto.*.max'     => 'A foto não pode ultrapassar 10 MB.',
-            'foto.*.mimes'   => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+            'foto.file'      => 'A foto enviada é inválida.',
+            'foto.max'       => 'A foto não pode ultrapassar 10 MB.',
+            'foto.mimes'     => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
         ]);
 
         try {
@@ -569,24 +570,26 @@ class AtendimentosRelatoriosController extends Controller
                 'aten_rel_desc_criado_em'    => now(),
             ]);
 
-            foreach ($request->file('foto', []) as $file) {
-                if (! $file->isValid()) continue;
+            $fotoUrl = null;
+            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+                $file         = $request->file('foto');
                 $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $ext          = $file->getClientOriginalExtension();
                 $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
                 if ($path === false) {
-                    return response()->json(['message' => 'Falha ao gravar uma das fotos em disco.'], 500);
+                    return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
                 }
                 $item->fotos()->create(['aten_rel_desc_foto_path' => $path]);
+                $fotoUrl = asset('midia/' . $path);
             }
 
             return response()->json([
                 'message' => 'Item adicionado!',
                 'item'    => [
-                    'id'    => $item->aten_rel_desc_id,
-                    'texto' => $item->aten_rel_desc_texto,
-                    'fotos' => $item->fotos->map(fn($f) => asset('midia/' . $f->aten_rel_desc_foto_path))->values(),
+                    'id'       => $item->aten_rel_desc_id,
+                    'texto'    => $item->aten_rel_desc_texto,
+                    'foto_url' => $fotoUrl,
                 ],
             ]);
         } catch (\Throwable $e) {

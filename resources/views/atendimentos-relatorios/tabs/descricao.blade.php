@@ -1,4 +1,5 @@
-{{-- DESCRIÇÃO — RF001: lista de itens (texto + foto opcional), mesmo padrão de Peças Substituídas --}}
+{{-- DESCRIÇÃO — RF001: lista de itens (texto + no máximo 1 foto; o texto é
+     um comentário da foto), mesmo padrão de Peças Substituídas --}}
 <div class="tab-pane fade" id="tab-descricao" role="tabpanel">
     <div id="descricaoFormNovo" class="mb-3">
         <textarea id="descricao_item_texto" class="form-control mb-2" rows="2"
@@ -8,7 +9,7 @@
             <div class="file-upload-group">
                 <label class="btn btn-primary btn-sm file-upload-button mb-0">
                     <i class="fas fa-upload"></i>
-                    <input type="file" class="file-upload-input" id="descricao_item_foto" accept=".jpg,.jpeg,.png,.webp,.gif" multiple>
+                    <input type="file" class="file-upload-input" id="descricao_item_foto" accept=".jpg,.jpeg,.png,.webp,.gif">
                 </label>
                 <span class="file-upload-text">Nenhuma foto selecionada</span>
                 <button type="button" id="btnAddDescricaoItem" class="btn btn-primary btn-icon-split">
