@@ -93,9 +93,10 @@
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-grid { width: 100%; border-collapse: collapse; }
         .descricao-grid td { padding: 0 10px 26px 10px; text-align: center; vertical-align: top; width: 50%; }
+        .descricao-grid td.texto-only { text-align: left; }
         .descricao-foto { width: 100%; max-width: 420px; height: auto; border: 1px solid #ddd; display: block; margin: 0 auto; }
         .descricao-comentario { margin: 6px auto 0; max-width: 420px; font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
-        .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; margin-bottom: 26px; }
+        .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
@@ -335,16 +336,36 @@
     <div class="section-title">{{ $secNum() }}. Descrição</div>
     @php
         // Cada item tem no máximo 1 foto; o texto funciona como comentário
-        // dela. Itens com foto aparecem primeiro (2 por linha); itens só de
-        // texto aparecem por último, ocupando a linha inteira.
-        $itensComFoto = $relatorio->itensDescricao->filter(fn($it) => $it->fotos->isNotEmpty())->values();
-        $itensSemFoto = $relatorio->itensDescricao->filter(fn($it) => $it->fotos->isEmpty())->values();
+        // dela. Itens são exibidos na ordem de inclusão (aten_rel_desc_id) —
+        // itens com foto são pareados 2 por linha respeitando essa ordem
+        // (um item sem foto no meio da sequência interrompe o par corrente),
+        // itens só de texto ocupam a linha inteira.
+        $linhasDescricao = [];
+        $parFotos = [];
+        foreach ($relatorio->itensDescricao as $item) {
+            if ($item->fotos->isNotEmpty()) {
+                $parFotos[] = $item;
+                if (count($parFotos) === 2) {
+                    $linhasDescricao[] = ['tipo' => 'fotos', 'itens' => $parFotos];
+                    $parFotos = [];
+                }
+            } else {
+                if (!empty($parFotos)) {
+                    $linhasDescricao[] = ['tipo' => 'fotos', 'itens' => $parFotos];
+                    $parFotos = [];
+                }
+                $linhasDescricao[] = ['tipo' => 'texto', 'itens' => [$item]];
+            }
+        }
+        if (!empty($parFotos)) {
+            $linhasDescricao[] = ['tipo' => 'fotos', 'itens' => $parFotos];
+        }
     @endphp
-    @if($itensComFoto->isNotEmpty())
-        <table class="descricao-grid">
-            @foreach($itensComFoto->chunk(2) as $par)
+    <table class="descricao-grid">
+        @foreach($linhasDescricao as $linha)
+            @if($linha['tipo'] === 'fotos')
             <tr>
-                @foreach($par as $item)
+                @foreach($linha['itens'] as $item)
                 <td>
                     @php $itemFotoSrc = $fotoBase64($item->fotos->first()->aten_rel_desc_foto_path); @endphp
                     @if($itemFotoSrc)
@@ -353,14 +374,17 @@
                     <div class="descricao-comentario">{{ $item->aten_rel_desc_texto }}</div>
                 </td>
                 @endforeach
-                @if($par->count() < 2)<td></td>@endif
+                @if(count($linha['itens']) < 2)<td></td>@endif
             </tr>
-            @endforeach
-        </table>
-    @endif
-    @foreach($itensSemFoto as $item)
-        <div class="descricao-texto-only">{{ $item->aten_rel_desc_texto }}</div>
-    @endforeach
+            @else
+            <tr>
+                <td colspan="2" class="texto-only">
+                    <div class="descricao-texto-only">{{ $linha['itens'][0]->aten_rel_desc_texto }}</div>
+                </td>
+            </tr>
+            @endif
+        @endforeach
+    </table>
 </div>
 @elseif($relatorio->aten_rel_descricao)
 <div class="section">
