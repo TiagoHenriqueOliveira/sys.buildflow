@@ -670,11 +670,16 @@ class RelatoriosController extends Controller
      */
     public function storeAssinaturas(Request $request, int $id): JsonResponse
     {
+        // 'nullable' é necessário além de 'required_with': sem ele, quando
+        // 'cliente' não vem preenchido, cliente_nome/cliente_cpf chegam como
+        // null e 'string'/'max' rejeitam esse null mesmo não sendo mais
+        // obrigatórios (mesmo bug corrigido em AtendimentoRelatorioAssinaturasRequest,
+        // a versão web deste mesmo endpoint).
         $request->validate([
             'tecnico'      => 'nullable|string',
             'cliente'      => 'nullable|string',
-            'cliente_nome' => 'required_with:cliente|string|max:100',
-            'cliente_cpf'  => 'required_with:cliente|string|max:14',
+            'cliente_nome' => 'nullable|required_with:cliente|string|max:100',
+            'cliente_cpf'  => 'nullable|required_with:cliente|string|max:14',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
