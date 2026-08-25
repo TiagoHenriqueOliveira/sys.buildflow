@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\Mcl;
 
 use App\Enums\AtendimentoStatus;
+use App\Enums\AtendimentoRelatorioStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Atendimento;
+use App\Models\AtendimentoRelatorio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -76,6 +78,25 @@ class AtendimentosController extends Controller
 
         if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
             return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        // Um atendimento "Concluído" precisa refletir um trabalho realmente
+        // fechado — sem isto, o app deixava concluir com o relatório ainda
+        // faltando assinatura/aprovação, e o técnico via "Concluído" na tela
+        // enquanto o relatório continuava "Revisar" para sempre no sistema.
+        // Validado aqui (não só no app) para valer também pra web e futuras
+        // versões do app que não tenham essa checagem no cliente.
+        if ((int) $request->status === AtendimentoStatus::Concluida->value) {
+            $relatorios = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
+                ->get(['aten_rel_id', 'aten_rel_status']);
+            $naoAprovados = $relatorios->where('aten_rel_status', '!=', AtendimentoRelatorioStatus::Aprovado->value);
+            if ($relatorios->isEmpty() || $naoAprovados->isNotEmpty()) {
+                return response()->json([
+                    'message' => $relatorios->isEmpty()
+                        ? 'Não é possível concluir: este atendimento não tem nenhum relatório criado.'
+                        : $naoAprovados->count() . ' relatório(s) deste atendimento ainda não foram aprovados.',
+                ], 422);
+            }
         }
 
         $atendimento->update(['aten_status' => $request->status]);

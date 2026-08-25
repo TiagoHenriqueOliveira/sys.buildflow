@@ -644,7 +644,17 @@ class RelatoriosController extends Controller
 
         $label = AtendimentoRelatorioStatus::tryFrom($novoStatus)?->label() ?? '-';
 
-        return response()->json(['message' => "Status alterado para: {$label}."]);
+        // O app confiava cegamente no status que ELE ENVIOU para atualizar a
+        // tela/cache local — quando a REL-05 rebaixava Aprovado → Revisar
+        // aqui em cima, o técnico via "aprovado" no aparelho (e o PDF sendo
+        // compartilhado como aprovado) enquanto o servidor continuava com
+        // "Revisar". Devolve o status REAL aplicado para o app nunca mais
+        // divergir do banco.
+        return response()->json([
+            'message'    => "Status alterado para: {$label}.",
+            'status'     => $novoStatus,
+            'rebaixado'  => $novoStatus !== (int) $request->status,
+        ]);
     }
 
     /**
