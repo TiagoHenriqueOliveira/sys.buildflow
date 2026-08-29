@@ -34,16 +34,18 @@ class RelatoriosController extends Controller
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /**
-     * Verifica se o técnico autenticado tem acesso ao relatório.
-     * Admin (nivel_acesso != 1) acessa qualquer um.
+     * Verifica se o usuário autenticado tem acesso ao relatório, delegando a
+     * regra de posse (admin vê tudo, técnico só o seu) para
+     * App\Policies\AtendimentoPolicy — antes esta checagem estava duplicada
+     * aqui e em Api\Mcl\RelatoriosController, cada uma com sua própria cópia
+     * da comparação.
      */
     private function checkAcesso(Request $request, AtendimentoRelatorio $relatorio): bool
     {
-        $usuario = $request->user();
-        if ($usuario->user_nivel_acesso !== 1) {
-            return true;
+        if (! $relatorio->atendimento) {
+            return $request->user()->user_nivel_acesso === 0;
         }
-        return $relatorio->atendimento?->aten_usuario_id === $usuario->user_id;
+        return $request->user()->can('acessar', $relatorio->atendimento);
     }
 
     private function formatRelatorio(AtendimentoRelatorio $r): array
@@ -108,7 +110,7 @@ class RelatoriosController extends Controller
             ->firstOrFail();
 
         // Técnico só cria relatório nos próprios atendimentos
-        if ($usuario->user_nivel_acesso === 1 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
@@ -425,11 +427,20 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $row = AtendimentoRelatorioAtividade::create([
-            'aten_rel_ativ_relatorio_id' => $id,
-            'aten_rel_ativ_descricao'    => $request->descricao,
-            'aten_rel_ativ_status'       => $request->status,
-        ]);
+        // Endpoint legado: a tabela atendimentos_relatorios_atividades não
+        // aparece no schema versionado atual (database/schema/mysql-schema.sql)
+        // — pendente confirmar em produção se ela ainda existe (SHOW TABLES).
+        // Até lá, uma falha aqui vira 501 em vez de um 500 de SQL cru.
+        try {
+            $row = AtendimentoRelatorioAtividade::create([
+                'aten_rel_ativ_relatorio_id' => $id,
+                'aten_rel_ativ_descricao'    => $request->descricao,
+                'aten_rel_ativ_status'       => $request->status,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json([
             'message' => 'Atividade adicionada!',
@@ -455,11 +466,16 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-            ->where('aten_rel_ativ_relatorio_id', $id)
-            ->firstOrFail();
+        try {
+            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
+                ->where('aten_rel_ativ_relatorio_id', $id)
+                ->firstOrFail();
 
-        $row->update(['aten_rel_ativ_descricao' => $request->descricao, 'aten_rel_ativ_status' => $request->status]);
+            $row->update(['aten_rel_ativ_descricao' => $request->descricao, 'aten_rel_ativ_status' => $request->status]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json([
             'message' => 'Atividade atualizada!',
@@ -479,10 +495,15 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-            ->where('aten_rel_ativ_relatorio_id', $id)
-            ->firstOrFail()
-            ->delete();
+        try {
+            AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
+                ->where('aten_rel_ativ_relatorio_id', $id)
+                ->firstOrFail()
+                ->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json(['message' => 'Atividade removida!']);
     }
@@ -502,10 +523,15 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $row = AtendimentoRelatorioComentario::create([
-            'aten_rel_com_relatorio_id' => $id,
-            'aten_rel_com_descricao'    => $request->descricao,
-        ]);
+        try {
+            $row = AtendimentoRelatorioComentario::create([
+                'aten_rel_com_relatorio_id' => $id,
+                'aten_rel_com_descricao'    => $request->descricao,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json([
             'message' => 'Comentário adicionado!',
@@ -525,10 +551,15 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        AtendimentoRelatorioComentario::where('aten_rel_com_id', $comId)
-            ->where('aten_rel_com_relatorio_id', $id)
-            ->firstOrFail()
-            ->delete();
+        try {
+            AtendimentoRelatorioComentario::where('aten_rel_com_id', $comId)
+                ->where('aten_rel_com_relatorio_id', $id)
+                ->firstOrFail()
+                ->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json(['message' => 'Comentário removido!']);
     }

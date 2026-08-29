@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers\Api\Mcl;
 
-use App\Enums\AssinaturaTipo;
 use App\Enums\AtendimentoRelatorioStatus;
+use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Mcl\StoreAssinaturaRequest;
+use App\Http\Requests\Mcl\StoreOcorrenciaRequest;
+use App\Http\Requests\Mcl\StorePecaRequest;
+use App\Http\Requests\Mcl\StoreRelatorioRequest;
+use App\Http\Requests\Mcl\StoreServicoRequest;
+use App\Http\Requests\Mcl\UpdateStatusRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAssinatura;
@@ -18,90 +24,35 @@ use App\Models\AtendimentoRelatorioPeca;
 use App\Models\AtendimentoRelatorioServico;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\Ocorrencia;
+use App\Services\RelatorioMclService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class RelatoriosController extends Controller
 {
+    public function __construct(
+        private readonly RelatorioMclService $media,
+    ) {}
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
+    /**
+     * Delega a regra de posse (admin vê tudo, técnico só o seu) para
+     * App\Policies\AtendimentoPolicy — antes esta checagem estava duplicada
+     * aqui e em Api\RelatoriosController, cada uma com sua própria cópia da
+     * comparação.
+     */
     private function checkAcesso(Request $request, AtendimentoRelatorio $relatorio): bool
     {
-        $usuario = $request->user();
-        if ($usuario->user_nivel_acesso === 0) return true;
-        return $relatorio->atendimento?->aten_usuario_id === $usuario->user_id;
+        if (! $relatorio->atendimento) {
+            return $request->user()->user_nivel_acesso === 0;
+        }
+        return $request->user()->can('acessar', $relatorio->atendimento);
     }
 
-    private function saveSignature(AtendimentoRelatorio $relatorio, string $base64, string $tipo, ?string $nome = null, ?string $cpf = null): string
-    {
-        if (! preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $m)) {
-            throw new \RuntimeException('Formato de assinatura inválido.');
-        }
-
-        $data = base64_decode($m[2]);
-        $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir  = dirname(storage_path('app/public/' . $path));
-
-        if (! is_dir($dir)) mkdir($dir, 0755, true);
-
-        $image = @imagecreatefromstring($data);
-        if ($image === false) throw new \RuntimeException('Imagem inválida.');
-
-        $bg    = imagecreatetruecolor(imagesx($image), imagesy($image));
-        $white = imagecolorallocate($bg, 255, 255, 255);
-        imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
-        imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        $saved = imagepng($bg, storage_path('app/public/' . $path));
-        imagedestroy($image);
-        imagedestroy($bg);
-
-        if (! $saved) {
-            throw new \RuntimeException("Não foi possível gravar a assinatura em disco ({$dir}). Verifique as permissões de escrita.");
-        }
-
-        $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
-            ->where('aten_rel_ass_tipo', $tipo)
-            ->first();
-
-        $now = now()->format('Y-m-d H:i:s');
-        if ($existing) {
-            $existing->update([
-                'aten_rel_ass_path'        => $path,
-                'aten_rel_ass_nome'        => $nome,
-                'aten_rel_ass_cpf'         => $cpf,
-                'aten_rel_ass_assinado_em' => $now,
-            ]);
-        } else {
-            AtendimentoRelatorioAssinatura::create([
-                'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_ass_path'         => $path,
-                'aten_rel_ass_tipo'         => $tipo,
-                'aten_rel_ass_nome'         => $nome,
-                'aten_rel_ass_cpf'          => $cpf,
-                'aten_rel_ass_assinado_em'  => $now,
-            ]);
-        }
-
-        return asset('midia/' . $path);
-    }
-
-    private function safeFilename(string $originalName, string $dir): string
-    {
-        $ext  = pathinfo($originalName, PATHINFO_EXTENSION);
-        $base = pathinfo($originalName, PATHINFO_FILENAME);
-        // Mantém nome original mas remove caracteres perigosos
-        $safe = preg_replace('/[^a-zA-Z0-9._\-]/', '_', $base);
-        $safe = trim($safe, '_') ?: 'arquivo';
-        $name = $safe . '.' . $ext;
-        // Evita conflitos adicionando sufixo numérico
-        $counter = 0;
-        while (\Illuminate\Support\Facades\Storage::disk('public')->exists("$dir/$name")) {
-            $counter++;
-            $name = "{$safe}_{$counter}.{$ext}";
-        }
-        return $name;
-    }
+    // saveSignature()/safeFilename() foram movidos para
+    // App\Services\RelatorioMclService — este controller só orquestra.
 
     // ─── Relatório CRUD ───────────────────────────────────────────────────────
 
@@ -115,7 +66,7 @@ class RelatoriosController extends Controller
         $usuario     = $request->user();
         $atendimento = Atendimento::findOrFail($atenId);
 
-        if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
@@ -138,21 +89,27 @@ class RelatoriosController extends Controller
      * POST /api/mcl/v1/atendimentos/{aten_id}/relatorios
      * Body: { aten_rel_data?: "YYYY-MM-DD" }
      */
-    public function store(Request $request, int $atenId): JsonResponse
+    public function store(StoreRelatorioRequest $request, int $atenId): JsonResponse
     {
-        $request->validate([
-            'aten_rel_data' => 'nullable|date|before_or_equal:today',
-        ]);
-
         $usuario     = $request->user();
         $atendimento = Atendimento::with('natureza.modeloRelatorio')->findOrFail($atenId);
 
-        if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
         if (! $atendimento->natureza?->modeloRelatorio) {
             return response()->json(['message' => 'Natureza do atendimento sem modelo de relatório.'], 422);
+        }
+
+        // REL-02: Bloquear se atendimento está Paralisado ou Concluído
+        if (in_array($atendimento->aten_status, [
+            AtendimentoStatus::Paralisada->value,
+            AtendimentoStatus::Concluida->value,
+        ])) {
+            return response()->json([
+                'message' => 'Não é possível criar relatório para atendimentos Paralisados ou Concluídos.',
+            ], 422);
         }
 
         $modelo = $atendimento->natureza->modeloRelatorio;
@@ -175,9 +132,12 @@ class RelatoriosController extends Controller
             'aten_rel_status'              => 0,
         ]);
 
-        // Muda atendimento para "em andamento" ao criar o primeiro relatório
-        if ($atendimento->aten_status !== 2) {
-            $atendimento->update(['aten_status' => 2]);
+        // Muda atendimento para "em andamento" ao criar o primeiro relatório —
+        // só a partir de "não iniciada". Nunca "reviver" um atendimento
+        // Paralisado/Concluído (a trava REL-02 acima já bloqueia esses casos,
+        // mas a condição fica explícita aqui também por segurança).
+        if ($atendimento->aten_status === AtendimentoStatus::NaoIniciada->value) {
+            $atendimento->update(['aten_status' => AtendimentoStatus::EmAndamento->value]);
         }
 
         return response()->json([
@@ -416,10 +376,8 @@ class RelatoriosController extends Controller
      * POST /api/mcl/v1/relatorios/{id}/servicos
      * Body: { descricao: string }
      */
-    public function storeServico(Request $request, int $id): JsonResponse
+    public function storeServico(StoreServicoRequest $request, int $id): JsonResponse
     {
-        $request->validate(['descricao' => 'required|string|max:500']);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -458,10 +416,8 @@ class RelatoriosController extends Controller
      * POST /api/mcl/v1/relatorios/{id}/pecas
      * Body: { descricao: string }
      */
-    public function storePeca(Request $request, int $id): JsonResponse
+    public function storePeca(StorePecaRequest $request, int $id): JsonResponse
     {
-        $request->validate(['descricao' => 'required|string|max:500']);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -523,7 +479,7 @@ class RelatoriosController extends Controller
         $fotoUrl = null;
         if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
             $file     = $request->file('foto');
-            $safeName = $this->safeFilename($file->getClientOriginalName(), "atendimentos_relatorios/{$id}/descricao");
+            $safeName = $this->media->safeFilename($file->getClientOriginalName(), "atendimentos_relatorios/{$id}/descricao");
             $path     = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
             if ($path === false) {
                 return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
@@ -569,13 +525,8 @@ class RelatoriosController extends Controller
      * POST /api/mcl/v1/relatorios/{id}/ocorrencias
      * Body: { ocorrencia_id: int, observacao?: string }
      */
-    public function storeOcorrencia(Request $request, int $id): JsonResponse
+    public function storeOcorrencia(StoreOcorrenciaRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'ocorrencia_id' => 'required|exists:ocorrencias,ocor_id',
-            'observacao'    => 'nullable|string',
-        ]);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -619,10 +570,8 @@ class RelatoriosController extends Controller
      * PUT /api/mcl/v1/relatorios/{id}/status
      * Body: { status: 0|1|2 }
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(UpdateStatusRequest $request, int $id): JsonResponse
     {
-        $request->validate(['status' => 'required|integer|in:0,1,2']);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -668,27 +617,15 @@ class RelatoriosController extends Controller
      * RF006 — nome e CPF de quem assinou são obrigatórios, mas só para o
      * cliente (o técnico já é o usuário logado, identidade conhecida).
      */
-    public function storeAssinaturas(Request $request, int $id): JsonResponse
+    public function storeAssinaturas(StoreAssinaturaRequest $request, int $id): JsonResponse
     {
-        // 'nullable' é necessário além de 'required_with': sem ele, quando
-        // 'cliente' não vem preenchido, cliente_nome/cliente_cpf chegam como
-        // null e 'string'/'max' rejeitam esse null mesmo não sendo mais
-        // obrigatórios (mesmo bug corrigido em AtendimentoRelatorioAssinaturasRequest,
-        // a versão web deste mesmo endpoint).
-        $request->validate([
-            'tecnico'      => 'nullable|string',
-            'cliente'      => 'nullable|string',
-            'cliente_nome' => 'nullable|required_with:cliente|string|max:100',
-            'cliente_cpf'  => 'nullable|required_with:cliente|string|max:14',
-        ]);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
         $urls = [];
         foreach (['tecnico' => 'responsavel', 'cliente' => 'cliente'] as $campo => $tipo) {
             if ($request->filled($campo)) {
-                $urls[$campo] = $this->saveSignature(
+                $urls[$campo] = $this->media->saveSignature(
                     $relatorio,
                     $request->input($campo),
                     $tipo,
@@ -775,7 +712,7 @@ class RelatoriosController extends Controller
             foreach ($request->file('fotos') as $i => $file) {
                 if (! $file->isValid()) continue;
                 $originalName = $file->getClientOriginalName();
-                $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/fotos");
+                $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/fotos");
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
                 if ($path === false) {
                     $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
@@ -794,7 +731,7 @@ class RelatoriosController extends Controller
             foreach ($request->file('videos') as $file) {
                 if (! $file->isValid()) continue;
                 $originalName = $file->getClientOriginalName();
-                $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/videos");
+                $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/videos");
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
                 if ($path === false) {
                     $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
@@ -809,7 +746,7 @@ class RelatoriosController extends Controller
             foreach ($request->file('arquivos') as $file) {
                 if (! $file->isValid()) continue;
                 $originalName = $file->getClientOriginalName();
-                $safeName     = $this->safeFilename($originalName, "atendimentos_relatorios/{$id}/arquivos");
+                $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/arquivos");
                 $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
                 if ($path === false) {
                     $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";

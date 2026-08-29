@@ -62,7 +62,7 @@ class AtendimentosController extends Controller
         ])->findOrFail($id);
 
         // Garante que técnico acesse só os seus
-        if ($usuario->user_nivel_acesso === 1 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 

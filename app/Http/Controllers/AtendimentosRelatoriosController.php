@@ -707,11 +707,13 @@ class AtendimentosRelatoriosController extends Controller
         // RF005/RNF004 — a rota agora aceita token do app (Sanctum), além da
         // sessão do painel; sem essa checagem, qualquer técnico autenticado
         // conseguiria baixar o PDF de um atendimento de outro técnico só
-        // trocando o ID na URL. Mesmo critério já usado em
-        // Api\Mcl\RelatoriosController::checkAcesso().
+        // trocando o ID na URL. Mesma regra de App\Policies\AtendimentoPolicy
+        // usada em toda a API (Mcl e legada).
         $usuario = $request->user();
-        $ehAdmin = (int) $usuario->user_nivel_acesso === 0;
-        if (! $ehAdmin && $relatorio->atendimento?->aten_usuario_id !== $usuario->user_id) {
+        $temAcesso = $relatorio->atendimento
+            ? $usuario->can('acessar', $relatorio->atendimento)
+            : (int) $usuario->user_nivel_acesso === 0;
+        if (! $temAcesso) {
             abort(403, 'Você não tem acesso a este relatório.');
         }
 

@@ -23,7 +23,6 @@ class AtendimentoFactory extends Factory
             'aten_usuario_id'  => Usuario::factory()->tecnico(),
             'aten_status'      => 2,
             'aten_nr_proposta' => fake()->optional()->numerify('PROP-####'),
-            'aten_descricao'   => fake()->sentence(4),
             'aten_responsavel' => fake()->optional()->name(),
             'aten_endereco'    => fake()->optional()->address(),
             'aten_dt_inicio'   => $inicio->format('Y-m-d'),

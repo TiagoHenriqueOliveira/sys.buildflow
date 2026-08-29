@@ -54,7 +54,7 @@ class AtendimentosController extends Controller
         $usuario     = $request->user();
         $atendimento = Atendimento::with(['natureza.modeloRelatorio', 'cliente', 'usuario', 'equipamentos', 'anexos'])->findOrFail($id);
 
-        if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
@@ -76,7 +76,7 @@ class AtendimentosController extends Controller
         $usuario     = $request->user();
         $atendimento = Atendimento::findOrFail($id);
 
-        if ($usuario->user_nivel_acesso !== 0 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
