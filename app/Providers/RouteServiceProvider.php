@@ -49,5 +49,12 @@ class RouteServiceProvider extends ServiceProvider
             }
             return Limit::perMinute(60)->by($request->ip());
         });
+
+        // Limite dedicado e mais rígido para login — antes compartilhava o
+        // limite genérico de 60/min/IP com toda rota pública, sem nenhuma
+        // proteção específica contra força bruta de senha.
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip() . '|' . $request->input('email'));
+        });
     }
 }

@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     // â”€â”€ PÃºblicas (sem token) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     // â”€â”€ Protegidas (Bearer token obrigatÃ³rio) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     Route::middleware('auth:sanctum')->group(function () {
@@ -88,7 +88,7 @@ Route::prefix('v1')->group(function () {
 Route::prefix('mcl/v1')->group(function () {
 
     // PÃºblica
-    Route::post('/login',  [AuthController::class, 'login']);
+    Route::post('/login',  [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/app/versao', [MclAppController::class, 'versao']);
 
     // Protegidas

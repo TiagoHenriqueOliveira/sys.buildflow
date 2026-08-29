@@ -166,7 +166,13 @@ class AtendimentosController extends Controller
 
     public function uploadAnexos(Request $request, int $id): JsonResponse
     {
-        $request->validate(['arquivos.*' => ['required', 'file', 'max:20480']]);
+        // Whitelist de extensão — antes ausente aqui, ao contrário de todo
+        // outro endpoint de upload do sistema (relatório web/Mcl), permitindo
+        // qualquer tipo de arquivo nesta rota.
+        $request->validate(['arquivos.*' => [
+            'required', 'file', 'max:20480',
+            'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,txt,csv,mp4,mov,avi,mkv,webm',
+        ]]);
 
         try {
             $criados = [];
