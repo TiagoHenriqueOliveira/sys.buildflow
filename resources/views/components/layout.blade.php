@@ -118,15 +118,6 @@
 
                         <!-- Topbar Navbar -->
                         <ul class="navbar-nav ml-auto">
-                            @if(file_exists(public_path('downloads/apk/buildflow.apk')))
-                            <!-- Nav Item - Download APK -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ asset('downloads/apk/buildflow.apk') }}" download title="Baixar App Android">
-                                    <i class="fas fa-android fa-fw"></i>
-                                    <span class="text-gray-600 small ml-1">Baixar App</span>
-                                </a>
-                            </li>
-                            @endif
                             <div class="topbar-divider d-none d-sm-block"></div>
 
                             <!-- Nav Item - User Information -->
