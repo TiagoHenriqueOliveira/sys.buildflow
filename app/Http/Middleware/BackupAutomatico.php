@@ -8,30 +8,37 @@ use Illuminate\Support\Facades\Artisan;
 
 /**
  * Dispara o backup do banco (ver App\Console\Commands\BackupDatabase) a
- * partir do uso normal do sistema — este ambiente de hospedagem não tem
- * como agendar uma tarefa fora da aplicação. A cada requisição, checa
- * (rápido, só timestamp de um arquivo) se faz mais de 3h desde a última
- * tentativa; se sim, roda um backup novo.
+ * partir do login/uso de um usuário administrador — este ambiente de
+ * hospedagem não tem como agendar uma tarefa fora da aplicação.
+ *
+ * O dia é dividido em 8 janelas fixas de 3h (00-03, 03-06, 06-09, 09-12,
+ * 12-15, 15-18, 18-21, 21-24). Na primeira requisição de um admin dentro de
+ * cada janela, roda um backup — só uma vez por janela, mesmo que o mesmo
+ * admin faça login várias vezes dentro do mesmo intervalo. Técnico logado
+ * não dispara nada.
+ *
+ * Registrado no grupo 'web' (não no middleware global): precisa rodar
+ * depois de StartSession pra $request->user() resolver corretamente.
  *
  * O backup roda em terminate() — método "terminable middleware" do Laravel,
  * chamado só DEPOIS que a resposta já foi enviada ao navegador (ver
- * public/index.php: $response->send() acontece antes de $kernel->terminate()).
- * Quem estiver usando o sistema não espera nada a mais; o backup roda
- * depois, sem atrasar a página.
- *
- * Não é preciso num horário exato — depende de alguém estar usando o
- * sistema (web ou app mobile) — mas qualquer uso durante o horário
- * comercial mantém backups espalhados ao longo do dia.
+ * public/index.php: $response->send() antes de $kernel->terminate()), então
+ * quem estiver usando o sistema não espera nada a mais.
  */
 class BackupAutomatico
 {
-    private const INTERVALO_HORAS = 3;
+    private const NIVEL_ADMIN = 0;
+    private const TAMANHO_JANELA_HORAS = 3;
 
     private bool $deveRodar = false;
 
     public function handle(Request $request, Closure $next)
     {
-        $this->deveRodar = $this->precisaRodar();
+        $usuario = $request->user();
+
+        if ($usuario && (int) $usuario->user_nivel_acesso === self::NIVEL_ADMIN) {
+            $this->deveRodar = $this->janelaAindaNaoTeveBackup();
+        }
 
         return $next($request);
     }
@@ -42,9 +49,7 @@ class BackupAutomatico
             return;
         }
 
-        // Marca a tentativa ANTES de rodar, pra uma requisição quase
-        // simultânea não disparar um segundo backup ao mesmo tempo.
-        touch(storage_path('app/backup') . '/.ultima_tentativa');
+        $this->marcarJanelaAtual();
 
         try {
             Artisan::call('backup:run');
@@ -53,16 +58,34 @@ class BackupAutomatico
         }
     }
 
-    private function precisaRodar(): bool
+    private function janelaAtual(): string
+    {
+        $agora = now();
+        $horaJanela = intdiv($agora->hour, self::TAMANHO_JANELA_HORAS) * self::TAMANHO_JANELA_HORAS;
+
+        return $agora->format('Y-m-d') . '_' . str_pad((string) $horaJanela, 2, '0', STR_PAD_LEFT);
+    }
+
+    private function arquivoMarcador(): string
+    {
+        return storage_path('app/backup/.ultima_janela');
+    }
+
+    private function janelaAindaNaoTeveBackup(): bool
     {
         $dir = storage_path('app/backup');
         if (! is_dir($dir)) {
             @mkdir($dir, 0755, true);
         }
 
-        $marcador = $dir . '/.ultima_tentativa';
-        $ultimaTentativa = file_exists($marcador) ? filemtime($marcador) : 0;
+        $marcador = $this->arquivoMarcador();
+        $ultimaJanela = file_exists($marcador) ? trim(file_get_contents($marcador)) : null;
 
-        return $ultimaTentativa <= now()->subHours(self::INTERVALO_HORAS)->timestamp;
+        return $ultimaJanela !== $this->janelaAtual();
+    }
+
+    private function marcarJanelaAtual(): void
+    {
+        file_put_contents($this->arquivoMarcador(), $this->janelaAtual());
     }
 }
