@@ -522,22 +522,27 @@
     </table>
 </div>
 
-{{-- FOTOS --}}
-@if($relatorio->fotos->isNotEmpty())
+{{-- FOTOS — só mostra a seção se pelo menos uma foto realmente existir no
+     disco e renderizar; ter registro no banco não basta (arquivo pode estar
+     ausente/corrompido), senão sobra título sem nenhuma foto embaixo. --}}
+@php
+    $fotosRenderaveis = $relatorio->fotos->map(fn($foto) => [
+        'foto' => $foto,
+        'src'  => $fotoBase64($foto->aten_rel_foto_path),
+    ])->filter(fn($item) => $item['src'] !== '')->values();
+@endphp
+@if($fotosRenderaveis->isNotEmpty())
 <div class="section page-break">
     <div class="section-title">{{ $secNum() }}. Fotos</div>
-    @php $fotos = $relatorio->fotos->values()->chunk(2); @endphp
+    @php $fotos = $fotosRenderaveis->chunk(2); @endphp
     <table class="fotos-grid">
         @foreach($fotos as $par)
         <tr>
-            @foreach($par as $foto)
+            @foreach($par as $item)
             <td @if($par->count() < 2) colspan="2" @endif>
-                @php $fotoSrc = $fotoBase64($foto->aten_rel_foto_path); @endphp
-                @if($fotoSrc)
-                    <img src="{{ $fotoSrc }}" alt="Foto">
-                @endif
-                @if($foto->aten_rel_foto_legenda)
-                    <div class="foto-legenda">{{ $foto->aten_rel_foto_legenda }}</div>
+                <img src="{{ $item['src'] }}" alt="Foto">
+                @if($item['foto']->aten_rel_foto_legenda)
+                    <div class="foto-legenda">{{ $item['foto']->aten_rel_foto_legenda }}</div>
                 @endif
             </td>
             @endforeach
