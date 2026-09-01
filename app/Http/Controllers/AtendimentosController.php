@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AtendimentoStatus;
+use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
 use App\Http\Requests\AtendimentoEquipamentoRequest;
 use App\Http\Requests\AtendimentoRequest;
 use App\Models\Atendimento;
@@ -20,11 +21,23 @@ use Illuminate\Support\Facades\Storage;
 
 class AtendimentosController extends Controller
 {
+    use GarantePosseDeAtendimento;
+
     public function __construct(
         private AtendimentoRepository $repository,
         private AtendimentoEquipamentoRepository $equipamentoRepository,
         private DataTableService $dataTable,
     ) {}
+
+    // Item 2.2: busca o atendimento já garantindo que o usuário autenticado
+    // tem acesso a ele (mesmo padrão de AtendimentosRelatoriosController).
+    private function atendimentoComPosseGarantida(int $id): Atendimento
+    {
+        $atendimento = Atendimento::findOrFail($id);
+        $this->garantirPosse($atendimento);
+
+        return $atendimento;
+    }
 
     public function index(Request $request)
     {
@@ -134,7 +147,7 @@ class AtendimentosController extends Controller
 
     public function getObservacoes(int $id): JsonResponse
     {
-        $atendimento = Atendimento::findOrFail($id);
+        $atendimento = $this->atendimentoComPosseGarantida($id);
         return response()->json([
             'aten_obs_tecnica'    => $atendimento->aten_obs_tecnica,
             'aten_obs_cliente'    => $atendimento->aten_obs_cliente,
@@ -144,8 +157,9 @@ class AtendimentosController extends Controller
 
     public function updateObservacoes(Request $request, int $id): JsonResponse
     {
+        $atendimento = $this->atendimentoComPosseGarantida($id);
+
         try {
-            $atendimento = Atendimento::findOrFail($id);
             $atendimento->update([
                 'aten_obs_tecnica'    => $request->input('aten_obs_tecnica'),
                 'aten_obs_cliente'    => $request->input('aten_obs_cliente'),
@@ -160,6 +174,8 @@ class AtendimentosController extends Controller
 
     public function getAnexos(int $id): JsonResponse
     {
+        $this->atendimentoComPosseGarantida($id);
+
         $anexos = AtendimentoAnexo::where('aten_anexo_atendimento_id', $id)->orderByDesc('aten_anexo_id')->get();
         return response()->json(['anexos' => $anexos]);
     }
@@ -173,6 +189,8 @@ class AtendimentosController extends Controller
             'required', 'file', 'max:20480',
             'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,txt,csv,mp4,mov,avi,mkv,webm',
         ]]);
+
+        $this->atendimentoComPosseGarantida($id);
 
         try {
             $criados = [];
@@ -193,6 +211,8 @@ class AtendimentosController extends Controller
 
     public function destroyAnexo(int $id, int $itemId): JsonResponse
     {
+        $this->atendimentoComPosseGarantida($id);
+
         try {
             $anexo = AtendimentoAnexo::where('aten_anexo_id', $itemId)
                 ->where('aten_anexo_atendimento_id', $id)
@@ -210,6 +230,8 @@ class AtendimentosController extends Controller
 
     public function storeEquipamento(AtendimentoEquipamentoRequest $request, int $id)
     {
+        $this->atendimentoComPosseGarantida($id);
+
         try {
             $this->equipamentoRepository->create([
                 'aten_equip_atendimento_id' => $id,
@@ -230,6 +252,8 @@ class AtendimentosController extends Controller
 
     public function destroyEquipamento(int $id, int $equipId)
     {
+        $this->atendimentoComPosseGarantida($id);
+
         try {
             $this->equipamentoRepository->delete($equipId);
 
@@ -247,6 +271,8 @@ class AtendimentosController extends Controller
 
     public function getEquipamentos(int $id): JsonResponse
     {
+        $this->atendimentoComPosseGarantida($id);
+
         try {
             $equipamentos = $this->equipamentoRepository->findByAtendimento($id);
 

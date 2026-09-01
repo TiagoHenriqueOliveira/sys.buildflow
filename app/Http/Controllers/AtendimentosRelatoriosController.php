@@ -6,6 +6,7 @@ use App\Enums\AssinaturaTipo;
 use App\Enums\AtendimentoRelatorioStatus;
 use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
+use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
 use App\Services\AuditService;
 use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
 use App\Http\Requests\AtendimentoRelatorioStoreRequest;
@@ -40,11 +41,24 @@ use Illuminate\Support\Facades\DB;
 
 class AtendimentosRelatoriosController extends Controller
 {
+    use GarantePosseDeAtendimento;
+
     public function __construct(
         private readonly AtendimentoRelatorioRepository $repo,
         private readonly MediaService $media,
         private readonly DataTableService $dataTable,
     ) {}
+
+    // Item 2.2: busca o relatório já garantindo que o usuário autenticado
+    // tem acesso ao atendimento dono dele — substitui o antigo padrão
+    // "AtendimentoRelatorio::findOrFail($id)" repetido em cada método.
+    private function relatorioComPosseGarantida(int $id, array $with = []): AtendimentoRelatorio
+    {
+        $relatorio = AtendimentoRelatorio::with(array_unique([...$with, 'atendimento']))->findOrFail($id);
+        $this->garantirPosse($relatorio->atendimento);
+
+        return $relatorio;
+    }
 
     public function index(Request $request)
     {
@@ -97,13 +111,18 @@ class AtendimentosRelatoriosController extends Controller
 
     public function store(AtendimentoRelatorioStoreRequest $request)
     {
+        $atendimento = Atendimento::query()
+            ->with('natureza.modeloRelatorio')
+            ->where('aten_id', $request->aten_id)
+            ->firstOrFail();
+
+        // Item 2.2: sem isto, qualquer técnico autenticado conseguia criar
+        // relatório em atendimento de OUTRO técnico só informando o aten_id
+        // no corpo da requisição. Fora do try/catch de propósito — dentro
+        // dele o abort_unless(403) vira 500, engolido pelo catch genérico.
+        $this->garantirPosse($atendimento);
+
         try {
-
-            $atendimento = Atendimento::query()
-                ->with('natureza.modeloRelatorio')
-                ->where('aten_id', $request->aten_id)
-                ->firstOrFail();
-
             if (
                 !$atendimento->natureza ||
                 !$atendimento->natureza->modeloRelatorio
@@ -191,6 +210,8 @@ class AtendimentosRelatoriosController extends Controller
             'assinaturas',
         ]);
 
+        $this->garantirPosse($atendimentoRelatorio->atendimento);
+
         if (!$atendimentoRelatorio->modeloRelatorio) {
             abort(500, 'Modelo de relatório não encontrado.');
         }
@@ -208,6 +229,8 @@ class AtendimentosRelatoriosController extends Controller
 
     public function update(AtendimentoRelatorioRequest $request, int $atendimentos_relatorio)
     {
+        $this->relatorioComPosseGarantida($atendimentos_relatorio);
+
         $rel = $this->repo->update($atendimentos_relatorio, $request->validated());
 
         return response()->json([
@@ -219,9 +242,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateDados(AtendimentoRelatorioDadosRequest $request, int $id)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             $relatorio->update([
                 'aten_rel_data' => $request->aten_rel_data,
             ]);
@@ -242,9 +265,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateHorarios(AtendimentoRelatorioHorariosRequest $request, int $id)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             AtendimentoRelatorioHorario::updateOrCreate(
                 ['aten_rel_hora_relatorio_id' => $relatorio->aten_rel_id],
                 [
@@ -271,9 +294,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateClima(AtendimentoRelatorioCondicaoClimaticaRequest $request, int $id)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             $periodos = [
                 1 => $request->clima_manha,
                 2 => $request->clima_tarde,
@@ -308,8 +331,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateAssinaturas(AtendimentoRelatorioAssinaturasRequest $request, int $id)
     {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['modeloRelatorio', 'assinaturas']);
+
         try {
-            $relatorio = AtendimentoRelatorio::with(['modeloRelatorio', 'assinaturas'])->findOrFail($id);
             $novoStatus = (int) $request->aten_rel_status;
 
             // REL-05: Técnicos precisam de assinaturas para aprovar; administradores podem dispensar
@@ -386,8 +410,9 @@ class AtendimentosRelatoriosController extends Controller
         if (!in_array($campo, $campos)) {
             return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
         }
+        $relatorio = $this->relatorioComPosseGarantida($id);
+
         try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
             $relatorio->update([$campo => $request->input('valor')]);
             return response()->json(['success' => true, 'message' => 'Salvo com sucesso.']);
         } catch (\Throwable $e) {
@@ -398,11 +423,11 @@ class AtendimentosRelatoriosController extends Controller
 
     public function storeOcorrencia(AtendimentoRelatorioOcorrenciaRequest $request, int $id)
     {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+
         try {
             $ocorrenciaId = (int) $request->ocorrencia_id;
             $observacao   = $request->observacao ?? '';
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
 
             $exists = $relatorio->ocorrencias()
                 ->where('ocorrencias.ocor_id', $ocorrenciaId)
@@ -439,9 +464,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function destroyOcorrencia(int $id, int $ocorrenciaId)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             $relatorio->ocorrencias()->detach($ocorrenciaId);
 
             return response()->json([
@@ -458,7 +483,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getServicos(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
         return response()->json([
             'data' => $relatorio->servicos()->orderBy('aten_rel_serv_id')->get(['aten_rel_serv_id', 'aten_rel_serv_descricao']),
         ]);
@@ -467,6 +492,8 @@ class AtendimentosRelatoriosController extends Controller
     public function storeServico(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $request->validate(['descricao' => 'required|string|max:255']);
+        $this->relatorioComPosseGarantida($id);
+
         try {
             $serv = AtendimentoRelatorioServico::create([
                 'aten_rel_serv_relatorio_id' => $id,
@@ -481,6 +508,8 @@ class AtendimentosRelatoriosController extends Controller
 
     public function destroyServico(int $id, int $itemId): \Illuminate\Http\JsonResponse
     {
+        $this->relatorioComPosseGarantida($id);
+
         try {
             AtendimentoRelatorioServico::where('aten_rel_serv_id', $itemId)
                 ->where('aten_rel_serv_relatorio_id', $id)
@@ -494,7 +523,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getPecas(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
         return response()->json([
             'data' => $relatorio->pecas()->orderBy('aten_rel_peca_id')->get(['aten_rel_peca_id', 'aten_rel_peca_descricao']),
         ]);
@@ -503,6 +532,8 @@ class AtendimentosRelatoriosController extends Controller
     public function storePeca(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
         $request->validate(['descricao' => 'required|string|max:255']);
+        $this->relatorioComPosseGarantida($id);
+
         try {
             $peca = AtendimentoRelatorioPeca::create([
                 'aten_rel_peca_relatorio_id' => $id,
@@ -517,6 +548,8 @@ class AtendimentosRelatoriosController extends Controller
 
     public function destroyPeca(int $id, int $itemId): \Illuminate\Http\JsonResponse
     {
+        $this->relatorioComPosseGarantida($id);
+
         try {
             AtendimentoRelatorioPeca::where('aten_rel_peca_id', $itemId)
                 ->where('aten_rel_peca_relatorio_id', $id)
@@ -532,7 +565,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getDescricaoItens(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
         $itens = $relatorio->itensDescricao()->with('fotos')->orderBy('aten_rel_desc_id')->get();
         $usaDescricaoNova = $itens->isNotEmpty();
 
@@ -562,6 +595,8 @@ class AtendimentosRelatoriosController extends Controller
             'foto.max'       => 'A foto não pode ultrapassar 10 MB.',
             'foto.mimes'     => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
         ]);
+
+        $this->relatorioComPosseGarantida($id);
 
         try {
             $item = AtendimentoRelatorioDescricaoItem::create([
@@ -600,6 +635,8 @@ class AtendimentosRelatoriosController extends Controller
 
     public function destroyDescricaoItem(int $id, int $itemId): \Illuminate\Http\JsonResponse
     {
+        $this->relatorioComPosseGarantida($id);
+
         try {
             $item = AtendimentoRelatorioDescricaoItem::with('fotos')
                 ->where('aten_rel_desc_id', $itemId)
@@ -618,7 +655,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getDados(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::with('atendimento.cliente')->findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['atendimento.cliente']);
         $prazo = $relatorio->calcularPrazo();
 
         return response()->json([
@@ -632,7 +669,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getHorarios(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::with('horarios')->findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['horarios']);
         $h = $relatorio->horarios;
 
         return response()->json([
@@ -645,7 +682,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getClimaData(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::with('climas')->findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['climas']);
 
         $clima = ['manha' => null, 'tarde' => null, 'noite' => null];
         foreach ($relatorio->climas as $c) {
@@ -660,7 +697,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getOcorrenciasData(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::with('ocorrencias')->findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['ocorrencias']);
 
         $ocorrencias = $relatorio->ocorrencias->map(fn($o) => [
             'ocorrencia_id' => (int) $o->ocor_id,
@@ -673,7 +710,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getAssinaturasData(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
         $resp = $relatorio->assinaturaResponsavel();
         $cli  = $relatorio->assinaturaCliente();
 
@@ -759,9 +796,9 @@ class AtendimentosRelatoriosController extends Controller
             'videos.*.mimes'   => 'Tipo de vídeo não permitido. Formatos aceitos: MP4, MOV, AVI, MKV, WEBM.',
         ]);
 
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             $saved = ['arquivos' => [], 'fotos' => [], 'videos' => [], 'erros' => []];
 
             // arquivos gerais
@@ -879,7 +916,7 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getAnexos(int $id)
     {
-        $relatorio = AtendimentoRelatorio::with(['anexos', 'fotos', 'videos'])->findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['anexos', 'fotos', 'videos']);
 
         $arquivos = $relatorio->anexos->map(function ($anexo) {
             return [
@@ -929,6 +966,8 @@ class AtendimentosRelatoriosController extends Controller
 
     public function destroyAnexo(int $id, string $type, int $itemId)
     {
+        $this->relatorioComPosseGarantida($id);
+
         try {
             switch ($type) {
                 case 'arquivo':
