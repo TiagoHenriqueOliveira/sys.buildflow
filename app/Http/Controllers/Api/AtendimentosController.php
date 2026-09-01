@@ -23,20 +23,13 @@ class AtendimentosController extends Controller
     {
         $usuario = $request->user();
 
+        // Item 2.5: filtro de listagem consolidado em Atendimento::visivelPara()
+        // — mesma regra de nível de acesso usada em AtendimentoPolicy, mas
+        // pra filtrar uma query em vez de autorizar um registro carregado.
         $query = Atendimento::query()
+            ->visivelPara($usuario)
             ->with(['natureza', 'cliente', 'usuario'])
             ->orderBy('aten_dt_inicio', 'desc');
-
-        // Técnico só vê os próprios; admin vê todos. Comparação alinhada com
-        // o resto do sistema (nivel_acesso 0 = admin, ver AtendimentoPolicy);
-        // "=== 1" filtrava certo só por coincidência (só existirem os níveis
-        // 0 e 1 até agora) — qualquer nível novo ficaria sem filtro nenhum.
-        // É filtro de listagem, não autorização de um registro carregado —
-        // não dá pra delegar pra AtendimentoPolicy::acessar() aqui (ver item
-        // 2.5 do plano de correções).
-        if ($usuario->user_nivel_acesso !== 0) {
-            $query->where('aten_usuario_id', $usuario->user_id);
-        }
 
         if ($request->filled('status')) {
             $query->where('aten_status', (int) $request->status);

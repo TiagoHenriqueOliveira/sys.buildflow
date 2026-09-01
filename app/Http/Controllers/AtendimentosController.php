@@ -44,7 +44,7 @@ class AtendimentosController extends Controller
         if ($request->ajax()) {
             try {
             $usuario = Auth::user();
-            $filtroUsuarioId = $usuario->user_nivel_acesso === 1 ? $usuario->user_id : null;
+            $filtroUsuarioId = Atendimento::idVisivelPara($usuario);
 
             return response()->json(
                 $this->dataTable->process(

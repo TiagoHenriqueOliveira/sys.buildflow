@@ -25,12 +25,9 @@ class AtendimentosController extends Controller
         $usuario = $request->user();
 
         $query = Atendimento::query()
+            ->visivelPara($usuario)
             ->with(['natureza.modeloRelatorio', 'cliente', 'usuario'])
             ->orderBy('aten_dt_inicio', 'desc');
-
-        if ($usuario->user_nivel_acesso !== 0) {
-            $query->where('aten_usuario_id', $usuario->user_id);
-        }
 
         if ($request->filled('status')) {
             $query->where('aten_status', (int) $request->status);

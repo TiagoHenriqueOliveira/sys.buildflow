@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\NaturezaAtendimento;
@@ -66,5 +67,25 @@ class Atendimento extends Model
     public function anexos()
     {
         return $this->hasMany(AtendimentoAnexo::class, 'aten_anexo_atendimento_id', 'aten_id');
+    }
+
+    /**
+     * Item 2.5 do plano de correções: a comparação "técnico só vê o seu,
+     * admin vê tudo" estava reimplementada com pequenas variações em ~6
+     * lugares (listagens do painel web, dashboard e 3 APIs). Mesma regra de
+     * App\Policies\AtendimentoPolicy::acessar(), mas para FILTRAR uma query
+     * em vez de autorizar um registro já carregado (por isso não dá pra
+     * reusar a Policy diretamente aqui).
+     */
+    public static function idVisivelPara(Usuario $usuario): ?int
+    {
+        return $usuario->user_nivel_acesso === 0 ? null : $usuario->user_id;
+    }
+
+    public function scopeVisivelPara(Builder $query, Usuario $usuario): Builder
+    {
+        $id = static::idVisivelPara($usuario);
+
+        return $id === null ? $query : $query->where('aten_usuario_id', $id);
     }
 }

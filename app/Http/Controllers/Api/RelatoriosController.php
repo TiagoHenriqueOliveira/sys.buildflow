@@ -75,8 +75,8 @@ class RelatoriosController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usuario = $request->user();
-        $filters = $usuario->user_nivel_acesso === 1
-            ? ['usuario_id' => $usuario->user_id]
+        $filters = ($id = Atendimento::idVisivelPara($usuario)) !== null
+            ? ['usuario_id' => $id]
             : [];
 
         if ($request->filled('atendimento_id')) {

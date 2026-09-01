@@ -64,8 +64,8 @@ class AtendimentosRelatoriosController extends Controller
     {
         if ($request->ajax()) {
             $usuario = Auth::user();
-            $filters = $usuario->user_nivel_acesso === 1
-                ? ['usuario_id' => $usuario->user_id]
+            $filters = ($id = Atendimento::idVisivelPara($usuario)) !== null
+                ? ['usuario_id' => $id]
                 : [];
 
             return response()->json(

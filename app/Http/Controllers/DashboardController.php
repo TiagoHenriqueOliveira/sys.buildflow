@@ -257,12 +257,11 @@ class DashboardController extends Controller
 
     private function isTecnico(): bool
     {
-        return Auth::user()->user_nivel_acesso === 1;
+        return Atendimento::idVisivelPara(Auth::user()) !== null;
     }
 
     private function baseQuery()
     {
-        return Atendimento::query()
-            ->when($this->isTecnico(), fn($q) => $q->where('aten_usuario_id', Auth::id()));
+        return Atendimento::query()->visivelPara(Auth::user());
     }
 }
