@@ -46,6 +46,13 @@ class UsuarioRepository implements CrudRepositoryInterface
 
         $user->update($payload);
 
+        // Desativar o usuário precisa também invalidar sessões já abertas
+        // (app e painel) — sem isto, um token Sanctum emitido antes da
+        // desativação continuava autenticando normalmente até expirar.
+        if ((int) $payload['user_ativo'] === 0) {
+            $user->tokens()->delete();
+        }
+
         return $user;
     }
 }

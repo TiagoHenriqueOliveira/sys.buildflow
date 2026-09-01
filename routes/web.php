@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\Route;
 // Rotas públicas (sem autenticação)
 Route::controller(AuthController::class)->middleware('guest')->group(function () {
     Route::get('/', 'mostrarLogin')->name('login');
-    Route::post('/login', 'login')->name('login.post');
+    // Mesmo limiter 'login' já usado pela API (5 tentativas/min por
+    // IP+email, ver RouteServiceProvider) — antes só a API tinha proteção
+    // contra força bruta de senha, o painel web ficava sem nenhuma.
+    Route::post('/login', 'login')->name('login.post')->middleware('throttle:login');
 });
 
 // Serve os arquivos gravados em public/midia (disco 'public', ver
