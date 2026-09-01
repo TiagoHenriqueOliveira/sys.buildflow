@@ -20,32 +20,35 @@ use Illuminate\Support\Facades\Artisan;
  * Registrado no grupo 'web' (não no middleware global): precisa rodar
  * depois de StartSession pra $request->user() resolver corretamente.
  *
- * O backup roda em terminate() — método "terminable middleware" do Laravel,
- * chamado só DEPOIS que a resposta já foi enviada ao navegador (ver
- * public/index.php: $response->send() antes de $kernel->terminate()), então
- * quem estiver usando o sistema não espera nada a mais.
+ * Toda a checagem/execução fica em terminate() — método "terminable
+ * middleware" do Laravel, chamado só DEPOIS que a resposta já foi enviada
+ * ao navegador (ver public/index.php: $response->send() antes de
+ * $kernel->terminate()), então quem estiver usando o sistema não espera
+ * nada a mais. IMPORTANTE: o Laravel resolve uma instância NOVA desta
+ * classe pra chamar terminate() (não reaproveita a instância do handle()),
+ * então nada pode ser guardado em propriedade de instância entre os dois —
+ * por isso toda a lógica mora só em terminate(), que recebe o $request de
+ * novo e consegue checar tudo sozinho.
  */
 class BackupAutomatico
 {
     private const NIVEL_ADMIN = 0;
     private const TAMANHO_JANELA_HORAS = 3;
 
-    private bool $deveRodar = false;
-
     public function handle(Request $request, Closure $next)
     {
-        $usuario = $request->user();
-
-        if ($usuario && (int) $usuario->user_nivel_acesso === self::NIVEL_ADMIN) {
-            $this->deveRodar = $this->janelaAindaNaoTeveBackup();
-        }
-
         return $next($request);
     }
 
     public function terminate(Request $request, $response): void
     {
-        if (! $this->deveRodar) {
+        $usuario = $request->user();
+
+        if (! $usuario || (int) $usuario->user_nivel_acesso !== self::NIVEL_ADMIN) {
+            return;
+        }
+
+        if (! $this->janelaAindaNaoTeveBackup()) {
             return;
         }
 
