@@ -22,6 +22,7 @@ use App\Repositories\AtendimentoRelatorioRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -767,19 +768,31 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
+        // Apaga o arquivo físico ANTES do registro — mesmo padrão já usado em
+        // AtendimentosRelatoriosController::destroyAnexo (painel web). Sem
+        // isto, o registro sumia do banco mas o arquivo ficava órfão pra
+        // sempre em storage/app/public.
         switch ($tipo) {
             case 'foto':
-                AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)->where('aten_rel_foto_relatorio_id', $id)->firstOrFail()->delete();
+                $item = AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)->where('aten_rel_foto_relatorio_id', $id)->firstOrFail();
+                $path = $item->aten_rel_foto_path;
                 break;
             case 'video':
-                AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)->where('aten_rel_vid_relatorio_id', $id)->firstOrFail()->delete();
+                $item = AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)->where('aten_rel_vid_relatorio_id', $id)->firstOrFail();
+                $path = $item->aten_rel_vid_path;
                 break;
             case 'arquivo':
-                AtendimentoRelatorioAnexo::where('aten_rel_anexo_id', $itemId)->where('aten_rel_anexo_relatorio_id', $id)->firstOrFail()->delete();
+                $item = AtendimentoRelatorioAnexo::where('aten_rel_anexo_id', $itemId)->where('aten_rel_anexo_relatorio_id', $id)->firstOrFail();
+                $path = $item->aten_rel_anexo_path;
                 break;
             default:
                 return response()->json(['message' => 'Tipo inválido. Use: foto, video ou arquivo.'], 422);
         }
+
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+        $item->delete();
 
         return response()->json(['message' => 'Anexo removido!']);
     }
