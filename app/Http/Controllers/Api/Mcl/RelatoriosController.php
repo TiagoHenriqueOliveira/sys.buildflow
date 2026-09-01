@@ -7,11 +7,16 @@ use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mcl\StoreAssinaturaRequest;
+use App\Http\Requests\Mcl\StoreDescricaoItemRequest;
 use App\Http\Requests\Mcl\StoreOcorrenciaRequest;
 use App\Http\Requests\Mcl\StorePecaRequest;
 use App\Http\Requests\Mcl\StoreRelatorioRequest;
 use App\Http\Requests\Mcl\StoreServicoRequest;
+use App\Http\Requests\Mcl\UpdateClimaRequest;
+use App\Http\Requests\Mcl\UpdateHorariosRequest;
+use App\Http\Requests\Mcl\UpdateInformacoesAdicionaisRequest;
 use App\Http\Requests\Mcl\UpdateStatusRequest;
+use App\Http\Requests\Mcl\UploadAnexosRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAssinatura;
@@ -309,10 +314,8 @@ class RelatoriosController extends Controller
      * PUT /api/mcl/v1/relatorios/{id}/informacoes-adicionais
      * Body: { informacoes_adicionais: string }
      */
-    public function updateInformacoesAdicionais(Request $request, int $id): JsonResponse
+    public function updateInformacoesAdicionais(UpdateInformacoesAdicionaisRequest $request, int $id): JsonResponse
     {
-        $request->validate(['informacoes_adicionais' => 'nullable|string']);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -327,15 +330,8 @@ class RelatoriosController extends Controller
      * PUT /api/mcl/v1/relatorios/{id}/horarios
      * Body: { entrada, inicio_intervalo, fim_intervalo, saida } — "HH:MM"
      */
-    public function updateHorarios(Request $request, int $id): JsonResponse
+    public function updateHorarios(UpdateHorariosRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'entrada'          => 'nullable|date_format:H:i',
-            'inicio_intervalo' => 'nullable|date_format:H:i',
-            'fim_intervalo'    => 'nullable|date_format:H:i',
-            'saida'            => 'nullable|date_format:H:i',
-        ]);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -358,14 +354,8 @@ class RelatoriosController extends Controller
      * PUT /api/mcl/v1/relatorios/{id}/clima
      * Body: { manha, tarde, noite } — "ensolarado|nublado|chuvoso"
      */
-    public function updateClima(Request $request, int $id): JsonResponse
+    public function updateClima(UpdateClimaRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'manha' => 'nullable|in:ensolarado,nublado,chuvoso',
-            'tarde' => 'nullable|in:ensolarado,nublado,chuvoso',
-            'noite' => 'nullable|in:ensolarado,nublado,chuvoso',
-        ]);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
@@ -469,13 +459,8 @@ class RelatoriosController extends Controller
      *
      * POST /api/mcl/v1/relatorios/{id}/descricao-itens
      */
-    public function storeDescricaoItem(Request $request, int $id): JsonResponse
+    public function storeDescricaoItem(StoreDescricaoItemRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'texto' => 'required|string',
-            'foto'  => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp',
-        ]);
-
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
@@ -695,9 +680,13 @@ class RelatoriosController extends Controller
      *   arquivos[] — pdf, doc, docx, xls, xlsx, txt, csv (max 20 MB)
      *   legendas[] — string (legenda por índice da foto)
      */
-    public function uploadAnexos(Request $request, int $id): JsonResponse
+    public function uploadAnexos(UploadAnexosRequest $request, int $id): JsonResponse
     {
-        // Verifica se PHP descartou arquivos por exceder upload_max_filesize antes do script rodar
+        // Verifica se PHP descartou arquivos por exceder upload_max_filesize
+        // antes do script rodar. Fica depois da validação automática do
+        // FormRequest (que passa mesmo sem arquivo nenhum, já que os campos
+        // são todos nullable) de propósito — é um caso à parte, não uma
+        // regra de validação de payload.
         if (
             $request->header('Content-Length') > 0 &&
             ! $request->hasFile('fotos') &&
@@ -710,17 +699,6 @@ class RelatoriosController extends Controller
                 'message' => 'Arquivo rejeitado pelo servidor. Verifique se o tamanho não excede 500 MB.',
             ], 422);
         }
-
-        $request->validate([
-            'fotos'      => 'nullable|array',
-            'fotos.*'    => 'file|max:10240|mimes:jpg,jpeg,png,webp',
-            'legendas'   => 'nullable|array',
-            'legendas.*' => 'nullable|string|max:255',
-            'videos'     => 'nullable|array',
-            'videos.*'   => 'file|max:524288|mimes:mp4,mov,avi,mkv,webm',
-            'arquivos'   => 'nullable|array',
-            'arquivos.*' => 'file|max:524288|mimes:pdf,doc,docx,xls,xlsx,txt,csv',
-        ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);

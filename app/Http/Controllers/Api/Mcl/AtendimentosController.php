@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\Mcl;
 use App\Enums\AtendimentoStatus;
 use App\Enums\AtendimentoRelatorioStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Mcl\UpdateAtendimentoStatusRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class AtendimentosController extends Controller
 {
@@ -67,12 +67,8 @@ class AtendimentosController extends Controller
      * PUT /api/mcl/v1/atendimentos/{id}/status
      * Body: { status: 0|1|2|3 }
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(UpdateAtendimentoStatusRequest $request, int $id): JsonResponse
     {
-        $request->validate([
-            'status' => ['required', 'integer', Rule::in([0, 1, 2, 3])],
-        ]);
-
         $usuario     = $request->user();
         $atendimento = Atendimento::findOrFail($id);
 
