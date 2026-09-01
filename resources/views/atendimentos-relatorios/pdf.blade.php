@@ -96,8 +96,8 @@
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-grid { width: 100%; border-collapse: collapse; }
         .descricao-grid td { padding: 0 14px 22px 0; text-align: left; vertical-align: top; }
-        .descricao-foto-col { width: 190px; }
-        .descricao-foto { width: 180px; height: 240px; border: 1px solid #ddd; display: block; }
+        .descricao-foto-col { width: 470px; }
+        .descricao-foto { width: 450px; height: 600px; border: 1px solid #ddd; display: block; }
         .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
 
         /* FOTOS */
