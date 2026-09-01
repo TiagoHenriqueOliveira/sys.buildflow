@@ -27,6 +27,7 @@ use App\Models\Ocorrencia;
 use App\Services\RelatorioMclService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -126,20 +127,29 @@ class RelatoriosController extends Controller
             }
         }
 
-        $rel = AtendimentoRelatorio::create([
-            'aten_rel_atendimento_id'      => $atendimento->aten_id,
-            'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio->mod_rel_id,
-            'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
-            'aten_rel_status'              => 0,
-        ]);
+        // Item 2.3: criação do relatório + avanço de status do atendimento são
+        // duas tabelas que precisam mudar juntas ou nenhuma — sem transação,
+        // uma falha entre as duas chamadas deixava o relatório criado com o
+        // atendimento parado em "não iniciada" (ou vice-versa).
+        $rel = DB::transaction(function () use ($request, $atendimento) {
+            $rel = AtendimentoRelatorio::create([
+                'aten_rel_atendimento_id'      => $atendimento->aten_id,
+                'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio->mod_rel_id,
+                'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
+                'aten_rel_status'              => 0,
+            ]);
 
-        // Muda atendimento para "em andamento" ao criar o primeiro relatório —
-        // só a partir de "não iniciada". Nunca "reviver" um atendimento
-        // Paralisado/Concluído (a trava REL-02 acima já bloqueia esses casos,
-        // mas a condição fica explícita aqui também por segurança).
-        if ($atendimento->aten_status === AtendimentoStatus::NaoIniciada->value) {
-            $atendimento->update(['aten_status' => AtendimentoStatus::EmAndamento->value]);
-        }
+            // Muda atendimento para "em andamento" ao criar o primeiro
+            // relatório — só a partir de "não iniciada". Nunca "reviver" um
+            // atendimento Paralisado/Concluído (a trava REL-02 acima já
+            // bloqueia esses casos, mas a condição fica explícita aqui
+            // também por segurança).
+            if ($atendimento->aten_status === AtendimentoStatus::NaoIniciada->value) {
+                $atendimento->update(['aten_status' => AtendimentoStatus::EmAndamento->value]);
+            }
+
+            return $rel;
+        });
 
         return response()->json([
             'message' => 'Relatório criado.',
@@ -623,18 +633,27 @@ class RelatoriosController extends Controller
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
-        $urls = [];
-        foreach (['tecnico' => 'responsavel', 'cliente' => 'cliente'] as $campo => $tipo) {
-            if ($request->filled($campo)) {
-                $urls[$campo] = $this->media->saveSignature(
-                    $relatorio,
-                    $request->input($campo),
-                    $tipo,
-                    $request->input("{$campo}_nome"),
-                    $request->input("{$campo}_cpf"),
-                );
+        // Item 2.3: se as duas assinaturas vierem na mesma requisição, o
+        // registro da segunda não pode ficar pendente sem o da primeira em
+        // caso de erro no meio do caminho — mesmo a gravação em disco não
+        // sendo transacional (arquivo de uma assinatura já revertida no
+        // banco fica órfão, tradeoff aceito no plano de correções).
+        $urls = DB::transaction(function () use ($request, $relatorio) {
+            $urls = [];
+            foreach (['tecnico' => 'responsavel', 'cliente' => 'cliente'] as $campo => $tipo) {
+                if ($request->filled($campo)) {
+                    $urls[$campo] = $this->media->saveSignature(
+                        $relatorio,
+                        $request->input($campo),
+                        $tipo,
+                        $request->input("{$campo}_nome"),
+                        $request->input("{$campo}_cpf"),
+                    );
+                }
             }
-        }
+
+            return $urls;
+        });
 
         return response()->json(['message' => 'Assinatura(s) salva(s).', 'data' => $urls]);
     }
@@ -709,54 +728,63 @@ class RelatoriosController extends Controller
         $saved    = ['fotos' => [], 'videos' => [], 'arquivos' => [], 'erros' => []];
         $legendas = $request->input('legendas', []);
 
-        if ($request->hasFile('fotos')) {
-            foreach ($request->file('fotos') as $i => $file) {
-                if (! $file->isValid()) continue;
-                $originalName = $file->getClientOriginalName();
-                $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/fotos");
-                $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
-                if ($path === false) {
-                    $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
-                    continue;
+        // Item 2.3: os registros de fotos/vídeos/arquivos deste upload
+        // formam um único lote — se uma gravação no meio do lote falhar por
+        // erro de banco (não pela validação, que já filtra antes), as
+        // anteriores não devem ficar committadas sozinhas. Os arquivos já
+        // salvos em disco antes do erro ficam órfãos nesse cenário raro —
+        // tradeoff aceito no plano de correções (I/O de arquivo não é
+        // transacional).
+        DB::transaction(function () use ($request, $id, $legendas, &$saved) {
+            if ($request->hasFile('fotos')) {
+                foreach ($request->file('fotos') as $i => $file) {
+                    if (! $file->isValid()) continue;
+                    $originalName = $file->getClientOriginalName();
+                    $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/fotos");
+                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
+                        continue;
+                    }
+                    $foto         = AtendimentoRelatorioFoto::create([
+                        'aten_rel_foto_relatorio_id' => $id,
+                        'aten_rel_foto_path'         => $path,
+                        'aten_rel_foto_legenda'      => $legendas[$i] ?? null,
+                    ]);
+                    $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('midia/' . $path), 'nome' => $originalName, 'legenda' => $foto->aten_rel_foto_legenda];
                 }
-                $foto         = AtendimentoRelatorioFoto::create([
-                    'aten_rel_foto_relatorio_id' => $id,
-                    'aten_rel_foto_path'         => $path,
-                    'aten_rel_foto_legenda'      => $legendas[$i] ?? null,
-                ]);
-                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('midia/' . $path), 'nome' => $originalName, 'legenda' => $foto->aten_rel_foto_legenda];
             }
-        }
 
-        if ($request->hasFile('videos')) {
-            foreach ($request->file('videos') as $file) {
-                if (! $file->isValid()) continue;
-                $originalName = $file->getClientOriginalName();
-                $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/videos");
-                $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
-                if ($path === false) {
-                    $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
-                    continue;
+            if ($request->hasFile('videos')) {
+                foreach ($request->file('videos') as $file) {
+                    if (! $file->isValid()) continue;
+                    $originalName = $file->getClientOriginalName();
+                    $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/videos");
+                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
+                        continue;
+                    }
+                    $video        = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
+                    $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('midia/' . $path), 'nome' => $originalName];
                 }
-                $video        = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
-                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('midia/' . $path), 'nome' => $originalName];
             }
-        }
 
-        if ($request->hasFile('arquivos')) {
-            foreach ($request->file('arquivos') as $file) {
-                if (! $file->isValid()) continue;
-                $originalName = $file->getClientOriginalName();
-                $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/arquivos");
-                $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
-                if ($path === false) {
-                    $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
-                    continue;
+            if ($request->hasFile('arquivos')) {
+                foreach ($request->file('arquivos') as $file) {
+                    if (! $file->isValid()) continue;
+                    $originalName = $file->getClientOriginalName();
+                    $safeName     = $this->media->safeFilename($originalName, "atendimentos_relatorios/{$id}/arquivos");
+                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$originalName}";
+                        continue;
+                    }
+                    $anexo        = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
+                    $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('midia/' . $path), 'nome' => $originalName];
                 }
-                $anexo        = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
-                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('midia/' . $path), 'nome' => $originalName];
             }
-        }
+        });
 
         return response()->json(['message' => 'Upload realizado.', 'data' => $saved]);
     }

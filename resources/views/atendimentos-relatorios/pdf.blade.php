@@ -94,7 +94,7 @@
         .descricao-grid { width: 100%; border-collapse: collapse; }
         .descricao-grid td { padding: 0 10px 26px 10px; text-align: center; vertical-align: top; width: 50%; }
         .descricao-grid td.texto-only { text-align: left; }
-        .descricao-foto { width: 100%; max-width: 420px; height: auto; border: 1px solid #ddd; display: block; margin: 0 auto; }
+        .descricao-foto { width: 380px; height: 500px; border: 1px solid #ddd; display: block; margin: 0 auto; }
         .descricao-comentario { margin: 6px auto 0; max-width: 420px; font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
         .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; }
 
@@ -332,7 +332,7 @@
      (texto + foto opcional), OU o campo legado de texto único; nunca os
      dois juntos. O critério é a existência de item na tabela nova. --}}
 @if($relatorio->itensDescricao->isNotEmpty())
-<div class="section section-descricao">
+<div class="section section-descricao page-break">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
     @php
         // Cada item tem no máximo 1 foto; o texto funciona como comentário
@@ -371,8 +371,13 @@
                     @if($itemFotoSrc)
                         <img class="descricao-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
                     @endif
-                    <div class="descricao-comentario">{{ $item->aten_rel_desc_texto }}</div>
                 </td>
+                @endforeach
+                @if(count($linha['itens']) < 2)<td></td>@endif
+            </tr>
+            <tr>
+                @foreach($linha['itens'] as $item)
+                <td><div class="descricao-comentario">{{ $item->aten_rel_desc_texto }}</div></td>
                 @endforeach
                 @if(count($linha['itens']) < 2)<td></td>@endif
             </tr>
