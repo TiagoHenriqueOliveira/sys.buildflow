@@ -14,11 +14,11 @@ use App\Models\AtendimentoRelatorioHorario;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
-use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\Equipamento;
 use App\Models\Ocorrencia;
 use App\Models\Ocupacao;
 use App\Repositories\AtendimentoRelatorioRepository;
+use App\Services\RelatorioMclService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +29,8 @@ use Illuminate\Support\Str;
 class RelatoriosController extends Controller
 {
     public function __construct(
-        private readonly AtendimentoRelatorioRepository $repo
+        private readonly AtendimentoRelatorioRepository $repo,
+        private readonly RelatorioMclService $assinaturaService,
     ) {}
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -630,9 +631,13 @@ class RelatoriosController extends Controller
     public function updateAssinaturas(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'status'                 => 'required|integer|in:0,1,2',
-            'assinatura_responsavel' => 'nullable|string',
-            'assinatura_cliente'     => 'nullable|string',
+            'status'                      => 'required|integer|in:0,1,2',
+            'assinatura_responsavel'      => 'nullable|string',
+            'assinatura_responsavel_nome' => 'nullable|string|max:100',
+            'assinatura_responsavel_cpf'  => 'nullable|string|max:14',
+            'assinatura_cliente'          => 'nullable|string',
+            'assinatura_cliente_nome'     => 'nullable|string|max:100',
+            'assinatura_cliente_cpf'      => 'nullable|string|max:14',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
@@ -643,10 +648,22 @@ class RelatoriosController extends Controller
         $relatorio->update(['aten_rel_status' => $request->status]);
         $urls = [];
 
+        // Item 2.6 do plano de correções: antes reimplementava a mesma
+        // lógica de salvar assinatura (imagem + registro) com uma variação
+        // própria que nem gravava nome/CPF de quem assinou — unificado com
+        // App\Services\RelatorioMclService::saveSignature(), a mesma usada
+        // pela API Mcl (decisão do usuário: a API legada passa a gravar
+        // nome/CPF também).
         foreach (['responsavel', 'cliente'] as $tipo) {
             $campo = "assinatura_{$tipo}";
             if ($request->filled($campo)) {
-                $urls[$tipo] = $this->saveSignature($relatorio, $request->input($campo), $tipo);
+                $urls[$tipo] = $this->assinaturaService->saveSignature(
+                    $relatorio,
+                    $request->input($campo),
+                    $tipo,
+                    $request->input("{$campo}_nome"),
+                    $request->input("{$campo}_cpf"),
+                );
             }
         }
 
@@ -797,45 +814,4 @@ class RelatoriosController extends Controller
         return response()->json(['message' => 'Anexo removido!']);
     }
 
-    // ─── Signature helper ────────────────────────────────────────────────────
-
-    private function saveSignature(AtendimentoRelatorio $relatorio, string $base64, string $tipo): string
-    {
-        if (! preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $m)) {
-            throw new \RuntimeException('Formato de assinatura inválido.');
-        }
-
-        $data  = base64_decode($m[2]);
-        $path  = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir   = dirname(storage_path('app/public/' . $path));
-
-        if (! is_dir($dir)) mkdir($dir, 0755, true);
-
-        $image = @imagecreatefromstring($data);
-        if ($image === false) throw new \RuntimeException('Imagem inválida.');
-
-        $bg    = imagecreatetruecolor(imagesx($image), imagesy($image));
-        $white = imagecolorallocate($bg, 255, 255, 255);
-        imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
-        imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        $saved = imagepng($bg, storage_path('app/public/' . $path));
-        imagedestroy($image);
-        imagedestroy($bg);
-
-        if (! $saved) {
-            throw new \RuntimeException("Não foi possível gravar a assinatura em disco ({$dir}). Verifique as permissões de escrita.");
-        }
-
-        $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
-            ->where('aten_rel_ass_path', 'like', "%/{$tipo}.%")
-            ->first();
-
-        if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path, 'aten_rel_ass_tipo' => $tipo]);
-        } else {
-            AtendimentoRelatorioAssinatura::create(['aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_ass_path' => $path, 'aten_rel_ass_tipo' => $tipo]);
-        }
-
-        return asset('midia/' . $path);
-    }
 }
