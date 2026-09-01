@@ -13,10 +13,16 @@ class ClienteFactory extends Factory
     {
         return [
             'cli_nome'     => fake()->company(),
-            'cli_cnpj'     => fake()->numerify('##.###.###/####-##'),
+            // cli_cnpj é varchar(14) e os dados reais são só dígitos, sem
+            // pontuação (confirmado consultando o banco) — a máscara
+            // '##.###.###/####-##' gera 18 caracteres e estourava a coluna.
+            'cli_cnpj'     => fake()->numerify('##############'),
             'cli_cidade'   => fake()->city(),
             'cli_uf'       => fake()->stateAbbr(),
-            'cli_telefone' => fake()->phoneNumber(),
+            // cli_telefone é varchar(11) (DDD + número, sem pontuação) —
+            // fake()->phoneNumber() gera formato americano com traços/DDI,
+            // sempre maior que 11 caracteres.
+            'cli_telefone' => fake()->numerify('###########'),
             'cli_email'    => fake()->companyEmail(),
             'cli_ativo'    => true,
         ];
