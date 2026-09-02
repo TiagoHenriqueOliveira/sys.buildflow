@@ -349,7 +349,7 @@
      (texto + foto opcional), OU o campo legado de texto único; nunca os
      dois juntos. O critério é a existência de item na tabela nova. --}}
 @if($relatorio->itensDescricao->isNotEmpty())
-<div class="section section-descricao page-break">
+<div class="section section-descricao">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
     @php
         // Cada item tem no máximo 1 foto; o texto funciona como comentário
