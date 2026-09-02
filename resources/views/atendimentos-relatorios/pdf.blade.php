@@ -81,7 +81,7 @@
         .field-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .field-grid td { padding: 3px 7px; vertical-align: top; }
         .field-label { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; white-space: nowrap; }
-        .field-value { color: #222; font-size: 20px; border-bottom: 1px solid #eee; }
+        .field-value { color: #222; font-size: 20px; }
 
         /* TABELAS */
         .data-table { width: 100%; border-collapse: collapse; font-size: 20px; }
