@@ -79,10 +79,14 @@
            desalinharem mesmo com a mesma estrutura de colunas. Larguras fixas eliminam
            essa variação (colgroup sozinho não foi respeitado pelo dompdf aqui). */
         .field-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .field-grid td { padding: 3px 7px; vertical-align: top; }
+        /* vertical-align: middle (não top): Poppins-Bold e Poppins-Regular tem metricas
+           verticais diferentes, entao label (bold) e valor (regular) de tamanhos
+           diferentes ficavam com o topo desalinhado usando top. */
+        .field-grid td { padding: 3px 7px; vertical-align: middle; }
         .field-label { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; white-space: nowrap; }
         .field-value { color: #222; font-size: 20px; }
         .field-value-right { text-align: right; }
+        .field-label-inline { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; margin-right: 10px; }
 
         /* TABELAS */
         .data-table { width: 100%; border-collapse: collapse; font-size: 20px; }
@@ -255,20 +259,17 @@
         <tr>
             <td class="field-label" style="width: 13%;">Data</td>
             <td class="field-value" colspan="3" style="width: 43%;">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-label" style="width: 12%;">Período</td>
-            <td class="field-value field-value-right" style="width: 32%;">{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value field-value-right" colspan="2" style="width: 44%;"><span class="field-label-inline">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Cliente</td>
             <td class="field-value" colspan="3">{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
-            <td class="field-label">Nº Proposta</td>
-            <td class="field-value field-value-right">{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Natureza</td>
             <td class="field-value" colspan="3">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
-            <td class="field-label">Telefone</td>
-            <td class="field-value field-value-right">{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Endereço</td>
