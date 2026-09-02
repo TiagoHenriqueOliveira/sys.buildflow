@@ -101,7 +101,7 @@
         .descricao-grid { width: 100%; border-collapse: collapse; }
         .descricao-grid td { padding: 0 0 22px 0; text-align: left; vertical-align: top; }
         .descricao-grid td.descricao-foto-col { width: 260px; padding-right: 15px; }
-        .descricao-foto { width: 260px; height: 326px; border: 1px solid #ddd; display: block; }
+        .descricao-foto { width: 260px; height: 346px; border: 1px solid #ddd; display: block; }
         .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
 
         /* FOTOS */
@@ -476,6 +476,17 @@
     <p>A garantia dos equipamentos permanece em vigor, de acordo com as "condições gerais de venda".</p>
 </div>
 @endif
+
+{{-- OBSERVAÇÕES DE CAUTELA DE USO — bloco fixo, sempre exibido (texto fixo
+     no template, não vem do banco), sempre logo antes de Assinaturas. --}}
+<div class="section">
+    <div class="section-title">{{ $secNum() }}. Observações de Cautela de Uso</div>
+    <div class="text-block">- Observar as orientações de manuseio contidas no manual técnico fornecido junto ao equipamento.
+- Não remover as proteções fixas instaladas no equipamento.
+- Não operar o equipamento sem as proteções previstas nas Normas Regulamentadoras (NR).
+- Desligar e bloquear a alimentação elétrica, pneumática e/ou hidráulica antes de qualquer intervenção de manutenção ou limpeza.
+- Manutenção, ajustes e reparos devem ser realizados exclusivamente por pessoal treinado e autorizado.</div>
+</div>
 
 {{-- ASSINATURAS --}}
 <div class="section">
