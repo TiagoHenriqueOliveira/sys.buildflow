@@ -10,8 +10,11 @@ use Illuminate\Console\Command;
  * Diagnostica por que a fonte Poppins pode não estar sendo aplicada nos
  * PDFs em produção: confere existência/legibilidade dos arquivos-fonte,
  * testa escrita real em storage/fonts (mais confiável que is_writable(),
- * que não detecta restrições como open_basedir) e tenta registrar a fonte
- * no dompdf de verdade, capturando a exceção real se houver uma.
+ * que não detecta restrições como open_basedir), tira um "antes/depois"
+ * do conteúdo da pasta pra provar se o registro realmente grava arquivo
+ * novo (em vez de só não lançar exceção), e confere se o dompdf realmente
+ * reconhece a fonte registrada (getFont), que é o que a geração de PDF de
+ * verdade usa internamente.
  */
 class DiagnosticarFontes extends Command
 {
@@ -21,6 +24,13 @@ class DiagnosticarFontes extends Command
 
     public function handle(): int
     {
+        $this->info('=== Versão do dompdf ===');
+        $versaoDompdf = \Composer\InstalledVersions::isInstalled('dompdf/dompdf')
+            ? \Composer\InstalledVersions::getPrettyVersion('dompdf/dompdf')
+            : 'desconhecida';
+        $this->line('  dompdf/dompdf: ' . $versaoDompdf);
+
+        $this->newLine();
         $this->info('=== Arquivos-fonte (public/fonts/Poppins) ===');
         $regular = public_path('fonts/Poppins/Poppins-Regular.ttf');
         $bold = public_path('fonts/Poppins/Poppins-Bold.ttf');
@@ -32,15 +42,12 @@ class DiagnosticarFontes extends Command
         }
 
         $this->newLine();
-        $this->info('=== storage/fonts (cache do dompdf) ===');
+        $this->info('=== storage/fonts (cache do dompdf) — detalhado ===');
         $dir = storage_path('fonts');
         $this->line('  caminho: ' . $dir);
         $this->line('  existe: ' . (is_dir($dir) ? 'SIM' : 'NAO'));
         $this->line('  is_writable(): ' . (is_writable($dir) ? 'SIM' : 'NAO'));
-
-        $conteudo = @scandir($dir) ?: [];
-        $conteudo = array_values(array_diff($conteudo, ['.', '..']));
-        $this->line('  conteudo atual: ' . (empty($conteudo) ? '(vazio)' : implode(', ', $conteudo)));
+        $this->listarConteudo($dir);
 
         $this->newLine();
         $this->info('=== Teste real de escrita em storage/fonts ===');
@@ -51,38 +58,80 @@ class DiagnosticarFontes extends Command
             $this->error('  FALHOU ao escrever arquivo de teste. Erro PHP: ' . ($erro['message'] ?? 'desconhecido'));
         } else {
             $this->info('  Escrita OK (' . $resultado . ' bytes).');
-            $lido = @file_get_contents($testeArquivo);
-            $this->line('  Leitura de volta: ' . ($lido === 'teste' ? 'OK' : 'FALHOU'));
             @unlink($testeArquivo);
-            $this->line('  Arquivo de teste removido.');
         }
 
         $this->newLine();
         $this->info('=== open_basedir / restrições do PHP ===');
-        $openBasedir = ini_get('open_basedir');
-        $this->line('  open_basedir: ' . ($openBasedir ?: '(nao definido)'));
+        $this->line('  open_basedir: ' . (ini_get('open_basedir') ?: '(nao definido)'));
+        $this->line('  disable_functions: ' . (ini_get('disable_functions') ?: '(nenhuma)'));
 
         $this->newLine();
-        $this->info('=== Registro real da fonte no dompdf ===');
+        $this->info('=== Registro real da fonte no dompdf (antes/depois) ===');
+        $antes = $this->snapshot($dir);
+
         try {
             $options = new Options();
-            $options->setFontDir(storage_path('fonts'));
-            $options->setFontCache(storage_path('fonts'));
+            $options->setFontDir($dir);
+            $options->setFontCache($dir);
             $options->setIsRemoteEnabled(true);
             $dompdf = new Dompdf($options);
             $fontMetrics = $dompdf->getFontMetrics();
             $fontMetrics->registerFont(['family' => 'Poppins', 'style' => 'normal', 'weight' => 'normal'], $regular);
             $fontMetrics->registerFont(['family' => 'Poppins', 'style' => 'normal', 'weight' => 'bold'], $bold);
-            $this->info('  Registro concluido sem excecao.');
+            $this->info('  registerFont() concluido sem excecao.');
 
-            $conteudoDepois = @scandir($dir) ?: [];
-            $conteudoDepois = array_values(array_diff($conteudoDepois, ['.', '..']));
-            $this->line('  conteudo apos registro: ' . (empty($conteudoDepois) ? '(vazio, algo falhou silenciosamente)' : implode(', ', $conteudoDepois)));
+            $depois = $this->snapshot($dir);
+            $novos = array_diff($depois, $antes);
+            if (empty($novos)) {
+                $this->error('  NENHUM arquivo novo foi criado — registro nao persistiu nada de fato.');
+            } else {
+                $this->info('  Arquivo(s) novo(s) criado(s): ' . implode(', ', $novos));
+            }
+
+            $this->newLine();
+            $fonteNormal = $fontMetrics->getFont('Poppins', 'normal');
+            $fonteBold = $fontMetrics->getFont('Poppins', 'bold');
+            $this->line('  getFont("Poppins","normal") retorna: ' . ($fonteNormal ?: '(NULO — dompdf não reconhece a fonte registrada)'));
+            $this->line('  getFont("Poppins","bold") retorna: ' . ($fonteBold ?: '(NULO — dompdf não reconhece a fonte registrada)'));
         } catch (\Throwable $e) {
             $this->error('  EXCECAO ao registrar fonte: ' . get_class($e) . ': ' . $e->getMessage());
             $this->line('  Arquivo: ' . $e->getFile() . ':' . $e->getLine());
         }
 
         return 0;
+    }
+
+    /** @return string[] nomes dos itens na pasta */
+    private function snapshot(string $dir): array
+    {
+        $itens = @scandir($dir) ?: [];
+
+        return array_values(array_diff($itens, ['.', '..']));
+    }
+
+    private function listarConteudo(string $dir): void
+    {
+        $itens = @scandir($dir) ?: [];
+        $itens = array_values(array_diff($itens, ['.', '..']));
+        if (empty($itens)) {
+            $this->line('  conteudo: (vazio)');
+
+            return;
+        }
+        foreach ($itens as $item) {
+            $caminho = $dir . DIRECTORY_SEPARATOR . $item;
+            $tipo = is_dir($caminho) ? 'DIRETORIO' : 'arquivo';
+            $tamanho = is_file($caminho) ? filesize($caminho) . ' bytes' : '';
+            $perm = substr(sprintf('%o', @fileperms($caminho)), -4);
+            $this->line("  - {$item} [{$tipo}] {$tamanho} perm={$perm}");
+            if (is_dir($caminho)) {
+                $sub = @scandir($caminho) ?: [];
+                $sub = array_values(array_diff($sub, ['.', '..']));
+                foreach ($sub as $s) {
+                    $this->line("      └─ {$s}");
+                }
+            }
+        }
     }
 }
