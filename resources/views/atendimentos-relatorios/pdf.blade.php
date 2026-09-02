@@ -88,25 +88,26 @@
         .text-block { border: 1px solid #e0e0e0; border-radius: 2px; padding: 8px 10px; font-size: 20px; color: #333; min-height: 30px; white-space: pre-wrap; }
 
         /* DESCRIÇÃO — itens (RF001): no máximo 1 foto por item, o texto é um
-           comentário dela. Par curto (texto combinado dentro do limite):
-           tabela de 2 colunas com foto (largura máxima da coluna) e texto
-           juntos na mesma célula, sempre começando em página nova — uma
-           tabela que precisa quebrar NO MEIO corrompe a paginação do
-           dompdf (página em branco ou texto corrompido), então cada
-           tabela é pequena o bastante para caber inteira numa página.
-           Testado: manter foto e texto de cada item em blocos
-           estruturalmente separados (só fotos numa tabela + textos em
-           divs independentes) parece evitar a quebra no par, mas
-           corrompe o bloco seguinte — não é seguro. Item sozinho/texto
-           longo: div simples (sem tabela). */
+           comentário dela. Itens com foto vêm primeiro (2 por linha); itens só
+           de texto vêm por último, ocupando a linha inteira.
+
+           ATENÇÃO — risco conhecido e aceito (decisão do usuário em
+           02/09/2026): o dompdf tem um bug de paginação em linhas de tabela
+           com 2 colunas que precisam quebrar no meio por texto longo — pode
+           duplicar ou corromper o texto (ex: relatório #200, comentários de
+           até 1523 caracteres). Não reproduz com comentários mais curtos
+           (ex: relatório #52). Foi tentado resolver com pareamento condicional
+           (só formar par quando o texto combinado cabe com segurança numa
+           página) e ficou comprovadamente estável, mas o usuário pediu para
+           reverter a essa versão original (2 por linha sempre) e aceitou o
+           risco de corrupção em relatórios com comentários muito longos. */
         .section-descricao .section-title { margin-bottom: 18px; }
-        .descricao-grid { width: 100%; border-collapse: collapse; page-break-before: always; }
-        .descricao-grid td { padding: 0 14px 22px 0; text-align: left; vertical-align: top; width: 50%; }
-        .descricao-grid td:last-child { padding-right: 0; }
-        .descricao-foto-par { width: 100%; height: auto; border: 1px solid #ddd; display: block; margin-bottom: 8px; }
-        .descricao-item-full { width: 100%; margin-bottom: 22px; }
-        .descricao-foto { width: 380px; height: 500px; border: 1px solid #ddd; display: block; margin-bottom: 8px; }
-        .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
+        .descricao-grid { width: 100%; border-collapse: collapse; }
+        .descricao-grid td { padding: 0 10px 26px 10px; text-align: center; vertical-align: top; width: 50%; }
+        .descricao-grid td.texto-only { text-align: left; }
+        .descricao-foto { width: 380px; height: 500px; border: 1px solid #ddd; display: block; margin: 0 auto; }
+        .descricao-comentario { margin: 6px auto 0; max-width: 420px; font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
+        .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; }
 
         /* FOTOS */
         .fotos-grid { width: 100%; border-collapse: collapse; }
@@ -344,74 +345,62 @@
 @if($relatorio->itensDescricao->isNotEmpty())
 <div class="section section-descricao">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
-    {{-- Duas fotos por linha, texto abaixo de cada uma, respeitando a
-         largura da foto; item sem foto ocupa a linha inteira. Itens com
-         foto são pareados na ordem em que aparecem. Um par só é formado se
-         o texto combinado dos dois itens couber com segurança numa página
-         (limite empírico); testei sem esse limite (sempre parear) e com
-         foto+texto em blocos separados — ambos corrompem a paginação do
-         dompdf (página em branco, texto corrompido ou perdido) quando o
-         texto é longo. Combinação longa demais faz os dois saírem
-         sozinhos, um por linha, mantendo a ordem. --}}
     @php
-        $limiteParChars = 500;
+        // Cada item tem no máximo 1 foto; o texto funciona como comentário
+        // dela. Itens são exibidos na ordem de inclusão (aten_rel_desc_id) —
+        // itens com foto são pareados 2 por linha respeitando essa ordem
+        // (um item sem foto no meio da sequência interrompe o par corrente),
+        // itens só de texto ocupam a linha inteira.
         $linhasDescricao = [];
-        $pendenteFoto = null;
+        $parFotos = [];
         foreach ($relatorio->itensDescricao as $item) {
-            $foto = $item->fotos->isNotEmpty() ? $fotoBase64($item->fotos->first()->aten_rel_desc_foto_path) : '';
-            if ($foto !== '') {
-                if ($pendenteFoto) {
-                    $totalChars = mb_strlen($pendenteFoto['item']->aten_rel_desc_texto) + mb_strlen($item->aten_rel_desc_texto);
-                    if ($totalChars <= $limiteParChars) {
-                        $linhasDescricao[] = ['tipo' => 'par', 'itens' => [$pendenteFoto, ['item' => $item, 'foto' => $foto]]];
-                    } else {
-                        $linhasDescricao[] = ['tipo' => 'par', 'itens' => [$pendenteFoto]];
-                        $linhasDescricao[] = ['tipo' => 'par', 'itens' => [['item' => $item, 'foto' => $foto]]];
-                    }
-                    $pendenteFoto = null;
-                } else {
-                    $pendenteFoto = ['item' => $item, 'foto' => $foto];
+            if ($item->fotos->isNotEmpty()) {
+                $parFotos[] = $item;
+                if (count($parFotos) === 2) {
+                    $linhasDescricao[] = ['tipo' => 'fotos', 'itens' => $parFotos];
+                    $parFotos = [];
                 }
             } else {
-                if ($pendenteFoto) {
-                    $linhasDescricao[] = ['tipo' => 'par', 'itens' => [$pendenteFoto]];
-                    $pendenteFoto = null;
+                if (!empty($parFotos)) {
+                    $linhasDescricao[] = ['tipo' => 'fotos', 'itens' => $parFotos];
+                    $parFotos = [];
                 }
-                $linhasDescricao[] = ['tipo' => 'texto', 'item' => $item];
+                $linhasDescricao[] = ['tipo' => 'texto', 'itens' => [$item]];
             }
         }
-        if ($pendenteFoto) {
-            $linhasDescricao[] = ['tipo' => 'par', 'itens' => [$pendenteFoto]];
+        if (!empty($parFotos)) {
+            $linhasDescricao[] = ['tipo' => 'fotos', 'itens' => $parFotos];
         }
     @endphp
-    {{-- Par curto (cabe numa página): tabela própria de 2 colunas — testado
-         e funciona sem bugs. Item sozinho/texto longo: div simples, sem
-         <table> — uma tabela que precisa quebrar para a próxima página
-         corrompe a paginação do dompdf, então nunca deixamos um único
-         <table> abranger conteúdo que precise quebrar. --}}
-    @foreach($linhasDescricao as $linha)
-        @if($linha['tipo'] === 'texto')
-            <div class="descricao-item-full">
-                <div class="descricao-texto-only">{{ $linha['item']->aten_rel_desc_texto }}</div>
-            </div>
-        @elseif(count($linha['itens']) === 1)
-            <div class="descricao-item-full">
-                <img class="descricao-foto" src="{{ $linha['itens'][0]['foto'] }}" alt="Foto do item">
-                <div class="descricao-texto-only">{{ $linha['itens'][0]['item']->aten_rel_desc_texto }}</div>
-            </div>
-        @else
-            <table class="descricao-grid">
-                <tr>
-                    @foreach($linha['itens'] as $par)
-                        <td>
-                            <img class="descricao-foto-par" src="{{ $par['foto'] }}" alt="Foto do item">
-                            <div class="descricao-texto-only">{{ $par['item']->aten_rel_desc_texto }}</div>
-                        </td>
-                    @endforeach
-                </tr>
-            </table>
-        @endif
-    @endforeach
+    <table class="descricao-grid">
+        @foreach($linhasDescricao as $linha)
+            @if($linha['tipo'] === 'fotos')
+            <tr>
+                @foreach($linha['itens'] as $item)
+                <td>
+                    @php $itemFotoSrc = $fotoBase64($item->fotos->first()->aten_rel_desc_foto_path); @endphp
+                    @if($itemFotoSrc)
+                        <img class="descricao-foto" src="{{ $itemFotoSrc }}" alt="Foto do item">
+                    @endif
+                </td>
+                @endforeach
+                @if(count($linha['itens']) < 2)<td></td>@endif
+            </tr>
+            <tr>
+                @foreach($linha['itens'] as $item)
+                <td><div class="descricao-comentario">{{ $item->aten_rel_desc_texto }}</div></td>
+                @endforeach
+                @if(count($linha['itens']) < 2)<td></td>@endif
+            </tr>
+            @else
+            <tr>
+                <td colspan="2" class="texto-only">
+                    <div class="descricao-texto-only">{{ $linha['itens'][0]->aten_rel_desc_texto }}</div>
+                </td>
+            </tr>
+            @endif
+        @endforeach
+    </table>
 </div>
 @elseif($relatorio->aten_rel_descricao)
 <div class="section">
