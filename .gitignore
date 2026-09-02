@@ -4,6 +4,8 @@
 /public/build
 /public/hot
 /storage/*.key
+/storage/fonts/*
+!/storage/fonts/.gitkeep
 /vendor
 .env
 .env.backup
