@@ -246,6 +246,16 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
+            <td class="field-label">Data</td>
+            <td class="field-value">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-label">Período</td>
+            <td class="field-value" colspan="3">
+                {{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}
+                &nbsp;–&nbsp;
+                {{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}
+            </td>
+        </tr>
+        <tr>
             <td class="field-label">Cliente</td>
             <td class="field-value" colspan="3">{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
             <td class="field-label">Nº Proposta</td>
@@ -254,8 +264,8 @@
         <tr>
             <td class="field-label">Natureza</td>
             <td class="field-value" colspan="3">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
-            <td class="field-label">Técnico</td>
-            <td class="field-value">{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
+            <td class="field-label">Telefone</td>
+            <td class="field-value">{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Endereço</td>
@@ -263,21 +273,11 @@
         </tr>
         <tr>
             <td class="field-label">Responsável</td>
-            <td class="field-value" colspan="3">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
-            <td class="field-label">Telefone</td>
-            <td class="field-value">{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+            <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label">Período</td>
-            <td class="field-value">
-                {{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}
-                &nbsp;–&nbsp;
-                {{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}
-            </td>
-            <td class="field-label">Data do Relatório</td>
-            <td class="field-value">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-label">Prazo Restante</td>
-            <td class="field-value">{{ $prazoAVencer }} dias</td>
+            <td class="field-label">Técnico</td>
+            <td class="field-value" colspan="5">{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
         </tr>
     </table>
 </div>
