@@ -89,14 +89,21 @@
 
         /* DESCRIÇÃO — itens (RF001): no máximo 1 foto por item, o texto é um
            comentário dela. Par curto (texto combinado dentro do limite):
-           tabela de 2 colunas, sempre começando em página nova — uma
+           tabela de 2 colunas com foto (largura máxima da coluna) e texto
+           juntos na mesma célula, sempre começando em página nova — uma
            tabela que precisa quebrar NO MEIO corrompe a paginação do
-           dompdf (página em branco), então cada tabela é pequena o
-           bastante para caber inteira numa página e começa sempre do
-           topo. Item sozinho/texto longo: div simples (sem tabela). */
+           dompdf (página em branco ou texto corrompido), então cada
+           tabela é pequena o bastante para caber inteira numa página.
+           Testado: manter foto e texto de cada item em blocos
+           estruturalmente separados (só fotos numa tabela + textos em
+           divs independentes) parece evitar a quebra no par, mas
+           corrompe o bloco seguinte — não é seguro. Item sozinho/texto
+           longo: div simples (sem tabela). */
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-grid { width: 100%; border-collapse: collapse; page-break-before: always; }
         .descricao-grid td { padding: 0 14px 22px 0; text-align: left; vertical-align: top; width: 50%; }
+        .descricao-grid td:last-child { padding-right: 0; }
+        .descricao-foto-par { width: 100%; height: auto; border: 1px solid #ddd; display: block; margin-bottom: 8px; }
         .descricao-item-full { width: 100%; margin-bottom: 22px; }
         .descricao-foto { width: 380px; height: 500px; border: 1px solid #ddd; display: block; margin-bottom: 8px; }
         .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
@@ -337,13 +344,15 @@
 @if($relatorio->itensDescricao->isNotEmpty())
 <div class="section section-descricao">
     <div class="section-title">{{ $secNum() }}. Descrição</div>
-    {{-- Duas fotos por linha, texto abaixo de cada uma; item sem foto ocupa
-         a linha inteira. Itens com foto são pareados na ordem em que
-         aparecem. Um par só é formado se o texto combinado dos dois itens
-         couber com segurança numa página (limite empírico); combinação
-         longa demais faz o dompdf corromper a paginação (foto some da
-         posição correta) — nesse caso os dois saem sozinhos, um por linha,
-         mantendo a ordem. --}}
+    {{-- Duas fotos por linha, texto abaixo de cada uma, respeitando a
+         largura da foto; item sem foto ocupa a linha inteira. Itens com
+         foto são pareados na ordem em que aparecem. Um par só é formado se
+         o texto combinado dos dois itens couber com segurança numa página
+         (limite empírico); testei sem esse limite (sempre parear) e com
+         foto+texto em blocos separados — ambos corrompem a paginação do
+         dompdf (página em branco, texto corrompido ou perdido) quando o
+         texto é longo. Combinação longa demais faz os dois saírem
+         sozinhos, um por linha, mantendo a ordem. --}}
     @php
         $limiteParChars = 500;
         $linhasDescricao = [];
@@ -378,8 +387,8 @@
     {{-- Par curto (cabe numa página): tabela própria de 2 colunas — testado
          e funciona sem bugs. Item sozinho/texto longo: div simples, sem
          <table> — uma tabela que precisa quebrar para a próxima página
-         corrompe a paginação do dompdf (página em branco), então nunca
-         deixamos um único <table> abranger conteúdo que precise quebrar. --}}
+         corrompe a paginação do dompdf, então nunca deixamos um único
+         <table> abranger conteúdo que precise quebrar. --}}
     @foreach($linhasDescricao as $linha)
         @if($linha['tipo'] === 'texto')
             <div class="descricao-item-full">
@@ -395,7 +404,7 @@
                 <tr>
                     @foreach($linha['itens'] as $par)
                         <td>
-                            <img class="descricao-foto" src="{{ $par['foto'] }}" alt="Foto do item">
+                            <img class="descricao-foto-par" src="{{ $par['foto'] }}" alt="Foto do item">
                             <div class="descricao-texto-only">{{ $par['item']->aten_rel_desc_texto }}</div>
                         </td>
                     @endforeach
