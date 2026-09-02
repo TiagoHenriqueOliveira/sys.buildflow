@@ -67,15 +67,23 @@ class DiagnosticarFontes extends Command
         $this->line('  disable_functions: ' . (ini_get('disable_functions') ?: '(nenhuma)'));
 
         $this->newLine();
-        $this->info('=== Registro real da fonte no dompdf (antes/depois) ===');
+        $this->info('=== Chroot efetivo (Laravel x dompdf cru) ===');
+        $this->line('  base_path(): ' . base_path());
+        $this->line('  realpath(base_path()): ' . (realpath(base_path()) ?: '(FALHOU — base_path nao resolve com realpath!)'));
+        $this->line('  realpath(caminho da fonte): ' . (realpath($regular) ?: '(FALHOU)'));
+        $dentroDoChroot = realpath(base_path()) && realpath($regular)
+            && strpos(realpath($regular), realpath(base_path())) === 0;
+        $this->line('  arquivo da fonte fica dentro de realpath(base_path())? ' . ($dentroDoChroot ? 'SIM' : 'NAO — aqui está o problema, provavelmente symlink'));
+
+        $this->newLine();
+        $this->info('=== Registro real da fonte, usando a MESMA instância que a geração de PDF usa (Pdf::loadView) — antes/depois ===');
         $antes = $this->snapshot($dir);
 
         try {
-            $options = new Options();
-            $options->setFontDir($dir);
-            $options->setFontCache($dir);
-            $options->setIsRemoteEnabled(true);
-            $dompdf = new Dompdf($options);
+            /** @var \Barryvdh\DomPDF\PDF $wrapper */
+            $wrapper = app('dompdf.wrapper');
+            $dompdf = $wrapper->getDomPDF();
+            $this->line('  chroot configurado nesta instância: ' . implode(', ', $dompdf->getOptions()->getChroot()));
             $fontMetrics = $dompdf->getFontMetrics();
             $fontMetrics->registerFont(['family' => 'Poppins', 'style' => 'normal', 'weight' => 'normal'], $regular);
             $fontMetrics->registerFont(['family' => 'Poppins', 'style' => 'normal', 'weight' => 'bold'], $bold);
