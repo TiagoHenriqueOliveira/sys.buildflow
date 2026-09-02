@@ -72,9 +72,15 @@
         }
 
         /* GRID DE CAMPOS */
-        .field-grid { width: 100%; border-collapse: collapse; }
+        /* table-layout fixed + largura explícita nas células da 1ª linha: o layout
+           automático do dompdf calcula a largura de cada coluna com base no conteúdo de
+           cada célula isoladamente, e não distribui de forma consistente quando linhas
+           diferentes usam colspans diferentes — isso fazia "Período" e "Nº Proposta"
+           desalinharem mesmo com a mesma estrutura de colunas. Larguras fixas eliminam
+           essa variação (colgroup sozinho não foi respeitado pelo dompdf aqui). */
+        .field-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .field-grid td { padding: 3px 7px; vertical-align: top; }
-        .field-label { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; white-space: nowrap; width: 1%; }
+        .field-label { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; white-space: nowrap; }
         .field-value { color: #222; font-size: 20px; border-bottom: 1px solid #eee; }
 
         /* TABELAS */
@@ -246,14 +252,10 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-label">Data</td>
-            <td class="field-value">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-label">Período</td>
-            <td class="field-value" colspan="3">
-                {{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}
-                &nbsp;–&nbsp;
-                {{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}
-            </td>
+            <td class="field-label" style="width: 13%;">Data</td>
+            <td class="field-value" colspan="3" style="width: 36%;">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-label" style="width: 13%;">Período</td>
+            <td class="field-value" style="width: 38%;">{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
             <td class="field-label">Cliente</td>
