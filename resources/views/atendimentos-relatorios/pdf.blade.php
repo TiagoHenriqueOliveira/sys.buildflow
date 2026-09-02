@@ -123,6 +123,7 @@
         /* UTILITÁRIOS */
         .text-muted { color: #aaa; font-style: italic; font-size: 14px; }
         .page-break  { page-break-before: always; }
+        .section-manter-junto { page-break-inside: avoid; }
     </style>
 </head>
 @php
@@ -480,7 +481,7 @@
 {{-- OBSERVAÇÕES DE CAUTELA DE USO — bloco fixo, sempre exibido (texto fixo
      no template, não vem do banco), sempre logo antes de Assinaturas. --}}
 <div class="section">
-    <div class="section-title">{{ $secNum() }}. Observações de Cautela de Uso</div>
+    <div class="section-title">{{ $secNum() }}. Observações de Cautela para Uso</div>
     <div class="text-block">- Observar as orientações de manuseio contidas no manual técnico fornecido junto ao equipamento.
 - Não remover as proteções fixas instaladas no equipamento.
 - Não operar o equipamento sem as proteções previstas nas Normas Regulamentadoras (NR).
@@ -488,8 +489,12 @@
 - Manutenção, ajustes e reparos devem ser realizados exclusivamente por pessoal treinado e autorizado.</div>
 </div>
 
-{{-- ASSINATURAS --}}
-<div class="section">
+{{-- ASSINATURAS — nunca deixar o título sozinho numa página com a tabela de
+     assinaturas na seguinte; se não couber inteira junto com a seção
+     anterior, quebra pra uma página nova. Seguro aqui (ao contrário da
+     Descrição) porque essa tabela tem tamanho sempre fixo/curto, nunca
+     precisa quebrar no meio. --}}
+<div class="section section-manter-junto">
     <div class="section-title">{{ $secNum() }}. Assinaturas</div>
     <table class="assinaturas-table">
         <tr>
