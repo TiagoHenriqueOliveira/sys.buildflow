@@ -100,8 +100,8 @@
         .section-descricao .section-title { margin-bottom: 18px; }
         .descricao-grid { width: 100%; border-collapse: collapse; }
         .descricao-grid td { padding: 0 0 22px 0; text-align: left; vertical-align: top; }
-        .descricao-grid td.descricao-foto-col { width: 300px; padding-right: 15px; }
-        .descricao-foto { width: 300px; height: 395px; border: 1px solid #ddd; display: block; }
+        .descricao-grid td.descricao-foto-col { width: 240px; padding-right: 15px; }
+        .descricao-foto { width: 240px; height: 316px; border: 1px solid #ddd; display: block; }
         .descricao-texto-only { font-size: 20px; color: #333; white-space: pre-wrap; text-align: justify; }
 
         /* FOTOS */
