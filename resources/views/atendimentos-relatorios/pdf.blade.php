@@ -72,21 +72,30 @@
         }
 
         /* GRID DE CAMPOS */
-        /* table-layout fixed + largura explícita nas células da 1ª linha: o layout
-           automático do dompdf calcula a largura de cada coluna com base no conteúdo de
-           cada célula isoladamente, e não distribui de forma consistente quando linhas
-           diferentes usam colspans diferentes — isso fazia "Período" e "Nº Proposta"
-           desalinharem mesmo com a mesma estrutura de colunas. Larguras fixas eliminam
-           essa variação (colgroup sozinho não foi respeitado pelo dompdf aqui). */
+        /* table-layout fixed + largura explícita nas células: o layout automático do
+           dompdf calcula a largura de cada coluna com base no conteúdo de cada célula
+           isoladamente, e não distribui de forma consistente entre linhas com colspans
+           diferentes. Larguras fixas eliminam essa variação. */
         .field-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        /* vertical-align: middle (não top): Poppins-Bold e Poppins-Regular tem metricas
-           verticais diferentes, entao label (bold) e valor (regular) de tamanhos
-           diferentes ficavam com o topo desalinhado usando top. */
         .field-grid td { padding: 3px 7px; vertical-align: middle; }
-        .field-label { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; white-space: nowrap; }
         .field-value { color: #222; font-size: 20px; }
         .field-value-right { text-align: right; }
-        .field-label-inline { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; margin-right: 10px; }
+        /* Label e valor no mesmo texto corrido (não em células separadas): Poppins-Bold
+           e Poppins-Regular tem metricas verticais diferentes, entao label (bold) e
+           valor (regular) em células adjacentes ficavam com o topo desalinhado mesmo
+           com vertical-align: middle. Colocando os dois na mesma célula/linha de texto
+           o desalinhamento desaparece. Largura fixa em px (não %) garante que o valor
+           comece sempre na mesma posição, mesmo quando a célula usa colspans diferentes
+           entre linhas (ex.: Data/Cliente/Natureza vs Endereço/Responsável/Técnico). */
+        .field-label-inline { display: inline-block; width: 150px; font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; }
+        /* mesma ideia do lado direito (Período/Nº Proposta/Telefone), mas sem largura
+           fixa: ali o bloco inteiro (label + valor) é alinhado à direita, entao não
+           precisa de coluna alinhada entre linhas — só do label colado ao valor. */
+        .field-label-inline-right { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; margin-right: 10px; }
+        /* Horário: 4 pares label+valor numa única linha, sem colspans e sem precisar
+           alinhar com outras linhas — layout automático (larguras por conteúdo) evita
+           que labels mais longos ("Início Intervalo") estourem uma largura fixa. */
+        .field-grid-auto { table-layout: auto; }
 
         /* TABELAS */
         .data-table { width: 100%; border-collapse: collapse; font-size: 20px; }
@@ -257,31 +266,25 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-label" style="width: 16%;">Data</td>
-            <td class="field-value" colspan="3" style="width: 40%;">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-value field-value-right" colspan="2" style="width: 44%;"><span class="field-label-inline">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value" colspan="4" style="width: 56%;"><span class="field-label-inline">Data</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value field-value-right" colspan="2" style="width: 44%;"><span class="field-label-inline-right">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 16%;">Cliente</td>
-            <td class="field-value" colspan="3">{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
-            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value" colspan="4"><span class="field-label-inline">Cliente</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
+            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline-right">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 16%;">Natureza</td>
-            <td class="field-value" colspan="3">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
-            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+            <td class="field-value" colspan="4"><span class="field-label-inline">Natureza</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline-right">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 16%;">Endereço</td>
-            <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
+            <td class="field-value" colspan="6"><span class="field-label-inline">Endereço</span>{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 16%;">Responsável</td>
-            <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
+            <td class="field-value" colspan="6"><span class="field-label-inline">Responsável</span>{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 16%;">Técnico</td>
-            <td class="field-value" colspan="5">{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
+            <td class="field-value" colspan="6"><span class="field-label-inline">Técnico</span>{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
         </tr>
     </table>
 </div>
@@ -324,16 +327,12 @@
 @if($h)
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Horário</div>
-    <table class="field-grid">
+    <table class="field-grid field-grid-auto">
         <tr>
-            <td class="field-label">Entrada</td>
-            <td class="field-value">{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
-            <td class="field-label">Início Intervalo</td>
-            <td class="field-value">{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-label">Fim Intervalo</td>
-            <td class="field-value">{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-label">Saída</td>
-            <td class="field-value">{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Entrada</span>{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Início Intervalo</span>{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Fim Intervalo</span>{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Saída</span>{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
         </tr>
     </table>
 </div>
