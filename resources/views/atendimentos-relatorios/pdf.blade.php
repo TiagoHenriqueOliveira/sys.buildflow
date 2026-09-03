@@ -90,11 +90,12 @@
            com vertical-align: middle. Colocando os dois na mesma célula/linha de texto
            o desalinhamento desaparece. Largura fixa em px garante que o valor comece
            sempre na mesma posição entre as linhas da tabela. */
-        .field-label-inline { display: inline-block; width: 150px; font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; }
+        .field-label-inline { display: inline-block; vertical-align: baseline; width: 175px; font-weight: bold; color: #555; font-size: 20px; text-transform: uppercase; }
         /* mesma ideia do lado direito (Período/Nº Proposta/Telefone), mas sem largura
            fixa: ali o bloco inteiro (label + valor) é alinhado à direita, entao não
-           precisa de coluna alinhada entre linhas — só do label colado ao valor. */
-        .field-label-inline-right { font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; margin-right: 10px; }
+           precisa de coluna alinhada entre linhas — só do label colado ao valor. Resto
+           (font-size, weight, color, transform) igual a .field-label-inline. */
+        .field-label-inline-right { display: inline; vertical-align: baseline; font-weight: bold; color: #555; font-size: 20px; text-transform: uppercase; margin-right: 10px; }
         /* Horário: 4 pares label+valor numa única linha, sem colspans e sem precisar
            alinhar com outras linhas — layout automático (larguras por conteúdo) evita
            que labels mais longos ("Início Intervalo") estourem uma largura fixa. */
@@ -269,16 +270,16 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Data:</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Período:</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value" style="width: 62%;"><span class="field-label-inline">Data:</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 38%;"><span class="field-label-inline-right">Período:</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Cliente:</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
-            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Nº Proposta:</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value" style="width: 62%;"><span class="field-label-inline">Cliente:</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 38%;"><span class="field-label-inline-right">Nº Proposta:</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Natureza:</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
-            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Telefone:</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+            <td class="field-value" style="width: 62%;"><span class="field-label-inline">Natureza:</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 38%;"><span class="field-label-inline-right">Telefone:</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
     </table>
     <table class="field-grid field-grid-auto">
