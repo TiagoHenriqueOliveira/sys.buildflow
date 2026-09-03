@@ -9,20 +9,8 @@ class ModeloRelatorioRequest extends FormRequest
     public function rules()
     {
         return [
-            'mod_rel_descricao' => ['required', 'string', 'max:50'],
-            'mod_rel_tp_data' => ['required', 'integer', 'in:0,1'],
-            'mod_rel_anexo' => ['nullable', 'boolean'],
-            'mod_rel_atividade' => ['nullable', 'boolean'],
-            'mod_rel_comentario' => ['nullable', 'boolean'],
-            'mod_rel_cond_clima' => ['nullable', 'boolean'],
-            'mod_rel_controle_material' => ['nullable', 'boolean'],
-            'mod_rel_entrega_tecnica' => ['nullable', 'boolean'],
-            'mod_rel_equipamento' => ['nullable', 'boolean'],
-            'mod_rel_foto' => ['nullable', 'boolean'],
-            'mod_rel_horarios' => ['nullable', 'boolean'],
-            'mod_rel_ocorrencia' => ['nullable', 'boolean'],
-            'mod_rel_ocupacao' => ['nullable', 'boolean'],
-            'mod_rel_video' => ['nullable', 'boolean'],
+            'mod_rel_descricao'              => ['required', 'string', 'max:50'],
+            'mod_rel_tp_data'                => ['required', 'integer', 'in:0,1'],
             'mod_rel_ativo' => ['nullable', 'boolean'],
         ];
     }

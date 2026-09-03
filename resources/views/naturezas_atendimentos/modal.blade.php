@@ -32,8 +32,6 @@
                         </div>
                     </div>
 
-                    <x-select-tipo-atendimento :tipos="$tiposAtivos" />
-
                     <x-select-modelo-relatorio :modelosRelatorios="$modelosRelatorios" />
 
                     <div class="form-group row d-none" id="div_nat_aten_ativo">

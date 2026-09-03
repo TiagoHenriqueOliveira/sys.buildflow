@@ -9,11 +9,10 @@ $(document).ready(function () {
 
     initSubmitRelatorio();
     initAtualizarRelatorio();
-    initMaoObraTab();
-    initEquipTab();
-    initAtividadesTab();
     initOcorrenciasTab();
-    initComentariosTab();
+    initServicosTab();
+    initPecasTab();
+    initDescricaoTab();
     initAssinaturasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
@@ -48,37 +47,24 @@ $(document).ready(function () {
         $("#form_relatorio button[type='submit']").prop("disabled", false);
     });
 
-    const relatorioId = getRelatorioIdAtual();
-
-    if (relatorioId) {
-        getData(relatorioId, 'tab-dados');
-        getData(relatorioId, 'tab-horarios');
-        getData(relatorioId, 'tab-clima');
-        getData(relatorioId, 'tab-assinatura');
-    }
+    initTextosTab();
 
     $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
-        const relatorioId = getRelatorioIdAtual();
-        if (!relatorioId) return;
+        const rid = getRelatorioIdAtual();
+        if (!rid) return;
 
         const target = $(e.target).attr('href')?.replace('#', '');
 
-        const tabsComGetData = [
-            'tab-dados',
-            'tab-horarios',
-            'tab-clima',
-            'tab-mao-obra',
-            'tab-ferramentas',
-            'tab-atividades',
-            'tab-ocorrencias',
-            'tab-comentarios',
-            'tab-assinatura',
-        ];
-
-        if (tabsComGetData.includes(target)) {
-            getData(relatorioId, target);
-        } else if (target === 'tab-anexos') {
-            refreshAnexos(relatorioId);
+        switch (target) {
+            case 'tab-dados':       carregarDados(rid);               break;
+            case 'tab-horarios':    carregarHorarios(rid);            break;
+            case 'tab-clima':       carregarClima(rid);               break;
+            case 'tab-ocorrencias': carregarOcorrenciasRelatorio(rid); break;
+            case 'tab-assinatura':  carregarAssinaturas(rid);         break;
+            case 'tab-servicos':    carregarServicos(rid);            break;
+            case 'tab-pecas':       carregarPecas(rid);               break;
+            case 'tab-descricao':   carregarDescricaoItens(rid);      break;
+            case 'tab-anexos':      refreshAnexos(rid);               break;
         }
     });
 
@@ -133,12 +119,16 @@ function configDataTableAtendimentosRelatorios() {
                 );
             }
         },
+        serverSide: true,
+        processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "data" },
-            { data: "obra" },
+            { data: "cliente" },
+            { data: "nr_proposta" },
             { data: "natureza" },
-            { data: "setor" },
+            { data: "tecnico" },
             { data: "status" }
         ],
         columnDefs: [{ width: "6%", targets: 0 }],
@@ -150,21 +140,20 @@ function configDataTableAtendimentosRelatorios() {
 
 function handleAjaxError(xhr) {
     if (xhr.status === 422) {
-        const errors = xhr.responseJSON?.errors || {};
-        let msg = "<ul>";
+        const resp   = xhr.responseJSON || {};
+        const errors = resp.errors || {};
+        const keys   = Object.keys(errors);
 
-        Object.values(errors).flat().forEach(m => {
-            msg += `<li>${m}</li>`;
-        });
+        let msg;
+        if (keys.length) {
+            msg = "Ocorreram erros:<br><ul>" +
+                Object.values(errors).flat().map(m => `<li>${m}</li>`).join('') +
+                "</ul>";
+        } else {
+            msg = resp.message || "Erro de validação.";
+        }
 
-        msg += "</ul>";
-
-        showNotification(
-            "fas fa-bug",
-            "Ocorreram erros:<br>" + msg,
-            "danger",
-            5000
-        );
+        showNotification("fas fa-bug", msg, "danger", 5000);
     } else {
         showNotification(
             "fas fa-bug",
@@ -195,20 +184,12 @@ function initSubmitRelatorio() {
                 "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
             },
             success: function (response) {
-                $("#modal_relatorio").modal("hide");
-
-                $("#dataTableAtendimentosRelatorios")
-                    .DataTable()
-                    .ajax.reload(null, false);
-
-                showNotification(
-                    "fas fa-check-double",
-                    response.message,
-                    "success",
-                    2000
-                );
-
-                btnSubmit.prop("disabled", false);
+                if (response.redirect_url) {
+                    window.location.href = response.redirect_url;
+                } else {
+                    $("#modal_relatorio").modal("hide");
+                    btnSubmit.prop("disabled", false);
+                }
             },
             error: function (xhr) {
                 btnSubmit.prop("disabled", false);
@@ -241,6 +222,17 @@ function initAtualizarRelatorio() {
                 form = $('#form_relatorio_assinaturas');
                 break;
 
+            case 'tab-info-adicionais':
+                form = $('#form_informacoes_adicionais');
+                break;
+
+            case 'tab-servicos':
+            case 'tab-pecas':
+            case 'tab-descricao':
+            case 'tab-ocorrencias':
+                showNotification('fas fa-info-circle', 'Use os botões para adicionar e remover itens nesta aba.', 'info', 2500);
+                return;
+
             case 'tab-anexos':
                 // handled specially below (no HTML form); mark form as a dummy jQuery object
                 form = $();
@@ -267,6 +259,16 @@ function initAtualizarRelatorio() {
             const assinaturaResponsavel = window.signatureData?.responsavel || '';
             const assinaturaCliente = window.signatureData?.cliente || '';
 
+            // Nome e CPF de quem assinou só são exigidos do cliente.
+            if (assinaturaCliente && !$('#assinatura_cliente_nome').val().trim()) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem assinou como Cliente.', 'warning', 3500);
+                return;
+            }
+            if (assinaturaCliente && !$('#assinatura_cliente_cpf').val().trim()) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o CPF de quem assinou como Cliente.', 'warning', 3500);
+                return;
+            }
+
             $.ajax({
                 url: baseURL + `/atendimentos-relatorios/${relatorioId}/assinaturas`,
                 type: 'POST',
@@ -274,6 +276,8 @@ function initAtualizarRelatorio() {
                     aten_rel_status: status,
                     assinatura_responsavel: assinaturaResponsavel,
                     assinatura_cliente: assinaturaCliente,
+                    assinatura_cliente_nome: $('#assinatura_cliente_nome').val().trim(),
+                    assinatura_cliente_cpf: $('#assinatura_cliente_cpf').val().trim(),
                 },
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
                 success: function (response) {
@@ -357,6 +361,13 @@ function initAtualizarRelatorio() {
                 'warning',
                 3000
             );
+            return;
+        }
+
+        // Tabs de texto têm handler próprio via initTextosTab()
+        const textTabForms = ['form_informacoes_adicionais'];
+        if (textTabForms.includes(form.attr('id'))) {
+            form.trigger('submit');
             return;
         }
 
@@ -483,490 +494,7 @@ $(document).on('click', '.btn-delete-anexo', function (e) {
     });
 });
 
-function initMaoObraTab() {
-    if ($.ui && $.ui.autocomplete && $('#mao_obra_label').length) {
-        setupAutocomplete(
-            '#mao_obra_label',
-            '#mao_obra_id',
-            baseURL + '/mao-de-obra/autocomplete',
-            function (item) {
-                $('#mao_obra_tp_id').val(item.tp_id || '');
-                $('#mao_obra_label').data('selectedItem', item);
-            }
-        );
-    }
-
-    $(document).off('input blur', '#mao_obra_qtd').on('input blur', '#mao_obra_qtd', function () {
-        const v = parseInt($(this).val(), 10);
-        if (isNaN(v) || v < 1) {
-            $(this).val(1);
-        }
-    });
-
-    $(document).off('change', '#mao_obra_label').on('change', '#mao_obra_label', function () {
-        if (!$('#mao_obra_id').val()) {
-            $('#mao_obra_tp_id').val('');
-            $('#mao_obra_label').removeData('selectedItem');
-        }
-    });
-
-    $(document).off('click', '#btnAddMaoObra').on('click', '#btnAddMaoObra', function () {
-
-        const relatorioId = getRelatorioIdAtual();
-
-        if (!relatorioId) {
-            showNotification(
-                'fas fa-exclamation-triangle',
-                'Salve o relatório antes de adicionar mão de obra.',
-                'warning',
-                3500
-            );
-            return;
-        }
-
-        const ocupId = $('#mao_obra_id').val();
-        const tpId = $('#mao_obra_tp_id').val();
-        const qtd = parseInt($('#mao_obra_qtd').val(), 10);
-
-        if (!ocupId || !tpId) {
-            showNotification(
-                'fas fa-exclamation-triangle',
-                'Selecione uma mão de obra válida na lista.',
-                'warning',
-                3000
-            );
-            return;
-        }
-
-        if (isNaN(qtd) || qtd < 1) {
-            showNotification(
-                'fas fa-exclamation-triangle',
-                'Quantidade deve ser no mínimo 1.',
-                'warning',
-                3000
-            );
-            return;
-        }
-
-        const key = `${tpId}-${ocupId}`;
-        if ($(`#tableMaoObra tbody tr[data-key="${key}"]`).length) {
-            showNotification(
-                'fas fa-exclamation-triangle',
-                'Essa mão de obra já foi adicionada.',
-                'warning',
-                3000
-            );
-            return;
-        }
-
-        const btn = $('#btnAddMaoObra');
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: baseURL + `/atendimentos-relatorios/${relatorioId}/mao-de-obra`,
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                ocup_id: ocupId,
-                qtd: qtd
-            },
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                const d = response.data;
-
-                const tr = $(`
-                        <tr data-key="${d.tp_id}-${d.ocup_id}"
-                            data-ocup-id="${d.ocup_id}"
-                            style="display:none;">
-                            <td>
-                                <button type="button"
-                                    class="btn btn-danger btn-sm btn-icon-split btnRemoveMaoObra">
-                                    <span class="icon text-white-50">
-                                        <i class="fas fa-trash"></i>
-                                    </span>
-                                    <span class="text">Excluir</span>
-                                </button>
-                            </td>
-                            <td>${escapeHtml(d.tp_label)}</td>
-                            <td>${escapeHtml(d.ocup)}</td>
-                            <td>${d.qtd}</td>
-                        </tr>
-                    `);
-
-                $('#tableMaoObra tbody').append(tr);
-                tr.fadeIn(500);
-
-                showNotification(
-                    'fas fa-check',
-                    response.message,
-                    'success',
-                    2000
-                );
-
-                $('#mao_obra_label').val('').removeData('selectedItem');
-                $('#mao_obra_id').val('');
-                $('#mao_obra_tp_id').val('');
-                $('#mao_obra_qtd').val(1);
-                $('#mao_obra_label').focus();
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) {
-                    const msg = xhr.responseJSON?.message || 'Erro de validação.';
-                    showNotification('fas fa-bug', msg, 'danger', 4000);
-                } else {
-                    handleAjaxError(xhr);
-                }
-            },
-            complete: function () {
-                btn.prop('disabled', false);
-            }
-        });
-    });
-
-    $(document).off('click', '.btnRemoveMaoObra').on('click', '.btnRemoveMaoObra', function () {
-
-        const relatorioId = getRelatorioIdAtual();
-        const tr = $(this).closest('tr');
-        const ocupId = tr.data('ocup-id');
-
-        if (!relatorioId || !ocupId) {
-            tr.fadeOut(500, function () { tr.remove(); });
-            return;
-        }
-
-        const btn = $(this);
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: baseURL + `/atendimentos-relatorios/${relatorioId}/mao-de-obra/${ocupId}`,
-            type: 'DELETE',
-            dataType: 'json',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                tr.fadeOut(500, function () {
-                    tr.remove();
-                });
-
-                showNotification(
-                    'fas fa-check',
-                    response.message,
-                    'success',
-                    2000
-                );
-            },
-            error: function (xhr) {
-                btn.prop('disabled', false);
-                handleAjaxError(xhr);
-            }
-        });
-    });
-}
-
-function initEquipTab() {
-    if ($.ui && $.ui.autocomplete && $('#equip_label').length) {
-        setupAutocomplete(
-            '#equip_label',
-            '#equip_id',
-            baseURL + '/equipamentos/autocomplete',
-            function (item) {
-                $('#equip_label').data('selectedItem', item);
-            }
-        );
-    }
-
-    $(document).off('input blur', '#equip_qtd').on('input blur', '#equip_qtd', function () {
-        const v = parseInt($(this).val(), 10);
-        if (isNaN(v) || v < 1) $(this).val(1);
-    });
-
-    $(document).off('change', '#equip_label').on('change', '#equip_label', function () {
-        if (!$('#equip_id').val()) {
-            $('#equip_label').removeData('selectedItem');
-        }
-    });
-
-    $(document).off('click', '#btnAddEquip').on('click', '#btnAddEquip', function () {
-        const relatorioId = getRelatorioIdAtual();
-
-        if (!relatorioId) {
-            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar equipamento.', 'warning', 3500);
-            return;
-        }
-
-        const equipId = $('#equip_id').val();
-        const qtd = parseInt($('#equip_qtd').val(), 10);
-
-        if (!equipId) {
-            showNotification('fas fa-exclamation-triangle', 'Selecione um equipamento válido na lista.', 'warning', 3000);
-            return;
-        }
-        if (isNaN(qtd) || qtd < 1) {
-            showNotification('fas fa-exclamation-triangle', 'Quantidade deve ser no mínimo 1.', 'warning', 3000);
-            return;
-        }
-
-        const key = `equip-${equipId}`;
-        if ($(`#tableEquip tbody tr[data-key="${key}"]`).length) {
-            showNotification('fas fa-exclamation-triangle', 'Esse equipamento já foi adicionado.', 'warning', 3000);
-            return;
-        }
-
-        const btn = $('#btnAddEquip');
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: baseURL + `/atendimentos-relatorios/${relatorioId}/equipamentos`,
-            type: 'POST',
-            dataType: 'json',
-            data: { equip_id: equipId, qtd: qtd },
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            success: function (response) {
-                const d = response.data;
-
-                const tr = $(`
-                    <tr data-key="equip-${d.equip_id}"
-                        data-equip-id="${d.equip_id}"
-                        style="display:none;">
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveEquip">
-                                <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
-                                <span class="text">Excluir</span>
-                            </button>
-                        </td>
-                        <td>${escapeHtml(d.equip)}</td>
-                        <td>${d.qtd}</td>
-                    </tr>
-                `);
-
-                $('#tableEquip tbody').append(tr);
-                tr.fadeIn(500);
-
-                showNotification('fas fa-check', response.message, 'success', 2000);
-
-                $('#equip_label').val('').removeData('selectedItem');
-                $('#equip_id').val('');
-                $('#equip_qtd').val(1);
-                $('#equip_label').focus();
-            },
-            error: function (xhr) {
-                if (xhr.status === 422) {
-                    const msg = xhr.responseJSON?.message || 'Erro de validação.';
-                    showNotification('fas fa-bug', msg, 'danger', 4000);
-                } else {
-                    handleAjaxError(xhr);
-                }
-            },
-            complete: function () {
-                btn.prop('disabled', false);
-            }
-        });
-    });
-
-    $(document).off('click', '.btnRemoveEquip').on('click', '.btnRemoveEquip', function () {
-        const relatorioId = getRelatorioIdAtual();
-        const tr = $(this).closest('tr');
-        const equipId = tr.data('equip-id');
-
-        if (!relatorioId || !equipId) {
-            tr.fadeOut(500, function () { tr.remove(); });
-            return;
-        }
-
-        const btn = $(this);
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: baseURL + `/atendimentos-relatorios/${relatorioId}/equipamentos/${equipId}`,
-            type: 'DELETE',
-            dataType: 'json',
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            success: function (response) {
-                tr.fadeOut(500, function () { tr.remove(); });
-                showNotification('fas fa-check', response.message, 'success', 2000);
-            },
-            error: function (xhr) {
-                btn.prop('disabled', false);
-                handleAjaxError(xhr);
-            }
-        });
-    });
-}
-
-function initAtividadesTab() {
-
-    $(document).off('click', '#btnNovaAtividade').on('click', '#btnNovaAtividade', function () {
-        $('#aten_rel_ativ_id').val('');
-        $('#aten_rel_ativ_descricao').val('');
-        $('#aten_rel_ativ_status').val('0');
-
-        $('#modalAtividade').modal({
-            backdrop: 'static',
-            keyboard: false
-        });
-
-        setTimeout(() => $('#aten_rel_ativ_descricao').focus(), 200);
-    });
-
-    $(document).off('hidden.bs.modal', '#modalAtividade').on('hidden.bs.modal', '#modalAtividade', function () {
-        $('#aten_rel_ativ_id').val('');
-        $('#aten_rel_ativ_descricao').val('');
-        $('#aten_rel_ativ_status').val('0');
-        $('#btnSalvarAtividade').prop('disabled', false);
-    });
-
-    $(document).off('submit', '#formAtividade').on('submit', '#formAtividade', function (e) {
-        e.preventDefault();
-
-        const relatorioId = getRelatorioIdAtual();
-
-        if (!relatorioId) {
-            showNotification(
-                'fas fa-exclamation-triangle',
-                'Salve o relatório antes de adicionar atividades.',
-                'warning',
-                3500
-            );
-            return;
-        }
-
-        const ativId = $('#aten_rel_ativ_id').val();
-
-        const payload = {
-            aten_rel_ativ_descricao: $('#aten_rel_ativ_descricao').val(),
-            aten_rel_ativ_status: $('#aten_rel_ativ_status').val()
-        };
-
-        const url = ativId
-            ? baseURL + `/atendimentos-relatorios/${relatorioId}/atividades/${ativId}`
-            : baseURL + `/atendimentos-relatorios/${relatorioId}/atividades`;
-
-        const btn = $('#btnSalvarAtividade');
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: payload,
-            dataType: 'json',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-
-                if (!ativId && response.data) {
-                    const tr = buildAtividadeRow(response.data).hide();
-                    $('#tableAtividades tbody').append(tr);
-                    tr.fadeIn(500);
-                } else if (ativId && response.data) {
-                    const tr = $(`#tableAtividades tbody tr[data-ativ-id="${response.data.id}"]`);
-
-                    if (tr.length) {
-                        tr.find('.td-descricao').html(escapeHtml(response.data.descricao));
-                        tr.find('.td-status').html(renderStatusAtividade(response.data.status));
-                        tr.data('descricao', response.data.descricao);
-                        tr.data('status', response.data.status);
-                    } else {
-                        const relId = getRelatorioIdAtual();
-                        if (relId) {
-                            getData(relId, 'tab-dados');
-                        }
-                    }
-                }
-
-                $('#modalAtividade').modal('hide');
-
-                showNotification(
-                    'fas fa-check',
-                    response.message,
-                    'success',
-                    2000
-                );
-            },
-            error: function (xhr) {
-                handleAjaxError(xhr);
-            },
-            complete: function () {
-                btn.prop('disabled', false);
-            }
-        });
-    });
-
-    $(document).off('click', '.btnEditAtividade').on('click', '.btnEditAtividade', function () {
-        const tr = $(this).closest('tr');
-
-        $('#aten_rel_ativ_id').val(tr.data('ativ-id'));
-        $('#aten_rel_ativ_descricao').val(tr.data('descricao'));
-        $('#aten_rel_ativ_status').val(tr.data('status'));
-
-        $('#modalAtividade').modal({
-            backdrop: 'static',
-            keyboard: false
-        });
-
-        setTimeout(() => $('#aten_rel_ativ_descricao').focus(), 200);
-    });
-
-    $(document).off('click', '.btnDelAtividade').on('click', '.btnDelAtividade', function () {
-        const relatorioId = getRelatorioIdAtual();
-        const tr = $(this).closest('tr');
-        const ativId = tr.data('ativ-id');
-
-        if (!relatorioId || !ativId) {
-            return;
-        }
-
-        const btn = $(this);
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: baseURL + `/atendimentos-relatorios/${relatorioId}/atividades/${ativId}`,
-            type: 'DELETE',
-            dataType: 'json',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                tr.fadeOut(500, function () {
-                    tr.remove();
-                });
-
-                showNotification(
-                    'fas fa-check',
-                    response.message,
-                    'success',
-                    2000
-                );
-            },
-            error: function (xhr) {
-                btn.prop('disabled', false);
-                handleAjaxError(xhr);
-            }
-        });
-    });
-}
-
 function initOcorrenciasTab() {
-    if ($.ui && $.ui.autocomplete && $('#ocorrencia_label').length) {
-        setupAutocomplete(
-            '#ocorrencia_label',
-            '#ocorrencia_id',
-            baseURL + '/ocorrencias/autocomplete',
-            function (item) {
-                $('#ocorrencia_label').data('selectedItem', item);
-            }
-        );
-    }
-
-    $(document).off('change', '#ocorrencia_label').on('change', '#ocorrencia_label', function () {
-        if (!$('#ocorrencia_id').val()) {
-            $('#ocorrencia_label').removeData('selectedItem');
-        }
-    });
-
     $(document).off('click', '#btnAddOcorrencia').on('click', '#btnAddOcorrencia', function () {
         const relatorioId = getRelatorioIdAtual();
 
@@ -980,14 +508,14 @@ function initOcorrenciasTab() {
             return;
         }
 
-        const ocorrenciaId = $('#ocorrencia_id').val();
-        const item = $('#ocorrencia_label').data('selectedItem');
+        const selectEl = $('#ocorrencia_id');
+        const ocorrenciaId = selectEl.val();
         const observacao = $('#ocorrencia_observacao').val();
 
-        if (!ocorrenciaId || !item) {
+        if (!ocorrenciaId) {
             showNotification(
                 'fas fa-exclamation-triangle',
-                'Selecione uma ocorrência válida na lista.',
+                'Selecione uma ocorrência.',
                 'warning',
                 3000
             );
@@ -1049,10 +577,8 @@ function initOcorrenciasTab() {
                     2000
                 );
 
-                $('#ocorrencia_label').val('').removeData('selectedItem');
                 $('#ocorrencia_id').val('');
                 $('#ocorrencia_observacao').val('');
-                $('#ocorrencia_label').focus();
             },
             error: function (xhr) {
                 if (xhr.status === 422) {
@@ -1106,188 +632,6 @@ function initOcorrenciasTab() {
     });
 }
 
-function initComentariosTab() {
-    $(document).off('click', '#btnNovoComentario').on('click', '#btnNovoComentario', function () {
-        $('#aten_rel_com_id').val('');
-        $('#aten_rel_com_descricao').val('');
-
-        $('#modalComentario').modal({
-            backdrop: 'static',
-            keyboard: false
-        });
-
-        setTimeout(() => $('#aten_rel_com_descricao').focus(), 200);
-    });
-
-    $(document).off('hidden.bs.modal', '#modalComentario').on('hidden.bs.modal', '#modalComentario', function () {
-        $('#aten_rel_com_id').val('');
-        $('#aten_rel_com_descricao').val('');
-        $('#btnSalvarComentario').prop('disabled', false);
-    });
-
-    $(document).off('submit', '#formComentario').on('submit', '#formComentario', function (e) {
-        e.preventDefault();
-
-        const relatorioId = getRelatorioIdAtual();
-
-        if (!relatorioId) {
-            showNotification(
-                'fas fa-exclamation-triangle',
-                'Salve o relatório antes de adicionar comentários.',
-                'warning',
-                3500
-            );
-            return;
-        }
-
-        const comentarioId = $('#aten_rel_com_id').val();
-
-        const payload = {
-            aten_rel_com_descricao: $('#aten_rel_com_descricao').val()
-        };
-
-        const url = comentarioId
-            ? baseURL + `/atendimentos-relatorios/${relatorioId}/comentarios/${comentarioId}`
-            : baseURL + `/atendimentos-relatorios/${relatorioId}/comentarios`;
-
-        const btn = $('#btnSalvarComentario');
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: payload,
-            dataType: 'json',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-
-                if (!comentarioId && response.data) {
-                    const tr = buildComentarioRow(response.data).hide();
-                    $('#tableComentarios tbody').append(tr);
-                    tr.fadeIn(500);
-                } else if (comentarioId && response.data) {
-                    const tr = $(`#tableComentarios tbody tr[data-com-id="${response.data.id}"]`);
-
-                    if (tr.length) {
-                        tr.find('.td-comentario').html(escapeHtml(response.data.descricao));
-                        tr.data('descricao', response.data.descricao);
-                    } else {
-                        const relId = getRelatorioIdAtual();
-                        if (relId) {
-                            getData(relId, 'tab-dados');
-                        }
-                    }
-                }
-
-                $('#modalComentario').modal('hide');
-
-                showNotification(
-                    'fas fa-check',
-                    response.message,
-                    'success',
-                    2000
-                );
-            },
-            error: function (xhr) {
-                handleAjaxError(xhr);
-            },
-            complete: function () {
-                btn.prop('disabled', false);
-            }
-        });
-    });
-
-    $(document).off('click', '.btnEditComentario').on('click', '.btnEditComentario', function () {
-        const tr = $(this).closest('tr');
-
-        $('#aten_rel_com_id').val(tr.data('com-id'));
-        $('#aten_rel_com_descricao').val(tr.data('descricao'));
-
-        $('#modalComentario').modal({
-            backdrop: 'static',
-            keyboard: false
-        });
-
-        setTimeout(() => $('#aten_rel_com_descricao').focus(), 200);
-    });
-
-    $(document).off('click', '.btnDelComentario').on('click', '.btnDelComentario', function () {
-        const relatorioId = getRelatorioIdAtual();
-        const tr = $(this).closest('tr');
-        const comentarioId = tr.data('com-id');
-
-        if (!relatorioId || !comentarioId) {
-            return;
-        }
-
-        const btn = $(this);
-        btn.prop('disabled', true);
-
-        $.ajax({
-            url: baseURL + `/atendimentos-relatorios/${relatorioId}/comentarios/${comentarioId}`,
-            type: 'DELETE',
-            dataType: 'json',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (response) {
-                tr.fadeOut(500, function () {
-                    tr.remove();
-                });
-
-                showNotification(
-                    'fas fa-check',
-                    response.message,
-                    'success',
-                    2000
-                );
-            },
-            error: function (xhr) {
-                btn.prop('disabled', false);
-                handleAjaxError(xhr);
-            }
-        });
-    });
-}
-
-function buildAtividadeRow(a) {
-    return $(`
-        <tr data-ativ-id="${a.id}"
-            data-descricao="${escapeHtml(a.descricao)}"
-            data-status="${a.status}">
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-primary btnEditAtividade" title="Editar">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-danger btnDelAtividade" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-            <td class="td-descricao">${escapeHtml(a.descricao)}</td>
-            <td class="td-status">${renderStatusAtividade(a.status)}</td>
-        </tr>
-    `);
-}
-
-function buildComentarioRow(c) {
-    return $(`
-        <tr data-com-id="${c.id}"
-            data-descricao="${escapeHtml(c.descricao)}">
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-primary btnEditComentario" title="Editar">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-danger btnDelComentario" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-            <td class="td-comentario">${escapeHtml(c.descricao)}</td>
-        </tr>
-    `);
-}
-
 function getRelatorioIdAtual() {
     const byData = $('#btnAtualizarRelatorio').data('relatorio-id');
     if (byData) return byData;
@@ -1301,93 +645,55 @@ function getRelatorioIdAtual() {
     return null;
 }
 
-function getData(relatorioId, guia) {
-    $.get(`/atendimentos-relatorios/${relatorioId}/get-data`, function (data) {
+function carregarDados(relatorioId) {
+    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/dados', function (d) {
+        $('input[name="aten_rel_data"]').val(d.aten_rel_data_iso);
+        $('#tab-dados .dia-semana').text(d.dia_semana);
+        $('#tab-dados .prazo-total').text(d.prazo_total + ' dias');
+        $('#tab-dados .prazo-decorrido').text(d.prazo_decorrido + ' dias');
+        $('#tab-dados .prazo-vencer').text(d.prazo_vencer + ' dias');
+    });
+}
 
-        switch (guia) {
-            case 'tab-dados':
-                applyDados(data.dados);
-                break;
+function carregarHorarios(relatorioId) {
+    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/horarios', function (h) {
+        $('input[name="aten_rel_hora_entrada"]').val(h.entrada);
+        $('input[name="aten_rel_hora_inicio_intervalo"]').val(h.inicio_intervalo);
+        $('input[name="aten_rel_hora_fim_intervalo"]').val(h.fim_intervalo);
+        $('input[name="aten_rel_hora_saida"]').val(h.saida);
+    });
+}
 
-            case 'tab-horarios':
-                applyHorarios(data.horarios);
-                break;
+function carregarClima(relatorioId) {
+    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/clima', function (clima) {
+        if (clima?.manha) $(`#manha_${clima.manha}`).prop('checked', true);
+        if (clima?.tarde) $(`#tarde_${clima.tarde}`).prop('checked', true);
+        if (clima?.noite) $(`#noite_${clima.noite}`).prop('checked', true);
+    });
+}
 
-            case 'tab-clima':
-                applyClima(data.clima);
-                break;
+function carregarOcorrenciasRelatorio(relatorioId) {
+    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/ocorrencias', function (r) {
+        applyOcorrencias(r.data);
+    });
+}
 
-            case 'tab-assinatura':
-                applyAssinaturas(data);
-                break;
+function carregarAssinaturas(relatorioId) {
+    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/assinaturas', function (data) {
+        if (data.assinaturas?.responsavel) {
+            $('#assinaturaResponsavelPreview').html(`<img src="${data.assinaturas.responsavel}" class="img-fluid border" alt="Assinatura Responsável">`);
         }
-
-        if (data.mao_obra) {
-            applyMaoDeObra(data.mao_obra);
-        }
-
-        if (data.equipamentos) {
-            applyEquipamentos(data.equipamentos);
-        }
-
-        if (data.atividades) {
-            applyAtividades(data.atividades);
-        }
-
-        if (data.ocorrencias) {
-            applyOcorrencias(data.ocorrencias);
-        }
-
-        if (data.comentarios) {
-            applyComentarios(data.comentarios);
+        if (data.assinaturas?.cliente) {
+            $('#assinaturaClientePreview').html(`<img src="${data.assinaturas.cliente}" class="img-fluid border" alt="Assinatura Cliente">`);
         }
     });
 }
 
-function applyDados(dados) {
-    $('input[name="aten_rel_data"]').val(dados.aten_rel_data_iso);
-    $('#tab-dados .dia-semana').text(dados.dia_semana);
-    $('#tab-dados .prazo-total').text(dados.prazo_total + ' dias');
-    $('#tab-dados .prazo-decorrido').text(dados.prazo_decorrido + ' dias');
-    $('#tab-dados .prazo-vencer').text(dados.prazo_vencer + ' dias');
-}
-
-function applyHorarios(h) {
-    $('input[name="aten_rel_hora_entrada"]').val(h.entrada?.substring(0, 5) || '');
-    $('input[name="aten_rel_hora_inicio_intervalo"]').val(h.inicio_intervalo?.substring(0, 5) || '');
-    $('input[name="aten_rel_hora_fim_intervalo"]').val(h.fim_intervalo?.substring(0, 5) || '');
-    $('input[name="aten_rel_hora_saida"]').val(h.saida?.substring(0, 5) || '');
-}
-
-function applyClima(clima) {
-    if (clima?.manha) {
-        $(`#manha_${clima.manha}`).prop('checked', true);
-    }
-    if (clima?.tarde) {
-        $(`#tarde_${clima.tarde}`).prop('checked', true);
-    }
-    if (clima?.noite) {
-        $(`#noite_${clima.noite}`).prop('checked', true);
-    }
-}
-
-function applyAssinaturas(data) {
-    if (typeof data.status !== 'undefined') {
-        $(`#form_relatorio_assinaturas input[name="aten_rel_status"][value="${data.status}"]`).prop('checked', true);
-        $(`#form_relatorio_assinaturas .btn-group-toggle label`).removeClass('active');
-        $(`#form_relatorio_assinaturas .btn-group-toggle input[name="aten_rel_status"]:checked`).closest('label').addClass('active');
-    }
-
-    if (data.assinaturas?.responsavel) {
-        $('#assinaturaResponsavelPreview').html(`<img src="${data.assinaturas.responsavel}" class="img-fluid border" alt="Assinatura Responsável">`);
-    }
-    if (data.assinaturas?.cliente) {
-        $('#assinaturaClientePreview').html(`<img src="${data.assinaturas.cliente}" class="img-fluid border" alt="Assinatura Cliente">`);
-    }
-}
-
 function initAssinaturasTab() {
     window.signatureData = window.signatureData || {};
+
+    // Nome/CPF de quem assinou só se aplicam ao cliente.
+    $('#assinatura_cliente_cpf').mask('000.000.000-00');
 
     function setupCanvas(canvasId) {
         const canvas = document.getElementById(canvasId);
@@ -1494,6 +800,22 @@ function initAssinaturasTab() {
             return;
         }
 
+        // Nome e CPF de quem assinou só são exigidos do cliente — o técnico
+        // já é o usuário logado, identidade conhecida.
+        let nome = null, cpf = null;
+        if (signatureType === 'cliente') {
+            nome = $('#assinatura_cliente_nome').val().trim();
+            if (!nome) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o nome de quem está assinando.', 'warning', 3500);
+                return;
+            }
+            cpf = $('#assinatura_cliente_cpf').val().trim();
+            if (!cpf) {
+                showNotification('fas fa-exclamation-triangle', 'Informe o CPF de quem está assinando.', 'warning', 3500);
+                return;
+            }
+        }
+
         const dataUrl = canvasObj.getDataUrl();
         window.signatureData = window.signatureData || {};
         window.signatureData[signatureType] = dataUrl;
@@ -1504,6 +826,10 @@ function initAssinaturasTab() {
             data: {
                 aten_rel_status: $('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked').val(),
                 [`assinatura_${signatureType}`]: dataUrl,
+                ...(signatureType === 'cliente' ? {
+                    assinatura_cliente_nome: nome,
+                    assinatura_cliente_cpf: cpf,
+                } : {}),
             },
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (response) {
@@ -1524,83 +850,357 @@ function initAssinaturasTab() {
     });
 }
 
-function applyMaoDeObra(lista) {
-    const tbody = $('#tableMaoObra tbody');
+function initTextosTab() {
+    // form_descricao removido (RF001): itens de descrição agora salvam
+    // individualmente via initDescricaoTab(), não por este form genérico.
+    const mapa = {
+        'form_informacoes_adicionais':{ campo: 'aten_rel_informacoes_adicionais', label: 'Observações Gerais' },
+    };
 
+    Object.keys(mapa).forEach(function (formId) {
+        const config = mapa[formId];
+        $(document).off('submit', '#' + formId).on('submit', '#' + formId, function (e) {
+            e.preventDefault();
+            const relatorioId = getRelatorioIdAtual();
+            if (!relatorioId) {
+                showNotification('fas fa-exclamation-triangle', 'Relatório não identificado.', 'warning', 3000);
+                return;
+            }
+
+            const valor = $('#' + config.campo).val();
+            $.ajax({
+                url: baseURL + `/atendimentos-relatorios/${relatorioId}/texto/${config.campo}`,
+                type: 'POST',
+                data: { valor: valor },
+                dataType: 'json',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function () {
+                    showNotification('fas fa-check-double', config.label + ' salvo com sucesso.', 'success', 2000);
+                },
+                error: function (xhr) {
+                    handleAjaxError(xhr);
+                }
+            });
+        });
+    });
+}
+
+// ─── Serviços / Peças ─────────────────────────────────────────────────────────
+
+function parseItemsJson(raw) {
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (e) {}
+    return raw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+function salvarItemsTexto(relatorioId, campo, items, callback) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/texto/' + campo,
+        type: 'POST',
+        data: { valor: JSON.stringify(items) },
+        dataType: 'json',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        success: function () {
+            if (callback) callback();
+        },
+        error: function (xhr) {
+            handleAjaxError(xhr);
+        }
+    });
+}
+
+function renderItemsTabela(items, tbodySelector, btnRemoveClass, label) {
+    const tbody = $(tbodySelector);
     tbody.empty();
+    if (!items.length) {
+        tbody.append('<tr><td colspan="2" class="text-center text-muted">Nenhum ' + label + ' cadastrado.</td></tr>');
+        return;
+    }
+    items.forEach(function (item, idx) {
+        const tr = $('<tr style="display:none;">' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-danger btn-sm btn-icon-split ' + btnRemoveClass + '" data-idx="' + idx + '">' +
+                    '<span class="icon text-white-50"><i class="fas fa-trash"></i></span>' +
+                    '<span class="text">Excluir</span>' +
+                '</button>' +
+            '</td>' +
+            '<td>' + escapeHtml(item) + '</td>' +
+        '</tr>');
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
 
-    if (!Array.isArray(lista) || !lista.length) {
+function carregarServicos(relatorioId) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/servicos',
+        type: 'GET',
+        dataType: 'json',
+        success: function (r) { renderServicos(r.data); },
+        error: function () { showNotification('fas fa-bug', 'Erro ao carregar serviços.', 'danger', 3000); }
+    });
+}
+
+function renderServicos(items) {
+    const tbody = $('#tableServicos tbody');
+    tbody.empty();
+    if (!items || !items.length) {
+        tbody.append('<tr><td colspan="2" class="text-center text-muted">Nenhum serviço cadastrado.</td></tr>');
+        return;
+    }
+    items.forEach(function (item) {
+        const tr = $('<tr style="display:none;">' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveServico" data-id="' + item.aten_rel_serv_id + '">' +
+                    '<span class="icon text-white-50"><i class="fas fa-trash"></i></span>' +
+                    '<span class="text">Excluir</span>' +
+                '</button>' +
+            '</td>' +
+            '<td>' + escapeHtml(item.aten_rel_serv_descricao) + '</td>' +
+        '</tr>');
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
+
+function initServicosTab() {
+
+    $(document).off('click', '#btnAddServico').on('click', '#btnAddServico', function () {
+        const rid = getRelatorioIdAtual();
+        if (!rid) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar serviços.', 'warning', 3500);
+            return;
+        }
+        const descricao = $('#servico_descricao').val().trim();
+        if (!descricao) {
+            showNotification('fas fa-exclamation-triangle', 'Informe a descrição do serviço.', 'warning', 3000);
+            return;
+        }
+        const btn = $(this);
+        btn.prop('disabled', true);
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/servicos',
+            type: 'POST',
+            data: { descricao: descricao },
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                $('#servico_descricao').val('').focus();
+                carregarServicos(rid);
+                showNotification('fas fa-check-double', r.message, 'success', 2000);
+                btn.prop('disabled', false);
+            },
+            error: function (xhr) { btn.prop('disabled', false); handleAjaxError(xhr); }
+        });
+    });
+
+    $(document).off('click', '.btnRemoveServico').on('click', '.btnRemoveServico', function () {
+        const rid = getRelatorioIdAtual();
+        const itemId = $(this).data('id');
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/servicos/' + itemId,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) { carregarServicos(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
+            error: function (xhr) { handleAjaxError(xhr); }
+        });
+    });
+}
+
+function carregarPecas(relatorioId) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/pecas',
+        type: 'GET',
+        dataType: 'json',
+        success: function (r) { renderPecas(r.data); },
+        error: function () { showNotification('fas fa-bug', 'Erro ao carregar peças.', 'danger', 3000); }
+    });
+}
+
+function renderPecas(items) {
+    const tbody = $('#tablePecas tbody');
+    tbody.empty();
+    if (!items || !items.length) {
+        tbody.append('<tr><td colspan="2" class="text-center text-muted">Nenhuma peça cadastrada.</td></tr>');
+        return;
+    }
+    items.forEach(function (item) {
+        const tr = $('<tr style="display:none;">' +
+            '<td class="text-center">' +
+                '<button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemovePeca" data-id="' + item.aten_rel_peca_id + '">' +
+                    '<span class="icon text-white-50"><i class="fas fa-trash"></i></span>' +
+                    '<span class="text">Excluir</span>' +
+                '</button>' +
+            '</td>' +
+            '<td>' + escapeHtml(item.aten_rel_peca_descricao) + '</td>' +
+        '</tr>');
+        tbody.append(tr);
+        tr.fadeIn(300);
+    });
+}
+
+function initPecasTab() {
+
+    $(document).off('click', '#btnAddPeca').on('click', '#btnAddPeca', function () {
+        const rid = getRelatorioIdAtual();
+        if (!rid) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar peças.', 'warning', 3500);
+            return;
+        }
+        const descricao = $('#peca_descricao').val().trim();
+        if (!descricao) {
+            showNotification('fas fa-exclamation-triangle', 'Informe a descrição da peça.', 'warning', 3000);
+            return;
+        }
+        const btn = $(this);
+        btn.prop('disabled', true);
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/pecas',
+            type: 'POST',
+            data: { descricao: descricao },
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                $('#peca_descricao').val('').focus();
+                carregarPecas(rid);
+                showNotification('fas fa-check-double', r.message, 'success', 2000);
+                btn.prop('disabled', false);
+            },
+            error: function (xhr) { btn.prop('disabled', false); handleAjaxError(xhr); }
+        });
+    });
+
+    $(document).off('click', '.btnRemovePeca').on('click', '.btnRemovePeca', function () {
+        const rid = getRelatorioIdAtual();
+        const itemId = $(this).data('id');
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/pecas/' + itemId,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) { carregarPecas(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
+            error: function (xhr) { handleAjaxError(xhr); }
+        });
+    });
+}
+
+// ─── Descrição (itens: texto + foto opcional) — RF001 ──────────────────────────
+
+function carregarDescricaoItens(relatorioId) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/descricao-itens',
+        type: 'GET',
+        dataType: 'json',
+        success: function (r) { renderDescricaoItens(r.data, r.legado); },
+        error: function () { showNotification('fas fa-bug', 'Erro ao carregar itens de descrição.', 'danger', 3000); }
+    });
+}
+
+function renderDescricaoItens(items, legado) {
+    // RF001/RF004: retrocompatibilidade — relatório antigo (texto único) x
+    // relatório novo (lista de itens), nunca os dois juntos na tela.
+    const temLegado = !!(legado && legado.trim().length);
+    $('#descricaoFormNovo').toggle(!temLegado);
+    $('#descricaoLegadoBox').toggle(temLegado).text(legado || '');
+    if (temLegado) {
+        $('#listaDescricaoItens').empty();
+        $('#descricaoItensVazio').hide();
         return;
     }
 
-    lista.forEach(function (d) {
-        const key = `${d.tp_id}-${d.ocup_id}`;
+    const container = $('#listaDescricaoItens');
+    container.empty();
+    $('#descricaoItensVazio').toggle(!items || !items.length);
 
-        const tr = $(`
-            <tr data-key="${key}"
-                data-ocup-id="${d.ocup_id}"
-                style="display:none;">
-                <td>
-                    <button type="button"
-                        class="btn btn-danger btn-sm btn-icon-split btnRemoveMaoObra">
-                        <span class="icon text-white-50">
-                            <i class="fas fa-trash"></i>
-                        </span>
-                        <span class="text">Excluir</span>
-                    </button>
-                </td>
-                <td>${escapeHtml(d.tp_label)}</td>
-                <td>${escapeHtml(d.ocup)}</td>
-                <td>${d.qtd}</td>
-            </tr>
-        `);
-
-        tbody.append(tr);
-        tr.fadeIn(300);
+    (items || []).forEach(function (item) {
+        // Mesmo modal de preview (#anexoPreviewModal) já usado na aba Anexos —
+        // clicar na foto abre ela em tamanho maior.
+        const fotoHtml = item.foto_url
+            ? '<a href="#" class="anexo-thumb" data-type="image" data-src="' + item.foto_url + '">' +
+                '<img src="' + item.foto_url + '" class="card-img-top" style="max-height:220px; object-fit:cover;" alt="Foto do item">' +
+              '</a>'
+            : '';
+        const card = $(
+            '<div class="col-md-4 mb-3" style="display:none;">' +
+                '<div class="card h-100">' +
+                    fotoHtml +
+                    '<div class="card-body">' +
+                        '<p class="card-text" style="white-space:pre-wrap;">' + escapeHtml(item.texto) + '</p>' +
+                    '</div>' +
+                    '<div class="card-footer text-right">' +
+                        '<button type="button" class="btn btn-danger btn-sm btnRemoveDescricaoItem" data-id="' + item.id + '">' +
+                            '<i class="fas fa-trash"></i> Excluir' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>'
+        );
+        container.append(card);
+        card.fadeIn(300);
     });
 }
 
-function applyEquipamentos(lista) {
-    const tbody = $('#tableEquip tbody');
-    tbody.empty();
+function initDescricaoTab() {
 
-    if (!Array.isArray(lista) || !lista.length) return;
+    $(document).off('click', '#btnAddDescricaoItem').on('click', '#btnAddDescricaoItem', function () {
+        const rid = getRelatorioIdAtual();
+        if (!rid) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de adicionar itens.', 'warning', 3500);
+            return;
+        }
+        const texto = $('#descricao_item_texto').val().trim();
+        if (!texto) {
+            showNotification('fas fa-exclamation-triangle', 'Descreva o item antes de adicionar.', 'warning', 3000);
+            return;
+        }
 
-    lista.forEach(function (d) {
-        const tr = $(`
-            <tr data-key="equip-${d.equip_id}"
-                data-equip-id="${d.equip_id}"
-                style="display:none;">
-                <td>
-                    <button type="button" class="btn btn-danger btn-sm btn-icon-split btnRemoveEquip">
-                        <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
-                        <span class="text">Excluir</span>
-                    </button>
-                </td>
-                <td>${escapeHtml(d.equip)}</td>
-                <td>${d.qtd}</td>
-            </tr>
-        `);
+        const fd = new FormData();
+        fd.append('texto', texto);
+        const fotoInput = document.getElementById('descricao_item_foto');
+        if (fotoInput && fotoInput.files.length) {
+            fd.append('foto', fotoInput.files[0]);
+        }
 
-        tbody.append(tr);
-        tr.fadeIn(300);
+        const btn = $(this);
+        btn.prop('disabled', true);
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens',
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                $('#descricao_item_texto').val('');
+                if (fotoInput) fotoInput.value = '';
+                $('#descricao_item_foto').closest('.file-upload-group').find('.file-upload-text').text('Nenhuma foto selecionada');
+                carregarDescricaoItens(rid);
+                showNotification('fas fa-check-double', r.message, 'success', 2000);
+                btn.prop('disabled', false);
+            },
+            error: function (xhr) { btn.prop('disabled', false); handleAjaxError(xhr); }
+        });
+    });
+
+    $(document).off('click', '.btnRemoveDescricaoItem').on('click', '.btnRemoveDescricaoItem', function () {
+        const rid = getRelatorioIdAtual();
+        const itemId = $(this).data('id');
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens/' + itemId,
+            type: 'DELETE',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) { carregarDescricaoItens(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
+            error: function (xhr) { handleAjaxError(xhr); }
+        });
     });
 }
 
-function applyAtividades(lista) {
-    const tbody = $('#tableAtividades tbody');
-    tbody.empty();
-
-    if (!Array.isArray(lista) || !lista.length) {
-        return;
-    }
-
-    lista.forEach(function (a) {
-        const tr = buildAtividadeRow(a).hide();
-        tbody.append(tr);
-        tr.fadeIn(300);
-    });
-}
+// ─── Ocorrências ──────────────────────────────────────────────────────────────
 
 function applyOcorrencias(lista) {
     const tbody = $('#tableOcorrencias tbody');
@@ -1633,31 +1233,3 @@ function applyOcorrencias(lista) {
     });
 }
 
-function applyComentarios(lista) {
-    const tbody = $('#tableComentarios tbody');
-    tbody.empty();
-
-    if (!Array.isArray(lista) || !lista.length) {
-        return;
-    }
-
-    lista.forEach(function (c) {
-        const tr = buildComentarioRow(c).hide();
-        tbody.append(tr);
-        tr.fadeIn(300);
-    });
-}
-
-function renderStatusAtividade(status) {
-    const map = {
-        0: { text: 'Não iniciada', badge: 'secondary' },
-        1: { text: 'Iniciada', badge: 'info' },
-        2: { text: 'Em andamento', badge: 'primary' },
-        3: { text: 'Concluída', badge: 'success' },
-        4: { text: 'Paralisada', badge: 'warning' },
-        5: { text: 'Não executada', badge: 'dark' }
-    };
-
-    const s = map[status] || { text: '-', badge: 'secondary' };
-    return `<span class="badge badge-${s.badge}">${s.text}</span>`;
-}

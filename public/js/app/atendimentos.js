@@ -19,7 +19,7 @@ $(document).ready(function () {
             aten_usuario_id: "",
             aten_status: 0,
             aten_nr_proposta: "",
-            aten_descricao: "",
+            aten_contato: "",
             aten_responsavel: "",
             aten_endereco: "",
             aten_dt_inicio: "",
@@ -27,16 +27,22 @@ $(document).ready(function () {
         });
     });
 
-    setupAutocomplete("#aten_cliente_nome", "#aten_cliente_id", baseURL + "/atendimentos/autocomplete");
+    setupAutocomplete("#aten_cliente_nome", "#aten_cliente_id", baseURL + "/clientes/autocomplete");
 
-    $(document).on("change", "#aten_tp_atendimento_id", function () {
-        const tipoId = $(this).val();
+    // Máscara de telefone
+    $('#aten_telefone').mask('(00) 00000-0000');
 
-        if (!$("#aten_id").val()) {
-            atualizarSelectNaturezas(tipoId, null, false);
-        }
+    // Switch entrega técnica
+    $(document).on('change', '#aten_entrega_tecnica', function () {
+        $('#aten_entrega_tecnica_badge')
+            .text(this.checked ? 'Sim' : 'Não')
+            .toggleClass('badge-success', this.checked)
+            .toggleClass('badge-secondary', !this.checked);
+    });
 
-        syncHiddenFromSelects();
+    // WhatsApp
+    $(document).on('input', '#aten_telefone', function () {
+        atualizarLinkWhatsapp();
     });
 
     $(document).on("change", "#aten_nat_atendimento_id, #aten_natureza_id, #aten_natureza_select", function () {
@@ -45,9 +51,19 @@ $(document).ready(function () {
 
     $("#modal_atendimento").on("hidden.bs.modal", function () {
         $("#form_atendimento button[type='submit']").prop("disabled", false);
-        $("#form_equip_atendimento")[0].reset();
+        $("#aten_equip_descricao").val("");
         $("#table_equipamentos tbody").empty();
-        $("#tab-equipamentos-tab").addClass("disabled").prop("disabled", true);
+        $("#aten_obs_tecnica, #aten_obs_cliente, #aten_obs_manutencao").val("");
+        $("#aten_anexos_lista").empty();
+        $("#aten_usuario_id").val("");
+        $("#aten_telefone").val("");
+        $("#aten_entrega_tecnica").prop("checked", false);
+        $("#aten_entrega_tecnica_badge").text("Não").removeClass("badge-success").addClass("badge-secondary");
+        $("#tab-equipamentos-tab, #tab-observacoes-tab, #tab-anexos-aten-tab").addClass("disabled").prop("disabled", true);
+        atualizarIconeAba("tab-equipamentos-tab", false);
+        atualizarIconeAba("tab-observacoes-tab", false);
+        atualizarIconeAba("tab-anexos-aten-tab", false);
+        $("#tab-dados-tab").tab("show");
     });
 });
 
@@ -59,7 +75,8 @@ function configDataTableAtendimentos() {
         return tableEl.DataTable();
     }
 
-    const url = tableEl.data("url");
+    const url     = tableEl.data("url");
+    const isAdmin = tableEl.data("admin") === 1 || tableEl.data("admin") === "1";
 
     return tableEl.DataTable({
         ajax: {
@@ -71,19 +88,30 @@ function configDataTableAtendimentos() {
                 showNotification("fas fa-bug", "Erro ao carregar dados. Código: " + xhr.status, "danger", 5000);
             }
         },
+        serverSide: true,
+        processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
-            { data: "tipo" },
             { data: "natureza" },
             { data: "usuario" },
             { data: "cliente" },
-            { data: "obra" },
+            { data: "nr_proposta" },
             { data: "periodo" },
             { data: "status" }
         ],
-        columnDefs: [{ width: "5%", targets: 0 }],
+        columnDefs: [
+            { width: "5%", targets: 0, className: "text-center" },
+            { visible: isAdmin, targets: 0 },
+        ],
         createdRow: function (row) {
-            $("td", row).eq(0).addClass("text-center");
+        },
+        fnRowCallback: function (nRow, aData) {
+            const concluida = 3;
+            const hoje = new Date().toISOString().slice(0, 10);
+            if (aData.aten_status !== concluida && aData.aten_dt_fim < hoje) {
+                $(nRow).addClass("row-atrasado");
+            }
         }
     });
 }
@@ -97,10 +125,12 @@ $(document).on("click", ".btn-modal-atendimento", function () {
         aten_cliente_nome: $(this).data("cliente"),
         aten_usuario_id: $(this).data("usuario-id"),
         aten_status: $(this).data("status"),
-        aten_nr_proposta: $(this).data("nr-proposta"),
-        aten_descricao: $(this).data("obra"),
-        aten_responsavel: $(this).data("responsavel"),
-        aten_endereco: $(this).data("endereco"),
+        aten_nr_proposta:     $(this).data("nr-proposta"),
+        aten_contato:         $(this).data("contato"),
+        aten_responsavel:     $(this).data("responsavel"),
+        aten_telefone:        $(this).data("telefone"),
+        aten_entrega_tecnica: $(this).data("entrega-tecnica"),
+        aten_endereco:        $(this).data("endereco"),
         aten_dt_inicio: $(this).data("dt-inicio"),
         aten_dt_fim: $(this).data("dt-fim")
     });
@@ -117,10 +147,6 @@ function getNaturezaSelect() {
     if (s.length) return s;
 
     return $();
-}
-
-function getTipoSelect() {
-    return $("#aten_tp_atendimento_id");
 }
 
 function ensureHiddenInputs() {
@@ -141,74 +167,28 @@ function syncHiddenFromSelects() {
     $("#aten_natureza_id_hidden").val(naturezaVal);
 }
 
-function atualizarSelectNaturezas(tipoId, selectedNaturezaId, lockAfter) {
-    const select = getNaturezaSelect();
-
-    if (!select.length) {
-        console.warn("Select de natureza não encontrado (#aten_nat_atendimento_id / #aten_natureza_id / #aten_natureza_select).");
-        return;
-    }
-
-    select.prop("disabled", true).html('<option value="" selected disabled hidden>Selecione...</option>');
-
-    syncHiddenFromSelects();
-
-    if (!tipoId) return;
-
-    $.ajax({
-        url: baseURL + "/atendimentos/naturezas-por-tipo",
-        type: "GET",
-        dataType: "json",
-        data: { tipo_id: tipoId },
-        success: function (data) {
-            if (data && !Array.isArray(data)) data = [data];
-
-            if (Array.isArray(data) && data.length) {
-                data.forEach(n => {
-                    select.append(`<option value="${n.id}">${n.label}</option>`);
-                });
-
-                select.prop("disabled", false);
-
-                if (selectedNaturezaId !== null && selectedNaturezaId !== undefined && String(selectedNaturezaId) !== "") {
-                    select.val(String(selectedNaturezaId));
-                }
-
-                syncHiddenFromSelects();
-
-                if (lockAfter) {
-                    select.prop("disabled", true);
-                }
-            } else {
-                select.prop("disabled", true).html('<option value="" selected disabled hidden>Nenhuma natureza vinculada</option>');
-
-                syncHiddenFromSelects();
-            }
-        },
-        error: function (xhr) {
-            console.error("Erro ao carregar naturezas:", xhr.status, xhr.responseText);
-            select.prop("disabled", true).html('<option value="" selected disabled hidden>Erro ao carregar naturezas</option>');
-
-            syncHiddenFromSelects();
-        }
-    });
-}
-
 function abrirModalAtendimento(data) {
     $("#form_atendimento button[type='submit']").prop("disabled", false);
     $("#modal_atendimento").modal({ backdrop: "static", focus: true });
 
-    const tipoSelect = getTipoSelect();
     const naturezaSelect = getNaturezaSelect();
 
     $("#aten_id").val(data.aten_id || "");
 
     $("#aten_cliente_id").val(data.aten_cliente_id || "");
     $("#aten_cliente_nome").val(data.aten_cliente_nome || "");
-    $("#aten_usuario_id").val(data.aten_usuario_id || "");
     $("#aten_nr_proposta").val(data.aten_nr_proposta || "");
-    $("#aten_descricao").val(data.aten_descricao || "");
+    $("#aten_contato").val(data.aten_contato || "");
     $("#aten_responsavel").val(data.aten_responsavel || "");
+    const tel = data.aten_telefone || "";
+    $("#aten_telefone").val(tel);
+    atualizarLinkWhatsapp(tel);
+    const entrega = !!data.aten_entrega_tecnica;
+    $("#aten_entrega_tecnica").prop("checked", entrega);
+    $("#aten_entrega_tecnica_badge")
+        .text(entrega ? "Sim" : "Não")
+        .toggleClass("badge-success", entrega)
+        .toggleClass("badge-secondary", !entrega);
     $("#aten_endereco").val(data.aten_endereco || "");
     $("#aten_dt_inicio").val(data.aten_dt_inicio || "");
     $("#aten_dt_fim").val(data.aten_dt_fim || "");
@@ -216,7 +196,7 @@ function abrirModalAtendimento(data) {
     $("input[name='aten_status']").prop("checked", false);
     $(`#aten_status_${data.aten_status ?? 0}`).prop("checked", true);
 
-    $("#modal_atendimento").off("shown.bs.modal").on("shown.bs.modal", function () {
+    function setupModal() {
         const isEdit = !!data.aten_id;
 
         if (!isEdit) {
@@ -224,10 +204,8 @@ function abrirModalAtendimento(data) {
             $("#aten_method").val("POST");
             $("#form_atendimento").attr("action", baseURL + "/atendimentos");
 
-            tipoSelect.prop("disabled", false).val("").trigger("change");
-
             if (naturezaSelect.length) {
-                naturezaSelect.prop("disabled", true).html('<option value="" selected disabled hidden>Selecione...</option>');
+                naturezaSelect.prop("disabled", false).val("");
             }
 
             syncHiddenFromSelects();
@@ -237,17 +215,31 @@ function abrirModalAtendimento(data) {
             $("#aten_method").val("PUT");
             $("#form_atendimento").attr("action", baseURL + "/atendimentos/" + data.aten_id);
 
-            tipoSelect.val(String(data.aten_tp_atendimento_id)).prop("disabled", true);
+            if (naturezaSelect.length) {
+                naturezaSelect.val(String(data.aten_natureza_id)).prop("disabled", false);
+            }
 
-            atualizarSelectNaturezas(
-                data.aten_tp_atendimento_id,
-                data.aten_natureza_id,
-                true
-            );
+            $("#aten_usuario_id").val(String(data.aten_usuario_id || ""));
+
+            syncHiddenFromSelects();
 
             // Habilitar aba de equipamentos
             $("#tab-equipamentos-tab").removeClass("disabled").prop("disabled", false);
-            $("#form_equip_aten_id").val(data.aten_id);
+        }
+
+        if (isEdit) {
+            // Habilitar abas de edição
+            $("#tab-observacoes-tab, #tab-anexos-aten-tab").removeClass("disabled").prop("disabled", false);
+
+            // Carregar observações, equipamentos e anexos ao abrir o modal (para exibir check icons)
+            carregarObservacoes(data.aten_id);
+            carregarEquipamentos(data.aten_id);
+            carregarAnexosAtendimento(data.aten_id);
+
+            // Recarregar ao clicar nas abas
+            $("#tab-anexos-aten-tab").off("click.anx").on("click.anx", function () {
+                carregarAnexosAtendimento(data.aten_id);
+            });
         }
 
         // Carregar equipamentos quando a aba é selecionada
@@ -257,8 +249,130 @@ function abrirModalAtendimento(data) {
 
         // Inicializar o submit do formulário de equipamentos
         initSubmitEquipamento();
+    }
+
+    const modalEl = $("#modal_atendimento");
+    modalEl.off("shown.bs.modal").on("shown.bs.modal", setupModal);
+
+    // Se o modal já está visível (transição de novo → edição), executa setup direto
+    if (modalEl.hasClass("show")) {
+        setupModal();
+    }
+}
+
+function atualizarLinkWhatsapp(tel) {
+    const numero = (tel !== undefined ? tel : $("#aten_telefone").val()).replace(/\D/g, "");
+    const link = numero.length >= 10 ? "https://wa.me/55" + numero : "#";
+    $("#btnWhatsapp").attr("href", link);
+}
+
+function atualizarIconeAba(tabId, temDados) {
+    const tab = $("#" + tabId);
+    const texto = tab.text().replace(/\s*✔.*$/, "").trim();
+    tab.text(temDados ? texto + " ✔" : texto);
+}
+
+function carregarObservacoes(atenId) {
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/observacoes",
+        type: "GET",
+        dataType: "json",
+        success: function (data) {
+            $("#aten_obs_tecnica").val(data.aten_obs_tecnica || "");
+            $("#aten_obs_cliente").val(data.aten_obs_cliente || "");
+            $("#aten_obs_manutencao").val(data.aten_obs_manutencao || "");
+            const temObs = !!(data.aten_obs_tecnica || data.aten_obs_cliente || data.aten_obs_manutencao);
+            atualizarIconeAba("tab-observacoes-tab", temObs);
+        }
     });
 }
+
+function carregarAnexosAtendimento(atenId) {
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/anexos",
+        type: "GET",
+        dataType: "json",
+        success: function (r) {
+            renderizarAnexosAtendimento(r.anexos, atenId);
+        }
+    });
+}
+
+function renderizarAnexosAtendimento(anexos, atenId) {
+    atualizarIconeAba("tab-anexos-aten-tab", anexos && anexos.length > 0);
+    const container = $("#aten_anexos_lista");
+    container.empty();
+
+    if (!anexos || !anexos.length) {
+        container.html('<p class="text-muted text-center">Nenhum anexo cadastrado.</p>');
+        return;
+    }
+
+    let html = '<ul class="list-group">';
+    anexos.forEach(function (a) {
+        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="/midia/${e(a.aten_anexo_path)}" target="_blank">${e(a.aten_anexo_nome_original)}</a>
+            <button type="button" class="btn btn-danger btn-sm btn-delete-anexo-aten"
+                data-id="${a.aten_anexo_id}" data-aten-id="${atenId}">
+                <i class="fas fa-trash"></i>
+            </button>
+        </li>`;
+    });
+    html += '</ul>';
+    container.html(html);
+}
+
+$("#aten_anexo_file").on("change", function () {
+    const names = Array.from(this.files).map(f => f.name).join(", ");
+    $("#aten_anexo_nome").text(names || "Selecione arquivos para upload");
+});
+
+$("#btnUploadAnexoAten").on("click", function () {
+    const atenId = $("#aten_id").val();
+    const files = $("#aten_anexo_file")[0].files;
+    if (!atenId || !files.length) return;
+
+    const formData = new FormData();
+    Array.from(files).forEach(f => formData.append("arquivos[]", f));
+
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/upload-anexos",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: "json",
+        headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
+        success: function (r) {
+            showNotification("fas fa-check-double", r.message, "success", 2000);
+            $("#aten_anexo_file").val("");
+            $("#aten_anexo_nome").text("Selecione arquivos para upload");
+            carregarAnexosAtendimento(atenId);
+        },
+        error: function (xhr) {
+            showNotification("fas fa-bug", "Erro ao enviar arquivo(s). Código: " + xhr.status, "danger", 4000);
+        }
+    });
+});
+
+$(document).on("click", ".btn-delete-anexo-aten", function () {
+    const id = $(this).data("id");
+    const atenId = $(this).data("aten-id");
+
+    $.ajax({
+        url: baseURL + "/atendimentos/" + atenId + "/anexos/" + id,
+        type: "DELETE",
+        dataType: "json",
+        headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
+        success: function (r) {
+            showNotification("fas fa-check-double", r.message, "success", 2000);
+            carregarAnexosAtendimento(atenId);
+        },
+        error: function (xhr) {
+            showNotification("fas fa-bug", "Erro ao remover anexo. Código: " + xhr.status, "danger", 4000);
+        }
+    });
+});
 
 function initSubmitAtendimento() {
     $(document).off("submit", "#form_atendimento").on("submit", "#form_atendimento", function (event) {
@@ -280,10 +394,18 @@ function initSubmitAtendimento() {
             dataType: "json",
             headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
             success: function (response) {
-                $("#modal_atendimento").modal("hide");
-                $("#dataTableAtendimentos").DataTable().ajax.reload(null, false);
                 showNotification("fas fa-check-double", response.message, "success", 2000);
                 btnSubmit.prop("disabled", false);
+                $("#dataTableAtendimentos").DataTable().ajax.reload(null, false);
+
+                if (response.aten_id && response.atendimento) {
+                    // Novo atendimento: reabre em modo edição sem fechar o modal
+                    abrirModalAtendimento(response.atendimento);
+                } else {
+                    // Edição: atualiza ícone da aba observações imediatamente
+                    const atenId = $("#aten_id").val();
+                    if (atenId) carregarObservacoes(atenId);
+                }
             },
             error: function (xhr) {
                 btnSubmit.prop("disabled", false);
@@ -319,27 +441,26 @@ function initSubmitAtendimento() {
 }
 
 function initSubmitEquipamento() {
-    $(document).off("submit", "#form_equip_atendimento").on("submit", "#form_equip_atendimento", function (event) {
-        event.preventDefault();
-
-        const form = $(this);
+    $(document).off("click", "#btnAdicionarEquipamento").on("click", "#btnAdicionarEquipamento", function () {
         const atenId = $("#aten_id").val();
         const actionUrl = baseURL + "/atendimentos/" + atenId + "/equipamentos";
-        const formData = new FormData(this);
 
-        const btnSubmit = form.find("button[type='submit']");
+        const fd = new FormData();
+        fd.append('aten_equip_descricao', $('#aten_equip_descricao').val() || '');
+
+        const btnSubmit = $(this);
         btnSubmit.prop("disabled", true);
 
         $.ajax({
             url: actionUrl,
             type: "POST",
-            data: formData,
+            data: fd,
             processData: false,
             contentType: false,
             dataType: "json",
             headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content") },
             success: function (response) {
-                form[0].reset();
+                $('#aten_equip_descricao').val('');
                 carregarEquipamentos(atenId);
                 showNotification("fas fa-check-double", response.message, "success", 2000);
                 btnSubmit.prop("disabled", false);
@@ -400,11 +521,12 @@ function carregarEquipamentos(atenId) {
 }
 
 function renderizarEquipamentos(equipamentos, atenId) {
+    atualizarIconeAba("tab-equipamentos-tab", equipamentos && equipamentos.length > 0);
     const tbody = $("#table_equipamentos tbody");
     tbody.empty();
 
     if (!equipamentos || equipamentos.length === 0) {
-        tbody.append("<tr><td colspan='3' class='text-center text-muted'>Nenhum equipamento cadastrado</td></tr>");
+        tbody.append("<tr><td colspan='2' class='text-center text-muted'>Nenhum equipamento cadastrado</td></tr>");
         return;
     }
 
@@ -417,7 +539,6 @@ function renderizarEquipamentos(equipamentos, atenId) {
                     </button>
                 </td>
                 <td>${e(equip.aten_equip_descricao)}</td>
-                <td>${equip.aten_equip_observacoes ? e(equip.aten_equip_observacoes) : "-"}</td>
             </tr>
         `;
         tbody.append(row);

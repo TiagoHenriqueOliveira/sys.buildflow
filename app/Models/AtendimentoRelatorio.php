@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use App\Enums\AssinaturaTipo;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Models\AtendimentoRelatorioServico;
+use App\Models\AtendimentoRelatorioPeca;
 use App\Models\ModeloRelatorio;
 
 class AtendimentoRelatorio extends Model
 {
+    use HasFactory;
+
     protected $table = 'atendimentos_relatorios';
     protected $primaryKey = 'aten_rel_id';
     public $timestamps = false;
@@ -18,6 +25,9 @@ class AtendimentoRelatorio extends Model
         'aten_rel_modelo_relatorio_id',
         'aten_rel_data',
         'aten_rel_status',
+        'aten_rel_descricao',
+        'aten_rel_informacoes_adicionais',
+        'aten_rel_dt_fim',
     ];
 
     protected $casts = [
@@ -61,38 +71,6 @@ class AtendimentoRelatorio extends Model
         );
     }
 
-    public function ocupacoes()
-    {
-        return $this->belongsToMany(
-            Ocupacao::class,
-            'atendimentos_relatorios_ocupacoes',
-            'aten_rel_ocup_relatorio_id',
-            'aten_rel_ocup_ocupacao_id'
-        )->withPivot([
-            'aten_rel_ocup_quantidade',
-            'aten_rel_ocup_id',
-        ]);
-    }
-
-    public function equipamentos()
-    {
-        return $this->belongsToMany(
-            Equipamento::class,
-            'atendimentos_relatorios_equipamentos',
-            'aten_rel_equip_relatorio_id',
-            'aten_rel_equip_equipamento_id'
-        )->withPivot(['aten_rel_equip_quantidade', 'aten_rel_equip_id']);
-    }
-
-    public function atividades()
-    {
-        return $this->hasMany(
-            AtendimentoRelatorioAtividade::class,
-            'aten_rel_ativ_relatorio_id',
-            'aten_rel_id'
-        );
-    }
-
     public function fotos()
     {
         return $this->hasMany(
@@ -129,14 +107,53 @@ class AtendimentoRelatorio extends Model
         );
     }
 
-    public function assinaturaResponsavel()
+    public function assinaturaResponsavel(): ?AtendimentoRelatorioAssinatura
     {
-        return $this->assinaturas()->where('aten_rel_ass_path', 'like', '%/responsavel.%')->first();
+        return $this->assinaturas()->where('aten_rel_ass_tipo', AssinaturaTipo::Responsavel)->first();
     }
 
-    public function assinaturaCliente()
+    public function assinaturaCliente(): ?AtendimentoRelatorioAssinatura
     {
-        return $this->assinaturas()->where('aten_rel_ass_path', 'like', '%/cliente.%')->first();
+        return $this->assinaturas()->where('aten_rel_ass_tipo', AssinaturaTipo::Cliente)->first();
+    }
+
+    /**
+     * Retorna os dados de prazo calculados a partir das datas do atendimento.
+     * Centraliza a lógica usada em show(), getData() e pdf().
+     */
+    public function calcularPrazo(): array
+    {
+        $inicio = Carbon::parse($this->atendimento->aten_dt_inicio);
+        $fim    = Carbon::parse($this->atendimento->aten_dt_fim);
+        $base   = Carbon::parse($this->aten_rel_data);
+
+        $total      = $inicio->diffInDays($fim);
+        $decorrido  = min($inicio->diffInDays($base), $total);
+        $aVencer    = max($total - $decorrido, 0);
+
+        return [
+            'prazo_total'      => $total,
+            'prazo_decorrido'  => $decorrido,
+            'prazo_a_vencer'   => $aVencer,
+        ];
+    }
+
+    public function servicos()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioServico::class,
+            'aten_rel_serv_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
+    public function pecas()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioPeca::class,
+            'aten_rel_peca_relatorio_id',
+            'aten_rel_id'
+        );
     }
 
     public function ocorrencias()
@@ -152,12 +169,21 @@ class AtendimentoRelatorio extends Model
         ]);
     }
 
-    public function comentarios()
+    /**
+     * RF001 — lista de itens de descrição (texto + foto opcional). Convive
+     * com a coluna legada aten_rel_descricao sem migração de dado — ver
+     * RF004: um relatório usa ou o campo legado, ou esta lista, nunca os
+     * dois (decidido por qual dos dois tem registro).
+     */
+    public function itensDescricao()
     {
+        // Ordena por ID de criação — a numeração do PDF ("1. ...", "2. ...")
+        // depende da ordem de inclusão ser sempre a mesma em qualquer consumidor.
         return $this->hasMany(
-            AtendimentoRelatorioComentario::class,
-            'aten_rel_com_relatorio_id',
+            AtendimentoRelatorioDescricaoItem::class,
+            'aten_rel_desc_relatorio_id',
             'aten_rel_id'
-        );
+        )->orderBy('aten_rel_desc_id');
     }
+
 }

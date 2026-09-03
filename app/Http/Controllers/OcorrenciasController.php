@@ -5,27 +5,33 @@ namespace App\Http\Controllers;
 use App\Http\Requests\OcorrenciaRequest;
 use App\Models\Ocorrencia;
 use App\Repositories\OcorrenciaRepository;
+use App\Services\DataTableService;
 use Illuminate\Http\Request;
 
 class OcorrenciasController extends Controller
 {
     public function __construct(
-        private OcorrenciaRepository $repository
+        private OcorrenciaRepository $repository,
+        private DataTableService $dataTable,
     ) {}
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = $this->repository->all()->map(function ($o) {
-                return [
-                    'acoes' => view('ocorrencias.partials.acoes', compact('o'))->render(),
-                    'ocor_descricao' => e($o->ocor_descricao),
-                    'ocor_ativo' => (int) $o->ocor_ativo,
-                    'status' => $o->ocor_ativo ? 'Ativo' : 'Desativado',
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    Ocorrencia::query(),
+                    searchable: ['ocor_descricao'],
+                    orderable:  ['acoes' => null, 'ocor_descricao' => 'ocor_descricao', 'status' => 'ocor_ativo'],
+                    mapper: fn($o) => [
+                        'acoes'          => view('ocorrencias.partials.acoes', compact('o'))->render(),
+                        'ocor_descricao' => e($o->ocor_descricao),
+                        'ocor_ativo'     => (int) $o->ocor_ativo,
+                        'status'         => $o->ocor_ativo ? 'Ativo' : 'Desativado',
+                    ],
+                )
+            );
         }
 
         return view('ocorrencias.index');

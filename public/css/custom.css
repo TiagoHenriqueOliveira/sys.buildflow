@@ -26,8 +26,8 @@ html body {
 }
 
 .bg-gradient-darkblue {
-  background-color: #1e3a8a;
-  background-image: linear-gradient(180deg, #1e3a8a 75%, #020617 100%);
+  background-color: #00a753;
+  background-image: linear-gradient(180deg, #00a753 0%, #00552a 100%);
   background-size: cover;
 }
 
@@ -56,7 +56,7 @@ html body {
 
 .nav-item i {
   transition: color 0.3s, transform 0.3s;
-  color: #adb5bd;
+  color: #a8e6c4;
   font-weight: bold;
   font-size: 1.2rem;
 }
@@ -66,7 +66,7 @@ html body {
 }
 
 .nav-link:hover i {
-  color: #F0F3F4;
+  color: #ffffff;
 }
 
 .sidebar .nav-link:hover {
@@ -102,12 +102,12 @@ html body {
 }
 
 .nav-link i {
-  color: #5EEAD4 !important;
+  color: #a8e6c4 !important;
 }
 
 .nav-link.collapsed:hover>i,
 .nav-link:not(.collapsed):hover>i {
-  color: #99F6E4 !important;
+  color: #ffffff !important;
 }
 
 .collapse-item:hover>i,
@@ -204,4 +204,14 @@ legend {
 
 .file-upload-box p {
   margin-bottom: .5rem;
+}
+
+/* Atendimentos com prazo vencido e não concluídos */
+tr.row-atrasado td {
+  background-color: #fde8e8 !important;
+  color: #7b2020;
+}
+
+tr.row-atrasado:hover td {
+  background-color: #f9d0d0 !important;
 }

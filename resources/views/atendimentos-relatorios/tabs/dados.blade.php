@@ -39,33 +39,23 @@
             </div>
         </div>
 
-        {{-- LINHA: Obra | Endereço --}}
+        {{-- LINHA: Cliente | Contato | Responsável | Nº Proposta --}}
         <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="font-weight-bold">Obra</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_descricao }}
-                </span>
-            </div>
-
-            <div class="col-md-6">
-                <label class="font-weight-bold">Endereço</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_endereco }}
-                </span>
-            </div>
-        </div>
-
-        {{-- LINHA: Cliente | Responsável | Nº Proposta --}}
-        <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="font-weight-bold">Cliente</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->cliente->cli_nome }}
                 </span>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label class="font-weight-bold">Contato</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_contato }}
+                </span>
+            </div>
+
+            <div class="col-md-3">
                 <label class="font-weight-bold">Responsável</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_responsavel }}
@@ -79,5 +69,66 @@
                 </span>
             </div>
         </div>
+
+        {{-- LINHA: Endereço | Cidade | UF --}}
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="font-weight-bold">Endereço</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->aten_endereco }}
+                </span>
+            </div>
+            <div class="col-md-4">
+                <label class="font-weight-bold">Cidade</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->cliente->cli_cidade }}
+                </span>
+            </div>
+            <div class="col-md-2">
+                <label class="font-weight-bold">UF</label>
+                <span class="readonly-field form-control-plaintext">
+                    {{ $atendimentoRelatorio->atendimento->cliente->cli_uf }}
+                </span>
+            </div>
+        </div>
     </form>
+
+    {{-- Equipamentos do atendimento --}}
+    @php $equipamentos = $atendimentoRelatorio->atendimento->equipamentos; @endphp
+    @if($equipamentos->isNotEmpty())
+    <hr class="my-3">
+    <h6 class="font-weight-bold mb-2"><i class="fas fa-tools mr-1 text-secondary"></i> Equipamentos</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="thead-light">
+                <tr>
+                    <th>Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($equipamentos as $eq)
+                <tr>
+                    <td>{{ $eq->aten_equip_descricao }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    {{-- Anexos do atendimento --}}
+    @php $anexosAten = $atendimentoRelatorio->atendimento->anexos; @endphp
+    @if($anexosAten->isNotEmpty())
+    <hr class="my-3">
+    <h6 class="font-weight-bold mb-2"><i class="fas fa-paperclip mr-1 text-secondary"></i> Anexos do Atendimento</h6>
+    <ul class="list-unstyled mb-0">
+        @foreach($anexosAten as $anx)
+        <li class="mb-1">
+            <a href="{{ asset('midia/' . $anx->aten_anexo_path) }}" target="_blank" class="text-primary">
+                <i class="fas fa-file mr-1"></i>{{ $anx->aten_anexo_nome_original }}
+            </a>
+        </li>
+        @endforeach
+    </ul>
+    @endif
 </div>

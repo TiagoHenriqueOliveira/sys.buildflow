@@ -19,13 +19,13 @@
     </coverage>
     <php>
         <env name="APP_ENV" value="testing"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="CACHE_DRIVER" value="array"/>
-        <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
-        <!-- <env name="DB_DATABASE" value=":memory:"/> -->
-        <env name="MAIL_MAILER" value="array"/>
+        <!-- DB_CONNECTION/DB_DATABASE não são fixados aqui de propósito: o
+             schema real (database/schema/mysql-schema.sql) é MySQL-only, e
+             fixar sqlite aqui sobrepunha o .env.testing e impedia qualquer
+             tabela de ser criada num banco de teste do zero. Ver
+             .env.testing (DB_DATABASE=buildflow_test) e a migration
+             2026_08_20_095959_baseline_schema_dump.php. -->
         <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
 </phpunit>

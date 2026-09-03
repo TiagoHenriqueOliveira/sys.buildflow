@@ -2,30 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AtendimentoRelatorioAtividadeRequest;
-use App\Http\Requests\AtendimentoRelatorioComentarioRequest;
+use App\Enums\AssinaturaTipo;
+use App\Enums\AtendimentoRelatorioStatus;
+use App\Enums\AtendimentoStatus;
+use App\Enums\CondicaoClimatica;
+use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
+use App\Services\AuditService;
+use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
+use App\Http\Requests\AtendimentoRelatorioStoreRequest;
 use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
-use App\Http\Requests\AtendimentoRelatorioEquipamentoRequest;
 use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
-use App\Http\Requests\AtendimentoRelatorioMaoObraRequest;
 use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\AtendimentoRelatorioAtividade;
-use App\Models\AtendimentoRelatorioComentario;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
-use App\Models\Equipamento;
 use App\Models\Ocorrencia;
-use App\Models\Ocupacao;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Models\AtendimentoRelatorioServico;
+use App\Models\AtendimentoRelatorioPeca;
+use App\Models\AtendimentoRelatorioDescricaoItem;
+use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
+use App\Services\DataTableService;
+use App\Services\MediaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -35,63 +41,88 @@ use Illuminate\Support\Facades\DB;
 
 class AtendimentosRelatoriosController extends Controller
 {
+    use GarantePosseDeAtendimento;
+
     public function __construct(
-        private readonly AtendimentoRelatorioRepository $repo
+        private readonly AtendimentoRelatorioRepository $repo,
+        private readonly MediaService $media,
+        private readonly DataTableService $dataTable,
     ) {}
+
+    // Item 2.2: busca o relatório já garantindo que o usuário autenticado
+    // tem acesso ao atendimento dono dele — substitui o antigo padrão
+    // "AtendimentoRelatorio::findOrFail($id)" repetido em cada método.
+    private function relatorioComPosseGarantida(int $id, array $with = []): AtendimentoRelatorio
+    {
+        $relatorio = AtendimentoRelatorio::with(array_unique([...$with, 'atendimento']))->findOrFail($id);
+        $this->garantirPosse($relatorio->atendimento);
+
+        return $relatorio;
+    }
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
             $usuario = Auth::user();
-            $filters = $usuario->user_nivel_acesso === 1
-                ? ['usuario_id' => $usuario->user_id]
+            $filters = ($id = Atendimento::idVisivelPara($usuario)) !== null
+                ? ['usuario_id' => $id]
                 : [];
 
-            $rows = $this->repo->all($filters);
-
-            $data = $rows->map(function ($r) {
-                return [
-                    'acoes' => view(
-                        'atendimentos-relatorios.partials.acoes',
-                        ['relatorio' => $r]
-                    )->render(),
-
-                    'data' => optional($r->aten_rel_data)->format('d/m/Y'),
-
-                    'obra' => $r->atendimento?->aten_descricao ?? '-',
-
-                    'natureza' => $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
-
-                    'setor' => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao ?? '-',
-
-                    'status' => match ($r->aten_rel_status) {
-                        0 => '<span class="badge badge-info">Preenchendo</span>',
-                        1 => '<span class="badge badge-warning">Revisar</span>',
-                        2 => '<span class="badge badge-success">Aprovado</span>',
-                        default => '-',
-                    },
-                ];
-            });
-
-            return response()->json(['data' => $data]);
+            return response()->json(
+                $this->dataTable->process(
+                    $request,
+                    $this->repo->query($filters),
+                    searchable: [
+                        'clientes.cli_nome',
+                        'naturezas_atendimentos.nat_aten_descricao',
+                        'usuarios.user_nome',
+                        'atendimentos.aten_nr_proposta',
+                        'atendimentos_relatorios.aten_rel_data',
+                    ],
+                    searchableRaw: [
+                        "CASE atendimentos_relatorios.aten_rel_status WHEN 0 THEN 'Preenchendo' WHEN 1 THEN 'Revisar' WHEN 2 THEN 'Aprovado' END",
+                    ],
+                    orderable:  [
+                        'acoes'       => null,
+                        'data'        => 'atendimentos_relatorios.aten_rel_data',
+                        'cliente'     => 'clientes.cli_nome',
+                        'nr_proposta' => 'atendimentos.aten_nr_proposta',
+                        'natureza'    => 'naturezas_atendimentos.nat_aten_descricao',
+                        'tecnico'     => 'usuarios.user_nome',
+                        'status'      => 'atendimentos_relatorios.aten_rel_status',
+                    ],
+                    mapper: fn($r) => [
+                        'acoes'       => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
+                        'data'        => optional($r->aten_rel_data)->format('d/m/Y'),
+                        'cliente'     => e($r->atendimento?->cliente?->cli_nome ?? '-'),
+                        'nr_proposta' => e($r->atendimento?->aten_nr_proposta ?? ''),
+                        'natureza'    => $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
+                        'tecnico'     => e($r->atendimento?->usuario?->user_nome ?? '-'),
+                        'status'  => ($s = AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status))
+                            ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
+                            : '-',
+                    ],
+                )
+            );
         }
 
         return view('atendimentos-relatorios.index');
     }
 
-    public function store(Request $request)
+    public function store(AtendimentoRelatorioStoreRequest $request)
     {
+        $atendimento = Atendimento::query()
+            ->with('natureza.modeloRelatorio')
+            ->where('aten_id', $request->aten_id)
+            ->firstOrFail();
+
+        // Item 2.2: sem isto, qualquer técnico autenticado conseguia criar
+        // relatório em atendimento de OUTRO técnico só informando o aten_id
+        // no corpo da requisição. Fora do try/catch de propósito — dentro
+        // dele o abort_unless(403) vira 500, engolido pelo catch genérico.
+        $this->garantirPosse($atendimento);
+
         try {
-            $request->validate([
-                'aten_id'       => 'required|exists:atendimentos,aten_id',
-                'aten_rel_data' => 'nullable|date|before_or_equal:today',
-            ]);
-
-            $atendimento = Atendimento::query()
-                ->with('natureza.modeloRelatorio')
-                ->where('aten_id', $request->aten_id)
-                ->firstOrFail();
-
             if (
                 !$atendimento->natureza ||
                 !$atendimento->natureza->modeloRelatorio
@@ -102,17 +133,54 @@ class AtendimentosRelatoriosController extends Controller
                 ], 422);
             }
 
+            $modelo = $atendimento->natureza->modeloRelatorio;
+
+            // REL-02: Bloquear se atendimento está Paralisado ou Concluído
+            if (in_array($atendimento->aten_status, [
+                AtendimentoStatus::Paralisada->value,
+                AtendimentoStatus::Concluida->value,
+            ])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não é possível criar relatório para atendimentos Paralisados ou Concluídos.',
+                ], 422);
+            }
+
+            // REL-03: Bloquear > 1 relatório de período por atendimento
+            if ((int) $modelo->mod_rel_tp_data === 1) {
+                $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
+                    ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
+                    ->exists();
+
+                if ($existe) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Não é possível criar outro relatório, seu atendimento só permite um!',
+                    ], 422);
+                }
+            }
+
             $rel = $this->repo->create([
                 'aten_rel_atendimento_id'      => $atendimento->aten_id,
-                'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio->mod_rel_id,
+                'aten_rel_modelo_relatorio_id' => $modelo->mod_rel_id,
                 'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
                 'aten_rel_status'              => 0,
             ]);
 
+            AuditService::log('Relatorios', 'CRIAR', $rel->aten_rel_id);
+
+            // Avança o atendimento para "Em andamento" somente se ainda não chegou lá
+            if (!in_array($atendimento->aten_status, [
+                AtendimentoStatus::EmAndamento->value,
+                AtendimentoStatus::Concluida->value,
+            ])) {
+                $atendimento->update(['aten_status' => AtendimentoStatus::EmAndamento->value]);
+            }
+
             return response()->json([
-                'success' => true,
-                'message' => 'Relatório criado com sucesso.',
-                'data'    => $rel,
+                'success'      => true,
+                'message'      => 'Relatório criado com sucesso.',
+                'redirect_url' => route('atendimentos-relatorios.show', $rel->aten_rel_id),
             ], 201);
         } catch (\Throwable $e) {
             report($e);
@@ -132,44 +200,37 @@ class AtendimentosRelatoriosController extends Controller
             'modeloRelatorio',
             'atendimento',
             'atendimento.cliente',
-            'atendimento.natureza.tipoAtendimento',
+            'atendimento.natureza',
+            'atendimento.equipamentos',
+            'atendimento.anexos',
             'horarios',
             'fotos',
             'videos',
             'anexos',
-            'assinaturas'
+            'assinaturas',
         ]);
+
+        $this->garantirPosse($atendimentoRelatorio->atendimento);
 
         if (!$atendimentoRelatorio->modeloRelatorio) {
             abort(500, 'Modelo de relatório não encontrado.');
         }
 
-        $inicio = Carbon::parse($atendimentoRelatorio->atendimento->aten_dt_inicio);
-        $fim    = Carbon::parse($atendimentoRelatorio->atendimento->aten_dt_fim);
-        $hoje   = Carbon::parse($atendimentoRelatorio->aten_rel_data);
-
-        $prazoTotal = $inicio->diffInDays($fim);
-
-        $prazoDecorrido = min(
-            $inicio->diffInDays($hoje),
-            $prazoTotal
-        );
-
-        $prazoAVencer = max(
-            $prazoTotal - $prazoDecorrido,
-            0
-        );
+        $prazo = $atendimentoRelatorio->calcularPrazo();
 
         return view('atendimentos-relatorios.show', [
             'atendimentoRelatorio' => $atendimentoRelatorio,
-            'prazoTotal'           => $prazoTotal,
-            'prazoDecorrido'       => $prazoDecorrido,
-            'prazoAVencer'         => $prazoAVencer,
+            'prazoTotal'           => $prazo['prazo_total'],
+            'prazoDecorrido'       => $prazo['prazo_decorrido'],
+            'prazoAVencer'         => $prazo['prazo_a_vencer'],
+            'ocorrencias'          => \App\Models\Ocorrencia::where('ocor_ativo', true)->orderBy('ocor_descricao')->get(),
         ]);
     }
 
     public function update(AtendimentoRelatorioRequest $request, int $atendimentos_relatorio)
     {
+        $this->relatorioComPosseGarantida($atendimentos_relatorio);
+
         $rel = $this->repo->update($atendimentos_relatorio, $request->validated());
 
         return response()->json([
@@ -179,12 +240,11 @@ class AtendimentosRelatoriosController extends Controller
         ]);
     }
 
-
     public function updateDados(AtendimentoRelatorioDadosRequest $request, int $id)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             $relatorio->update([
                 'aten_rel_data' => $request->aten_rel_data,
             ]);
@@ -205,9 +265,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateHorarios(AtendimentoRelatorioHorariosRequest $request, int $id)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             AtendimentoRelatorioHorario::updateOrCreate(
                 ['aten_rel_hora_relatorio_id' => $relatorio->aten_rel_id],
                 [
@@ -234,15 +294,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function updateClima(AtendimentoRelatorioCondicaoClimaticaRequest $request, int $id)
     {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+
         try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $condMap = [
-                'ensolarado' => 1,
-                'nublado'    => 2,
-                'chuvoso'    => 3,
-            ];
-
             $periodos = [
                 1 => $request->clima_manha,
                 2 => $request->clima_tarde,
@@ -256,7 +310,7 @@ class AtendimentosRelatoriosController extends Controller
                         'aten_rel_clima_periodo'      => $periodo,
                     ],
                     [
-                        'aten_rel_clima_condicao' => $condMap[$condStr],
+                        'aten_rel_clima_condicao' => CondicaoClimatica::fromLabel($condStr)->value,
                     ]
                 );
             }
@@ -275,33 +329,57 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function updateAssinaturas(Request $request, int $id)
+    public function updateAssinaturas(AtendimentoRelatorioAssinaturasRequest $request, int $id)
     {
-        try {
-            $request->validate([
-                'aten_rel_status'        => 'required|integer|in:0,1,2',
-                'assinatura_responsavel' => 'nullable|string',
-                'assinatura_cliente'     => 'nullable|string',
-            ]);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['modeloRelatorio', 'assinaturas']);
 
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-            $relatorio->update(['aten_rel_status' => $request->aten_rel_status]);
+        try {
+            $novoStatus = (int) $request->aten_rel_status;
+
+            // REL-05: Técnicos precisam de assinaturas para aprovar; administradores podem dispensar
+            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value && auth()->user()->user_nivel_acesso !== 0) {
+                $temResponsavel = $relatorio->assinaturaResponsavel() || $request->filled('assinatura_responsavel');
+                $temCliente     = $relatorio->assinaturaCliente()     || $request->filled('assinatura_cliente');
+
+                if (!$temResponsavel || !$temCliente) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Assinaturas do técnico e do cliente são obrigatórias para concluir o relatório.',
+                    ], 422);
+                }
+            }
+
+            $statusAnterior = $relatorio->aten_rel_status;
+            $relatorio->update(['aten_rel_status' => $novoStatus]);
+
+            if (
+                $novoStatus === AtendimentoRelatorioStatus::Aprovado->value &&
+                $statusAnterior !== AtendimentoRelatorioStatus::Aprovado->value
+            ) {
+                $relatorio->update(['aten_rel_dt_fim' => now()->toDateString()]);
+            }
+
+            AuditService::log('Relatorios', 'APROVAR', $id, ['status' => $statusAnterior], ['status' => $novoStatus]);
 
             $assinaturas = [];
 
             if ($request->filled('assinatura_responsavel')) {
-                $assinaturas['responsavel'] = $this->saveSignatureImage(
+                $assinaturas['responsavel'] = $this->media->saveSignatureImage(
                     $relatorio,
                     $request->assinatura_responsavel,
-                    'responsavel'
+                    'responsavel',
+                    $request->input('assinatura_responsavel_nome'),
+                    $request->input('assinatura_responsavel_cpf'),
                 );
             }
 
             if ($request->filled('assinatura_cliente')) {
-                $assinaturas['cliente'] = $this->saveSignatureImage(
+                $assinaturas['cliente'] = $this->media->saveSignatureImage(
                     $relatorio,
                     $request->assinatura_cliente,
-                    'cliente'
+                    'cliente',
+                    $request->input('assinatura_cliente_nome'),
+                    $request->input('assinatura_cliente_cpf'),
                 );
             }
 
@@ -309,7 +387,7 @@ class AtendimentosRelatoriosController extends Controller
                 'success' => true,
                 'message' => 'Status e assinaturas atualizados com sucesso.',
                 'data' => [
-                    'status' => $relatorio->aten_rel_status,
+                    'status'      => $relatorio->aten_rel_status,
                     'assinaturas' => $assinaturas,
                 ],
             ]);
@@ -323,267 +401,33 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    private function saveSignatureImage(AtendimentoRelatorio $relatorio, string $base64, string $tipo)
+    public function updateTexto(Request $request, int $id, string $campo): \Illuminate\Http\JsonResponse
     {
-        if (!preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $matches)) {
-            throw new \RuntimeException('Formato de assinatura inválido.');
+        // aten_rel_descricao removido da lista (RF001): agora só é editável
+        // via storeDescricaoItem/destroyDescricaoItem, para não contornar a
+        // regra de retrocompatibilidade do RF004 (legado x itens novos).
+        $campos = ['aten_rel_informacoes_adicionais'];
+        if (!in_array($campo, $campos)) {
+            return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
         }
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
-        $mime = $matches[1];
-        $data = base64_decode($matches[2]);
-        $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-
-        $image = @imagecreatefromstring($data);
-        if ($image === false) {
-            throw new \RuntimeException('Não foi possível processar a imagem da assinatura.');
-        }
-
-        $width = imagesx($image);
-        $height = imagesy($image);
-
-        // create a white background canvas
-        $bg = imagecreatetruecolor($width, $height);
-        $white = imagecolorallocate($bg, 255, 255, 255);
-        imagefilledrectangle($bg, 0, 0, $width, $height, $white);
-
-        // Ensure we compose correctly when source has alpha (preserve strokes over white)
-        imagealphablending($image, true);
-        imagesavealpha($image, true);
-
-        imagealphablending($bg, true);
-        imagesavealpha($bg, false); // do not keep alpha in final image
-
-        // copy source onto white background
-        imagecopy($bg, $image, 0, 0, 0, 0, $width, $height);
-
-        $dir = dirname(storage_path('app/public/' . $path));
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        // save PNG without alpha channel so background stays white
-        imagepng($bg, storage_path('app/public/' . $path));
-
-        imagedestroy($image);
-        imagedestroy($bg);
-
-        // Busca pelo relatório + padrão do tipo (ex: "/responsavel." ou "/cliente.")
-        // para evitar duplicatas sem precisar de coluna extra
-        $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
-            ->where('aten_rel_ass_path', 'like', "%/{$tipo}.%")
-            ->first();
-
-        if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path]);
-        } else {
-            AtendimentoRelatorioAssinatura::create([
-                'aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_ass_path'         => $path,
-            ]);
-        }
-
-        return asset('storage/' . $path);
-    }
-
-    public function storeMaoObra(AtendimentoRelatorioMaoObraRequest $request, int $id)
-    {
         try {
-            $ocupId = (int) $request->ocup_id;
-            $qtd    = (int) $request->qtd;
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $exists = $relatorio->ocupacoes()
-                ->where('ocupacoes.ocup_id', $ocupId)
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'message' => 'Essa mão de obra já foi adicionada neste relatório.'
-                ], 422);
-            }
-
-            $ocup = Ocupacao::with('tipoOcupacao')->findOrFail($ocupId);
-
-            $relatorio->ocupacoes()->attach($ocupId, [
-                'aten_rel_ocup_quantidade' => $qtd,
-            ]);
-
-            return response()->json([
-                'message' => 'Mão de obra adicionada!',
-                'data' => [
-                    'ocup_id'  => $ocup->ocup_id,
-                    'ocup'     => $ocup->ocup_descricao,
-                    'tp_id'    => $ocup->ocup_tp_ocupacao_id,
-                    'tp_label' => optional($ocup->tipoOcupacao)->tp_ocup_descricao,
-                    'qtd'      => $qtd,
-                ]
-            ]);
+            $relatorio->update([$campo => $request->input('valor')]);
+            return response()->json(['success' => true, 'message' => 'Salvo com sucesso.']);
         } catch (\Throwable $e) {
             report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar mão de obra.'
-            ], 500);
-        }
-    }
-
-    public function destroyMaoObra(int $id, int $ocupId)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $relatorio->ocupacoes()->detach($ocupId);
-
-            return response()->json([
-                'message' => 'Mão de obra removida!'
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao remover mão de obra.'
-            ], 500);
-        }
-    }
-
-    public function storeEquipamento(AtendimentoRelatorioEquipamentoRequest $request, int $id)
-    {
-        try {
-            $equipId = (int) $request->equip_id;
-            $qtd     = (int) $request->qtd;
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $exists = $relatorio->equipamentos()
-                ->where('equipamentos.equip_id', $equipId)
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'message' => 'Esse equipamento já foi adicionado neste relatório.'
-                ], 422);
-            }
-
-            $equip = Equipamento::findOrFail($equipId);
-
-            $relatorio->equipamentos()->attach($equipId, [
-                'aten_rel_equip_quantidade' => $qtd,
-            ]);
-
-            return response()->json([
-                'message' => 'Equipamento adicionado!',
-                'data' => [
-                    'equip_id' => (int) $equip->equip_id,
-                    'equip'    => (string) $equip->equip_descricao,
-                    'qtd'      => $qtd,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar equipamento.'
-            ], 500);
-        }
-    }
-
-    public function destroyEquipamento(int $id, int $equipId)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-            $relatorio->equipamentos()->detach($equipId);
-
-            return response()->json([
-                'message' => 'Equipamento removido!'
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao remover equipamento.'
-            ], 500);
-        }
-    }
-
-    public function storeAtividade(AtendimentoRelatorioAtividadeRequest $request, int $id)
-    {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioAtividade::create([
-                'aten_rel_ativ_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_ativ_descricao'    => $request->aten_rel_ativ_descricao,
-                'aten_rel_ativ_status'       => (int) $request->aten_rel_ativ_status,
-            ]);
-
-            return response()->json([
-                'message' => 'Atividade adicionada!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_ativ_id,
-                    'descricao' => (string) $row->aten_rel_ativ_descricao,
-                    'status'    => (int) $row->aten_rel_ativ_status,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao adicionar atividade.'], 500);
-        }
-    }
-
-    public function updateAtividade(AtendimentoRelatorioAtividadeRequest $request, int $id, int $ativId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-                ->where('aten_rel_ativ_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->update([
-                'aten_rel_ativ_descricao' => $request->aten_rel_ativ_descricao,
-                'aten_rel_ativ_status'    => (int) $request->aten_rel_ativ_status,
-            ]);
-
-            return response()->json([
-                'message' => 'Atividade atualizada!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_ativ_id,
-                    'descricao' => (string) $row->aten_rel_ativ_descricao,
-                    'status'    => (int) $row->aten_rel_ativ_status,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar atividade.'], 500);
-        }
-    }
-
-    public function destroyAtividade(int $id, int $ativId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-                ->where('aten_rel_ativ_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->delete();
-
-            return response()->json(['message' => 'Atividade removida!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao remover atividade.'], 500);
+            return response()->json(['success' => false, 'message' => 'Erro ao salvar.'], 500);
         }
     }
 
     public function storeOcorrencia(AtendimentoRelatorioOcorrenciaRequest $request, int $id)
     {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+
         try {
             $ocorrenciaId = (int) $request->ocorrencia_id;
             $observacao   = $request->observacao ?? '';
-
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
 
             $exists = $relatorio->ocorrencias()
                 ->where('ocorrencias.ocor_id', $ocorrenciaId)
@@ -620,9 +464,9 @@ class AtendimentosRelatoriosController extends Controller
 
     public function destroyOcorrencia(int $id, int $ocorrenciaId)
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
+        try {
             $relatorio->ocorrencias()->detach($ocorrenciaId);
 
             return response()->json([
@@ -637,243 +481,293 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    public function storeComentario(AtendimentoRelatorioComentarioRequest $request, int $id)
+    public function getServicos(int $id): \Illuminate\Http\JsonResponse
     {
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioComentario::create([
-                'aten_rel_com_relatorio_id' => $relatorio->aten_rel_id,
-                'aten_rel_com_descricao'    => $request->aten_rel_com_descricao,
-            ]);
-
-            return response()->json([
-                'message' => 'Comentário adicionado!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_com_id,
-                    'descricao' => (string) $row->aten_rel_com_descricao,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao adicionar comentário.'
-            ], 500);
-        }
-    }
-
-    public function updateComentario(AtendimentoRelatorioComentarioRequest $request, int $id, int $comentarioId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioComentario::where('aten_rel_com_id', $comentarioId)
-                ->where('aten_rel_com_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->update([
-                'aten_rel_com_descricao' => $request->aten_rel_com_descricao,
-            ]);
-
-            return response()->json([
-                'message' => 'Comentário atualizado!',
-                'data'    => [
-                    'id'        => (int) $row->aten_rel_com_id,
-                    'descricao' => (string) $row->aten_rel_com_descricao,
-                ]
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao atualizar comentário.'
-            ], 500);
-        }
-    }
-
-    public function destroyComentario(int $id, int $comentarioId)
-    {
-        try {
-            AtendimentoRelatorio::findOrFail($id);
-
-            $row = AtendimentoRelatorioComentario::where('aten_rel_com_id', $comentarioId)
-                ->where('aten_rel_com_relatorio_id', $id)
-                ->firstOrFail();
-
-            $row->delete();
-
-            return response()->json([
-                'message' => 'Comentário removido!'
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'message' => 'Erro ao remover comentário.'
-            ], 500);
-        }
-    }
-
-    public function getData(int $id)
-    {
-        $relatorio = AtendimentoRelatorio::with([
-            'atendimento',
-            'horarios',
-            'climas',
-            'ocupacoes.tipoOcupacao',
-            'equipamentos',
-            'atividades',
-            'ocorrencias',
-            'comentarios',
-        ])->findOrFail($id);
-
-        $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
-        $fim    = Carbon::parse($relatorio->atendimento->aten_dt_fim);
-        $base   = Carbon::parse($relatorio->aten_rel_data);
-
-        $prazoTotal = $inicio->diffInDays($fim);
-        $prazoDecorrido = min(
-            $inicio->diffInDays($base),
-            $prazoTotal
-        );
-
-        $condReverse = [
-            1 => 'ensolarado',
-            2 => 'nublado',
-            3 => 'chuvoso',
-        ];
-
-        $climaPorPeriodo = [
-            'manha' => null,
-            'tarde' => null,
-            'noite' => null,
-        ];
-
-        foreach ($relatorio->climas as $c) {
-            if ($c->aten_rel_clima_periodo === 1) $climaPorPeriodo['manha'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 2) $climaPorPeriodo['tarde'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 3) $climaPorPeriodo['noite'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-        }
-
-        $maoObra = $relatorio->ocupacoes->map(function ($o) {
-            return [
-                'ocup_id'  => $o->ocup_id,
-                'ocup'     => $o->ocup_descricao,
-                'tp_id'    => $o->ocup_tp_ocupacao_id,
-                'tp_label' => optional($o->tipoOcupacao)->tp_ocup_descricao,
-                'qtd'      => (int) $o->pivot->aten_rel_ocup_quantidade,
-            ];
-        })->values();
-
-        $equipamentos = $relatorio->equipamentos->map(function ($e) {
-            return [
-                'equip_id' => $e->equip_id,
-                'equip'    => $e->equip_descricao,
-                'qtd'      => (int) $e->pivot->aten_rel_equip_quantidade,
-            ];
-        })->values();
-
-        $atividades = $relatorio->atividades
-            ->sortBy('aten_rel_ativ_id')
-            ->map(function ($a) {
-                return [
-                    'id'        => (int) $a->aten_rel_ativ_id,
-                    'descricao' => (string) $a->aten_rel_ativ_descricao,
-                    'status'    => (int) $a->aten_rel_ativ_status,
-                ];
-            })->values();
-
-        $ocorrencias = $relatorio->ocorrencias->map(function ($o) {
-            return [
-                'ocorrencia_id' => (int) $o->ocor_id,
-                'ocorrencia'    => (string) $o->ocor_descricao,
-                'observacao'    => (string) ($o->pivot->aten_rel_ocor_observacao ?? ''),
-            ];
-        })->values();
-
-        $comentarios = $relatorio->comentarios
-            ->sortBy('aten_rel_com_id')
-            ->map(function ($c) {
-                return [
-                    'id'        => (int) $c->aten_rel_com_id,
-                    'descricao' => (string) $c->aten_rel_com_descricao,
-                ];
-            })->values();
-
-        $assinaturas = [
-            'responsavel' => optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
-                : null,
-            'cliente' => optional($relatorio->assinaturaCliente())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
-                : null,
-        ];
-
+        $relatorio = $this->relatorioComPosseGarantida($id);
         return response()->json([
-            'dados' => [
-                'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
-                'aten_rel_data_fmt' => $relatorio->aten_rel_data->format('d/m/Y'),
-                'dia_semana'        => getFormatDiaSemana($relatorio->aten_rel_data),
-                'prazo_total'       => $prazoTotal,
-                'prazo_decorrido'   => $prazoDecorrido,
-                'prazo_vencer'      => max($prazoTotal - $prazoDecorrido, 0),
-            ],
-
-            'horarios' => [
-                'entrada'          => optional($relatorio->horarios)->aten_rel_hora_entrada,
-                'inicio_intervalo' => optional($relatorio->horarios)->aten_rel_hora_inicio_intervalo,
-                'fim_intervalo'    => optional($relatorio->horarios)->aten_rel_hora_fim_intervalo,
-                'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
-            ],
-
-            'clima'         => $climaPorPeriodo,
-            'mao_obra'      => $maoObra,
-            'equipamentos'  => $equipamentos,
-            'atividades'    => $atividades,
-            'ocorrencias' => $ocorrencias,
-            'comentarios' => $comentarios,
-            'status' => $relatorio->aten_rel_status,
-            'assinaturas' => $assinaturas,
+            'data' => $relatorio->servicos()->orderBy('aten_rel_serv_id')->get(['aten_rel_serv_id', 'aten_rel_serv_descricao']),
         ]);
     }
 
-    public function pdf(int $id)
+    public function storeServico(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['descricao' => 'required|string|max:255']);
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $serv = AtendimentoRelatorioServico::create([
+                'aten_rel_serv_relatorio_id' => $id,
+                'aten_rel_serv_descricao'    => $request->input('descricao'),
+            ]);
+            return response()->json(['message' => 'Serviço adicionado!', 'item' => $serv]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar serviço.'], 500);
+        }
+    }
+
+    public function destroyServico(int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            AtendimentoRelatorioServico::where('aten_rel_serv_id', $itemId)
+                ->where('aten_rel_serv_relatorio_id', $id)
+                ->delete();
+            return response()->json(['message' => 'Serviço removido!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover serviço.'], 500);
+        }
+    }
+
+    public function getPecas(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+        return response()->json([
+            'data' => $relatorio->pecas()->orderBy('aten_rel_peca_id')->get(['aten_rel_peca_id', 'aten_rel_peca_descricao']),
+        ]);
+    }
+
+    public function storePeca(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['descricao' => 'required|string|max:255']);
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $peca = AtendimentoRelatorioPeca::create([
+                'aten_rel_peca_relatorio_id' => $id,
+                'aten_rel_peca_descricao'    => $request->input('descricao'),
+            ]);
+            return response()->json(['message' => 'Peça adicionada!', 'item' => $peca]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar peça.'], 500);
+        }
+    }
+
+    public function destroyPeca(int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            AtendimentoRelatorioPeca::where('aten_rel_peca_id', $itemId)
+                ->where('aten_rel_peca_relatorio_id', $id)
+                ->delete();
+            return response()->json(['message' => 'Peça removida!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover peça.'], 500);
+        }
+    }
+
+    // ─── Itens de descrição (texto + foto opcional) — RF001 ────────────────
+
+    public function getDescricaoItens(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+        $itens = $relatorio->itensDescricao()->with('fotos')->orderBy('aten_rel_desc_id')->get();
+        $usaDescricaoNova = $itens->isNotEmpty();
+
+        // RF001/RF004: retrocompatibilidade — um relatório usa OU o campo
+        // legado de texto único, OU a lista nova de itens, nunca os dois. O
+        // critério é a existência de item novo, não a data do relatório.
+        return response()->json([
+            'legado' => $usaDescricaoNova ? null : $relatorio->aten_rel_descricao,
+            'data'   => $usaDescricaoNova ? $itens->map(fn($it) => [
+                'id'       => $it->aten_rel_desc_id,
+                'texto'    => $it->aten_rel_desc_texto,
+                'foto_url' => optional($it->fotos->first())->aten_rel_desc_foto_path
+                    ? asset('midia/' . $it->fotos->first()->aten_rel_desc_foto_path)
+                    : null,
+            ]) : [],
+        ]);
+    }
+
+    public function storeDescricaoItem(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'texto' => ['required', 'string'],
+            'foto'  => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
+        ], [
+            'texto.required' => 'Descreva o item antes de adicionar.',
+            'foto.file'      => 'A foto enviada é inválida.',
+            'foto.max'       => 'A foto não pode ultrapassar 10 MB.',
+            'foto.mimes'     => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+        ]);
+
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $item = AtendimentoRelatorioDescricaoItem::create([
+                'aten_rel_desc_relatorio_id' => $id,
+                'aten_rel_desc_texto'        => $request->input('texto'),
+                'aten_rel_desc_criado_em'    => now(),
+            ]);
+
+            $fotoUrl = null;
+            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+                $file         = $request->file('foto');
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $ext          = $file->getClientOriginalExtension();
+                $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
+                $path         = $file->storeAs("atendimentos_relatorios/{$id}/descricao", $safeName, 'public');
+                if ($path === false) {
+                    return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
+                }
+                $item->fotos()->create(['aten_rel_desc_foto_path' => $path]);
+                $fotoUrl = asset('midia/' . $path);
+            }
+
+            return response()->json([
+                'message' => 'Item adicionado!',
+                'item'    => [
+                    'id'       => $item->aten_rel_desc_id,
+                    'texto'    => $item->aten_rel_desc_texto,
+                    'foto_url' => $fotoUrl,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao adicionar item.'], 500);
+        }
+    }
+
+    public function destroyDescricaoItem(int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $item = AtendimentoRelatorioDescricaoItem::with('fotos')
+                ->where('aten_rel_desc_id', $itemId)
+                ->where('aten_rel_desc_relatorio_id', $id)
+                ->first();
+            foreach ($item?->fotos ?? [] as $foto) {
+                Storage::disk('public')->delete($foto->aten_rel_desc_foto_path);
+            }
+            $item?->delete();
+            return response()->json(['message' => 'Item removido!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover item.'], 500);
+        }
+    }
+
+    public function getDados(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['atendimento.cliente']);
+        $prazo = $relatorio->calcularPrazo();
+
+        return response()->json([
+            'aten_rel_data_iso' => $relatorio->aten_rel_data->format('Y-m-d'),
+            'dia_semana'        => getFormatDiaSemana($relatorio->aten_rel_data),
+            'prazo_total'       => $prazo['prazo_total'],
+            'prazo_decorrido'   => $prazo['prazo_decorrido'],
+            'prazo_vencer'      => $prazo['prazo_a_vencer'],
+        ]);
+    }
+
+    public function getHorarios(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['horarios']);
+        $h = $relatorio->horarios;
+
+        return response()->json([
+            'entrada'          => $h?->aten_rel_hora_entrada          ? substr($h->aten_rel_hora_entrada, 0, 5)          : '',
+            'inicio_intervalo' => $h?->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '',
+            'fim_intervalo'    => $h?->aten_rel_hora_fim_intervalo    ? substr($h->aten_rel_hora_fim_intervalo, 0, 5)    : '',
+            'saida'            => $h?->aten_rel_hora_saida            ? substr($h->aten_rel_hora_saida, 0, 5)            : '',
+        ]);
+    }
+
+    public function getClimaData(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['climas']);
+
+        $clima = ['manha' => null, 'tarde' => null, 'noite' => null];
+        foreach ($relatorio->climas as $c) {
+            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
+            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $label;
+            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $label;
+            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $label;
+        }
+
+        return response()->json($clima);
+    }
+
+    public function getOcorrenciasData(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['ocorrencias']);
+
+        $ocorrencias = $relatorio->ocorrencias->map(fn($o) => [
+            'ocorrencia_id' => (int) $o->ocor_id,
+            'ocorrencia'    => (string) $o->ocor_descricao,
+            'observacao'    => (string) ($o->pivot->aten_rel_ocor_observacao ?? ''),
+        ])->values();
+
+        return response()->json(['data' => $ocorrencias]);
+    }
+
+    public function getAssinaturasData(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+        $resp = $relatorio->assinaturaResponsavel();
+        $cli  = $relatorio->assinaturaCliente();
+
+        return response()->json([
+            'status' => $relatorio->aten_rel_status,
+            'assinaturas' => [
+                'responsavel' => $resp?->aten_rel_ass_path ? asset('midia/' . $resp->aten_rel_ass_path) : null,
+                'cliente'     => $cli?->aten_rel_ass_path  ? asset('midia/' . $cli->aten_rel_ass_path)  : null,
+            ],
+        ]);
+    }
+
+    public function pdf(Request $request, int $id)
     {
         $relatorio = AtendimentoRelatorio::with([
             'modeloRelatorio',
             'atendimento.cliente',
-            'atendimento.natureza.tipoAtendimento',
+            'atendimento.natureza',
+            'atendimento.usuario',
+            'atendimento.equipamentos',
             'horarios',
             'climas',
-            'ocupacoes.tipoOcupacao',
-            'equipamentos',
-            'atividades',
             'ocorrencias',
-            'comentarios',
+            'servicos',
+            'pecas',
+            'fotos',
             'assinaturas',
+            'itensDescricao.fotos',
         ])->findOrFail($id);
 
-        $inicio = Carbon::parse($relatorio->atendimento->aten_dt_inicio);
-        $fim    = Carbon::parse($relatorio->atendimento->aten_dt_fim);
-        $hoje   = Carbon::parse($relatorio->aten_rel_data);
+        // RF005/RNF004 — a rota agora aceita token do app (Sanctum), além da
+        // sessão do painel; sem essa checagem, qualquer técnico autenticado
+        // conseguiria baixar o PDF de um atendimento de outro técnico só
+        // trocando o ID na URL. Mesma regra de App\Policies\AtendimentoPolicy
+        // usada em toda a API (Mcl e legada).
+        $usuario = $request->user();
+        $temAcesso = $relatorio->atendimento
+            ? $usuario->can('acessar', $relatorio->atendimento)
+            : (int) $usuario->user_nivel_acesso === 0;
+        if (! $temAcesso) {
+            abort(403, 'Você não tem acesso a este relatório.');
+        }
 
-        $prazoTotal     = $inicio->diffInDays($fim);
-        $prazoDecorrido = min($inicio->diffInDays($hoje), $prazoTotal);
-        $prazoAVencer   = max($prazoTotal - $prazoDecorrido, 0);
+        $prazo = $relatorio->calcularPrazo();
 
         $pdf = Pdf::loadView('atendimentos-relatorios.pdf', [
             'relatorio'      => $relatorio,
-            'prazoTotal'     => $prazoTotal,
-            'prazoDecorrido' => $prazoDecorrido,
-            'prazoAVencer'   => $prazoAVencer,
+            'prazoTotal'     => $prazo['prazo_total'],
+            'prazoDecorrido' => $prazo['prazo_decorrido'],
+            'prazoAVencer'   => $prazo['prazo_a_vencer'],
         ])
         ->setPaper('a4', 'portrait')
         ->setOptions([
-            'defaultFont'       => 'DejaVu Sans',
+            'defaultFont'          => 'DejaVu Sans',
             'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled'   => true,
-            'dpi'               => 150,
+            'isRemoteEnabled'      => true,
+            'dpi'                  => 150,
         ]);
 
         $filename = 'relatorio_' . $relatorio->aten_rel_id . '_' . $relatorio->aten_rel_data->format('Y-m-d') . '.pdf';
@@ -890,12 +784,22 @@ class AtendimentosRelatoriosController extends Controller
             'fotos.*'    => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
             'videos'     => ['nullable', 'array'],
             'videos.*'   => ['file', 'max:102400', 'mimes:mp4,mov,avi,mkv,webm'],
+        ], [
+            'arquivos.*.file'  => 'O arquivo enviado é inválido.',
+            'arquivos.*.max'   => 'Cada arquivo não pode ultrapassar 20 MB.',
+            'arquivos.*.mimes' => 'Tipo de arquivo não permitido. Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV.',
+            'fotos.*.file'     => 'A foto enviada é inválida.',
+            'fotos.*.max'      => 'Cada foto não pode ultrapassar 10 MB.',
+            'fotos.*.mimes'    => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+            'videos.*.file'    => 'O vídeo enviado é inválido.',
+            'videos.*.max'     => 'Cada vídeo não pode ultrapassar 100 MB.',
+            'videos.*.mimes'   => 'Tipo de vídeo não permitido. Formatos aceitos: MP4, MOV, AVI, MKV, WEBM.',
         ]);
 
-        try {
-            $relatorio = AtendimentoRelatorio::findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
-            $saved = ['arquivos' => [], 'fotos' => [], 'videos' => []];
+        try {
+            $saved = ['arquivos' => [], 'fotos' => [], 'videos' => [], 'erros' => []];
 
             // arquivos gerais
             if ($request->hasFile('arquivos')) {
@@ -906,6 +810,10 @@ class AtendimentosRelatoriosController extends Controller
                     $ext          = $file->getClientOriginalExtension();
                     $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                     $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                        continue;
+                    }
 
                     $anexo = AtendimentoRelatorioAnexo::create([
                         'aten_rel_anexo_relatorio_id' => $id,
@@ -913,10 +821,10 @@ class AtendimentosRelatoriosController extends Controller
                     ]);
 
                     $saved['arquivos'][] = [
-                        'id' => $anexo->aten_rel_anexo_id,
+                        'id'   => $anexo->aten_rel_anexo_id,
                         'name' => $file->getClientOriginalName(),
                         'path' => $path,
-                        'url' => asset('storage/' . $path),
+                        'url'  => asset('midia/' . $path),
                     ];
                 }
             }
@@ -930,25 +838,30 @@ class AtendimentosRelatoriosController extends Controller
                     $ext          = $file->getClientOriginalExtension();
                     $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                     $path         = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                        continue;
+                    }
 
                     $full      = storage_path('app/public/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/fotos/thumbs";
                     $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
-                    $thumbCreated = $this->createImageThumbnail($full, $thumbFull, 400);
+
+                    ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
                     $foto = AtendimentoRelatorioFoto::create([
                         'aten_rel_foto_relatorio_id' => $id,
-                        'aten_rel_foto_path' => $path,
+                        'aten_rel_foto_path'         => $path,
                     ]);
 
                     $saved['fotos'][] = [
-                        'id' => $foto->aten_rel_foto_id,
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'url' => asset('storage/' . $path),
-                        'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('storage/' . $path),
+                        'id'        => $foto->aten_rel_foto_id,
+                        'name'      => $file->getClientOriginalName(),
+                        'path'      => $path,
+                        'url'       => asset('midia/' . $path),
+                        'thumb_url' => asset('midia/' . $thumbPath),
                     ];
                 }
             }
@@ -962,25 +875,30 @@ class AtendimentosRelatoriosController extends Controller
                     $ext          = $file->getClientOriginalExtension();
                     $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
                     $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
+                    if ($path === false) {
+                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                        continue;
+                    }
 
                     $full      = storage_path('app/public/' . $path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/videos/thumbs";
                     $thumbName = $safeName . '.jpg';
                     $thumbPath = $thumbDir . '/' . $thumbName;
                     $thumbFull = storage_path('app/public/' . $thumbPath);
-                    $thumbCreated = $this->createVideoThumbnail($full, $thumbFull);
+
+                    ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
 
                     $video = AtendimentoRelatorioVideo::create([
                         'aten_rel_vid_relatorio_id' => $id,
-                        'aten_rel_vid_path' => $path,
+                        'aten_rel_vid_path'         => $path,
                     ]);
 
                     $saved['videos'][] = [
-                        'id' => $video->aten_rel_vid_id,
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'url' => asset('storage/' . $path),
-                        'thumb_url' => $thumbCreated ? asset('storage/' . $thumbPath) : asset('img/video-placeholder.svg'),
+                        'id'        => $video->aten_rel_vid_id,
+                        'name'      => $file->getClientOriginalName(),
+                        'path'      => $path,
+                        'url'       => asset('midia/' . $path),
+                        'thumb_url' => asset('midia/' . $thumbPath),
                     ];
                 }
             }
@@ -988,7 +906,7 @@ class AtendimentosRelatoriosController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Uploads processados com sucesso.',
-                'data' => $saved,
+                'data'    => $saved,
             ]);
         } catch (\Throwable $e) {
             report($e);
@@ -998,56 +916,58 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getAnexos(int $id)
     {
-        $relatorio = AtendimentoRelatorio::with(['anexos', 'fotos', 'videos'])->findOrFail($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['anexos', 'fotos', 'videos']);
 
         $arquivos = $relatorio->anexos->map(function ($anexo) {
             return [
-                'id' => $anexo->aten_rel_anexo_id,
+                'id'   => $anexo->aten_rel_anexo_id,
                 'name' => basename($anexo->aten_rel_anexo_path),
                 'path' => $anexo->aten_rel_anexo_path,
-                'url' => asset('storage/' . $anexo->aten_rel_anexo_path),
+                'url'  => asset('midia/' . $anexo->aten_rel_anexo_path),
             ];
         });
 
         $fotos = $relatorio->fotos->map(function ($foto) {
             $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $foto->aten_rel_foto_path);
-            $thumbUrl = file_exists(public_path('storage/' . $thumbPath))
-                ? asset('storage/' . $thumbPath)
-                : asset('storage/' . $foto->aten_rel_foto_path);
+            $thumbUrl  = Storage::disk('public')->exists($thumbPath)
+                ? asset('midia/' . $thumbPath)
+                : asset('midia/' . $foto->aten_rel_foto_path);
 
             return [
-                'id' => $foto->aten_rel_foto_id,
-                'name' => basename($foto->aten_rel_foto_path),
-                'path' => $foto->aten_rel_foto_path,
-                'url' => asset('storage/' . $foto->aten_rel_foto_path),
+                'id'        => $foto->aten_rel_foto_id,
+                'name'      => basename($foto->aten_rel_foto_path),
+                'path'      => $foto->aten_rel_foto_path,
+                'url'       => asset('midia/' . $foto->aten_rel_foto_path),
                 'thumb_url' => $thumbUrl,
             ];
         });
 
         $videos = $relatorio->videos->map(function ($video) {
             $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $video->aten_rel_vid_path) . '.jpg';
-            $thumbUrl = file_exists(public_path('storage/' . $thumbPath))
-                ? asset('storage/' . $thumbPath)
+            $thumbUrl  = Storage::disk('public')->exists($thumbPath)
+                ? asset('midia/' . $thumbPath)
                 : asset('img/video-placeholder.svg');
 
             return [
-                'id' => $video->aten_rel_vid_id,
-                'name' => basename($video->aten_rel_vid_path),
-                'path' => $video->aten_rel_vid_path,
-                'url' => asset('storage/' . $video->aten_rel_vid_path),
+                'id'        => $video->aten_rel_vid_id,
+                'name'      => basename($video->aten_rel_vid_path),
+                'path'      => $video->aten_rel_vid_path,
+                'url'       => asset('midia/' . $video->aten_rel_vid_path),
                 'thumb_url' => $thumbUrl,
             ];
         });
 
         return response()->json([
             'arquivos' => $arquivos,
-            'fotos' => $fotos,
-            'videos' => $videos,
+            'fotos'    => $fotos,
+            'videos'   => $videos,
         ]);
     }
 
     public function destroyAnexo(int $id, string $type, int $itemId)
     {
+        $this->relatorioComPosseGarantida($id);
+
         try {
             switch ($type) {
                 case 'arquivo':
@@ -1060,14 +980,14 @@ class AtendimentosRelatoriosController extends Controller
                     $item = AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)
                         ->where('aten_rel_foto_relatorio_id', $id)
                         ->firstOrFail();
-                    $path = $item->aten_rel_foto_path;
+                    $path      = $item->aten_rel_foto_path;
                     $thumbPath = preg_replace('#/fotos/#', '/fotos/thumbs/', $path);
                     break;
                 case 'video':
                     $item = AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)
                         ->where('aten_rel_vid_relatorio_id', $id)
                         ->firstOrFail();
-                    $path = $item->aten_rel_vid_path;
+                    $path      = $item->aten_rel_vid_path;
                     $thumbPath = preg_replace('#/videos/#', '/videos/thumbs/', $path) . '.jpg';
                     break;
                 default:
@@ -1091,88 +1011,6 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
-    private function createImageThumbnail(string $src, string $dest, int $maxWidth = 300)
-    {
-        try {
-            if (!file_exists($src)) return false;
-            $info = getimagesize($src);
-            if (!$info) return false;
-
-            [$width, $height] = [$info[0], $info[1]];
-            $ratio = $height ? ($width / $height) : 1;
-            $newWidth = $maxWidth;
-            $newHeight = (int) ($newWidth / $ratio);
-
-            $mime = $info['mime'];
-            switch ($mime) {
-                case 'image/jpeg':
-                    $img = imagecreatefromjpeg($src);
-                    break;
-                case 'image/png':
-                    $img = imagecreatefrompng($src);
-                    break;
-                case 'image/gif':
-                    $img = imagecreatefromgif($src);
-                    break;
-                default:
-                    return false;
-            }
-
-            $thumb = imagecreatetruecolor($newWidth, $newHeight);
-            imagecopyresampled($thumb, $img, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-            // ensure destination dir
-            $dir = dirname($dest);
-            if (!is_dir($dir)) mkdir($dir, 0755, true);
-
-            switch ($mime) {
-                case 'image/jpeg':
-                    imagejpeg($thumb, $dest, 85);
-                    break;
-                case 'image/png':
-                    imagepng($thumb, $dest);
-                    break;
-                case 'image/gif':
-                    imagegif($thumb, $dest);
-                    break;
-            }
-
-            imagedestroy($img);
-            imagedestroy($thumb);
-            return true;
-        } catch (\Throwable $e) {
-            report($e);
-            return false;
-        }
-    }
-
-    private function createVideoThumbnail(string $videoPath, string $dest)
-    {
-        try {
-            // try ffmpeg if available
-            if (!file_exists($videoPath)) return false;
-
-            $ffmpegCheck = null;
-            if (function_exists('shell_exec')) {
-                $ffmpegCheck = trim(@shell_exec('ffmpeg -version 2>&1'));
-            }
-
-            if ($ffmpegCheck) {
-                $dir = dirname($dest);
-                if (!is_dir($dir)) mkdir($dir, 0755, true);
-
-                $cmd = sprintf('ffmpeg -y -i %s -ss 00:00:01 -vframes 1 %s 2>&1', escapeshellarg($videoPath), escapeshellarg($dest));
-                @shell_exec($cmd);
-                return file_exists($dest);
-            }
-
-            return false;
-        } catch (\Throwable $e) {
-            report($e);
-            return false;
-        }
-    }
-
     public function autoComplete(Request $request)
     {
         $term = trim((string) $request->get('term', ''));
@@ -1184,24 +1022,24 @@ class AtendimentosRelatoriosController extends Controller
         $rows = Atendimento::query()
             ->select([
                 'atendimentos.aten_id',
-                'atendimentos.aten_descricao',
+                'atendimentos.aten_nr_proposta',
                 'clientes.cli_nome',
             ])
             ->leftJoin('clientes', 'clientes.cli_id', '=', 'atendimentos.aten_cliente_id')
-            ->where(function ($q) use ($term) {
-                $q->where('clientes.cli_nome', 'like', "%{$term}%")
-                    ->orWhere('atendimentos.aten_descricao', 'like', "%{$term}%");
-            })
+            ->where('clientes.cli_nome', 'like', "%{$term}%")
+            ->whereNotIn('atendimentos.aten_status', [
+                \App\Enums\AtendimentoStatus::Concluida->value,
+                \App\Enums\AtendimentoStatus::Paralisada->value,
+            ])
             ->orderBy('clientes.cli_nome')
             ->orderBy('atendimentos.aten_id', 'desc')
             ->limit(20)
             ->get();
 
         $payload = $rows->map(function ($r) {
-            $cliente = $r->cli_nome ?: 'Sem cliente';
-            $obra    = $r->aten_descricao ?: 'Sem descrição';
-
-            $text = "{$cliente} ({$obra})";
+            $nome  = $r->cli_nome ?: 'Sem cliente';
+            $prop  = $r->aten_nr_proposta ? " - {$r->aten_nr_proposta}" : '';
+            $text  = $nome . $prop;
 
             return [
                 'id'    => $r->aten_id,

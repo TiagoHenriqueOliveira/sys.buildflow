@@ -17,7 +17,6 @@
                         <tr>
                             <th>Ações</th>
                             <th>Descrição</th>
-                            <th>Setor</th>
                             <th>Modelo de Relatório</th>
                             <th>Status</th>
                         </tr>
@@ -28,7 +27,7 @@
         </div>
     </div>
 
-    @include('naturezas_atendimentos.modal', ['modelosRelatorios' => $modelosRelatorios, 'tiposAtivos' => $tiposAtivos])
+    @include('naturezas_atendimentos.modal', ['modelosRelatorios' => $modelosRelatorios])
 
     @push('scripts')
     <script src="{{ asset('js/app/naturezas.atendimentos.js') }}"></script>

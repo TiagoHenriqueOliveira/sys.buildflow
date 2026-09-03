@@ -9,6 +9,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ $title ?? '' }} | Sys.Buildflow</title>
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32x32.png') }}">
 
         <!-- CSS -->
         <!-- Bootstrap CSS -->
@@ -59,31 +60,8 @@
                     </a>
                 </li>
 
-                <!-- Nav Item - Equipamentos -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/equipamentos') }}">
-                        <i class="fas fa-tools fa-fw fa-lg"></i>
-                        <span>Ferramentas</span>
-                    </a>
-                </li>
-
-                <!-- Nav Item - Ocorrências -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/ocorrencias') }}">
-                        <i class="fas fa-exclamation-triangle fa-fw fa-lg"></i>
-                        <span>Ocorrências</span>
-                    </a>
-                </li>
-
-                <!-- Nav Item - Mão de Obra -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/mao-de-obra') }}">
-                        <i class="fas fa-people-carry fa-fw fa-lg"></i>
-                        <span>Mão de Obra</span>
-                    </a>
-                </li>
                 @endif
-                
+
                 <!-- Nav Item - Relatórios -->
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url('/atendimentos-relatorios') }}">
@@ -91,16 +69,6 @@
                         <span>Relatórios</span>
                     </a>
                 </li>
-
-                <!-- Nav Item - Usuários -->
-                @if(Auth::user()->user_nivel_acesso === 0)
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/usuarios') }}">
-                        <i class="fas fa-users fa-fw fa-lg"></i>
-                        <span>Usuários</span>
-                    </a>
-                </li>
-                @endif
 
                 <!-- Nav Item - Configurações Collapse Menu -->
                 @if(Auth::user()->user_nivel_acesso === 0)
@@ -117,11 +85,14 @@
                         <a class="collapse-item" href="{{ url('/naturezas-dos-atendimentos') }}">
                             <i class="fas fa-tags fa-fw fa-lg mr-2"></i>Naturezas de Atendimentos
                         </a>
-                        <a class="collapse-item" href="{{ url('/setores') }}">
-                            <i class="fas fa-clipboard-list fa-fw fa-lg mr-2"></i>Setores
+                        <a class="collapse-item" href="{{ url('/ocorrencias') }}">
+                            <i class="fas fa-exclamation-triangle fa-fw fa-lg mr-2"></i>Ocorrências
                         </a>
-                        <a class="collapse-item" href="{{ url('tipos-de-mao-de-obra') }}">
-                            <i class="fas fa-briefcase fa-fw fa-lg mr-2"></i>Tipos de Mão de Obra
+                        <a class="collapse-item" href="{{ url('/usuarios') }}">
+                            <i class="fas fa-users fa-fw fa-lg mr-2"></i>Usuários
+                        </a>
+                        <a class="collapse-item" href="{{ url('/logs-auditoria') }}">
+                            <i class="fas fa-history fa-fw fa-lg mr-2"></i>Logs de Auditoria
                         </a>
                         </div>
                     </div>
@@ -147,21 +118,12 @@
 
                         <!-- Topbar Navbar -->
                         <ul class="navbar-nav ml-auto">
-                            @if(file_exists(public_path('downloads/apk/buildflow.apk')))
-                            <!-- Nav Item - Download APK -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ asset('downloads/apk/buildflow.apk') }}" download title="Baixar App Android">
-                                    <i class="fas fa-android fa-fw"></i>
-                                    <span class="d-none d-lg-inline text-gray-600 small ml-1">Baixar App</span>
-                                </a>
-                            </li>
-                            @endif
                             <div class="topbar-divider d-none d-sm-block"></div>
 
                             <!-- Nav Item - User Information -->
                             <li class="nav-item dropdown no-arrow">
                                 <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ Auth::user()->user_nome }}</span>
+                                    <span class="mr-2 text-gray-600 small">{{ Auth::user()->user_nome }}</span>
                                 </a>
                                 <!-- Dropdown - User Information -->
                                 <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
@@ -189,7 +151,7 @@
                 <footer class="sticky-footer bg-white">
                     <div class="container my-auto">
                         <div class="copyright text-center my-auto">
-                            <span>Sys.Buildflow - Copyright &copy; <?php echo date('Y'); ?></span>
+                            <span>Sys.Buildflow - Copyright &copy; <?php echo date('Y'); ?> - v{{ config('app.version') }}</span>
                         </div>
                     </div>
                 </footer>
