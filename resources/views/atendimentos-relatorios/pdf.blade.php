@@ -257,30 +257,30 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-label" style="width: 13%;">Data</td>
-            <td class="field-value" colspan="3" style="width: 43%;">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-label" style="width: 16%;">Data</td>
+            <td class="field-value" colspan="3" style="width: 40%;">{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
             <td class="field-value field-value-right" colspan="2" style="width: 44%;"><span class="field-label-inline">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 13%;">Cliente</td>
+            <td class="field-label" style="width: 16%;">Cliente</td>
             <td class="field-value" colspan="3">{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
             <td class="field-value field-value-right" colspan="2"><span class="field-label-inline">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 13%;">Natureza</td>
+            <td class="field-label" style="width: 16%;">Natureza</td>
             <td class="field-value" colspan="3">{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
             <td class="field-value field-value-right" colspan="2"><span class="field-label-inline">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 13%;">Endereço</td>
+            <td class="field-label" style="width: 16%;">Endereço</td>
             <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 13%;">Responsável</td>
+            <td class="field-label" style="width: 16%;">Responsável</td>
             <td class="field-value" colspan="5">{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-label" style="width: 13%;">Técnico</td>
+            <td class="field-label" style="width: 16%;">Técnico</td>
             <td class="field-value" colspan="5">{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
         </tr>
     </table>
