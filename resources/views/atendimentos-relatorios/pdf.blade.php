@@ -72,10 +72,14 @@
         }
 
         /* GRID DE CAMPOS */
-        /* table-layout fixed + largura explícita nas células: o layout automático do
-           dompdf calcula a largura de cada coluna com base no conteúdo de cada célula
-           isoladamente, e não distribui de forma consistente entre linhas com colspans
-           diferentes. Larguras fixas eliminam essa variação. */
+        /* table-layout fixed + largura em % direto no <td> de cada linha (não em
+           <colgroup><col>, que o dompdf ignora silenciosamente aqui — sempre divide as
+           colunas ao meio, não importa o valor declarado). Também sem colspan: mesmo
+           com largura fixa e correta, colspans diferentes entre linhas (ex.: uma linha
+           com 2 campos e outra com o campo sozinho ocupando a linha toda) faziam o
+           dompdf ignorar a largura declarada de forma imprevisível dependendo do
+           conteúdo das outras linhas da tabela. Por isso "Endereço/Responsável/Técnico"
+           (que ocupam a linha toda) ficam numa tabela separada, com layout automático. */
         .field-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .field-grid td { padding: 3px 7px; vertical-align: middle; }
         .field-value { color: #222; font-size: 20px; }
@@ -84,9 +88,8 @@
            e Poppins-Regular tem metricas verticais diferentes, entao label (bold) e
            valor (regular) em células adjacentes ficavam com o topo desalinhado mesmo
            com vertical-align: middle. Colocando os dois na mesma célula/linha de texto
-           o desalinhamento desaparece. Largura fixa em px (não %) garante que o valor
-           comece sempre na mesma posição, mesmo quando a célula usa colspans diferentes
-           entre linhas (ex.: Data/Cliente/Natureza vs Endereço/Responsável/Técnico). */
+           o desalinhamento desaparece. Largura fixa em px garante que o valor comece
+           sempre na mesma posição entre as linhas da tabela. */
         .field-label-inline { display: inline-block; width: 150px; font-weight: bold; color: #555; font-size: 18px; text-transform: uppercase; }
         /* mesma ideia do lado direito (Período/Nº Proposta/Telefone), mas sem largura
            fixa: ali o bloco inteiro (label + valor) é alinhado à direita, entao não
@@ -266,25 +269,27 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-value" colspan="4" style="width: 56%;"><span class="field-label-inline">Data</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-value field-value-right" colspan="2" style="width: 44%;"><span class="field-label-inline-right">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Data</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" colspan="4"><span class="field-label-inline">Cliente</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
-            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline-right">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Cliente</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" colspan="4"><span class="field-label-inline">Natureza</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
-            <td class="field-value field-value-right" colspan="2"><span class="field-label-inline-right">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Natureza</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+        </tr>
+    </table>
+    <table class="field-grid field-grid-auto">
+        <tr>
+            <td class="field-value"><span class="field-label-inline">Endereço</span>{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" colspan="6"><span class="field-label-inline">Endereço</span>{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
+            <td class="field-value"><span class="field-label-inline">Responsável</span>{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" colspan="6"><span class="field-label-inline">Responsável</span>{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
-        </tr>
-        <tr>
-            <td class="field-value" colspan="6"><span class="field-label-inline">Técnico</span>{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
+            <td class="field-value"><span class="field-label-inline">Técnico</span>{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
         </tr>
     </table>
 </div>
