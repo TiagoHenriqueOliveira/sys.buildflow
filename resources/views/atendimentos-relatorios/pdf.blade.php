@@ -269,27 +269,27 @@
     <div class="section-title">{{ $secNum() }}. Dados do Atendimento</div>
     <table class="field-grid">
         <tr>
-            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Data</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
-            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Período</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Data:</span>{{ optional($relatorio->aten_rel_data)->format('d/m/Y') ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Período:</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Cliente</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
-            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Nº Proposta</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
+            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Cliente:</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Nº Proposta:</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Natureza</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
-            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Telefone</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
+            <td class="field-value" style="width: 65%;"><span class="field-label-inline">Natureza:</span>{{ $relatorio->atendimento->natureza?->nat_aten_descricao ?? '-' }}</td>
+            <td class="field-value field-value-right" style="width: 35%;"><span class="field-label-inline-right">Telefone:</span>{{ $relatorio->atendimento->aten_telefone ?? '-' }}</td>
         </tr>
     </table>
     <table class="field-grid field-grid-auto">
         <tr>
-            <td class="field-value"><span class="field-label-inline">Endereço</span>{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
+            <td class="field-value"><span class="field-label-inline">Endereço:</span>{{ $relatorio->atendimento->aten_endereco ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value"><span class="field-label-inline">Responsável</span>{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
+            <td class="field-value"><span class="field-label-inline">Responsável:</span>{{ $relatorio->atendimento->aten_responsavel ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value"><span class="field-label-inline">Técnico</span>{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
+            <td class="field-value"><span class="field-label-inline">Técnico:</span>{{ $relatorio->atendimento->usuario?->user_nome ?? '-' }}</td>
         </tr>
     </table>
 </div>
@@ -334,10 +334,10 @@
     <div class="section-title">{{ $secNum() }}. Horário</div>
     <table class="field-grid field-grid-auto">
         <tr>
-            <td class="field-value"><span class="field-label-inline-right">Entrada</span>{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Início Intervalo</span>{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Fim Intervalo</span>{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Saída</span>{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Entrada:</span>{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Início Intervalo:</span>{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Fim Intervalo:</span>{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
+            <td class="field-value"><span class="field-label-inline-right">Saída:</span>{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
         </tr>
     </table>
 </div>
