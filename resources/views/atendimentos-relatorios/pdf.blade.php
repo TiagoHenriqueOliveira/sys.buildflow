@@ -90,7 +90,7 @@
            com vertical-align: middle. Colocando os dois na mesma célula/linha de texto
            o desalinhamento desaparece. Largura fixa em px garante que o valor comece
            sempre na mesma posição entre as linhas da tabela. */
-        .field-label-inline { display: inline-block; vertical-align: baseline; width: 175px; font-weight: bold; color: #555; font-size: 20px; text-transform: uppercase; }
+        .field-label-inline { display: inline; vertical-align: baseline; width: 175px; font-weight: bold; color: #555; font-size: 20px; text-transform: uppercase; margin-right: 10px; }
         /* mesma ideia do lado direito (Período/Nº Proposta/Telefone), mas sem largura
            fixa: ali o bloco inteiro (label + valor) é alinhado à direita, entao não
            precisa de coluna alinhada entre linhas — só do label colado ao valor. Resto
