@@ -7,39 +7,43 @@
     </div>
 
     <form method="GET" action="{{ route('logs-auditoria.index') }}" class="sbadmin-card mb-4">
-        <div class="sbadmin-card-body d-flex flex-wrap gap-2 align-items-end">
-            <div style="min-width: 200px;">
-                <x-sbadmin::form.select
-                    id="modulo"
-                    name="modulo"
-                    label="Módulo"
-                    :options="$modulos->mapWithKeys(fn ($m) => [$m => $m])->all()"
-                    :value="request('modulo')"
-                    placeholder="Todos"
-                />
+        <div class="sbadmin-card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-3">
+                    <x-sbadmin::form.select
+                        id="modulo"
+                        name="modulo"
+                        label="Módulo"
+                        :options="$modulos->mapWithKeys(fn ($m) => [$m => $m])->all()"
+                        :value="request('modulo')"
+                        placeholder="Todos"
+                    />
+                </div>
+                <div class="col-6 col-md-3">
+                    <x-sbadmin::form.select
+                        id="acao"
+                        name="acao"
+                        label="Ação"
+                        :options="collect(['CRIAR','EDITAR','INATIVAR','APROVAR','CONCLUIR'])->mapWithKeys(fn ($a) => [$a => $a])->all()"
+                        :value="request('acao')"
+                        placeholder="Todas"
+                    />
+                </div>
+                <div class="col-6 col-md-2">
+                    <x-sbadmin::form.input id="data_de" type="date" name="data_de" label="De" :value="request('data_de')" />
+                </div>
+                <div class="col-6 col-md-2">
+                    <x-sbadmin::form.input id="data_ate" type="date" name="data_ate" label="Até" :value="request('data_ate')" />
+                </div>
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary sbadmin-btn-primary">
+                        <i class="bi bi-search" aria-hidden="true"></i> Filtrar
+                    </button>
+                    <a href="{{ route('logs-auditoria.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i> Limpar
+                    </a>
+                </div>
             </div>
-            <div style="min-width: 200px;">
-                <x-sbadmin::form.select
-                    id="acao"
-                    name="acao"
-                    label="Ação"
-                    :options="collect(['CRIAR','EDITAR','INATIVAR','APROVAR','CONCLUIR'])->mapWithKeys(fn ($a) => [$a => $a])->all()"
-                    :value="request('acao')"
-                    placeholder="Todas"
-                />
-            </div>
-            <div>
-                <x-sbadmin::form.input id="data_de" type="date" name="data_de" label="De" :value="request('data_de')" />
-            </div>
-            <div>
-                <x-sbadmin::form.input id="data_ate" type="date" name="data_ate" label="Até" :value="request('data_ate')" />
-            </div>
-            <button type="submit" class="btn btn-primary sbadmin-btn-primary">
-                <i class="bi bi-search" aria-hidden="true"></i> Filtrar
-            </button>
-            <a href="{{ route('logs-auditoria.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-x-lg" aria-hidden="true"></i> Limpar
-            </a>
         </div>
     </form>
 

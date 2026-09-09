@@ -1,7 +1,7 @@
 {{-- PEÇAS SUBSTITUÍDAS --}}
 <div id="tab-pecas" role="tabpanel" x-show="tab === 'pecas'">
     <div class="mb-3">
-        <div class="form-row align-items-end">
+        <div class="row g-2 align-items-end">
             <div class="col-md-6">
                 <label for="peca_descricao" class="fw-bold mb-1">Descrição da Peça</label>
                 <input type="text"

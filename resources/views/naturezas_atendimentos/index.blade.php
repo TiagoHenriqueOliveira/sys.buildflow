@@ -24,24 +24,28 @@
         @endif
 
         <form method="GET" action="{{ route('naturezas-dos-atendimentos.index') }}" class="sbadmin-card mb-4">
-            <div class="sbadmin-card-body d-flex flex-wrap gap-2 align-items-end">
-                <div class="flex-grow-1" style="min-width: 240px;">
-                    <label for="busca" class="sbadmin-form-label">Buscar</label>
-                    <input
-                        type="text"
-                        id="busca"
-                        name="busca"
-                        value="{{ $busca }}"
-                        class="form-control sbadmin-form-control"
-                        placeholder="Descrição"
-                    >
+            <div class="sbadmin-card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label for="busca" class="sbadmin-form-label">Buscar</label>
+                        <input
+                            type="text"
+                            id="busca"
+                            name="busca"
+                            value="{{ $busca }}"
+                            class="form-control sbadmin-form-control"
+                            placeholder="Descrição"
+                        >
+                    </div>
+                    <div class="col-12 col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                        </button>
+                        @if($busca !== '')
+                            <a href="{{ route('naturezas-dos-atendimentos.index') }}" class="btn btn-link">Limpar</a>
+                        @endif
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-outline-secondary">
-                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
-                </button>
-                @if($busca !== '')
-                    <a href="{{ route('naturezas-dos-atendimentos.index') }}" class="btn btn-link">Limpar</a>
-                @endif
             </div>
         </form>
 

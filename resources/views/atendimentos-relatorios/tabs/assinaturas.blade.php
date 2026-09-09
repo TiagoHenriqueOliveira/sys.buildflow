@@ -54,7 +54,7 @@
                             <button type="button" class="btn btn-success btn-sm btn-save-signature" data-signature="cliente">Salvar Assinatura</button>
                         </div>
                         {{-- Nome e CPF de quem assinou são obrigatórios para o cliente. --}}
-                        <div class="form-row mt-3">
+                        <div class="row g-2 mt-3">
                             <div class="col-md-8">
                                 <label class="fw-bold mb-1" for="assinatura_cliente_nome">Nome de quem assinou <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="assinatura_cliente_nome" maxlength="100"

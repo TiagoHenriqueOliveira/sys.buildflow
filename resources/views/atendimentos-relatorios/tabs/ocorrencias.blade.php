@@ -1,7 +1,7 @@
 {{-- OCORRÊNCIAS --}}
 <div id="tab-ocorrencias" role="tabpanel" x-show="tab === 'ocorrencias'">
     <div class="mb-3">
-        <div class="form-row align-items-end">
+        <div class="row g-2 align-items-end">
             <div class="col-md-6">
                 <label for="ocorrencia_id" class="fw-bold mb-1">Ocorrência</label>
                 <select id="ocorrencia_id" class="form-control">

@@ -1,7 +1,7 @@
 {{-- SERVIÇOS PRESTADOS --}}
 <div id="tab-servicos" role="tabpanel" x-show="tab === 'servicos'">
     <div class="mb-3">
-        <div class="form-row align-items-end">
+        <div class="row g-2 align-items-end">
             <div class="col-md-6">
                 <label for="servico_descricao" class="fw-bold mb-1">Descrição do Serviço</label>
                 <input type="text"
