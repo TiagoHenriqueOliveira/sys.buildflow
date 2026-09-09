@@ -101,11 +101,15 @@
                 ></i>
             </button>
 
+            {{-- Sem x-collapse: o pedido do cliente/usuario e que o submenu
+                 abra/feche instantaneo, sem nenhuma animacao de altura tipo
+                 accordion — so x-show (toggle imediato de display), tanto no
+                 flyout (sidebar recolhida) quanto no accordion inline
+                 (sidebar expandida/off-canvas mobile). --}}
             <ul
                 class="sbadmin-submenu"
                 id="{{ $uid }}"
                 x-show="open"
-                x-collapse.duration.75ms
                 x-cloak
                 :class="{ 'sbadmin-submenu--flyout': collapsed && isDesktop }"
                 :style="(collapsed && isDesktop) ? { position: 'fixed', top: flyoutTop, left: flyoutLeft } : {}"
