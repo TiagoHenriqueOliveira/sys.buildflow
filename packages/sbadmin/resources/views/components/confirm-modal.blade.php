@@ -8,8 +8,7 @@
 <div
     class="modal"
     :class="{ show: $store.confirmacao.aberto }"
-    x-show="$store.confirmacao.aberto"
-    style="display: block"
+    :style="$store.confirmacao.aberto ? 'display: block' : 'display: none'"
     x-cloak
     tabindex="-1"
     role="dialog"

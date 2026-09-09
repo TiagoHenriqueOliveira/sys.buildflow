@@ -39,9 +39,10 @@ class AtendimentosController extends Controller
     /**
      * Migrada pro pacote sbadmin/dashboard (ver CLAUDE.md, seção "Template
      * visual"): sem branch DataTables-JSON, paginação nativa consumida por
-     * <x-sbadmin::table>; busca via ?busca= (cliente/técnico/proposta/
-     * natureza), ordenação descartada (lista sempre por status + período,
-     * igual ao antigo AtendimentoRepository::all()). O filtro "técnico só
+     * <x-sbadmin::table>; a busca única (?busca=) foi substituída pelos
+     * filtros individuais por coluna abaixo. Ordenação descartada (lista
+     * sempre por status + período, igual ao antigo
+     * AtendimentoRepository::all()). O filtro "técnico só
      * vê o seu, admin vê tudo" (Atendimento::idVisivelPara) e o destaque
      * visual de atendimento em atraso (antes um fnRowCallback client-side
      * da DataTable) foram preservados na query/view.
@@ -58,11 +59,10 @@ class AtendimentosController extends Controller
     {
         $usuarioLogado = Auth::user();
         $filtroUsuarioId = Atendimento::idVisivelPara($usuarioLogado);
-        $busca = trim((string) $request->get('busca', ''));
 
-        // Filtros individuais por coluna (combinaveis em AND entre si e com
-        // a busca acima): um por coluna exibida em <x-sbadmin::table>, exceto
-        // "Ações". "Período" é um intervalo (aten_dt_inicio/aten_dt_fim), os
+        // Filtros individuais por coluna (combinaveis em AND entre si): um
+        // por coluna exibida em <x-sbadmin::table>, exceto "Ações". "Período"
+        // é um intervalo (aten_dt_inicio/aten_dt_fim), os
         // demais texto livre (LIKE) ou o select de Status.
         $filtroNatureza = trim((string) $request->get('f_natureza', ''));
         $filtroTecnico = trim((string) $request->get('f_tecnico', ''));
@@ -73,14 +73,6 @@ class AtendimentosController extends Controller
         $filtroStatus = $request->get('f_status', '');
 
         $atendimentos = $this->repository->query($filtroUsuarioId)
-            ->when($busca !== '', function ($query) use ($busca) {
-                $query->where(function ($q) use ($busca) {
-                    $q->where('clientes.cli_nome', 'like', "%{$busca}%")
-                        ->orWhere('usuarios.user_nome', 'like', "%{$busca}%")
-                        ->orWhere('atendimentos.aten_nr_proposta', 'like', "%{$busca}%")
-                        ->orWhere('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$busca}%");
-                });
-            })
             ->when($filtroNatureza !== '', fn ($q) => $q->where('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$filtroNatureza}%"))
             ->when($filtroTecnico !== '', fn ($q) => $q->where('usuarios.user_nome', 'like', "%{$filtroTecnico}%"))
             ->when($filtroCliente !== '', fn ($q) => $q->where('clientes.cli_nome', 'like', "%{$filtroCliente}%"))
@@ -96,7 +88,6 @@ class AtendimentosController extends Controller
 
         return view('atendimentos.index', [
             'atendimentos'          => $atendimentos,
-            'busca'                 => $busca,
             'filtroNatureza'        => $filtroNatureza,
             'filtroTecnico'         => $filtroTecnico,
             'filtroCliente'         => $filtroCliente,
@@ -104,7 +95,7 @@ class AtendimentosController extends Controller
             'filtroPeriodoDe'       => $filtroPeriodoDe,
             'filtroPeriodoAte'      => $filtroPeriodoAte,
             'filtroStatus'          => $filtroStatus,
-            'temFiltro'             => $busca !== '' || $filtroNatureza !== '' || $filtroTecnico !== '' || $filtroCliente !== ''
+            'temFiltro'             => $filtroNatureza !== '' || $filtroTecnico !== '' || $filtroCliente !== ''
                 || $filtroNrProposta !== '' || $filtroPeriodoDe !== '' || $filtroPeriodoAte !== '' || $filtroStatus !== '',
             'usuarios'              => Usuario::where('user_nivel_acesso', 1)->where('user_ativo', 1)->orderBy('user_nome')->get(),
             'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao')

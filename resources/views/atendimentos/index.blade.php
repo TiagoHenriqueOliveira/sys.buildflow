@@ -29,31 +29,11 @@
         @endif
 
         <form method="GET" action="{{ route('atendimentos.index') }}" class="sbadmin-card mb-4">
+            {{-- Filtros individuais por coluna — combinaveis entre si (AND:
+                 cada filtro preenchido restringe ainda mais o resultado).
+                 Substituem a busca unica que existia antes (removida a
+                 pedido do cliente). --}}
             <div class="sbadmin-card-body d-flex flex-wrap gap-2 align-items-end">
-                <div class="flex-grow-1" style="min-width: 240px;">
-                    <label for="busca" class="sbadmin-form-label">Buscar</label>
-                    <input
-                        type="text"
-                        id="busca"
-                        name="busca"
-                        value="{{ $busca }}"
-                        class="form-control sbadmin-form-control"
-                        placeholder="Cliente, técnico, proposta ou natureza"
-                    >
-                </div>
-                <button type="submit" class="btn btn-outline-secondary">
-                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
-                </button>
-                @if($temFiltro)
-                    <a href="{{ route('atendimentos.index') }}" class="btn btn-link">Limpar</a>
-                @endif
-            </div>
-
-            {{-- Filtros individuais por coluna — combinaveis entre si e com a
-                 busca acima (AND: cada filtro preenchido restringe ainda mais
-                 o resultado). Vao no mesmo <form> pra que "Aplicar Filtro"
-                 submeta tudo junto (busca + filtros) via querystring. --}}
-            <div class="sbadmin-card-body border-top d-flex flex-wrap gap-2 align-items-end">
                 <div style="min-width: 180px;">
                     <label for="f_natureza" class="sbadmin-form-label">Natureza</label>
                     <input type="text" id="f_natureza" name="f_natureza" value="{{ $filtroNatureza }}" class="form-control sbadmin-form-control" placeholder="Natureza">
@@ -90,6 +70,9 @@
                 <button type="submit" class="btn btn-info">
                     <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar Filtro
                 </button>
+                @if($temFiltro)
+                    <a href="{{ route('atendimentos.index') }}" class="btn btn-link">Limpar</a>
+                @endif
             </div>
         </form>
 

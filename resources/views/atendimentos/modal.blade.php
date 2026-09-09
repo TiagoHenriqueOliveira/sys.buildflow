@@ -13,8 +13,7 @@
 <div
     class="modal"
     :class="{ show: aberto }"
-    x-show="aberto"
-    style="display: block"
+    :style="aberto ? 'display: block' : 'display: none'"
     x-cloak
     tabindex="-1"
     role="dialog"

@@ -24,20 +24,18 @@ class ClientesController extends Controller
      * normal com paginação nativa do Eloquent, consumida diretamente por
      * <x-sbadmin::table :paginator="$clientes">. Busca client-side e
      * ordenação por coluna que a DataTables oferecia de graça não têm
-     * equivalente direto no novo componente — a busca foi reimplementada
-     * no backend via querystring (?busca=), e a ordenação foi descartada
+     * equivalente direto no novo componente — a ordenação foi descartada
      * nesta fase (lista sempre ordenada por nome; não havia botões de
-     * exportação Excel/PDF nesta tela para reavaliar).
+     * exportação Excel/PDF nesta tela para reavaliar). A busca única
+     * (?busca=) foi substituída pelos filtros individuais por coluna abaixo.
      */
     public function index(Request $request): View
     {
-        $busca = trim((string) $request->get('busca', ''));
-
-        // Filtros individuais por coluna (combinaveis com a busca acima e
-        // entre si, sempre em AND — cada filtro adicional so restringe mais
-        // o resultado): um por coluna exibida em <x-sbadmin::table>, exceto
-        // "Ações". Prefixo "f_" no nome do campo evita colisão com outros
-        // parâmetros da querystring (busca, page).
+        // Filtros individuais por coluna (combinaveis entre si, sempre em
+        // AND — cada filtro adicional so restringe mais o resultado): um
+        // por coluna exibida em <x-sbadmin::table>, exceto "Ações". Prefixo
+        // "f_" no nome do campo evita colisão com outros parâmetros da
+        // querystring (page).
         $filtroNome = trim((string) $request->get('f_nome', ''));
         $filtroCnpj = trim((string) $request->get('f_cnpj', ''));
         $filtroCidade = trim((string) $request->get('f_cidade', ''));
@@ -47,14 +45,6 @@ class ClientesController extends Controller
         $filtroStatus = $request->get('f_status', '');
 
         $clientes = Cliente::query()
-            ->when($busca !== '', function ($query) use ($busca) {
-                $query->where(function ($q) use ($busca) {
-                    $q->where('cli_nome', 'like', "%{$busca}%")
-                        ->orWhere('cli_cnpj', 'like', "%{$busca}%")
-                        ->orWhere('cli_cidade', 'like', "%{$busca}%")
-                        ->orWhere('cli_email', 'like', "%{$busca}%");
-                });
-            })
             ->when($filtroNome !== '', fn ($q) => $q->where('cli_nome', 'like', "%{$filtroNome}%"))
             ->when($filtroCnpj !== '', fn ($q) => $q->where('cli_cnpj', 'like', "%{$filtroCnpj}%"))
             ->when($filtroCidade !== '', fn ($q) => $q->where('cli_cidade', 'like', "%{$filtroCidade}%"))
@@ -68,7 +58,6 @@ class ClientesController extends Controller
 
         return view('clientes.index', [
             'clientes' => $clientes,
-            'busca' => $busca,
             'filtroNome' => $filtroNome,
             'filtroCnpj' => $filtroCnpj,
             'filtroCidade' => $filtroCidade,
@@ -76,7 +65,7 @@ class ClientesController extends Controller
             'filtroTelefone' => $filtroTelefone,
             'filtroEmail' => $filtroEmail,
             'filtroStatus' => $filtroStatus,
-            'temFiltro' => $busca !== '' || $filtroNome !== '' || $filtroCnpj !== '' || $filtroCidade !== ''
+            'temFiltro' => $filtroNome !== '' || $filtroCnpj !== '' || $filtroCidade !== ''
                 || $filtroUf !== '' || $filtroTelefone !== '' || $filtroEmail !== '' || $filtroStatus !== '',
         ]);
     }

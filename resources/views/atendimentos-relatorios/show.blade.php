@@ -85,9 +85,8 @@
     <div class="modal-backdrop show" x-show="previewAberto" x-cloak x-data></div>
     <div
         class="modal"
-        style="display: block"
         :class="{ show: previewAberto }"
-        x-show="previewAberto"
+        :style="previewAberto ? 'display: block' : 'display: none'"
         x-cloak
         x-data="{ previewAberto: false }"
         x-init="window.addEventListener('relatorio-preview', () => previewAberto = true)"

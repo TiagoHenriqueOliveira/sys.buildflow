@@ -62,10 +62,11 @@ class AtendimentosRelatoriosController extends Controller
      * Migrada pro pacote sbadmin/dashboard (ver CLAUDE.md, seção "Template
      * visual") seguindo o mesmo padrão das demais listagens: sem branch
      * DataTables-JSON, paginação nativa consumida por <x-sbadmin::table>;
-     * busca via ?busca= (cliente/natureza/técnico/proposta/data), ordenação
-     * descartada (lista sempre por data + id, igual ao antigo
-     * AtendimentoRelatorioRepository::query()). O filtro "técnico só vê o
-     * seu, admin vê tudo" (Atendimento::idVisivelPara) foi preservado.
+     * a busca única (?busca=) foi substituída pelos filtros individuais por
+     * coluna abaixo. Ordenação descartada (lista sempre por data + id,
+     * igual ao antigo AtendimentoRelatorioRepository::query()). O filtro
+     * "técnico só vê o seu, admin vê tudo" (Atendimento::idVisivelPara) foi
+     * preservado.
      */
     public function index(Request $request)
     {
@@ -74,12 +75,10 @@ class AtendimentosRelatoriosController extends Controller
             ? ['usuario_id' => $id]
             : [];
 
-        $busca = trim((string) $request->get('busca', ''));
-
-        // Filtros individuais por coluna (combinaveis em AND entre si e com
-        // a busca acima): um por coluna exibida em <x-sbadmin::table>, exceto
-        // "Ações". "Data" é um valor exato (coluna DATE), os demais texto
-        // livre (LIKE) ou o select de Status.
+        // Filtros individuais por coluna (combinaveis em AND entre si): um
+        // por coluna exibida em <x-sbadmin::table>, exceto "Ações". "Data" é
+        // um valor exato (coluna DATE), os demais texto livre (LIKE) ou o
+        // select de Status.
         $filtroData = trim((string) $request->get('f_data', ''));
         $filtroCliente = trim((string) $request->get('f_cliente', ''));
         $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
@@ -88,15 +87,6 @@ class AtendimentosRelatoriosController extends Controller
         $filtroStatus = $request->get('f_status', '');
 
         $relatorios = $this->repo->query($filters)
-            ->when($busca !== '', function ($query) use ($busca) {
-                $query->where(function ($q) use ($busca) {
-                    $q->where('clientes.cli_nome', 'like', "%{$busca}%")
-                        ->orWhere('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$busca}%")
-                        ->orWhere('usuarios.user_nome', 'like', "%{$busca}%")
-                        ->orWhere('atendimentos.aten_nr_proposta', 'like', "%{$busca}%")
-                        ->orWhere('atendimentos_relatorios.aten_rel_data', 'like', "%{$busca}%");
-                });
-            })
             ->when($filtroData !== '', fn ($q) => $q->where('atendimentos_relatorios.aten_rel_data', $filtroData))
             ->when($filtroCliente !== '', fn ($q) => $q->where('clientes.cli_nome', 'like', "%{$filtroCliente}%"))
             ->when($filtroNrProposta !== '', fn ($q) => $q->where('atendimentos.aten_nr_proposta', 'like', "%{$filtroNrProposta}%"))
@@ -108,14 +98,13 @@ class AtendimentosRelatoriosController extends Controller
 
         return view('atendimentos-relatorios.index', [
             'relatorios' => $relatorios,
-            'busca' => $busca,
             'filtroData' => $filtroData,
             'filtroCliente' => $filtroCliente,
             'filtroNrProposta' => $filtroNrProposta,
             'filtroNatureza' => $filtroNatureza,
             'filtroTecnico' => $filtroTecnico,
             'filtroStatus' => $filtroStatus,
-            'temFiltro' => $busca !== '' || $filtroData !== '' || $filtroCliente !== '' || $filtroNrProposta !== ''
+            'temFiltro' => $filtroData !== '' || $filtroCliente !== '' || $filtroNrProposta !== ''
                 || $filtroNatureza !== '' || $filtroTecnico !== '' || $filtroStatus !== '',
         ]);
     }

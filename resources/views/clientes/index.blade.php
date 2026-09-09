@@ -52,31 +52,11 @@
         @endif
 
         <form method="GET" action="{{ route('clientes.index') }}" class="sbadmin-card mb-4">
+            {{-- Filtros individuais por coluna — combinaveis entre si (AND:
+                 cada filtro preenchido restringe ainda mais o resultado).
+                 Substituem a busca unica que existia antes (removida a
+                 pedido do cliente). --}}
             <div class="sbadmin-card-body d-flex flex-wrap gap-2 align-items-end">
-                <div class="flex-grow-1" style="min-width: 240px;">
-                    <label for="busca" class="sbadmin-form-label">Buscar</label>
-                    <input
-                        type="text"
-                        id="busca"
-                        name="busca"
-                        value="{{ $busca }}"
-                        class="form-control sbadmin-form-control"
-                        placeholder="Nome, CNPJ, cidade ou e-mail"
-                    >
-                </div>
-                <button type="submit" class="btn btn-outline-secondary">
-                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
-                </button>
-                @if($temFiltro)
-                    <a href="{{ route('clientes.index') }}" class="btn btn-link">Limpar</a>
-                @endif
-            </div>
-
-            {{-- Filtros individuais por coluna — combinaveis entre si e com a
-                 busca acima (AND: cada filtro preenchido restringe ainda mais
-                 o resultado). Vao no mesmo <form> pra que "Aplicar Filtro"
-                 submeta tudo junto (busca + filtros) via querystring. --}}
-            <div class="sbadmin-card-body border-top d-flex flex-wrap gap-2 align-items-end">
                 <div style="min-width: 160px;">
                     <label for="f_nome" class="sbadmin-form-label">Nome</label>
                     <input type="text" id="f_nome" name="f_nome" value="{{ $filtroNome }}" class="form-control sbadmin-form-control" placeholder="Nome">
@@ -112,6 +92,9 @@
                 <button type="submit" class="btn btn-info">
                     <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar Filtro
                 </button>
+                @if($temFiltro)
+                    <a href="{{ route('clientes.index') }}" class="btn btn-link">Limpar</a>
+                @endif
             </div>
         </form>
 
