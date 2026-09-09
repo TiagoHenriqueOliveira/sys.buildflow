@@ -111,7 +111,7 @@ Alpine.start();
 npm install bootstrap sass-embedded alpinejs @alpinejs/collapse bootstrap-icons --save
 ```
 
-(`chart.js` e `@fontsource/poppins` são opcionais — use-os apenas se sua
+(`chart.js` e `@fontsource/ubuntu-sans` são opcionais — use-os apenas se sua
 página de exemplo precisar de gráficos/fonte auto-hospedada, como na demo
 deste repositório.)
 
@@ -225,7 +225,7 @@ $sbadmin-color-success: #16A34A;
 $sbadmin-color-error: #DC2626;
 $sbadmin-color-warning: #D97706;
 $sbadmin-color-info: #0891B2;
-$sbadmin-font-family: 'Poppins', ...;
+$sbadmin-font-family: 'Ubuntu Sans', ...;
 ```
 
 ### Dark mode

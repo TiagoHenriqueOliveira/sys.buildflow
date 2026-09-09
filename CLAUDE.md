@@ -35,9 +35,11 @@ O `feature/mcl` já estabeleceu o padrão de como isolar cada cliente dentro do 
 
 ## Template visual — pacote `sbadmin/dashboard`
 
-O `sys.buildflow`/`feature/mcl` usa o template legado **SB Admin 2** (jQuery + DataTables + Bootstrap 4, arquivos estáticos em `public/css`/`public/js`). **Esta branch adota, por pedido do cliente/usuário, um pacote Composer autoral diferente: `sbadmin/dashboard`** (fonte em `C:\Apache24\htdocs\sb-admin\packages\sbadmin`, copiado pra cá em `packages/sbadmin`) — Bootstrap 5 + Alpine.js, **sem jQuery**, com componentes Blade próprios (`<x-sbadmin::layout>`, `<x-sbadmin::table>` com paginação nativa do Laravel em vez de DataTables, `<x-sbadmin::form.*>`, dark mode) e tokens de design centralizados em `resources/sass/sbadmin/_variables.scss` (cores, fonte Poppins, espaçamento). Ver `packages/sbadmin/README.md` pra referência completa de componentes e customização do menu (`config/sbadmin.php`).
+O `sys.buildflow`/`feature/mcl` usa o template legado **SB Admin 2** (jQuery + DataTables + Bootstrap 4, arquivos estáticos em `public/css`/`public/js`). **Esta branch adota, por pedido do cliente/usuário, um pacote Composer autoral diferente: `sbadmin/dashboard`** (fonte em `C:\Apache24\htdocs\sb-admin\packages\sbadmin`, copiado pra cá em `packages/sbadmin`) — Bootstrap 5 + Alpine.js, **sem jQuery**, com componentes Blade próprios (`<x-sbadmin::layout>`, `<x-sbadmin::table>` com paginação nativa do Laravel em vez de DataTables, `<x-sbadmin::form.*>`, dark mode) e tokens de design centralizados em `resources/sass/sbadmin/_variables.scss` (cores, fonte Ubuntu Sans, espaçamento — ver nota de tipografia abaixo). Ver `packages/sbadmin/README.md` pra referência completa de componentes e customização do menu (`config/sbadmin.php`).
 
 **Não copiar telas prontas do `feature/mcl` sem adaptar** — lá usam DataTables + modal Bootstrap 4; aqui o padrão é `<x-sbadmin::table>` (retorno de `Model::paginate()`) + `<x-sbadmin::form.*>`. Funcionalidades de exportação Excel/PDF e busca/ordenação client-side que a DataTables oferecia precisam ser reavaliadas tela a tela (reimplementar no backend ou descartar nesta fase).
+
+**Tipografia:** a fonte do design system é **Ubuntu Sans** (trocada de Poppins em 09/2026, pedido do cliente/usuário) — não confundir com a antiga família "Ubuntu" (`@fontsource/ubuntu`), é uma family diferente e mais nova. Fonte da verdade: `$sbadmin-font-family` em `packages/sbadmin/resources/sass/sbadmin/_variables.scss`. Auto-hospedada via pacote npm `@fontsource/ubuntu-sans` (`^5.3.0`), importado em `resources/js/app.js` (pesos 400/500/600/700 — cobre os tokens `$sbadmin-font-weight-*` e negrito). Não reintroduzir `@fontsource/poppins` nem carregar fonte via `<link>` do Google Fonts numa página específica (a tela de login chegou a ter uma tag de teste assim, já removida) — qualquer mudança de fonte deve passar pela variável central do design system, nunca por override local de página, senão ela some na próxima limpeza.
 
 ## Mapa do escopo (especificação v2)
 
@@ -69,6 +71,10 @@ O `sys.buildflow`/`feature/mcl` usa o template legado **SB Admin 2** (jQuery + D
   - **PATCH** — qualquer outro ajuste (correção, pequeno refino, commit intermediário)
   - **MAJOR** — reservado para breaking change; nunca subir sem confirmação explícita do usuário
 - RNF07 (da especificação): toda alteração de schema é uma migration versionada específica desta branch — nunca aplicada num banco compartilhado com outro cliente.
+
+### Revisão de segurança a cada MINOR
+
+A cada vez que a versão **MINOR** for incrementada (padrão `BF_vMAJOR.MINOR.PATCH` acima), fazer uma revisão de segurança específica antes de fechar aquele MINOR: mapear as rotas/endpoints em `routes/api.php` e `routes/web.php` (incluindo o grupo `fae/v1`) e identificar quais estão fora dos grupos de middleware `auth`/`sanctum` — ou seja, acessíveis sem autenticação — e avaliar se isso é intencional (ex.: rota de login, health-check, webhook público). Qualquer rota que deveria exigir autenticação e não exige é uma falha e deve ser corrigida antes de finalizar aquele MINOR.
 
 ## Testes
 

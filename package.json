@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@alpinejs/collapse": "^3.17.2",
-        "@fontsource/poppins": "^5.3.0",
+        "@fontsource/ubuntu-sans": "^5.3.0",
         "alpinejs": "^3.17.2",
         "bootstrap": "^5.3.8",
         "bootstrap-icons": "^1.13.1",
