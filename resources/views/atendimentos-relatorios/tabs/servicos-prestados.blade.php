@@ -1,9 +1,9 @@
 {{-- SERVIÇOS PRESTADOS --}}
-<div class="tab-pane fade" id="tab-servicos" role="tabpanel">
+<div id="tab-servicos" role="tabpanel" x-show="tab === 'servicos'">
     <div class="mb-3">
         <div class="form-row align-items-end">
             <div class="col-md-6">
-                <label for="servico_descricao" class="font-weight-bold mb-1">Descrição do Serviço</label>
+                <label for="servico_descricao" class="fw-bold mb-1">Descrição do Serviço</label>
                 <input type="text"
                     id="servico_descricao"
                     class="form-control"
@@ -14,7 +14,7 @@
             <div class="col-md-2">
                 <button type="button" id="btnAddServico" class="btn btn-primary btn-icon-split">
                     <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
                     </span>
                     <span class="text">Adicionar</span>
                 </button>

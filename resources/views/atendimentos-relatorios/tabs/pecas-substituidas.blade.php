@@ -1,9 +1,9 @@
 {{-- PEÇAS SUBSTITUÍDAS --}}
-<div class="tab-pane fade" id="tab-pecas" role="tabpanel">
+<div id="tab-pecas" role="tabpanel" x-show="tab === 'pecas'">
     <div class="mb-3">
         <div class="form-row align-items-end">
             <div class="col-md-6">
-                <label for="peca_descricao" class="font-weight-bold mb-1">Descrição da Peça</label>
+                <label for="peca_descricao" class="fw-bold mb-1">Descrição da Peça</label>
                 <input type="text"
                     id="peca_descricao"
                     class="form-control"
@@ -14,7 +14,7 @@
             <div class="col-md-2">
                 <button type="button" id="btnAddPeca" class="btn btn-primary btn-icon-split">
                     <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
                     </span>
                     <span class="text">Adicionar</span>
                 </button>

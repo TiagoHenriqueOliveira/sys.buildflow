@@ -1,22 +1,31 @@
-{{-- ANEXOS --}}
-<div class="tab-pane fade" id="tab-anexos">
+{{-- ANEXOS — accordion convertido de Bootstrap4 JS (data-toggle="collapse")
+     pra Alpine (x-collapse, plugin @alpinejs/collapse já registrado em
+     packages/sbadmin/resources/js/sbadmin/app.js e usado no mesmo padrão em
+     sidebar-item.blade.php), já que este stack não carrega o bundle JS do
+     Bootstrap — só Alpine.js. O preview de foto/vídeo usa o modal
+     compartilhado de show.blade.php (#anexoPreviewContent + evento
+     `relatorio-preview`); o modal/local antigo com jQuery foi removido daqui
+     pra não duplicar o id #anexoPreviewContent. --}}
+<div id="tab-anexos" role="tabpanel" x-show="tab === 'anexos'" x-data="{ anexosAberto: 'arquivos' }">
     <div class="accordion" id="anexosAccordion">
         <div class="card">
             <div class="card-header" id="headingArquivos">
                 <h2 class="mb-0">
-                    <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseArquivos" aria-expanded="true" aria-controls="collapseArquivos">
+                    <button class="btn btn-link w-100 text-start" type="button"
+                        @click="anexosAberto = (anexosAberto === 'arquivos' ? null : 'arquivos')"
+                        :aria-expanded="(anexosAberto === 'arquivos').toString()" aria-controls="collapseArquivos">
                         Arquivos
                     </button>
                 </h2>
             </div>
-            <div id="collapseArquivos" class="collapse show" aria-labelledby="headingArquivos" data-parent="#anexosAccordion">
+            <div id="collapseArquivos" x-show="anexosAberto === 'arquivos'" x-collapse aria-labelledby="headingArquivos">
                 <div class="card-body">
                     {{-- Conteúdo de arquivos --}}
                     <p class="text-muted">Selecione arquivos ou use o botão de upload para adicionar anexos.</p>
                     <div class="file-upload-box mb-2">
                         <div class="file-upload-group">
                             <button type="button" class="btn btn-outline-primary file-upload-button upload-trigger" data-input-id="uploadArquivosInput" aria-label="Upload de arquivos">
-                                <i class="fas fa-upload"></i>
+                                <i class="bi bi-upload" aria-hidden="true"></i>
                             </button>
                             <input id="uploadArquivosInput" name="arquivos[]" type="file" class="file-upload-input" multiple>
                             <span class="file-upload-text">Nenhum arquivo selecionado</span>
@@ -30,7 +39,7 @@
                                         <li class="d-flex align-items-center justify-content-between mb-1">
                                             <a href="{{ asset('midia/' . $anexo->aten_rel_anexo_path) }}" target="_blank">{{ basename($anexo->aten_rel_anexo_path) }}</a>
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-delete-anexo" data-type="arquivo" data-id="{{ $anexo->aten_rel_anexo_id }}" aria-label="Excluir anexo">
-                                                <i class="fas fa-trash"></i>
+                                                <i class="bi bi-trash" aria-hidden="true"></i>
                                             </button>
                                         </li>
                                     @endforeach
@@ -43,19 +52,21 @@
         <div class="card">
             <div class="card-header" id="headingFotos">
                 <h2 class="mb-0">
-                    <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseFotos" aria-expanded="false" aria-controls="collapseFotos">
+                    <button class="btn btn-link w-100 text-start" type="button"
+                        @click="anexosAberto = (anexosAberto === 'fotos' ? null : 'fotos')"
+                        :aria-expanded="(anexosAberto === 'fotos').toString()" aria-controls="collapseFotos">
                         Fotos
                     </button>
                 </h2>
             </div>
-            <div id="collapseFotos" class="collapse" aria-labelledby="headingFotos" data-parent="#anexosAccordion">
+            <div id="collapseFotos" x-show="anexosAberto === 'fotos'" x-collapse aria-labelledby="headingFotos">
                 <div class="card-body">
                     {{-- Conteúdo de fotos --}}
                     <p class="text-muted">Use o botão abaixo para anexar imagens ao relatório.</p>
                     <div class="file-upload-box mb-2">
                         <div class="file-upload-group">
                             <button type="button" class="btn btn-outline-primary file-upload-button upload-trigger" data-input-id="uploadFotosInput" aria-label="Upload de fotos">
-                                <i class="fas fa-upload"></i>
+                                <i class="bi bi-upload" aria-hidden="true"></i>
                             </button>
                             <input id="uploadFotosInput" name="fotos[]" type="file" class="file-upload-input" accept="image/*" multiple>
                             <span class="file-upload-text">Nenhuma foto selecionada</span>
@@ -79,7 +90,7 @@
                                             <img src="{{ $src }}" style="width:120px;height:80px;object-fit:cover;border-radius:.35rem;" alt="foto">
                                         </a>
                                         <button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="foto" data-id="{{ $foto->aten_rel_foto_id }}" aria-label="Excluir foto">
-                                            <i class="fas fa-trash"></i>
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                     @endforeach
@@ -92,19 +103,21 @@
         <div class="card">
             <div class="card-header" id="headingVideos">
                 <h2 class="mb-0">
-                    <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseVideos" aria-expanded="false" aria-controls="collapseVideos">
+                    <button class="btn btn-link w-100 text-start" type="button"
+                        @click="anexosAberto = (anexosAberto === 'videos' ? null : 'videos')"
+                        :aria-expanded="(anexosAberto === 'videos').toString()" aria-controls="collapseVideos">
                         Vídeos
                     </button>
                 </h2>
             </div>
-            <div id="collapseVideos" class="collapse" aria-labelledby="headingVideos" data-parent="#anexosAccordion">
+            <div id="collapseVideos" x-show="anexosAberto === 'videos'" x-collapse aria-labelledby="headingVideos">
                 <div class="card-body">
                     {{-- Conteúdo de vídeos --}}
                     <p class="text-muted">Use o botão abaixo para anexar vídeos ao relatório.</p>
                     <div class="file-upload-box mb-2">
                         <div class="file-upload-group">
                             <button type="button" class="btn btn-outline-primary file-upload-button upload-trigger" data-input-id="uploadVideosInput" aria-label="Upload de vídeos">
-                                <i class="fas fa-upload"></i>
+                                <i class="bi bi-upload" aria-hidden="true"></i>
                             </button>
                             <input id="uploadVideosInput" name="videos[]" type="file" class="file-upload-input" accept="video/*" multiple>
                             <span class="file-upload-text">Nenhum vídeo selecionado</span>
@@ -128,7 +141,7 @@
                                             <img src="{{ $thumbUrl }}" style="width:160px;height:90px;object-fit:cover;border-radius:.35rem;" alt="video">
                                         </a>
                                         <button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="video" data-id="{{ $video->aten_rel_vid_id }}" aria-label="Excluir vídeo">
-                                            <i class="fas fa-trash"></i>
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                     @endforeach
@@ -140,42 +153,3 @@
         </div>
     </div>
 </div>
-
-<!-- Modal de visualização de anexo -->
-<div class="modal fade" id="anexoPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <div id="anexoPreviewContent"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@push('scripts')
-<script>
-        $(document).on('click', '.anexo-thumb', function (e) {
-                e.preventDefault();
-                const type = $(this).data('type');
-                const src = $(this).data('src');
-                const container = $('#anexoPreviewContent');
-                container.empty();
-
-                if (type === 'image') {
-                        const img = $('<img>').attr('src', src).css({'max-width':'100%','height':'auto'});
-                        container.append(img);
-                } else if (type === 'video') {
-                        const video = $("<video controls playsinline style='width:100%;height:auto;'></video>");
-                        video.append($('<source>').attr('src', src));
-                        container.append(video);
-                }
-
-                $('#anexoPreviewModal').modal('show');
-        });
-</script>
-@endpush

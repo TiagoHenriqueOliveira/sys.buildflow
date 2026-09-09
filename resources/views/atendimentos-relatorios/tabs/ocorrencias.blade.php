@@ -1,9 +1,9 @@
 {{-- OCORRÊNCIAS --}}
-<div class="tab-pane fade" id="tab-ocorrencias">
+<div id="tab-ocorrencias" role="tabpanel" x-show="tab === 'ocorrencias'">
     <div class="mb-3">
         <div class="form-row align-items-end">
             <div class="col-md-6">
-                <label for="ocorrencia_id" class="font-weight-bold mb-1">Ocorrência</label>
+                <label for="ocorrencia_id" class="fw-bold mb-1">Ocorrência</label>
                 <select id="ocorrencia_id" class="form-control">
                     <option value="">Selecione...</option>
                     @foreach($ocorrencias as $ocorrencia)
@@ -13,7 +13,7 @@
             </div>
 
             <div class="col-md-4">
-                <label for="ocorrencia_observacao" class="font-weight-bold mb-1">Observação</label>
+                <label for="ocorrencia_observacao" class="fw-bold mb-1">Observação</label>
                 <input type="text"
                     id="ocorrencia_observacao"
                     class="form-control"
@@ -24,7 +24,7 @@
             <div class="col-md-2">
                 <button type="button" id="btnAddOcorrencia" class="btn btn-primary btn-icon-split">
                     <span class="icon text-white-50">
-                        <i class="fas fa-plus"></i>
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
                     </span>
                     <span class="text">Adicionar</span>
                 </button>

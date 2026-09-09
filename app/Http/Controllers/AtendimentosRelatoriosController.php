@@ -30,7 +30,6 @@ use App\Models\AtendimentoRelatorioPeca;
 use App\Models\AtendimentoRelatorioDescricaoItem;
 use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
-use App\Services\DataTableService;
 use App\Services\MediaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -46,7 +45,6 @@ class AtendimentosRelatoriosController extends Controller
     public function __construct(
         private readonly AtendimentoRelatorioRepository $repo,
         private readonly MediaService $media,
-        private readonly DataTableService $dataTable,
     ) {}
 
     // Item 2.2: busca o relatório já garantindo que o usuário autenticado
@@ -60,55 +58,51 @@ class AtendimentosRelatoriosController extends Controller
         return $relatorio;
     }
 
+    /**
+     * Migrada pro pacote sbadmin/dashboard (ver CLAUDE.md, seção "Template
+     * visual") seguindo o mesmo padrão das demais listagens: sem branch
+     * DataTables-JSON, paginação nativa consumida por <x-sbadmin::table>;
+     * busca via ?busca= (cliente/natureza/técnico/proposta/data), ordenação
+     * descartada (lista sempre por data + id, igual ao antigo
+     * AtendimentoRelatorioRepository::query()). O filtro "técnico só vê o
+     * seu, admin vê tudo" (Atendimento::idVisivelPara) foi preservado.
+     */
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            $usuario = Auth::user();
-            $filters = ($id = Atendimento::idVisivelPara($usuario)) !== null
-                ? ['usuario_id' => $id]
-                : [];
+        $usuario = Auth::user();
+        $filters = ($id = Atendimento::idVisivelPara($usuario)) !== null
+            ? ['usuario_id' => $id]
+            : [];
 
-            return response()->json(
-                $this->dataTable->process(
-                    $request,
-                    $this->repo->query($filters),
-                    searchable: [
-                        'clientes.cli_nome',
-                        'naturezas_atendimentos.nat_aten_descricao',
-                        'usuarios.user_nome',
-                        'atendimentos.aten_nr_proposta',
-                        'atendimentos_relatorios.aten_rel_data',
-                    ],
-                    searchableRaw: [
-                        "CASE atendimentos_relatorios.aten_rel_status WHEN 0 THEN 'Preenchendo' WHEN 1 THEN 'Revisar' WHEN 2 THEN 'Aprovado' END",
-                    ],
-                    orderable:  [
-                        'acoes'       => null,
-                        'data'        => 'atendimentos_relatorios.aten_rel_data',
-                        'cliente'     => 'clientes.cli_nome',
-                        'nr_proposta' => 'atendimentos.aten_nr_proposta',
-                        'natureza'    => 'naturezas_atendimentos.nat_aten_descricao',
-                        'tecnico'     => 'usuarios.user_nome',
-                        'status'      => 'atendimentos_relatorios.aten_rel_status',
-                    ],
-                    mapper: fn($r) => [
-                        'acoes'       => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
-                        'data'        => optional($r->aten_rel_data)->format('d/m/Y'),
-                        'cliente'     => e($r->atendimento?->cliente?->cli_nome ?? '-'),
-                        'nr_proposta' => e($r->atendimento?->aten_nr_proposta ?? ''),
-                        'natureza'    => $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
-                        'tecnico'     => e($r->atendimento?->usuario?->user_nome ?? '-'),
-                        'status'  => ($s = AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status))
-                            ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
-                            : '-',
-                    ],
-                )
-            );
-        }
+        $busca = trim((string) $request->get('busca', ''));
 
-        return view('atendimentos-relatorios.index');
+        $relatorios = $this->repo->query($filters)
+            ->when($busca !== '', function ($query) use ($busca) {
+                $query->where(function ($q) use ($busca) {
+                    $q->where('clientes.cli_nome', 'like', "%{$busca}%")
+                        ->orWhere('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$busca}%")
+                        ->orWhere('usuarios.user_nome', 'like', "%{$busca}%")
+                        ->orWhere('atendimentos.aten_nr_proposta', 'like', "%{$busca}%")
+                        ->orWhere('atendimentos_relatorios.aten_rel_data', 'like', "%{$busca}%");
+                });
+            })
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('atendimentos-relatorios.index', [
+            'relatorios' => $relatorios,
+            'busca' => $busca,
+        ]);
     }
 
+    /**
+     * Modal "Novo Relatório" migrado pro padrão redirect+flash (ver
+     * CLAUDE.md, seção "Template visual") igual às telas simples — nada
+     * mais depende deste endpoint retornar JSON (só o modal desta própria
+     * tela), então as regras de negócio (REL-02/REL-03) passaram a devolver
+     * erro via $errors->back() em vez de response()->json(...,422), sem
+     * mudar a regra em si.
+     */
     public function store(AtendimentoRelatorioStoreRequest $request)
     {
         $atendimento = Atendimento::query()
@@ -118,48 +112,44 @@ class AtendimentosRelatoriosController extends Controller
 
         // Item 2.2: sem isto, qualquer técnico autenticado conseguia criar
         // relatório em atendimento de OUTRO técnico só informando o aten_id
-        // no corpo da requisição. Fora do try/catch de propósito — dentro
-        // dele o abort_unless(403) vira 500, engolido pelo catch genérico.
+        // no corpo da requisição.
         $this->garantirPosse($atendimento);
 
+        if (
+            !$atendimento->natureza ||
+            !$atendimento->natureza->modeloRelatorio
+        ) {
+            return back()->withInput()->withErrors([
+                'aten_id' => 'A natureza do atendimento não possui modelo de relatório vinculado.',
+            ]);
+        }
+
+        $modelo = $atendimento->natureza->modeloRelatorio;
+
+        // REL-02: Bloquear se atendimento está Paralisado ou Concluído
+        if (in_array($atendimento->aten_status, [
+            AtendimentoStatus::Paralisada->value,
+            AtendimentoStatus::Concluida->value,
+        ])) {
+            return back()->withInput()->withErrors([
+                'aten_id' => 'Não é possível criar relatório para atendimentos Paralisados ou Concluídos.',
+            ]);
+        }
+
+        // REL-03: Bloquear > 1 relatório de período por atendimento
+        if ((int) $modelo->mod_rel_tp_data === 1) {
+            $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
+                ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
+                ->exists();
+
+            if ($existe) {
+                return back()->withInput()->withErrors([
+                    'aten_id' => 'Não é possível criar outro relatório, seu atendimento só permite um!',
+                ]);
+            }
+        }
+
         try {
-            if (
-                !$atendimento->natureza ||
-                !$atendimento->natureza->modeloRelatorio
-            ) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'A natureza do atendimento não possui modelo de relatório vinculado.',
-                ], 422);
-            }
-
-            $modelo = $atendimento->natureza->modeloRelatorio;
-
-            // REL-02: Bloquear se atendimento está Paralisado ou Concluído
-            if (in_array($atendimento->aten_status, [
-                AtendimentoStatus::Paralisada->value,
-                AtendimentoStatus::Concluida->value,
-            ])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Não é possível criar relatório para atendimentos Paralisados ou Concluídos.',
-                ], 422);
-            }
-
-            // REL-03: Bloquear > 1 relatório de período por atendimento
-            if ((int) $modelo->mod_rel_tp_data === 1) {
-                $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
-                    ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
-                    ->exists();
-
-                if ($existe) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Não é possível criar outro relatório, seu atendimento só permite um!',
-                    ], 422);
-                }
-            }
-
             $rel = $this->repo->create([
                 'aten_rel_atendimento_id'      => $atendimento->aten_id,
                 'aten_rel_modelo_relatorio_id' => $modelo->mod_rel_id,
@@ -177,18 +167,13 @@ class AtendimentosRelatoriosController extends Controller
                 $atendimento->update(['aten_status' => AtendimentoStatus::EmAndamento->value]);
             }
 
-            return response()->json([
-                'success'      => true,
-                'message'      => 'Relatório criado com sucesso.',
-                'redirect_url' => route('atendimentos-relatorios.show', $rel->aten_rel_id),
-            ], 201);
+            return redirect()
+                ->route('atendimentos-relatorios.show', $rel->aten_rel_id)
+                ->with('success', 'Relatório criado com sucesso.');
         } catch (\Throwable $e) {
             report($e);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao criar o relatório.',
-            ], 500);
+            return back()->withInput()->withErrors(['aten_id' => 'Erro ao criar o relatório.']);
         }
     }
 

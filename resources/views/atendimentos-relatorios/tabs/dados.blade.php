@@ -1,38 +1,38 @@
-<div class="tab-pane fade show active" id="tab-dados" role="tabpanel">
+<div id="tab-dados" role="tabpanel" x-show="tab === 'dados'">
     <form id="form_relatorio_dados" data-action="{{ route('atendimentos-relatorios.update-dados', $atendimentoRelatorio->aten_rel_id) }}">
         @csrf
         {{-- LINHA: Data | Dia da Semana | Prazo | Decorrido | À Vencer --}}
         <div class="row mb-3">
             <div class="col-md-3">
-                <label class="font-weight-bold">Data</label>
+                <label class="fw-bold">Data</label>
                 <input type="date" name="aten_rel_data" class="form-control"
                     value="{{ $atendimentoRelatorio->aten_rel_data->format('Y-m-d') }}"
                     max="{{ now()->format('Y-m-d') }}">
             </div>
 
             <div class="col-md-3">
-                <label class="font-weight-bold">Dia da Semana</label>
+                <label class="fw-bold">Dia da Semana</label>
                 <span class="readonly-field dia-semana form-control-plaintext">
                     {{ getFormatDiaSemana($atendimentoRelatorio->aten_rel_data) }}
                 </span>
             </div>
 
             <div class="col-md-2">
-                <label class="font-weight-bold">Prazo (dias)</label>
+                <label class="fw-bold">Prazo (dias)</label>
                 <span class="readonly-field prazo-total form-control-plaintext text-indigo">
                     {{ $prazoTotal }} dias
                 </span>
             </div>
 
             <div class="col-md-2">
-                <label class="font-weight-bold">Prazo Decorrido</label>
+                <label class="fw-bold">Prazo Decorrido</label>
                 <span class="readonly-field prazo-decorrido form-control-plaintext text-warning">
                     {{ $prazoDecorrido }} dias
                 </span>
             </div>
 
             <div class="col-md-2">
-                <label class="font-weight-bold">Prazo à Vencer</label>
+                <label class="fw-bold">Prazo à Vencer</label>
                 <span class="readonly-field prazo-vencer form-control-plaintext text-success">
                     {{ $prazoAVencer }} dias
                 </span>
@@ -42,28 +42,28 @@
         {{-- LINHA: Cliente | Contato | Responsável | Nº Proposta --}}
         <div class="row mb-3">
             <div class="col-md-4">
-                <label class="font-weight-bold">Cliente</label>
+                <label class="fw-bold">Cliente</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->cliente->cli_nome }}
                 </span>
             </div>
 
             <div class="col-md-3">
-                <label class="font-weight-bold">Contato</label>
+                <label class="fw-bold">Contato</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_contato }}
                 </span>
             </div>
 
             <div class="col-md-3">
-                <label class="font-weight-bold">Responsável</label>
+                <label class="fw-bold">Responsável</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_responsavel }}
                 </span>
             </div>
 
             <div class="col-md-2">
-                <label class="font-weight-bold">Nº Proposta</label>
+                <label class="fw-bold">Nº Proposta</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_nr_proposta }}
                 </span>
@@ -73,19 +73,19 @@
         {{-- LINHA: Endereço | Cidade | UF --}}
         <div class="row mb-3">
             <div class="col-md-6">
-                <label class="font-weight-bold">Endereço</label>
+                <label class="fw-bold">Endereço</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->aten_endereco }}
                 </span>
             </div>
             <div class="col-md-4">
-                <label class="font-weight-bold">Cidade</label>
+                <label class="fw-bold">Cidade</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->cliente->cli_cidade }}
                 </span>
             </div>
             <div class="col-md-2">
-                <label class="font-weight-bold">UF</label>
+                <label class="fw-bold">UF</label>
                 <span class="readonly-field form-control-plaintext">
                     {{ $atendimentoRelatorio->atendimento->cliente->cli_uf }}
                 </span>
@@ -97,10 +97,10 @@
     @php $equipamentos = $atendimentoRelatorio->atendimento->equipamentos; @endphp
     @if($equipamentos->isNotEmpty())
     <hr class="my-3">
-    <h6 class="font-weight-bold mb-2"><i class="fas fa-tools mr-1 text-secondary"></i> Equipamentos</h6>
+    <h6 class="fw-bold mb-2"><i class="bi bi-tools me-1 text-secondary" aria-hidden="true"></i> Equipamentos</h6>
     <div class="table-responsive">
         <table class="table table-sm table-bordered mb-0">
-            <thead class="thead-light">
+            <thead class="table-light">
                 <tr>
                     <th>Descrição</th>
                 </tr>
@@ -120,12 +120,12 @@
     @php $anexosAten = $atendimentoRelatorio->atendimento->anexos; @endphp
     @if($anexosAten->isNotEmpty())
     <hr class="my-3">
-    <h6 class="font-weight-bold mb-2"><i class="fas fa-paperclip mr-1 text-secondary"></i> Anexos do Atendimento</h6>
+    <h6 class="fw-bold mb-2"><i class="bi bi-paperclip me-1 text-secondary" aria-hidden="true"></i> Anexos do Atendimento</h6>
     <ul class="list-unstyled mb-0">
         @foreach($anexosAten as $anx)
         <li class="mb-1">
             <a href="{{ asset('midia/' . $anx->aten_anexo_path) }}" target="_blank" class="text-primary">
-                <i class="fas fa-file mr-1"></i>{{ $anx->aten_anexo_nome_original }}
+                <i class="bi bi-file-earmark me-1" aria-hidden="true"></i>{{ $anx->aten_anexo_nome_original }}
             </a>
         </li>
         @endforeach

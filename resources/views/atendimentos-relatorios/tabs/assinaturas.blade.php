@@ -1,16 +1,19 @@
 {{-- ASSINATURA --}}
-<div class="tab-pane fade" id="tab-assinatura">
+<div id="tab-assinatura" role="tabpanel" x-show="tab === 'assinatura'">
     <form id="form_relatorio_assinaturas" data-action="{{ route('atendimentos-relatorios.update-assinaturas', $atendimentoRelatorio->aten_rel_id) }}">
         @csrf
 
         <div class="form-group">
-            <label class="font-weight-bold">Status do Relatório</label>
+            <label class="fw-bold">Status do Relatório</label>
             @php $statusClasses = [0 => 'info', 1 => 'warning', 2 => 'success']; @endphp
-            <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+            {{-- Grupo de radios "toggle" — btn-group-toggle/data-toggle="buttons" era
+                 API JS do Bootstrap4; convertido pro padrão .btn-check do Bootstrap5
+                 (puramente CSS via :checked + label, sem depender de nenhum JS do
+                 Bootstrap, que este stack não carrega — só Alpine). --}}
+            <div class="btn-group d-flex" role="group">
                 @foreach([0 => 'Preenchendo', 1 => 'Revisar', 2 => 'Aprovado'] as $value => $label)
-                    <label class="btn btn-outline-{{ $statusClasses[$value] }} {{ $atendimentoRelatorio->aten_rel_status === $value ? 'active' : '' }}">
-                        <input type="radio" name="aten_rel_status" value="{{ $value }}" autocomplete="off" {{ $atendimentoRelatorio->aten_rel_status === $value ? 'checked' : '' }}> {{ $label }}
-                    </label>
+                    <input type="radio" class="btn-check" name="aten_rel_status" id="aten_rel_status_{{ $value }}" value="{{ $value }}" autocomplete="off" {{ $atendimentoRelatorio->aten_rel_status === $value ? 'checked' : '' }}>
+                    <label class="btn btn-outline-{{ $statusClasses[$value] }}" for="aten_rel_status_{{ $value }}">{{ $label }}</label>
                 @endforeach
             </div>
         </div>
@@ -18,7 +21,7 @@
         <div class="row mt-4">
             <div class="col-md-6 mb-3">
                 <div class="card h-100">
-                    <div class="card-header font-weight-bold">Assinatura Técnico</div>
+                    <div class="card-header fw-bold">Assinatura Técnico</div>
                     <div class="card-body">
                         <canvas id="assinaturaResponsavelCanvas" class="border rounded w-100" width="600" height="220"></canvas>
                         <div class="mt-2 d-flex justify-content-between">
@@ -28,7 +31,7 @@
                         {{-- Nome/CPF de quem assinou são exigidos só do cliente — o técnico já
                              é o usuário logado, identidade conhecida. --}}
                         <div class="mt-3">
-                            <p class="mb-1 font-weight-bold">Preview atual</p>
+                            <p class="mb-1 fw-bold">Preview atual</p>
                             <div id="assinaturaResponsavelPreview">
                                 @if(optional($atendimentoRelatorio->assinaturaResponsavel())->aten_rel_ass_path)
                                     <img src="{{ asset('midia/' . $atendimentoRelatorio->assinaturaResponsavel()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Técnico">
@@ -43,7 +46,7 @@
 
             <div class="col-md-6 mb-3">
                 <div class="card h-100">
-                    <div class="card-header font-weight-bold">Assinatura Cliente</div>
+                    <div class="card-header fw-bold">Assinatura Cliente</div>
                     <div class="card-body">
                         <canvas id="assinaturaClienteCanvas" class="border rounded w-100" width="600" height="220"></canvas>
                         <div class="mt-2 d-flex justify-content-between">
@@ -53,18 +56,18 @@
                         {{-- Nome e CPF de quem assinou são obrigatórios para o cliente. --}}
                         <div class="form-row mt-3">
                             <div class="col-md-8">
-                                <label class="font-weight-bold mb-1" for="assinatura_cliente_nome">Nome de quem assinou <span class="text-danger">*</span></label>
+                                <label class="fw-bold mb-1" for="assinatura_cliente_nome">Nome de quem assinou <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="assinatura_cliente_nome" maxlength="100"
                                     placeholder="Nome completo" value="{{ optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_nome }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="font-weight-bold mb-1" for="assinatura_cliente_cpf">CPF <span class="text-danger">*</span></label>
+                                <label class="fw-bold mb-1" for="assinatura_cliente_cpf">CPF <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" id="assinatura_cliente_cpf" maxlength="14"
                                     placeholder="000.000.000-00" value="{{ optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_cpf }}">
                             </div>
                         </div>
                         <div class="mt-3">
-                            <p class="mb-1 font-weight-bold">Preview atual</p>
+                            <p class="mb-1 fw-bold">Preview atual</p>
                             <div id="assinaturaClientePreview">
                                 @if(optional($atendimentoRelatorio->assinaturaCliente())->aten_rel_ass_path)
                                     <img src="{{ asset('midia/' . $atendimentoRelatorio->assinaturaCliente()->aten_rel_ass_path) }}" class="img-fluid border" alt="Assinatura Cliente">
