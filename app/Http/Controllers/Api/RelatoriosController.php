@@ -163,8 +163,11 @@ class RelatoriosController extends Controller
         $fim    = Carbon::parse($relatorio->atendimento->aten_dt_fim);
         $base   = Carbon::parse($relatorio->aten_rel_data);
 
-        $prazoTotal     = $inicio->diffInDays($fim);
-        $prazoDecorrido = min($inicio->diffInDays($base), $prazoTotal);
+        // Carbon 3: diffInDays() agora retorna float com sinal por padrão
+        // (Carbon 2/Laravel 10 sempre retornava inteiro absoluto) — ver
+        // mesma correção em AtendimentoRelatorio::calcularPrazo().
+        $prazoTotal     = (int) $inicio->diffInDays($fim, true);
+        $prazoDecorrido = min((int) $inicio->diffInDays($base, true), $prazoTotal);
 
 
         $clima = ['manha' => null, 'tarde' => null, 'noite' => null];

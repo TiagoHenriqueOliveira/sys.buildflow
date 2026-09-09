@@ -127,8 +127,12 @@ class AtendimentoRelatorio extends Model
         $fim    = Carbon::parse($this->atendimento->aten_dt_fim);
         $base   = Carbon::parse($this->aten_rel_data);
 
-        $total      = $inicio->diffInDays($fim);
-        $decorrido  = min($inicio->diffInDays($base), $total);
+        // Carbon 3: diffInDays() passou a retornar float com sinal por
+        // padrão (antes, Carbon 2/Laravel 10 sempre retornava inteiro
+        // absoluto). Passamos absolute:true e convertemos pra int aqui
+        // pra manter o comportamento original desses cálculos de prazo.
+        $total      = (int) $inicio->diffInDays($fim, true);
+        $decorrido  = min((int) $inicio->diffInDays($base, true), $total);
         $aVencer    = max($total - $decorrido, 0);
 
         return [
