@@ -76,6 +76,17 @@ class AtendimentosRelatoriosController extends Controller
 
         $busca = trim((string) $request->get('busca', ''));
 
+        // Filtros individuais por coluna (combinaveis em AND entre si e com
+        // a busca acima): um por coluna exibida em <x-sbadmin::table>, exceto
+        // "Ações". "Data" é um valor exato (coluna DATE), os demais texto
+        // livre (LIKE) ou o select de Status.
+        $filtroData = trim((string) $request->get('f_data', ''));
+        $filtroCliente = trim((string) $request->get('f_cliente', ''));
+        $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
+        $filtroNatureza = trim((string) $request->get('f_natureza', ''));
+        $filtroTecnico = trim((string) $request->get('f_tecnico', ''));
+        $filtroStatus = $request->get('f_status', '');
+
         $relatorios = $this->repo->query($filters)
             ->when($busca !== '', function ($query) use ($busca) {
                 $query->where(function ($q) use ($busca) {
@@ -86,12 +97,26 @@ class AtendimentosRelatoriosController extends Controller
                         ->orWhere('atendimentos_relatorios.aten_rel_data', 'like', "%{$busca}%");
                 });
             })
+            ->when($filtroData !== '', fn ($q) => $q->where('atendimentos_relatorios.aten_rel_data', $filtroData))
+            ->when($filtroCliente !== '', fn ($q) => $q->where('clientes.cli_nome', 'like', "%{$filtroCliente}%"))
+            ->when($filtroNrProposta !== '', fn ($q) => $q->where('atendimentos.aten_nr_proposta', 'like', "%{$filtroNrProposta}%"))
+            ->when($filtroNatureza !== '', fn ($q) => $q->where('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$filtroNatureza}%"))
+            ->when($filtroTecnico !== '', fn ($q) => $q->where('usuarios.user_nome', 'like', "%{$filtroTecnico}%"))
+            ->when($filtroStatus !== '', fn ($q) => $q->where('atendimentos_relatorios.aten_rel_status', (int) $filtroStatus))
             ->paginate(15)
             ->withQueryString();
 
         return view('atendimentos-relatorios.index', [
             'relatorios' => $relatorios,
             'busca' => $busca,
+            'filtroData' => $filtroData,
+            'filtroCliente' => $filtroCliente,
+            'filtroNrProposta' => $filtroNrProposta,
+            'filtroNatureza' => $filtroNatureza,
+            'filtroTecnico' => $filtroTecnico,
+            'filtroStatus' => $filtroStatus,
+            'temFiltro' => $busca !== '' || $filtroData !== '' || $filtroCliente !== '' || $filtroNrProposta !== ''
+                || $filtroNatureza !== '' || $filtroTecnico !== '' || $filtroStatus !== '',
         ]);
     }
 

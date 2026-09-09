@@ -5,7 +5,7 @@
             editando: {{ old('user_id') ? 'true' : 'false' }},
         }"
     >
-        <div class="sbadmin-page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="sbadmin-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h2 class="sbadmin-page-heading">Usuários</h2>
                 <p class="sbadmin-page-subheading">Gerencie os usuários com acesso ao sistema.</p>

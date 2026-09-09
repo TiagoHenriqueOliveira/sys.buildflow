@@ -1,5 +1,5 @@
 <x-layout title="Logs de Auditoria">
-    <div class="sbadmin-page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div class="sbadmin-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
             <h2 class="sbadmin-page-heading">Logs de Auditoria</h2>
             <p class="sbadmin-page-subheading">Consulte o histórico de ações e os erros registrados no sistema.</p>

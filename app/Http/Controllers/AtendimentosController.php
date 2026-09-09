@@ -60,6 +60,18 @@ class AtendimentosController extends Controller
         $filtroUsuarioId = Atendimento::idVisivelPara($usuarioLogado);
         $busca = trim((string) $request->get('busca', ''));
 
+        // Filtros individuais por coluna (combinaveis em AND entre si e com
+        // a busca acima): um por coluna exibida em <x-sbadmin::table>, exceto
+        // "Ações". "Período" é um intervalo (aten_dt_inicio/aten_dt_fim), os
+        // demais texto livre (LIKE) ou o select de Status.
+        $filtroNatureza = trim((string) $request->get('f_natureza', ''));
+        $filtroTecnico = trim((string) $request->get('f_tecnico', ''));
+        $filtroCliente = trim((string) $request->get('f_cliente', ''));
+        $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
+        $filtroPeriodoDe = trim((string) $request->get('f_periodo_de', ''));
+        $filtroPeriodoAte = trim((string) $request->get('f_periodo_ate', ''));
+        $filtroStatus = $request->get('f_status', '');
+
         $atendimentos = $this->repository->query($filtroUsuarioId)
             ->when($busca !== '', function ($query) use ($busca) {
                 $query->where(function ($q) use ($busca) {
@@ -69,6 +81,13 @@ class AtendimentosController extends Controller
                         ->orWhere('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$busca}%");
                 });
             })
+            ->when($filtroNatureza !== '', fn ($q) => $q->where('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$filtroNatureza}%"))
+            ->when($filtroTecnico !== '', fn ($q) => $q->where('usuarios.user_nome', 'like', "%{$filtroTecnico}%"))
+            ->when($filtroCliente !== '', fn ($q) => $q->where('clientes.cli_nome', 'like', "%{$filtroCliente}%"))
+            ->when($filtroNrProposta !== '', fn ($q) => $q->where('atendimentos.aten_nr_proposta', 'like', "%{$filtroNrProposta}%"))
+            ->when($filtroPeriodoDe !== '', fn ($q) => $q->where('atendimentos.aten_dt_inicio', '>=', $filtroPeriodoDe))
+            ->when($filtroPeriodoAte !== '', fn ($q) => $q->where('atendimentos.aten_dt_fim', '<=', $filtroPeriodoAte))
+            ->when($filtroStatus !== '', fn ($q) => $q->where('atendimentos.aten_status', (int) $filtroStatus))
             ->orderBy('aten_status')
             ->orderBy('aten_dt_inicio')
             ->orderBy('usuarios.user_nome')
@@ -78,6 +97,15 @@ class AtendimentosController extends Controller
         return view('atendimentos.index', [
             'atendimentos'          => $atendimentos,
             'busca'                 => $busca,
+            'filtroNatureza'        => $filtroNatureza,
+            'filtroTecnico'         => $filtroTecnico,
+            'filtroCliente'         => $filtroCliente,
+            'filtroNrProposta'      => $filtroNrProposta,
+            'filtroPeriodoDe'       => $filtroPeriodoDe,
+            'filtroPeriodoAte'      => $filtroPeriodoAte,
+            'filtroStatus'          => $filtroStatus,
+            'temFiltro'             => $busca !== '' || $filtroNatureza !== '' || $filtroTecnico !== '' || $filtroCliente !== ''
+                || $filtroNrProposta !== '' || $filtroPeriodoDe !== '' || $filtroPeriodoAte !== '' || $filtroStatus !== '',
             'usuarios'              => Usuario::where('user_nivel_acesso', 1)->where('user_ativo', 1)->orderBy('user_nome')->get(),
             'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao')
                 ->where('nat_aten_ativo', 1)

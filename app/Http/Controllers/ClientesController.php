@@ -33,6 +33,19 @@ class ClientesController extends Controller
     {
         $busca = trim((string) $request->get('busca', ''));
 
+        // Filtros individuais por coluna (combinaveis com a busca acima e
+        // entre si, sempre em AND — cada filtro adicional so restringe mais
+        // o resultado): um por coluna exibida em <x-sbadmin::table>, exceto
+        // "Ações". Prefixo "f_" no nome do campo evita colisão com outros
+        // parâmetros da querystring (busca, page).
+        $filtroNome = trim((string) $request->get('f_nome', ''));
+        $filtroCnpj = trim((string) $request->get('f_cnpj', ''));
+        $filtroCidade = trim((string) $request->get('f_cidade', ''));
+        $filtroUf = trim((string) $request->get('f_uf', ''));
+        $filtroTelefone = trim((string) $request->get('f_telefone', ''));
+        $filtroEmail = trim((string) $request->get('f_email', ''));
+        $filtroStatus = $request->get('f_status', '');
+
         $clientes = Cliente::query()
             ->when($busca !== '', function ($query) use ($busca) {
                 $query->where(function ($q) use ($busca) {
@@ -42,6 +55,13 @@ class ClientesController extends Controller
                         ->orWhere('cli_email', 'like', "%{$busca}%");
                 });
             })
+            ->when($filtroNome !== '', fn ($q) => $q->where('cli_nome', 'like', "%{$filtroNome}%"))
+            ->when($filtroCnpj !== '', fn ($q) => $q->where('cli_cnpj', 'like', "%{$filtroCnpj}%"))
+            ->when($filtroCidade !== '', fn ($q) => $q->where('cli_cidade', 'like', "%{$filtroCidade}%"))
+            ->when($filtroUf !== '', fn ($q) => $q->where('cli_uf', 'like', "%{$filtroUf}%"))
+            ->when($filtroTelefone !== '', fn ($q) => $q->where('cli_telefone', 'like', "%{$filtroTelefone}%"))
+            ->when($filtroEmail !== '', fn ($q) => $q->where('cli_email', 'like', "%{$filtroEmail}%"))
+            ->when($filtroStatus !== '', fn ($q) => $q->where('cli_ativo', (int) $filtroStatus))
             ->orderBy('cli_nome')
             ->paginate(15)
             ->withQueryString();
@@ -49,6 +69,15 @@ class ClientesController extends Controller
         return view('clientes.index', [
             'clientes' => $clientes,
             'busca' => $busca,
+            'filtroNome' => $filtroNome,
+            'filtroCnpj' => $filtroCnpj,
+            'filtroCidade' => $filtroCidade,
+            'filtroUf' => $filtroUf,
+            'filtroTelefone' => $filtroTelefone,
+            'filtroEmail' => $filtroEmail,
+            'filtroStatus' => $filtroStatus,
+            'temFiltro' => $busca !== '' || $filtroNome !== '' || $filtroCnpj !== '' || $filtroCidade !== ''
+                || $filtroUf !== '' || $filtroTelefone !== '' || $filtroEmail !== '' || $filtroStatus !== '',
         ]);
     }
 

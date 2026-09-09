@@ -147,6 +147,25 @@
     color: var(--sbadmin-text-muted);
 }
 
+// Botoes de acao das linhas (editar/visualizar/etc.), tipicamente
+// icon-only e com a classe Bootstrap `.btn-outline-secondary`. Essa classe
+// usa a cor "secondary" do tema ($sbadmin-color-primary, um slate escuro) —
+// no modo claro contrasta bem com o fundo branco, mas no modo escuro essa
+// mesma cor e praticamente identica a --sbadmin-surface (o fundo da propria
+// linha/celula), deixando o icone quase invisivel. Sobrescrevemos aqui com
+// os tokens de tema (que ja se adaptam claro/escuro) em vez da cor fixa do
+// Bootstrap, garantindo contraste nos dois temas.
+.sbadmin-table .btn-outline-secondary {
+    color: var(--sbadmin-text-muted);
+    border-color: var(--sbadmin-border);
+
+    &:hover, &:focus {
+        color: var(--sbadmin-text);
+        background-color: var(--sbadmin-surface-muted);
+        border-color: var(--sbadmin-text-muted);
+    }
+}
+
 .sbadmin-table-pagination {
     display: flex;
     flex-wrap: wrap;

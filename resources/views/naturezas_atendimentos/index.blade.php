@@ -5,7 +5,7 @@
             editando: {{ old('nat_aten_id') ? 'true' : 'false' }},
         }"
     >
-        <div class="sbadmin-page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="sbadmin-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h2 class="sbadmin-page-heading">Naturezas de Atendimento</h2>
                 <p class="sbadmin-page-subheading">Gerencie as naturezas de atendimento cadastradas no sistema.</p>
