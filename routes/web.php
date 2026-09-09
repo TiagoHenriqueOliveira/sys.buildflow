@@ -59,18 +59,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Dashboard
-    Route::controller(DashboardController::class)->prefix('dashboard')->group(function () {
-        Route::get('/',                    'index')->name('dashboard');
-        Route::get('/data/kpis',           'kpis');
-        Route::get('/data/por-status',     'porStatus');
-        Route::get('/data/evolucao',       'evolucao');
-        Route::get('/data/mais-relatorios','maisRelatorios');
-        Route::get('/data/por-estado',     'porEstado');
-        Route::get('/data/por-tecnico',    'porTecnico');
-        Route::get('/data/por-setor',      'porSetor');
-        Route::get('/data/tempo-medio',    'tempoMedio');
-    });
+    // Dashboard (placeholder minimo por ora - ver DashboardController)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Clientes — autocomplete
     Route::get('/clientes/autocomplete', [ClientesController::class, 'autoComplete'])->name('clientes.autocomplete');

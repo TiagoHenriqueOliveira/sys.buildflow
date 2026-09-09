@@ -21,16 +21,6 @@
             <i class="bi bi-list" aria-hidden="true"></i>
         </button>
 
-        <button
-            type="button"
-            class="sbadmin-icon-btn d-none d-lg-inline-flex"
-            @click="collapsed = !collapsed"
-            aria-label="Recolher ou expandir menu lateral"
-            :aria-expanded="(!collapsed).toString()"
-        >
-            <i class="bi bi-layout-sidebar-inset" aria-hidden="true"></i>
-        </button>
-
         @if($title)
             <h1 class="sbadmin-page-title">{{ $title }}</h1>
         @endif
@@ -38,17 +28,6 @@
 
     <div class="sbadmin-topbar-end">
         {{ $slot }}
-
-        <button
-            type="button"
-            class="sbadmin-icon-btn"
-            @click="toggleTheme()"
-            :aria-pressed="darkMode.toString()"
-            aria-label="Alternar entre tema claro e escuro"
-        >
-            <i class="bi bi-moon-stars" x-show="!darkMode"></i>
-            <i class="bi bi-sun" x-show="darkMode" x-cloak></i>
-        </button>
 
         <div class="sbadmin-dropdown" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
             <button

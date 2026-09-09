@@ -71,7 +71,12 @@
 
     {{ $slot }}
 
-    <footer class="text-center small text-body-secondary mt-5 mb-3">
-        Sys.Buildflow &mdash; FAÉ Bioenergia &copy; {{ date('Y') }} &mdash; v{{ config('app.version') }}
-    </footer>
+    {{-- Slot dedicado `footer` (fora de <main>, ver components/layout.blade.php
+         do pacote) - e como o rodape gruda no fim do viewport em paginas
+         curtas sem virar position:fixed. --}}
+    <x-slot:footer>
+        <footer class="sbadmin-app-footer text-center small text-body-secondary mt-5 mb-3">
+            {{ config('sbadmin.brand.name') }} &copy; {{ date('Y') }} &mdash; v{{ config('app.version') }}
+        </footer>
+    </x-slot:footer>
 </x-sbadmin::layout>

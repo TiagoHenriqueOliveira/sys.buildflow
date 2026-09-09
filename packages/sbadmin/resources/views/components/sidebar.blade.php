@@ -10,9 +10,13 @@
             @if(config('sbadmin.brand.logo'))
                 <img src="{{ config('sbadmin.brand.logo') }}" alt="{{ config('sbadmin.brand.name') }}" class="sbadmin-brand-logo">
             @else
-                <i class="bi bi-grid-1x2-fill sbadmin-brand-icon" aria-hidden="true"></i>
+                {{-- Sem logo configurado ainda (cliente vai fornecer a marca da
+                     FAE Bioenergia futuramente) - placeholder vazio do mesmo
+                     tamanho do logo real, so pra reservar o espaco e o layout
+                     nao pular quando a imagem for adicionada. --}}
+                <span class="sbadmin-brand-logo-placeholder" aria-hidden="true"></span>
             @endif
-            <span class="sbadmin-brand-text">{{ config('sbadmin.brand.name', config('app.name')) }}</span>
+            <span class="sbadmin-brand-text">{{ config('sbadmin.brand.name') }}</span>
         </a>
         <button type="button" class="sbadmin-sidebar-close d-lg-none" @click="mobileOpen = false" aria-label="Fechar menu">
             <i class="bi bi-x-lg" aria-hidden="true"></i>

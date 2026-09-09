@@ -230,18 +230,20 @@ $sbadmin-font-family: 'Ubuntu Sans', ...;
 
 ### Dark mode
 
-Controlado pelo atributo `data-theme` na tag `<html>` (`light`/`dark`),
-persistido em `localStorage` (chave `sbadmin-theme`) e alternado pelo botão
-no topbar. As cores por tema ficam em `_theme.scss` como custom properties
-CSS (`--sbadmin-bg`, `--sbadmin-surface`, `--sbadmin-text`, etc.) — se você
-adicionar componentes próprios, consuma essas variáveis para funcionar nos
-dois temas automaticamente.
+Único tema suportado (sem alternância/toggle): o atributo `data-theme` na tag
+`<html>` (e `data-bs-theme`, pro color mode nativo do Bootstrap) já sai fixo
+em `dark` via script inline no `<head>` de `components/layout.blade.php`, sem
+ler `localStorage`/`prefers-color-scheme`. As cores do tema escuro ficam em
+`_theme.scss` como custom properties CSS (`--sbadmin-bg`, `--sbadmin-surface`,
+`--sbadmin-text`, etc.) — se você adicionar componentes próprios, consuma
+essas variáveis. As variáveis do tema claro continuam declaradas em
+`_theme.scss` (não usadas atualmente, mas inofensivas) caso um projeto que
+instale o pacote queira reintroduzir a alternância.
 
 ## Acessibilidade
 
-- Sidebar, dropdowns e o botão de dark mode usam `aria-expanded`,
-  `aria-controls`, `aria-haspopup`, `aria-pressed` e `aria-current="page"`
-  no item ativo.
+- Sidebar e dropdowns usam `aria-expanded`, `aria-controls`, `aria-haspopup`
+  e `aria-current="page"` no item ativo.
 - Ícones decorativos usam `aria-hidden="true"`; botões apenas com ícone têm
   `aria-label`.
 - Campos de formulário associam `<label for>` ao `id` do input e expõem

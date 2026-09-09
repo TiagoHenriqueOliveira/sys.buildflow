@@ -1,11 +1,17 @@
-const COLLAPSE_STORAGE_KEY = 'sbadmin-sidebar-collapsed';
-
 // Estado da sidebar (colapsar no desktop / off-canvas no mobile). O
 // accordion do submenu (2o nivel) e os dropdowns da topbar usam x-data
 // local dentro dos proprios componentes Blade, sem precisar deste modulo.
+//
+// "collapsed" e permanentemente true (decisao do produto: sidebar sempre
+// recolhida no desktop, sem toggle de expandir - ver topbar.blade.php, que
+// nao tem mais o botao que alterava esse valor). Continua uma propriedade
+// normal do x-data (nao uma constante) porque outras expressoes Alpine
+// (ex.: :class="{ 'sidebar-collapsed': collapsed && isDesktop }" no layout,
+// e o flyout do submenu em sidebar-item.blade.php) referenciam "collapsed"
+// reativamente; so nao existe mais nenhum caminho de codigo que a mude.
 export function sidebarState() {
     return {
-        collapsed: localStorage.getItem(COLLAPSE_STORAGE_KEY) === 'true',
+        collapsed: true,
         mobileOpen: false,
         // Propriedade reativa espelhando window.innerWidth >= 992 (breakpoint
         // lg do Bootstrap). Usada nos expressoes Alpine (ex.: flyout do
@@ -16,10 +22,6 @@ export function sidebarState() {
         isDesktop: window.innerWidth >= 992,
 
         initSidebar() {
-            this.$watch('collapsed', (value) => {
-                localStorage.setItem(COLLAPSE_STORAGE_KEY, value ? 'true' : 'false');
-            });
-
             window.addEventListener('resize', () => {
                 this.isDesktop = window.innerWidth >= 992;
 

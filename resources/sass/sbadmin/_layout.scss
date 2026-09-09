@@ -61,8 +61,11 @@ body.sbadmin-body {
     min-width: 0;
 }
 
-.sbadmin-brand-icon { font-size: 1.4rem; color: $sbadmin-color-secondary; }
 .sbadmin-brand-logo { height: 28px; width: auto; }
+// Reserva o mesmo espaco do logo real enquanto nenhum estiver configurado
+// (config('sbadmin.brand.logo')), pra o layout nao pular quando ele for
+// adicionado.
+.sbadmin-brand-logo-placeholder { display: inline-block; width: 28px; height: 28px; flex-shrink: 0; }
 .sbadmin-brand-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .sbadmin-sidebar-close {
@@ -218,6 +221,15 @@ body.sbadmin-body {
 .sbadmin-main {
     padding: $sbadmin-space-5;
     flex: 1;
+}
+
+// Footer da aplicacao: irmao do <main> dentro de .sbadmin-content (slot
+// `footer` de <x-sbadmin::layout>), fora da area com padding do <main> -
+// como .sbadmin-content ja e flex-column com <main> em flex:1, o footer
+// gruda sozinho no rodape do viewport em paginas curtas. So precisa do
+// padding horizontal/inferior que o <main> normalmente daria de graca.
+.sbadmin-app-footer {
+    padding: 0 $sbadmin-space-5 $sbadmin-space-5;
 }
 
 .sbadmin-page-header { margin-bottom: $sbadmin-space-5; }

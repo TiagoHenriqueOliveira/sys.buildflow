@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'brand' => [
-        'name' => env('APP_NAME', 'Buildflow — FAÉ Bioenergia'),
+        'name' => 'Buildflow',
         'logo' => null,
     ],
 

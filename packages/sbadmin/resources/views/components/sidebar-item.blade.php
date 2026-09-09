@@ -105,7 +105,7 @@
                 class="sbadmin-submenu"
                 id="{{ $uid }}"
                 x-show="open"
-                x-collapse
+                x-collapse.duration.75ms
                 x-cloak
                 :class="{ 'sbadmin-submenu--flyout': collapsed && isDesktop }"
                 :style="(collapsed && isDesktop) ? { position: 'fixed', top: flyoutTop, left: flyoutLeft } : {}"
