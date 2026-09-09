@@ -1,0 +1,309 @@
+// =============================================================================
+// Componentes: card generico, KPI card, tabela, formularios, alerts, badges
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// Card generico (usado nas paginas de exemplo para envolver graficos/listas)
+// ---------------------------------------------------------------------------
+.sbadmin-card {
+    background-color: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    border-radius: $sbadmin-radius-lg;
+}
+
+.sbadmin-card-header {
+    padding: $sbadmin-space-4 $sbadmin-space-5;
+    border-bottom: 1px solid var(--sbadmin-border);
+}
+
+.sbadmin-card-title {
+    font-size: 1rem;
+    font-weight: $sbadmin-font-weight-semibold;
+    margin: 0;
+    color: var(--sbadmin-text);
+}
+
+.sbadmin-card-body { padding: $sbadmin-space-5; }
+
+// ---------------------------------------------------------------------------
+// KPI card
+// ---------------------------------------------------------------------------
+.sbadmin-kpi-card {
+    display: flex;
+    align-items: flex-start;
+    gap: $sbadmin-space-4;
+    background-color: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    border-radius: $sbadmin-radius-lg;
+    padding: $sbadmin-space-5;
+    height: 100%;
+}
+
+.sbadmin-kpi-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: $sbadmin-radius;
+    background-color: rgba($sbadmin-color-secondary, 0.12);
+    color: $sbadmin-color-secondary;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+
+    // Variantes semanticas -- cada KPI pode ter uma cor que represente o que
+    // o numero significa (ex.: verde pra entrada de dinheiro, vermelho pra
+    // saida), em vez de todo card usar a mesma cor padrao (secondary).
+    &.sbadmin-kpi-icon-success { background-color: rgba($sbadmin-color-success, 0.12); color: $sbadmin-color-success; }
+    &.sbadmin-kpi-icon-danger { background-color: rgba($sbadmin-color-error, 0.12); color: $sbadmin-color-error; }
+    &.sbadmin-kpi-icon-warning { background-color: rgba($sbadmin-color-warning, 0.12); color: $sbadmin-color-warning; }
+    &.sbadmin-kpi-icon-info { background-color: rgba($sbadmin-color-info, 0.12); color: $sbadmin-color-info; }
+}
+
+.sbadmin-kpi-body { min-width: 0; }
+
+.sbadmin-kpi-title {
+    margin: 0 0 $sbadmin-space-1;
+    font-size: 0.85rem;
+    color: var(--sbadmin-text-muted);
+    font-weight: $sbadmin-font-weight-medium;
+}
+
+.sbadmin-kpi-value {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: $sbadmin-font-weight-semibold;
+    color: var(--sbadmin-text);
+}
+
+.sbadmin-kpi-change {
+    display: flex;
+    align-items: center;
+    gap: $sbadmin-space-1;
+    margin: $sbadmin-space-2 0 0;
+    font-size: 0.8rem;
+    font-weight: $sbadmin-font-weight-medium;
+
+    &.is-positive { color: $sbadmin-color-success; }
+    &.is-negative { color: $sbadmin-color-error; }
+}
+
+.sbadmin-kpi-change-label { color: var(--sbadmin-text-muted); font-weight: $sbadmin-font-weight-regular; }
+
+:root[data-theme='dark'] {
+    .sbadmin-kpi-change.is-positive { color: lighten($sbadmin-color-success, 20%); }
+    .sbadmin-kpi-change.is-negative { color: lighten($sbadmin-color-error, 15%); }
+}
+
+// ---------------------------------------------------------------------------
+// Tabela
+// ---------------------------------------------------------------------------
+.sbadmin-table-card {
+    background-color: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    border-radius: $sbadmin-radius-lg;
+    overflow: hidden;
+}
+
+.sbadmin-table {
+    // Sobrescreve as custom properties nativas do Bootstrap (--bs-table-*), que
+    // o .table usa internamente (via box-shadow) para pintar zebra/hover. Sem
+    // isso, o Bootstrap aplicava suas cores padrao (pensadas para tema claro)
+    // por cima das nossas, deixando linhas brancas com texto ilegivel no dark
+    // mode - inclusive no hover (fundo escuro + texto preto).
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--sbadmin-text);
+    --bs-table-border-color: var(--sbadmin-border);
+    --bs-table-striped-bg: var(--sbadmin-surface-muted);
+    --bs-table-striped-color: var(--sbadmin-text);
+    --bs-table-hover-bg: rgba(37, 99, 235, 0.12);
+    --bs-table-hover-color: var(--sbadmin-text);
+
+    margin-bottom: 0;
+    color: var(--sbadmin-text);
+
+    thead th {
+        background-color: var(--sbadmin-surface-muted);
+        border-bottom: 1px solid var(--sbadmin-border);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: $sbadmin-font-weight-semibold;
+        color: var(--sbadmin-text-muted);
+        white-space: nowrap;
+    }
+
+    td, th { padding: $sbadmin-space-3 $sbadmin-space-4; vertical-align: middle; border-color: var(--sbadmin-border); }
+
+    tfoot td {
+        background-color: var(--sbadmin-surface-muted);
+        border-top: 2px solid var(--sbadmin-border);
+    }
+}
+
+.sbadmin-table-empty {
+    text-align: center;
+    padding: $sbadmin-space-6 !important;
+    color: var(--sbadmin-text-muted);
+}
+
+.sbadmin-table-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $sbadmin-space-3;
+    padding: $sbadmin-space-4;
+    border-top: 1px solid var(--sbadmin-border);
+}
+
+.sbadmin-pagination {
+    margin: 0;
+
+    .page-link {
+        color: var(--sbadmin-text);
+        background-color: var(--sbadmin-surface);
+        border-color: var(--sbadmin-border);
+    }
+
+    .page-item.active .page-link {
+        background-color: $sbadmin-color-secondary;
+        border-color: $sbadmin-color-secondary;
+    }
+
+    .page-item.disabled .page-link {
+        background-color: var(--sbadmin-surface);
+        color: var(--sbadmin-text-muted);
+    }
+}
+
+.sbadmin-pagination-summary {
+    margin: $sbadmin-space-2 0 0;
+    font-size: 0.85rem;
+    color: var(--sbadmin-text-muted);
+}
+
+// ---------------------------------------------------------------------------
+// Formularios
+// ---------------------------------------------------------------------------
+.sbadmin-form-group { margin-bottom: $sbadmin-space-4; }
+
+.sbadmin-form-label {
+    display: inline-block;
+    margin-bottom: $sbadmin-space-2;
+    font-weight: $sbadmin-font-weight-medium;
+    font-size: 0.9rem;
+    color: var(--sbadmin-text);
+}
+
+.sbadmin-required { color: $sbadmin-color-error; margin-left: 2px; }
+
+.sbadmin-form-control {
+    background-color: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    color: var(--sbadmin-text);
+
+    &:focus {
+        border-color: $sbadmin-color-secondary;
+        box-shadow: 0 0 0 0.2rem rgba($sbadmin-color-secondary, 0.18);
+        background-color: var(--sbadmin-surface);
+        color: var(--sbadmin-text);
+    }
+
+    &.is-invalid { border-color: $sbadmin-color-error; }
+}
+
+.sbadmin-form-help {
+    margin-top: $sbadmin-space-1;
+    font-size: 0.8rem;
+    color: var(--sbadmin-text-muted);
+}
+
+.sbadmin-form-check .form-check-input:checked {
+    background-color: $sbadmin-color-secondary;
+    border-color: $sbadmin-color-secondary;
+}
+
+// ---------------------------------------------------------------------------
+// Alerts
+// ---------------------------------------------------------------------------
+.sbadmin-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: $sbadmin-space-3;
+    padding: $sbadmin-space-4;
+    border-radius: $sbadmin-radius;
+    border: 1px solid transparent;
+    margin-bottom: $sbadmin-space-4;
+}
+
+.sbadmin-alert-icon { font-size: 1.1rem; margin-top: 1px; }
+.sbadmin-alert-content { flex: 1; font-size: 0.9rem; }
+
+.sbadmin-alert-close {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    opacity: 0.6;
+    font-size: 0.85rem;
+    line-height: 1;
+
+    &:hover { opacity: 1; }
+}
+
+.sbadmin-alert-success { background-color: rgba($sbadmin-color-success, 0.1); border-color: rgba($sbadmin-color-success, 0.25); color: darken($sbadmin-color-success, 10%); }
+.sbadmin-alert-error { background-color: rgba($sbadmin-color-error, 0.1); border-color: rgba($sbadmin-color-error, 0.25); color: darken($sbadmin-color-error, 5%); }
+.sbadmin-alert-warning { background-color: rgba($sbadmin-color-warning, 0.12); border-color: rgba($sbadmin-color-warning, 0.28); color: darken($sbadmin-color-warning, 10%); }
+.sbadmin-alert-info { background-color: rgba($sbadmin-color-info, 0.1); border-color: rgba($sbadmin-color-info, 0.25); color: darken($sbadmin-color-info, 10%); }
+
+:root[data-theme='dark'] {
+    .sbadmin-alert-success { color: lighten($sbadmin-color-success, 22%); }
+    .sbadmin-alert-error { color: lighten($sbadmin-color-error, 18%); }
+    .sbadmin-alert-warning { color: lighten($sbadmin-color-warning, 20%); }
+    .sbadmin-alert-info { color: lighten($sbadmin-color-info, 25%); }
+}
+
+// ---------------------------------------------------------------------------
+// Badges
+// ---------------------------------------------------------------------------
+.sbadmin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $sbadmin-space-1;
+    padding: 0.3em 0.65em;
+    font-size: 0.75rem;
+    font-weight: $sbadmin-font-weight-medium;
+    border-radius: $sbadmin-radius-sm;
+    line-height: 1.4;
+
+    &.sbadmin-badge-pill { border-radius: 50rem; }
+}
+
+.sbadmin-badge-success { background-color: rgba($sbadmin-color-success, 0.14); color: darken($sbadmin-color-success, 8%); }
+.sbadmin-badge-error { background-color: rgba($sbadmin-color-error, 0.14); color: $sbadmin-color-error; }
+.sbadmin-badge-warning { background-color: rgba($sbadmin-color-warning, 0.16); color: darken($sbadmin-color-warning, 8%); }
+.sbadmin-badge-info { background-color: rgba($sbadmin-color-info, 0.14); color: darken($sbadmin-color-info, 5%); }
+.sbadmin-badge-neutral { background-color: var(--sbadmin-surface-muted); color: var(--sbadmin-text-muted); }
+
+// Fundos mais opacos e texto mais claro no dark mode: os tons "darken()" do
+// modo claro ficam com pouquissimo contraste sobre superficies escuras.
+:root[data-theme='dark'] {
+    .sbadmin-badge-success { background-color: rgba($sbadmin-color-success, 0.22); color: lighten($sbadmin-color-success, 25%); }
+    .sbadmin-badge-error { background-color: rgba($sbadmin-color-error, 0.22); color: lighten($sbadmin-color-error, 18%); }
+    .sbadmin-badge-warning { background-color: rgba($sbadmin-color-warning, 0.22); color: lighten($sbadmin-color-warning, 22%); }
+    .sbadmin-badge-info { background-color: rgba($sbadmin-color-info, 0.22); color: lighten($sbadmin-color-info, 28%); }
+    .sbadmin-badge-neutral { color: var(--sbadmin-text); }
+}
+
+// ---------------------------------------------------------------------------
+// Botao primario com a cor secundaria do design system
+// ---------------------------------------------------------------------------
+.sbadmin-btn-primary {
+    background-color: $sbadmin-color-secondary;
+    border-color: $sbadmin-color-secondary;
+
+    &:hover, &:focus {
+        background-color: darken($sbadmin-color-secondary, 8%);
+        border-color: darken($sbadmin-color-secondary, 8%);
+    }
+}

@@ -1,0 +1,13 @@
+// =============================================================================
+// SB Admin - entrypoint SCSS do pacote
+//
+// Importe este arquivo a partir do resources/sass/app.scss do seu projeto
+// (ou publique via `php artisan vendor:publish --tag=sbadmin-assets` e
+// importe de resources/sass/sbadmin/app.scss). Veja o README do pacote.
+// =============================================================================
+
+@import 'variables';
+@import 'bootstrap/scss/bootstrap';
+@import 'theme';
+@import 'layout';
+@import 'components';

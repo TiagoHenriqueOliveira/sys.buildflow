@@ -1,0 +1,445 @@
+// =============================================================================
+// Layout: wrapper, sidebar, topbar e comportamento responsivo (off-canvas)
+// =============================================================================
+
+[x-cloak] { display: none !important; }
+
+html, body {
+    height: 100%;
+}
+
+body.sbadmin-body {
+    background-color: var(--sbadmin-bg);
+    color: var(--sbadmin-text);
+    min-height: 100vh;
+    font-family: $sbadmin-font-family;
+}
+
+.sbadmin-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar
+// ---------------------------------------------------------------------------
+.sbadmin-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: $sbadmin-sidebar-width;
+    background-color: var(--sbadmin-sidebar-bg);
+    color: var(--sbadmin-sidebar-text);
+    display: flex;
+    flex-direction: column;
+    z-index: 1030;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transition: width $sbadmin-transition, transform $sbadmin-transition;
+}
+
+.sbadmin-sidebar-brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $sbadmin-space-2;
+    height: $sbadmin-topbar-height;
+    padding-inline: $sbadmin-space-4;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sbadmin-brand-link {
+    display: flex;
+    align-items: center;
+    gap: $sbadmin-space-2;
+    color: #fff;
+    text-decoration: none;
+    font-weight: $sbadmin-font-weight-semibold;
+    font-size: 1.05rem;
+    min-width: 0;
+}
+
+.sbadmin-brand-icon { font-size: 1.4rem; color: $sbadmin-color-secondary; }
+.sbadmin-brand-logo { height: 28px; width: auto; }
+.sbadmin-brand-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sbadmin-sidebar-close {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: $sbadmin-space-1;
+}
+
+.sbadmin-nav { padding: $sbadmin-space-3 $sbadmin-space-2 $sbadmin-space-6; }
+.sbadmin-nav-list { list-style: none; margin: 0; padding: 0; }
+.sbadmin-nav-item { margin-bottom: 2px; }
+
+.sbadmin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: $sbadmin-space-3;
+    width: 100%;
+    padding: $sbadmin-space-3 $sbadmin-space-3;
+    border-radius: $sbadmin-radius;
+    color: var(--sbadmin-sidebar-text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: $sbadmin-font-weight-medium;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color $sbadmin-transition, color $sbadmin-transition;
+
+    &:hover {
+        background-color: var(--sbadmin-sidebar-hover-bg);
+        color: #fff;
+    }
+
+    &.is-active,
+    &.is-active-parent {
+        background-color: $sbadmin-color-secondary;
+        color: #fff;
+    }
+}
+
+.sbadmin-nav-icon { font-size: 1.05rem; width: 1.25rem; text-align: center; flex-shrink: 0; }
+.sbadmin-nav-label { flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sbadmin-nav-chevron {
+    font-size: 0.75rem;
+    transition: transform $sbadmin-transition;
+    flex-shrink: 0;
+
+    // bi-chevron-right como base: aponta pra direita "ha mais conteudo" quando
+    // fechado/flyout, e gira para baixo (accordion inline aberto) quando a
+    // sidebar esta expandida.
+    &.is-rotated { transform: rotate(90deg); }
+}
+
+.sbadmin-nav-group { position: relative; }
+
+.sbadmin-nav-badge { margin-left: auto; font-size: 0.65rem; flex-shrink: 0; }
+
+.sbadmin-submenu {
+    list-style: none;
+    margin: $sbadmin-space-1 0 0;
+
+    .sbadmin-nav-link { font-size: 0.85rem; }
+}
+
+// Flyout do submenu quando a sidebar esta recolhida (collapsed). Aparece em
+// qualquer profundidade - cada nivel abre seu proprio painel encadeado a
+// direita do item clicado (posicao top/left fixed calculada via Alpine em
+// sidebar-item.blade.php, escapando do overflow-x:hidden do <aside>). Fundo
+// claro (var(--sbadmin-surface), inves da cor escura da propria sidebar),
+// pra funcionar como um painel de conteudo autonomo - igual a um menu em
+// cascata - e continuar legivel/consistente tanto no tema claro quanto escuro.
+.sbadmin-submenu--flyout {
+    min-width: 220px;
+    width: max-content;
+    max-width: 320px;
+    max-height: calc(100vh - #{$sbadmin-space-6});
+    overflow-y: auto;
+    margin: 0;
+    background-color: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    border-radius: $sbadmin-radius;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.24);
+    padding: $sbadmin-space-2 0;
+    z-index: 1050;
+
+    // Dentro do flyout cada painel e sempre uma lista "plana": zera a
+    // indentacao por profundidade (herdada do modo accordion inline) e usa
+    // as cores do tema (nao as cores da sidebar escura) para o link/icone.
+    > li > .sbadmin-nav-link,
+    > li > .sbadmin-nav-group > .sbadmin-nav-link {
+        padding-left: $sbadmin-space-3 !important;
+        color: var(--sbadmin-text);
+
+        &:hover {
+            background-color: var(--sbadmin-surface-muted);
+            color: var(--sbadmin-text);
+        }
+
+        &.is-active,
+        &.is-active-parent {
+            background-color: $sbadmin-color-secondary;
+            color: #fff;
+        }
+    }
+
+    .sbadmin-nav-chevron { color: var(--sbadmin-text-muted); }
+}
+
+// ---------------------------------------------------------------------------
+// Conteudo / topbar
+// ---------------------------------------------------------------------------
+.sbadmin-content {
+    margin-left: $sbadmin-sidebar-width;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left $sbadmin-transition;
+}
+
+.sbadmin-topbar {
+    height: $sbadmin-topbar-height;
+    background-color: var(--sbadmin-topbar-bg);
+    border-bottom: 1px solid var(--sbadmin-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $sbadmin-space-3;
+    padding-inline: $sbadmin-space-4;
+    position: sticky;
+    top: 0;
+    z-index: 1010;
+}
+
+.sbadmin-topbar-start,
+.sbadmin-topbar-end {
+    display: flex;
+    align-items: center;
+    gap: $sbadmin-space-2;
+}
+
+.sbadmin-page-title {
+    font-size: 1.05rem;
+    font-weight: $sbadmin-font-weight-semibold;
+    margin: 0 0 0 $sbadmin-space-2;
+    color: var(--sbadmin-text);
+}
+
+.sbadmin-main {
+    padding: $sbadmin-space-5;
+    flex: 1;
+}
+
+.sbadmin-page-header { margin-bottom: $sbadmin-space-5; }
+.sbadmin-page-heading { font-size: 1.35rem; font-weight: $sbadmin-font-weight-semibold; margin: 0; color: var(--sbadmin-text); }
+.sbadmin-page-subheading { color: var(--sbadmin-text-muted); margin: $sbadmin-space-1 0 0; }
+
+// ---------------------------------------------------------------------------
+// Botoes de icone / dropdowns da topbar
+// ---------------------------------------------------------------------------
+.sbadmin-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: $sbadmin-radius;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--sbadmin-text-muted);
+    font-size: 1.1rem;
+
+    &:hover { background-color: var(--sbadmin-surface-muted); color: var(--sbadmin-text); }
+}
+
+.sbadmin-notif-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: $sbadmin-color-error;
+    border: 2px solid var(--sbadmin-topbar-bg);
+}
+
+.sbadmin-user-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $sbadmin-space-2;
+    padding: $sbadmin-space-1 $sbadmin-space-2;
+    border-radius: $sbadmin-radius;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--sbadmin-text);
+
+    &:hover { background-color: var(--sbadmin-surface-muted); }
+}
+
+.sbadmin-user-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: $sbadmin-color-secondary;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: $sbadmin-font-weight-semibold;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.sbadmin-user-name { font-size: 0.9rem; font-weight: $sbadmin-font-weight-medium; }
+.sbadmin-user-caret { font-size: 0.7rem; color: var(--sbadmin-text-muted); }
+
+.sbadmin-dropdown { position: relative; }
+
+.sbadmin-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    min-width: 260px;
+    background-color: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    border-radius: $sbadmin-radius;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+    padding: $sbadmin-space-2 0;
+    z-index: 1040;
+}
+
+.sbadmin-dropdown-menu-end { right: 0; }
+
+.sbadmin-dropdown-header {
+    padding: $sbadmin-space-2 $sbadmin-space-4;
+    font-size: 0.8rem;
+    font-weight: $sbadmin-font-weight-medium;
+    color: var(--sbadmin-text-muted);
+    border-bottom: 1px solid var(--sbadmin-border);
+    margin-bottom: $sbadmin-space-1;
+}
+
+.sbadmin-dropdown-empty {
+    padding: $sbadmin-space-4;
+    font-size: 0.85rem;
+    color: var(--sbadmin-text-muted);
+    text-align: center;
+}
+
+.sbadmin-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: $sbadmin-space-2 $sbadmin-space-4;
+    color: var(--sbadmin-text);
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    font-size: 0.9rem;
+
+    &:hover { background-color: var(--sbadmin-surface-muted); }
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar recolhida (desktop)
+// ---------------------------------------------------------------------------
+.sidebar-collapsed {
+    // overflow: visible (em vez do overflow-x: hidden padrao) para o tooltip
+    // (position: absolute, ver mais abaixo) nao ser cortado - ele fica fora
+    // da faixa de 76px do rail. O flyout dos submenus nao depende disso (usa
+    // position: fixed calculado via JS, que ja escapa do overflow sozinho).
+    // Como o rail so mostra icones, abrir mao do scroll vertical aqui e um
+    // trade-off aceitavel (accordion expandido continua com scroll normal).
+    .sbadmin-sidebar { width: $sbadmin-sidebar-collapsed-width; overflow: visible; }
+    .sbadmin-content { margin-left: $sbadmin-sidebar-collapsed-width; }
+    .sbadmin-brand-text { display: none; }
+
+    // Some apenas o rotulo/badge/chevron do gatilho de 1o nivel (marcados com
+    // .sbadmin-hide-collapsed em sidebar-item.blade.php) - o conteudo do
+    // flyout (2o nivel em diante) continua com labels visiveis normalmente.
+    .sbadmin-hide-collapsed { display: none; }
+
+    // Centraliza o icone apenas nos itens/gatilhos de 1o nivel; itens dentro
+    // do flyout (2o nivel+) continuam alinhados a esquerda normalmente.
+    .sbadmin-nav-link--top { justify-content: center; }
+
+    // No rail recolhido, o item ativo ganha um destaque sutil (fundo leve +
+    // barra azul a esquerda) em vez do preenchimento solido usado nos demais
+    // niveis - a barra fica visivel mesmo com o icone centralizado.
+    .sbadmin-nav-link--top.is-active,
+    .sbadmin-nav-link--top.is-active-parent {
+        position: relative;
+        background-color: var(--sbadmin-sidebar-hover-bg);
+        color: #fff;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            bottom: 6px;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background-color: $sbadmin-color-secondary;
+        }
+    }
+
+    // Tooltip no hover dos itens de 1o nivel: com o rail recolhido o rotulo
+    // fica escondido (so icone), entao ao passar o mouse mostramos o nome da
+    // opcao de forma nitida - fundo escuro solido com texto branco, alto
+    // contraste independente do tema claro/escuro da pagina.
+    .sbadmin-nav-link--top {
+        position: relative;
+
+        &::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: calc(100% + 12px);
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #0F172A;
+            color: #fff;
+            padding: 0.4rem 0.75rem;
+            border-radius: $sbadmin-radius-sm;
+            font-size: 0.8rem;
+            font-weight: $sbadmin-font-weight-medium;
+            line-height: 1.2;
+            white-space: nowrap;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 120ms ease, visibility 120ms ease;
+            z-index: 1060;
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 80ms;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Off-canvas no mobile
+// ---------------------------------------------------------------------------
+.sbadmin-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    z-index: 1020;
+}
+
+@include media-breakpoint-down(lg) {
+    .sbadmin-sidebar {
+        width: $sbadmin-sidebar-width !important;
+        transform: translateX(-100%);
+    }
+
+    .sbadmin-content { margin-left: 0 !important; }
+
+    .sbadmin-main { padding: $sbadmin-space-4; }
+}
+
+// Estado aberto do off-canvas: classe aplicada diretamente no <aside> (nao
+// apenas no wrapper ancestral), para uma sobreposicao de especificidade
+// simples e inequivoca sobre a regra de fechado acima.
+.sbadmin-sidebar.is-open {
+    transform: translateX(0) !important;
+}
+
+@include media-breakpoint-up(lg) {
+    .sbadmin-sidebar-close { display: none; }
+}

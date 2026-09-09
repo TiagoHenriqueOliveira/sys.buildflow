@@ -1,0 +1,41 @@
+// =============================================================================
+// Custom properties de tema (claro/escuro), controladas por
+// [data-theme] na tag <html>. Todos os componentes sbadmin devem consumir
+// estas variaveis em vez de cores fixas, para funcionar nos dois temas.
+// =============================================================================
+
+:root {
+    --sbadmin-bg: #{$sbadmin-bg-light};
+    --sbadmin-surface: #ffffff;
+    --sbadmin-surface-muted: #F1F5F9;
+    --sbadmin-text: #{$sbadmin-color-primary};
+    --sbadmin-text-muted: #64748B;
+    --sbadmin-border: #E2E8F0;
+
+    --sbadmin-sidebar-bg: #{$sbadmin-color-primary};
+    --sbadmin-sidebar-text: #CBD5E1;
+    --sbadmin-sidebar-text-muted: #94A3B8;
+    --sbadmin-sidebar-active-bg: #{$sbadmin-color-secondary};
+    --sbadmin-sidebar-active-text: #ffffff;
+    --sbadmin-sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+
+    --sbadmin-topbar-bg: #ffffff;
+}
+
+:root[data-theme='dark'] {
+    --sbadmin-bg: #{$sbadmin-bg-dark};
+    --sbadmin-surface: #1E293B;
+    --sbadmin-surface-muted: #17233A;
+    --sbadmin-text: #E2E8F0;
+    --sbadmin-text-muted: #94A3B8;
+    --sbadmin-border: #334155;
+
+    --sbadmin-sidebar-bg: #0B1220;
+    --sbadmin-sidebar-text: #94A3B8;
+    --sbadmin-sidebar-text-muted: #64748B;
+    --sbadmin-sidebar-active-bg: #{$sbadmin-color-secondary};
+    --sbadmin-sidebar-active-text: #ffffff;
+    --sbadmin-sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+
+    --sbadmin-topbar-bg: #1E293B;
+}

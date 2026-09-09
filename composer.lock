@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3be3f1b741016d52683ba4f0a49d5dd3",
+    "content-hash": "db53f46c39432cad2d04798dddc4fb62",
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -3754,6 +3754,48 @@
                 "source": "https://github.com/MyIntervals/PHP-CSS-Parser/tree/v9.3.0"
             },
             "time": "2026-03-03T17:31:43+00:00"
+        },
+        {
+            "name": "sbadmin/dashboard",
+            "version": "dev-feature/fae",
+            "dist": {
+                "type": "path",
+                "url": "packages/sbadmin",
+                "reference": "9b91370147114af096eaf86e884ad83e97de681e"
+            },
+            "require": {
+                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                "php": "^8.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "SbAdmin\\Dashboard\\SbAdminServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "SbAdmin\\Dashboard\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Componentes Blade reutilizaveis para dashboards administrativos, com Bootstrap 5 e Alpine.js",
+            "keywords": [
+                "admin",
+                "alpinejs",
+                "blade",
+                "bootstrap",
+                "dashboard",
+                "laravel",
+                "template"
+            ],
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "symfony/clock",
@@ -9193,7 +9235,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "sbadmin/dashboard": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

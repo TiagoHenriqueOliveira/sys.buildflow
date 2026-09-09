@@ -1,0 +1,24 @@
+{
+    "name": "sbadmin/dashboard",
+    "description": "Componentes Blade reutilizaveis para dashboards administrativos, com Bootstrap 5 e Alpine.js",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "blade", "bootstrap", "admin", "dashboard", "alpinejs", "template"],
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SbAdmin\\Dashboard\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "SbAdmin\\Dashboard\\SbAdminServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable"
+}
