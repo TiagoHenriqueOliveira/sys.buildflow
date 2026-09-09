@@ -10,12 +10,14 @@
   </testsuites>
   <php>
     <env name="APP_ENV" value="testing"/>
-    <!-- DB_CONNECTION/DB_DATABASE não são fixados aqui de propósito: o
-             schema real (database/schema/mysql-schema.sql) é MySQL-only, e
+    <!-- DB_CONNECTION/DB_DATABASE não são fixados aqui de propósito:
              fixar sqlite aqui sobrepunha o .env.testing e impedia qualquer
              tabela de ser criada num banco de teste do zero. Ver
-             .env.testing (DB_DATABASE=buildflow_test) e a migration
-             2026_08_20_095959_baseline_schema_dump.php. -->
+             .env.testing (DB_DATABASE=buildflow_test) e as migrations
+             versionadas por tabela em database/migrations/2026_08_20_09*
+             (RNF07 — ver 2026_08_20_090000_create_usuarios_table.php para
+             o histórico completo; database/schema/baseline-schema.sql é
+             mantido só como referência, nenhuma migration mais o lê). -->
     <env name="QUEUE_CONNECTION" value="sync"/>
     <env name="TELESCOPE_ENABLED" value="false"/>
   </php>
