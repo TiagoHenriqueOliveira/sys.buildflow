@@ -8,6 +8,10 @@ use App\Http\Controllers\Api\Mcl\AppController as MclAppController;
 use App\Http\Controllers\Api\Mcl\AtendimentosController as MclAtendimentosController;
 use App\Http\Controllers\Api\Mcl\RelatoriosController as MclRelatoriosController;
 use App\Http\Controllers\Api\Mcl\CatalogoController as MclCatalogoController;
+use App\Http\Controllers\Api\Fae\AppController as FaeAppController;
+use App\Http\Controllers\Api\Fae\AtendimentosController as FaeAtendimentosController;
+use App\Http\Controllers\Api\Fae\RelatoriosController as FaeRelatoriosController;
+use App\Http\Controllers\Api\Fae\CatalogoController as FaeCatalogoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -141,6 +145,73 @@ Route::prefix('mcl/v1')->group(function () {
         Route::get('/relatorios/{id}/anexos',                    [MclRelatoriosController::class, 'getAnexos']);
         Route::post('/relatorios/{id}/anexos',                   [MclRelatoriosController::class, 'uploadAnexos']);
         Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [MclRelatoriosController::class, 'destroyAnexo']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| FAE Bioenergia â€” API v1
+| Base URL: /api/fae/v1
+| Auth: Bearer token (Laravel Sanctum)
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('fae/v1')->group(function () {
+
+    // PÃºblica
+    Route::post('/login',  [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::get('/app/versao', [FaeAppController::class, 'versao']);
+
+    // Protegidas
+    Route::middleware('auth:sanctum')->group(function () {
+
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me',      [AuthController::class, 'me']);
+
+        // CatÃ¡logos (somente leitura)
+        Route::get('/catalogos/ocorrencias', [FaeCatalogoController::class, 'ocorrencias']);
+
+        // Atendimentos
+        Route::get('/atendimentos',      [FaeAtendimentosController::class, 'index']);
+        Route::get('/atendimentos/{id}', [FaeAtendimentosController::class, 'show']);
+        Route::put('/atendimentos/{id}/status', [FaeAtendimentosController::class, 'updateStatus']);
+
+        // RelatÃ³rios de um atendimento
+        Route::get('/atendimentos/{aten_id}/relatorios',  [FaeRelatoriosController::class, 'index']);
+        Route::post('/atendimentos/{aten_id}/relatorios', [FaeRelatoriosController::class, 'store']);
+
+        // RelatÃ³rio â€” leitura
+        Route::get('/relatorios/{id}', [FaeRelatoriosController::class, 'show']);
+
+        // RelatÃ³rio â€” seÃ§Ãµes de escrita
+        Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais']);
+        Route::put('/relatorios/{id}/horarios',                [FaeRelatoriosController::class, 'updateHorarios']);
+        Route::put('/relatorios/{id}/clima',                   [FaeRelatoriosController::class, 'updateClima']);
+        Route::put('/relatorios/{id}/status',                  [FaeRelatoriosController::class, 'updateStatus']);
+
+        // ServiÃ§os (1:N)
+        Route::post('/relatorios/{id}/servicos',             [FaeRelatoriosController::class, 'storeServico']);
+        Route::delete('/relatorios/{id}/servicos/{serv_id}', [FaeRelatoriosController::class, 'destroyServico']);
+
+        // PeÃ§as (1:N)
+        Route::post('/relatorios/{id}/pecas',             [FaeRelatoriosController::class, 'storePeca']);
+        Route::delete('/relatorios/{id}/pecas/{peca_id}', [FaeRelatoriosController::class, 'destroyPeca']);
+
+        // Itens de descriÃ§Ã£o (texto + foto opcional) â€” RF001, multipart/form-data
+        Route::post('/relatorios/{id}/descricao-itens',              [FaeRelatoriosController::class, 'storeDescricaoItem']);
+        Route::delete('/relatorios/{id}/descricao-itens/{item_id}',  [FaeRelatoriosController::class, 'destroyDescricaoItem']);
+
+        // OcorrÃªncias
+        Route::post('/relatorios/{id}/ocorrencias',                    [FaeRelatoriosController::class, 'storeOcorrencia']);
+        Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}',  [FaeRelatoriosController::class, 'destroyOcorrencia']);
+
+        // Assinaturas (base64)
+        Route::post('/relatorios/{id}/assinaturas', [FaeRelatoriosController::class, 'storeAssinaturas']);
+
+        // Fotos / vÃ­deos / arquivos (multipart/form-data)
+        Route::get('/relatorios/{id}/anexos',                    [FaeRelatoriosController::class, 'getAnexos']);
+        Route::post('/relatorios/{id}/anexos',                   [FaeRelatoriosController::class, 'uploadAnexos']);
+        Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [FaeRelatoriosController::class, 'destroyAnexo']);
     });
 });
 
