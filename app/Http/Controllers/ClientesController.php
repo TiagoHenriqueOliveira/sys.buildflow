@@ -5,73 +5,77 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ClienteRequest;
 use App\Models\Cliente;
 use App\Repositories\ClienteRepository;
-use App\Services\DataTableService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ClientesController extends Controller
 {
     public function __construct(
         private ClienteRepository $repository,
-        private DataTableService $dataTable,
     ) {}
 
-    public function index(Request $request)
+    /**
+     * Tela de referência da migração pro pacote sbadmin/dashboard (ver
+     * CLAUDE.md, seção "Template visual"): a listagem deixou de ser um
+     * shell Blade + endpoint JSON no protocolo server-side da DataTables
+     * (ver git history / feature/mcl) e passou a ser uma renderização Blade
+     * normal com paginação nativa do Eloquent, consumida diretamente por
+     * <x-sbadmin::table :paginator="$clientes">. Busca client-side e
+     * ordenação por coluna que a DataTables oferecia de graça não têm
+     * equivalente direto no novo componente — a busca foi reimplementada
+     * no backend via querystring (?busca=), e a ordenação foi descartada
+     * nesta fase (lista sempre ordenada por nome; não havia botões de
+     * exportação Excel/PDF nesta tela para reavaliar).
+     */
+    public function index(Request $request): View
     {
-        if ($request->ajax()) {
-            return response()->json(
-                $this->dataTable->process(
-                    $request,
-                    Cliente::query(),
-                    searchable: ['cli_nome', 'cli_cnpj', 'cli_cidade', 'cli_email'],
-                    orderable:  [
-                        'acoes'       => null,
-                        'cli_nome'    => 'cli_nome',
-                        'cli_cnpj'    => 'cli_cnpj',
-                        'cli_cidade'  => 'cli_cidade',
-                        'cli_uf'      => 'cli_uf',
-                        'cli_telefone'=> 'cli_telefone',
-                        'cli_email'   => 'cli_email',
-                        'status'      => 'cli_ativo',
-                    ],
-                    mapper: fn($c) => [
-                        'acoes'       => view('clientes.partials.acoes', compact('c'))->render(),
-                        'cli_nome'    => e($c->cli_nome),
-                        'cli_cnpj'   => e($c->cli_cnpj),
-                        'cli_cidade'  => e($c->cli_cidade),
-                        'cli_uf'      => e($c->cli_uf),
-                        'cli_telefone'=> e($c->cli_telefone),
-                        'cli_email'   => e($c->cli_email),
-                        'cli_ativo'   => (int) $c->cli_ativo,
-                        'status'      => $c->cli_ativo ? 'Ativo' : 'Desativado',
-                    ],
-                )
-            );
-        }
+        $busca = trim((string) $request->get('busca', ''));
 
-        return view('clientes.index');
+        $clientes = Cliente::query()
+            ->when($busca !== '', function ($query) use ($busca) {
+                $query->where(function ($q) use ($busca) {
+                    $q->where('cli_nome', 'like', "%{$busca}%")
+                        ->orWhere('cli_cnpj', 'like', "%{$busca}%")
+                        ->orWhere('cli_cidade', 'like', "%{$busca}%")
+                        ->orWhere('cli_email', 'like', "%{$busca}%");
+                });
+            })
+            ->orderBy('cli_nome')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('clientes.index', [
+            'clientes' => $clientes,
+            'busca' => $busca,
+        ]);
     }
 
-    public function store(ClienteRequest $request)
+    /**
+     * O modal de criação/edição deixou de submeter via AJAX (fetch/$.ajax +
+     * JSON de resposta) e passou a ser um <form> comum, com redirect +
+     * mensagem flash em caso de sucesso e o padrão nativo do Laravel
+     * (redirect back + $errors + old()) em caso de validação — os
+     * componentes <x-sbadmin::form.*> já leem old()/$errors sozinhos, sem
+     * precisar de nenhuma renderização de erro feita à mão em JS.
+     */
+    public function store(ClienteRequest $request): RedirectResponse
     {
-        try {
-            $this->repository->create($request->validated());
-            return response()->json(['message' => 'Cadastrado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao cadastrar.'], 500);
-        }
+        $cliente = $this->repository->create($request->validated());
+
+        return redirect()
+            ->route('clientes.index')
+            ->with('success', 'Cliente "'.$cliente->cli_nome.'" cadastrado com sucesso.');
     }
 
-    public function update(ClienteRequest $request, int $id)
+    public function update(ClienteRequest $request, int $id): RedirectResponse
     {
-        try {
-            $this->repository->update($id, $request->validated());
-            return response()->json(['message' => 'Atualizado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar.'], 500);
-        }
+        $cliente = $this->repository->update($id, $request->validated());
+
+        return redirect()
+            ->route('clientes.index')
+            ->with('success', 'Cliente "'.$cliente->cli_nome.'" atualizado com sucesso.');
     }
 
     public function autoComplete(Request $request): JsonResponse
