@@ -345,7 +345,18 @@ body.sbadmin-body {
 // ---------------------------------------------------------------------------
 // Sidebar recolhida (desktop)
 // ---------------------------------------------------------------------------
-.sidebar-collapsed {
+// Aplicado direto via media query (nao mais uma classe .sidebar-collapsed
+// dependente do Alpine) - como a sidebar e SEMPRE recolhida no desktop
+// (decisao de produto, sem toggle de expandir), depender de uma classe
+// reativa adicionada so depois do JS inicializar causava um "flash" visivel
+// a cada navegacao de pagina: a sidebar nascia larga/com rotulos (CSS padrao
+// pre-Alpine) e so encolhia pro rail de icones quando o Alpine terminava de
+// processar x-data/:class, alguns instantes depois - lido pelo usuario como
+// um efeito de "abrir e fechar tipo accordion" em TODO clique do menu (cada
+// item leva a uma rota/pagina nova, recarregando a sidebar do zero). Como
+// media query pura, o rail ja nasce correto no primeiro paint, sem esperar
+// JS nenhum.
+@include media-breakpoint-up(lg) {
     // overflow: visible (em vez do overflow-x: hidden padrao) para o tooltip
     // (position: absolute, ver mais abaixo) nao ser cortado - ele fica fora
     // da faixa de 76px do rail. O flyout dos submenus nao depende disso (usa

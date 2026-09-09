@@ -4,11 +4,12 @@
 //
 // "collapsed" e permanentemente true (decisao do produto: sidebar sempre
 // recolhida no desktop, sem toggle de expandir - ver topbar.blade.php, que
-// nao tem mais o botao que alterava esse valor). Continua uma propriedade
-// normal do x-data (nao uma constante) porque outras expressoes Alpine
-// (ex.: :class="{ 'sidebar-collapsed': collapsed && isDesktop }" no layout,
-// e o flyout do submenu em sidebar-item.blade.php) referenciam "collapsed"
-// reativamente; so nao existe mais nenhum caminho de codigo que a mude.
+// nao tem mais o botao que alterava esse valor). O rail de icones em si e
+// puro CSS (media query em _layout.scss, nao depende mais de "collapsed"),
+// mas a propriedade continua existindo porque o flyout do submenu em
+// sidebar-item.blade.php ainda referencia "collapsed && isDesktop"
+// reativamente pra decidir flyout vs. accordion inline e calcular a posicao
+// do painel; so nao existe mais nenhum caminho de codigo que mude o valor.
 export function sidebarState() {
     return {
         collapsed: true,

@@ -56,45 +56,49 @@
                  cada filtro preenchido restringe ainda mais o resultado).
                  Substituem a busca unica que existia antes (removida a
                  pedido do cliente). --}}
-            <div class="sbadmin-card-body d-flex flex-wrap gap-2 align-items-end">
-                <div style="min-width: 160px;">
-                    <label for="f_nome" class="sbadmin-form-label">Nome</label>
-                    <input type="text" id="f_nome" name="f_nome" value="{{ $filtroNome }}" class="form-control sbadmin-form-control" placeholder="Nome">
+            <div class="sbadmin-card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-6 col-md-3">
+                        <label for="f_nome" class="sbadmin-form-label">Nome</label>
+                        <input type="text" id="f_nome" name="f_nome" value="{{ $filtroNome }}" class="form-control sbadmin-form-control" placeholder="Nome">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="f_cnpj" class="sbadmin-form-label">CNPJ</label>
+                        <input type="text" id="f_cnpj" name="f_cnpj" value="{{ $filtroCnpj }}" class="form-control sbadmin-form-control" placeholder="CNPJ">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="f_cidade" class="sbadmin-form-label">Cidade</label>
+                        <input type="text" id="f_cidade" name="f_cidade" value="{{ $filtroCidade }}" class="form-control sbadmin-form-control" placeholder="Cidade">
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <label for="f_uf" class="sbadmin-form-label">UF</label>
+                        <input type="text" id="f_uf" name="f_uf" value="{{ $filtroUf }}" class="form-control sbadmin-form-control" placeholder="UF" maxlength="2">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="f_telefone" class="sbadmin-form-label">Telefone</label>
+                        <input type="text" id="f_telefone" name="f_telefone" value="{{ $filtroTelefone }}" class="form-control sbadmin-form-control" placeholder="Telefone">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="f_email" class="sbadmin-form-label">E-mail</label>
+                        <input type="text" id="f_email" name="f_email" value="{{ $filtroEmail }}" class="form-control sbadmin-form-control" placeholder="E-mail">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label for="f_status" class="sbadmin-form-label">Status</label>
+                        <select id="f_status" name="f_status" class="form-select sbadmin-form-control">
+                            <option value="">Todos</option>
+                            <option value="1" @selected($filtroStatus === '1')>Ativo</option>
+                            <option value="0" @selected($filtroStatus === '0')>Desativado</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar Filtro
+                        </button>
+                        @if($temFiltro)
+                            <a href="{{ route('clientes.index') }}" class="btn btn-link">Limpar</a>
+                        @endif
+                    </div>
                 </div>
-                <div style="min-width: 160px;">
-                    <label for="f_cnpj" class="sbadmin-form-label">CNPJ</label>
-                    <input type="text" id="f_cnpj" name="f_cnpj" value="{{ $filtroCnpj }}" class="form-control sbadmin-form-control" placeholder="CNPJ">
-                </div>
-                <div style="min-width: 140px;">
-                    <label for="f_cidade" class="sbadmin-form-label">Cidade</label>
-                    <input type="text" id="f_cidade" name="f_cidade" value="{{ $filtroCidade }}" class="form-control sbadmin-form-control" placeholder="Cidade">
-                </div>
-                <div style="min-width: 80px;">
-                    <label for="f_uf" class="sbadmin-form-label">UF</label>
-                    <input type="text" id="f_uf" name="f_uf" value="{{ $filtroUf }}" class="form-control sbadmin-form-control" placeholder="UF" maxlength="2">
-                </div>
-                <div style="min-width: 150px;">
-                    <label for="f_telefone" class="sbadmin-form-label">Telefone</label>
-                    <input type="text" id="f_telefone" name="f_telefone" value="{{ $filtroTelefone }}" class="form-control sbadmin-form-control" placeholder="Telefone">
-                </div>
-                <div style="min-width: 180px;">
-                    <label for="f_email" class="sbadmin-form-label">E-mail</label>
-                    <input type="text" id="f_email" name="f_email" value="{{ $filtroEmail }}" class="form-control sbadmin-form-control" placeholder="E-mail">
-                </div>
-                <div style="min-width: 150px;">
-                    <label for="f_status" class="sbadmin-form-label">Status</label>
-                    <select id="f_status" name="f_status" class="form-select sbadmin-form-control">
-                        <option value="">Todos</option>
-                        <option value="1" @selected($filtroStatus === '1')>Ativo</option>
-                        <option value="0" @selected($filtroStatus === '0')>Desativado</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-info">
-                    <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar Filtro
-                </button>
-                @if($temFiltro)
-                    <a href="{{ route('clientes.index') }}" class="btn btn-link">Limpar</a>
-                @endif
             </div>
         </form>
 

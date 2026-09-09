@@ -29,13 +29,17 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
 <body class="sbadmin-body">
-    {{-- 'sidebar-collapsed' so deve refletir o rail-de-icones do DESKTOP
-         (collapsed && isDesktop) - no mobile o off-canvas precisa continuar
-         em largura total com os rotulos visiveis (accordion), mesmo com
-         'collapsed' permanentemente true (ver sidebar.js). Sem o "&& isDesktop"
-         aqui, o mobile herdaria .sbadmin-hide-collapsed e apareceria como uma
-         sidebar cheia porem sem nenhum rotulo. --}}
-    <div class="sbadmin-wrapper" :class="{ 'sidebar-collapsed': collapsed && isDesktop }">
+    {{-- O rail de icones (desktop) NAO depende mais de uma classe adicionada
+         via Alpine (:class="{ 'sidebar-collapsed': ... }") - isso causava um
+         flash visivel a cada navegacao (a sidebar nascia larga/com rotulos,
+         no CSS padrao pre-Alpine, e so encolhia pro rail quando o JS
+         terminava de inicializar, lido como um efeito de "abrir e fechar" em
+         todo clique do menu). Agora o rail e puro CSS via media query
+         (min-width: lg em _layout.scss), ja correto desde o primeiro paint;
+         o mobile continua em largura total com rotulos (off-canvas) porque a
+         media query so atinge breakpoints desktop, sem precisar de nenhuma
+         logica condicional aqui. --}}
+    <div class="sbadmin-wrapper">
         <x-sbadmin::sidebar :menu="$menu" />
 
         <div class="sbadmin-backdrop" x-show="mobileOpen" x-transition.opacity x-cloak @click="mobileOpen = false" aria-hidden="true"></div>
