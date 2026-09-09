@@ -1,123 +1,134 @@
-<div class="modal fade" id="modal_usuario" tabindex="-1" role="dialog" aria-hidden="true">
+{{-- Modal de criação/edição de usuário — mesmo padrão do
+     clientes/modal.blade.php (ver comentários lá). Os campos de senha
+     (grupo com botão "Sugerir" + toggle de visibilidade) não têm componente
+     equivalente em <x-sbadmin::form.*>, então ficam com markup manual
+     (input-group Bootstrap 5) só trocando fontawesome por bootstrap-icons e
+     jQuery por listener vanilla (ver usuarios/index.blade.php). O campo
+     "Nível" era um par de radio buttons Bootstrap4; virou
+     <x-sbadmin::form.select> pelo mesmo motivo do Tipo de Data em
+     modelos_relatorios (sem <x-sbadmin::form.radio> no pacote). --}}
+<div class="modal-backdrop show" x-show="aberto" x-cloak></div>
+<div
+    class="modal"
+    :class="{ show: aberto }"
+    x-show="aberto"
+    style="display: block"
+    x-cloak
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal_usuario_label"
+    @keydown.escape.window="aberto = false"
+    @click.self="aberto = false"
+>
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-primary font-weight-bold" id="modal_usuario_label">
-                    Usuários | Novo
-                </h5>
-
-                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="modal_usuario_label" x-text="editando ? 'Usuários | Editar' : 'Usuários | Novo'"></h5>
+                <button type="button" class="btn-close" aria-label="Fechar" @click="aberto = false"></button>
             </div>
 
-            <div class="modal-body ui-front">
-                <form id="form_usuario" method="POST">
+            <div class="modal-body">
+                <form
+                    id="form_usuario"
+                    method="POST"
+                    action="{{ old('user_id') ? route('usuarios.update', old('user_id')) : route('usuarios.store') }}"
+                >
                     @csrf
-                    <input type="hidden" name="_method" id="user_method" value="POST">
-                    <input type="hidden" id="user_id" name="user_id">
+                    <input type="hidden" name="_method" id="user_method" value="{{ old('user_id') ? 'PUT' : 'POST' }}">
+                    <input type="hidden" id="user_id" name="user_id" value="{{ old('user_id') }}">
 
-                    <div class="form-group row">
-                        <label for="user_nome" class="col-sm-3 col-form-label font-weight-bold">Nome:</label>
-                        <div class="col-sm-9">
-                            <input type="text" class="form-control"
-                                id="user_nome" name="user_nome"
-                                maxlength="50" placeholder="Ex.: João da Silva">
+                    <x-sbadmin::form.input
+                        id="user_nome"
+                        name="user_nome"
+                        label="Nome"
+                        :value="old('user_nome')"
+                        maxlength="50"
+                        required
+                        placeholder="Ex.: João da Silva"
+                    />
+
+                    <x-sbadmin::form.input
+                        id="user_email"
+                        type="email"
+                        name="user_email"
+                        label="E-mail"
+                        :value="old('user_email')"
+                        maxlength="100"
+                        required
+                        placeholder="Ex.: joao@email.com"
+                    />
+
+                    <x-sbadmin::form.select
+                        id="user_nivel_acesso"
+                        name="user_nivel_acesso"
+                        label="Nível"
+                        :options="['0' => 'Administrador', '1' => 'Técnico']"
+                        :value="old('user_nivel_acesso')"
+                        placeholder="Selecione..."
+                        required
+                    />
+
+                    <div class="sbadmin-form-group">
+                        <label for="user_senha" class="sbadmin-form-label">Senha</label>
+                        <div class="input-group">
+                            <input
+                                type="password"
+                                class="form-control sbadmin-form-control @error('user_senha') is-invalid @enderror"
+                                id="user_senha"
+                                name="user_senha"
+                                maxlength="50"
+                                placeholder="Informe uma senha"
+                            >
+                            <button type="button" class="btn btn-outline-primary" id="btnSugerirSenha">Sugerir</button>
+                            <button type="button" class="btn btn-outline-secondary btn-toggle-password" data-target="#user_senha" aria-label="Mostrar/ocultar senha">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                            @error('user_senha')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="sbadmin-form-help" id="senha_help">No cadastro a senha é obrigatória. Na edição, preencha apenas se desejar alterá-la.</div>
+                    </div>
+
+                    <div class="sbadmin-form-group">
+                        <label for="user_senha_confirmation" class="sbadmin-form-label">Confirmar</label>
+                        <div class="input-group">
+                            <input
+                                type="password"
+                                class="form-control sbadmin-form-control @error('user_senha_confirmation') is-invalid @enderror"
+                                id="user_senha_confirmation"
+                                name="user_senha_confirmation"
+                                maxlength="50"
+                                placeholder="Confirme a senha"
+                            >
+                            <button type="button" class="btn btn-outline-secondary btn-toggle-password" data-target="#user_senha_confirmation" aria-label="Mostrar/ocultar senha">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                            @error('user_senha_confirmation')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
 
-                    <div class="form-group row">
-                        <label for="user_email" class="col-sm-3 col-form-label font-weight-bold">E-mail:</label>
-                        <div class="col-sm-9">
-                            <input type="email" class="form-control"
-                                id="user_email" name="user_email"
-                                maxlength="100" placeholder="Ex.: joao@email.com">
-                        </div>
+                    <div x-show="editando" x-cloak>
+                        <input type="hidden" name="user_ativo" value="0">
+                        <x-sbadmin::form.checkbox
+                            id="user_ativo"
+                            name="user_ativo"
+                            label="Ativo"
+                            :checked="old('user_ativo', true)"
+                        />
                     </div>
 
-                    <div class="form-group row">
-                        <label class="col-sm-3 col-form-label font-weight-bold">Nível:</label>
-                        <div class="col-sm-9">
-                            <div class="custom-control custom-radio custom-control-inline">
-                                <input type="radio" id="nivel_admin" name="user_nivel_acesso"
-                                    class="custom-control-input" value="0">
-                                <label class="custom-control-label" for="nivel_admin">Administrador</label>
-                            </div>
-
-                            <div class="custom-control custom-radio custom-control-inline">
-                                <input type="radio" id="nivel_tecnico" name="user_nivel_acesso"
-                                    class="custom-control-input" value="1">
-                                <label class="custom-control-label" for="nivel_tecnico">Técnico</label>
-                            </div>
-                        </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="submit" class="btn btn-primary sbadmin-btn-primary">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" @click="aberto = false">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i> Fechar
+                        </button>
                     </div>
-
-                    <div class="form-group row">
-                        <label for="user_senha" class="col-sm-3 col-form-label font-weight-bold">
-                            Senha:
-                        </label>
-                        <div class="col-sm-9">
-                            <div class="input-group">
-                                <input type="password" class="form-control"
-                                    id="user_senha" name="user_senha"
-                                    maxlength="50"
-                                    placeholder="Informe uma senha">
-
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-outline-primary" id="btnSugerirSenha">
-                                        Sugerir
-                                    </button>
-                                </div>
-
-                                <div class="input-group-append">
-                                    <button type="button"
-                                        class="btn btn-outline-secondary btn-toggle-password"
-                                        data-target="#user_senha">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <small class="form-text text-muted" id="senha_help">
-                                No cadastro a senha é obrigatória. Na edição, preencha apenas se desejar alterá-la.
-                            </small>
-                        </div>
-                    </div>
-
-                    <div class="form-group row">
-                        <label for="user_senha_confirmation" class="col-sm-3 col-form-label font-weight-bold">
-                            Confirmar:
-                        </label>
-                        <div class="col-sm-9">
-                            <div class="input-group">
-                                <input type="password" class="form-control"
-                                    id="user_senha_confirmation"
-                                    name="user_senha_confirmation"
-                                    maxlength="50"
-                                    placeholder="Confirme a senha">
-
-                                <div class="input-group-append">
-                                    <button type="button"
-                                        class="btn btn-outline-secondary btn-toggle-password"
-                                        data-target="#user_senha_confirmation">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group row d-none" id="div_user_ativo">
-                        <label for="user_ativo" class="col-sm-3 col-form-label font-weight-bold">Ativo:</label>
-                        <div class="col-sm-9">
-                            <div class="custom-control custom-checkbox col-form-label">
-                                <input type="checkbox" class="custom-control-input"
-                                    id="user_ativo" name="user_ativo" checked>
-                                <label class="custom-control-label" for="user_ativo" id="user_ativo_label">Ativo</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <x-modal-footer />
                 </form>
             </div>
         </div>

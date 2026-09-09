@@ -3,91 +3,97 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        
-        <title>Login | Sys.Buildflow</title>
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32x32.png') }}">
 
-        <!-- Bootstrap CSS -->
-        <link href="{{ asset('css/bootstrap/bootstrap.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/bootstrap/jquery-ui.min.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/bootstrap/jquery-ui.theme.css') }}" rel="stylesheet">
-        <!-- DataTables CSS -->
-        <link href="{{ asset('css/datatables/dataTables.bootstrap4.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/datatables/responsive.dataTables.css') }}" rel="stylesheet">
-        <!-- Fontawesome CSS -->
-        <link href="{{ asset('css/fontawesome-free/all.css') }}" rel="stylesheet">
-        <!-- Tema SB Admin 2 -->
-        <link href="{{ asset('css/sb-admin-2.css') }}" rel="stylesheet">
+        <title>Login | {{ config('sbadmin.brand.name', config('app.name')) }}</title>
+
+        {{-- Mesmo script do <x-sbadmin::layout> para evitar flash de tema errado
+             (le a preferencia salva ou o prefers-color-scheme do sistema). --}}
+        <script>
+            (function () {
+                var stored = localStorage.getItem('sbadmin-theme');
+                var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.setAttribute('data-bs-theme', theme);
+            })();
+        </script>
+
+        @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+
+        {{-- Teste de tipografia especifico desta tela de login (nao afeta o
+             restante do app, que continua em Poppins via design system). --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
         <style>
-            body {
-                height: 100vh;
+            body.sbadmin-login-body {
+                min-height: 100vh;
                 display: flex;
                 align-items: center;
-                background-color: #d4dbe9;
+                background-color: var(--sbadmin-bg);
+                font-family: 'Ubuntu Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
 
-            .login-card {
+            .sbadmin-login-card {
                 max-width: 400px;
                 margin: 0 auto;
                 padding: 2rem;
-                border-radius: 15px;
+                border-radius: var(--sbadmin-radius-lg, 0.75rem);
                 box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-                background: #ffffff;
+                background: var(--sbadmin-surface);
+                border: 1px solid var(--sbadmin-border);
             }
 
-            .logo {
+            .sbadmin-login-logo {
                 text-align: center;
                 margin-bottom: 2rem;
             }
 
-            .brand-name {
-                font-size: 2.2rem;
-                line-height: 1;
-                margin-bottom: 1.2rem;
+            .sbadmin-login-brand-h1 {
+                font-size: 1.75rem;
+                line-height: 1.2;
+                margin: 0 0 0.25rem;
                 font-weight: 700;
-                color: #0d6efd;
+                letter-spacing: 0.04em;
+                color: var(--sbadmin-text);
+                text-align: center;
             }
 
-            .brand-subtitle {
-                font-size: 1.1rem;
-                margin-bottom: 1rem;
-                color: #6c757d;
-            }
-
-            .form-label {
-                font-weight: 500;
-            }
-
-            .form-control:focus {
-                box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-                border-color: #86b7fe;
-            }
-
-            .btn-primary {
+            .sbadmin-login-brand-h2 {
+                font-size: 1.15rem;
+                line-height: 1.25;
+                margin: 0 0 0.5rem;
                 font-weight: 600;
+                color: var(--sbadmin-text);
+                text-align: center;
             }
 
-            .loading {
-                opacity: 0.7;
-                pointer-events: none;
+            .sbadmin-login-brand-h3 {
+                font-size: 0.9rem;
+                line-height: 1.35;
+                margin: 0 0 1rem;
+                font-weight: 400;
+                color: var(--sbadmin-text-muted);
+                text-align: center;
             }
         </style>
     </head>
 
-    <body>
+    <body class="sbadmin-login-body">
         <div class="container">
-            <div class="login-card">
-                <div class="logo">
-                    <div class="brand-name">Sys.Buildflow</div>
-                    <div class="brand-subtitle">Gestão de Obras, Manutenção & Assistência Técnica</div>
+            <div class="sbadmin-login-card">
+                <div class="sbadmin-login-logo">
+                    <h1 class="sbadmin-login-brand-h1">BUILDFLOW</h1>
+                    <h2 class="sbadmin-login-brand-h2">FAÉ Bioenergia</h2>
+                    <h3 class="sbadmin-login-brand-h3">Gestão Comercial, Start-up e Assistência Técnica</h3>
                 </div>
 
                 @if($errors->any())
-                    <div class="alert alert-danger">
+                    <x-sbadmin::alert type="error">
                         @foreach($errors->all() as $error)
-                            {{ $error }}<br>
+                            {{ $error }}@if(!$loop->last)<br>@endif
                         @endforeach
-                    </div>
+                    </x-sbadmin::alert>
                 @endif
 
                 <form method="POST" action="{{ route('login.post') }}" id="loginForm">
@@ -133,6 +139,8 @@
                 const spinner = document.getElementById('loadingSpinner');
 
                 button.classList.add('loading');
+                button.style.opacity = '0.7';
+                button.style.pointerEvents = 'none';
                 buttonText.textContent = 'Autenticando...';
                 spinner.classList.remove('d-none');
                 button.disabled = true;

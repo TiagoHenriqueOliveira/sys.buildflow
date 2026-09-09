@@ -1,60 +1,76 @@
-{{-- Modal Naturezas de Atendimento --}}
-<div class="modal fade" id="modal_natureza_atendimento" tabindex="-1" role="dialog" aria-labelledby="modalNaturezaAtendimentoLabel" aria-hidden="true">
+{{-- Modal de criação/edição de natureza de atendimento — mesmo padrão do
+     clientes/modal.blade.php (ver comentários lá): visibilidade via Alpine
+     (x-data no index.blade.php), <form> submetido normalmente (POST/PUT com
+     redirect), sem AJAX. --}}
+<div class="modal-backdrop show" x-show="aberto" x-cloak></div>
+<div
+    class="modal"
+    :class="{ show: aberto }"
+    x-show="aberto"
+    style="display: block"
+    x-cloak
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal_natureza_atendimento_label"
+    @keydown.escape.window="aberto = false"
+    @click.self="aberto = false"
+>
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-primary font-weight-bold" id="modal_natureza_atendimento_label">
-                    Naturezas de Atendimento | Novo
-                </h5>
-
-                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="modal_natureza_atendimento_label" x-text="editando ? 'Naturezas de Atendimento | Editar' : 'Naturezas de Atendimento | Novo'"></h5>
+                <button type="button" class="btn-close" aria-label="Fechar" @click="aberto = false"></button>
             </div>
 
-            <div class="modal-body ui-front">
-                <form id="form_natureza_atendimento" method="POST">
+            <div class="modal-body">
+                <form
+                    id="form_natureza_atendimento"
+                    method="POST"
+                    action="{{ old('nat_aten_id') ? route('naturezas-dos-atendimentos.update', old('nat_aten_id')) : route('naturezas-dos-atendimentos.store') }}"
+                >
                     @csrf
-                    <input type="hidden" name="_method" id="nat_aten_method" value="POST">
-                    <input type="hidden" id="nat_aten_id" name="nat_aten_id">
+                    <input type="hidden" name="_method" id="nat_aten_method" value="{{ old('nat_aten_id') ? 'PUT' : 'POST' }}">
+                    <input type="hidden" id="nat_aten_id" name="nat_aten_id" value="{{ old('nat_aten_id') }}">
 
-                    <div class="form-group row">
-                        <label for="nat_aten_descricao" class="col-sm-3 col-form-label font-weight-bold">
-                            Descrição:
-                        </label>
-                        <div class="col-sm-9">
-                            <input type="text"
-                                class="form-control"
-                                id="nat_aten_descricao"
-                                name="nat_aten_descricao"
-                                maxlength="50"
-                                placeholder="Ex.: Visita Técnica">
-                        </div>
+                    <x-sbadmin::form.input
+                        id="nat_aten_descricao"
+                        name="nat_aten_descricao"
+                        label="Descrição"
+                        :value="old('nat_aten_descricao')"
+                        maxlength="50"
+                        required
+                        placeholder="Ex.: Visita Técnica"
+                    />
+
+                    <x-sbadmin::form.select
+                        id="nat_aten_mod_relatorio_id"
+                        name="nat_aten_mod_relatorio_id"
+                        label="Modelo de Relatório"
+                        :options="$modelosRelatorios->pluck('mod_rel_descricao', 'mod_rel_id')->all()"
+                        :value="old('nat_aten_mod_relatorio_id')"
+                        placeholder="Selecione..."
+                        required
+                    />
+
+                    <div x-show="editando" x-cloak>
+                        <input type="hidden" name="nat_aten_ativo" value="0">
+                        <x-sbadmin::form.checkbox
+                            id="nat_aten_ativo"
+                            name="nat_aten_ativo"
+                            label="Ativo"
+                            :checked="old('nat_aten_ativo', true)"
+                        />
                     </div>
 
-                    <x-select-modelo-relatorio :modelosRelatorios="$modelosRelatorios" />
-
-                    <div class="form-group row d-none" id="div_nat_aten_ativo">
-                        <label for="nat_aten_ativo" class="col-sm-3 col-form-label font-weight-bold">
-                            Ativo:
-                        </label>
-                        <div class="col-sm-9">
-                            <div class="custom-control custom-checkbox col-form-label">
-                                <input type="checkbox"
-                                    class="custom-control-input"
-                                    id="nat_aten_ativo"
-                                    name="nat_aten_ativo"
-                                    checked>
-                                <label class="custom-control-label"
-                                    for="nat_aten_ativo"
-                                    id="nat_aten_ativo_label">
-                                    Ativo
-                                </label>
-                            </div>
-                        </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="submit" class="btn btn-primary sbadmin-btn-primary">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" @click="aberto = false">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i> Fechar
+                        </button>
                     </div>
-
-                    <x-modal-footer />
                 </form>
             </div>
         </div>

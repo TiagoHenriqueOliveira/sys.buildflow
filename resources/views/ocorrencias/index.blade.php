@@ -1,39 +1,104 @@
 <x-layout title="Ocorrências">
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <a href="javascript:void(0)"
-                class="btn btn-info btn-icon-split"
-                id="btnNovaOcorrencia">
-                <span class="icon text-white-50">
-                    <i class="fas fa-plus"></i>
-                </span>
-                <span class="text">Cadastrar</span>
-            </a>
+    <div
+        x-data="{
+            aberto: {{ $errors->any() ? 'true' : 'false' }},
+            editando: {{ old('ocor_id') ? 'true' : 'false' }},
+        }"
+    >
+        <div class="sbadmin-page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h2 class="sbadmin-page-heading">Ocorrências</h2>
+                <p class="sbadmin-page-subheading">Gerencie as ocorrências cadastradas no sistema.</p>
+            </div>
+            <button
+                type="button"
+                class="btn btn-primary sbadmin-btn-primary"
+                @click="editando = false; aberto = true; resetFormularioOcorrencia()"
+            >
+                <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
+            </button>
         </div>
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table id="dataTableOcorrencias"
-                    class="table table-translate dt-responsive"
-                    data-url="{{ route('ocorrencias.index') }}"
-                    width="100%"
-                    cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Ações</th>
-                            <th>Descrição</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        @if(session('success'))
+            <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
+        @endif
+
+        <form method="GET" action="{{ route('ocorrencias.index') }}" class="sbadmin-card mb-4">
+            <div class="sbadmin-card-body d-flex flex-wrap gap-2 align-items-end">
+                <div class="flex-grow-1" style="min-width: 240px;">
+                    <label for="busca" class="sbadmin-form-label">Buscar</label>
+                    <input
+                        type="text"
+                        id="busca"
+                        name="busca"
+                        value="{{ $busca }}"
+                        class="form-control sbadmin-form-control"
+                        placeholder="Descrição"
+                    >
+                </div>
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                </button>
+                @if($busca !== '')
+                    <a href="{{ route('ocorrencias.index') }}" class="btn btn-link">Limpar</a>
+                @endif
             </div>
-        </div>
+        </form>
+
+        <x-sbadmin::table
+            :headers="['Ações', 'Descrição', 'Status']"
+            :paginator="$ocorrencias"
+            :count="$ocorrencias->count()"
+            empty-message="Nenhuma ocorrência encontrada."
+        >
+            @foreach($ocorrencias as $o)
+                <tr>
+                    <td class="text-center">
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            data-id="{{ $o->ocor_id }}"
+                            data-descricao="{{ e($o->ocor_descricao) }}"
+                            data-ativo="{{ (int) $o->ocor_ativo }}"
+                            aria-label="Editar {{ e($o->ocor_descricao) }}"
+                            @click="editando = true; aberto = true; preencherFormularioOcorrencia($el.dataset)"
+                        >
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                        </button>
+                    </td>
+                    <td>{{ $o->ocor_descricao }}</td>
+                    <td>
+                        <x-sbadmin::badge :type="$o->ocor_ativo ? 'success' : 'error'">
+                            {{ $o->ocor_ativo ? 'Ativo' : 'Desativado' }}
+                        </x-sbadmin::badge>
+                    </td>
+                </tr>
+            @endforeach
+        </x-sbadmin::table>
+
+        @include('ocorrencias.modal')
     </div>
 
-    @include('ocorrencias.modal')
-
     @push('scripts')
-    <script src="{{ asset('js/app/ocorrencias.js') }}"></script>
+        <script>
+            function preencherFormularioOcorrencia(data) {
+                document.getElementById('ocor_id').value = data.id || '';
+                document.getElementById('ocor_descricao').value = data.descricao || '';
+                document.getElementById('ocor_ativo').checked = data.ativo === '1';
+
+                document.getElementById('ocor_method').value = 'PUT';
+                document.getElementById('form_ocorrencia').action = '{{ url('/ocorrencias') }}/' + data.id;
+            }
+
+            function resetFormularioOcorrencia() {
+                const form = document.getElementById('form_ocorrencia');
+                form.reset();
+
+                document.getElementById('ocor_id').value = '';
+                document.getElementById('ocor_ativo').checked = true;
+                document.getElementById('ocor_method').value = 'POST';
+                form.action = '{{ route('ocorrencias.store') }}';
+            }
+        </script>
     @endpush
 </x-layout>

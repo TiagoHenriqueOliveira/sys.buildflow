@@ -5,58 +5,55 @@ namespace App\Http\Controllers;
 use App\Http\Requests\OcorrenciaRequest;
 use App\Models\Ocorrencia;
 use App\Repositories\OcorrenciaRepository;
-use App\Services\DataTableService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class OcorrenciasController extends Controller
 {
     public function __construct(
         private OcorrenciaRepository $repository,
-        private DataTableService $dataTable,
     ) {}
 
-    public function index(Request $request)
+    /**
+     * Migrada pro pacote sbadmin/dashboard — mesmo padrão de
+     * clientes/naturezas_atendimentos (ver CLAUDE.md, seção "Template
+     * visual"): sem branch DataTables-JSON, paginação nativa consumida por
+     * <x-sbadmin::table>; busca via ?busca= na descrição, ordenação
+     * descartada (lista sempre por descrição).
+     */
+    public function index(Request $request): View
     {
-        if ($request->ajax()) {
-            return response()->json(
-                $this->dataTable->process(
-                    $request,
-                    Ocorrencia::query(),
-                    searchable: ['ocor_descricao'],
-                    orderable:  ['acoes' => null, 'ocor_descricao' => 'ocor_descricao', 'status' => 'ocor_ativo'],
-                    mapper: fn($o) => [
-                        'acoes'          => view('ocorrencias.partials.acoes', compact('o'))->render(),
-                        'ocor_descricao' => e($o->ocor_descricao),
-                        'ocor_ativo'     => (int) $o->ocor_ativo,
-                        'status'         => $o->ocor_ativo ? 'Ativo' : 'Desativado',
-                    ],
-                )
-            );
-        }
+        $busca = trim((string) $request->get('busca', ''));
 
-        return view('ocorrencias.index');
+        $ocorrencias = Ocorrencia::query()
+            ->when($busca !== '', fn ($query) => $query->where('ocor_descricao', 'like', "%{$busca}%"))
+            ->orderBy('ocor_descricao')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('ocorrencias.index', [
+            'ocorrencias' => $ocorrencias,
+            'busca' => $busca,
+        ]);
     }
 
-    public function store(OcorrenciaRequest $request)
+    public function store(OcorrenciaRequest $request): RedirectResponse
     {
-        try {
-            $this->repository->create($request->validated());
-            return response()->json(['message' => 'Cadastrado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao cadastrar.'], 500);
-        }
+        $ocorrencia = $this->repository->create($request->validated());
+
+        return redirect()
+            ->route('ocorrencias.index')
+            ->with('success', 'Ocorrência "'.$ocorrencia->ocor_descricao.'" cadastrada com sucesso.');
     }
 
-    public function update(OcorrenciaRequest $request, int $id)
+    public function update(OcorrenciaRequest $request, int $id): RedirectResponse
     {
-        try {
-            $this->repository->update($id, $request->validated());
-            return response()->json(['message' => 'Atualizado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar.'], 500);
-        }
+        $ocorrencia = $this->repository->update($id, $request->validated());
+
+        return redirect()
+            ->route('ocorrencias.index')
+            ->with('success', 'Ocorrência "'.$ocorrencia->ocor_descricao.'" atualizada com sucesso.');
     }
 
     public function autoComplete(Request $request)

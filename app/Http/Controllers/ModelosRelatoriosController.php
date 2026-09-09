@@ -5,59 +5,54 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ModeloRelatorioRequest;
 use App\Models\ModeloRelatorio;
 use App\Repositories\ModeloRelatorioRepository;
-use App\Services\DataTableService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ModelosRelatoriosController extends Controller
 {
     public function __construct(
         private ModeloRelatorioRepository $repository,
-        private DataTableService $dataTable,
     ) {}
 
-    public function index(Request $request)
+    /**
+     * Migrada pro pacote sbadmin/dashboard — mesmo padrão das demais telas
+     * de cadastro simples (ver CLAUDE.md, seção "Template visual"): sem
+     * branch DataTables-JSON, paginação nativa consumida por
+     * <x-sbadmin::table>; busca via ?busca= na descrição, ordenação
+     * descartada (lista sempre por descrição).
+     */
+    public function index(Request $request): View
     {
-        if ($request->ajax()) {
-            return response()->json(
-                $this->dataTable->process(
-                    $request,
-                    ModeloRelatorio::query(),
-                    searchable: ['mod_rel_descricao'],
-                    orderable:  ['acoes' => null, 'mod_rel_descricao' => 'mod_rel_descricao', 'tipo_data' => 'mod_rel_tp_data', 'status' => 'mod_rel_ativo'],
-                    mapper: fn($m) => [
-                        'acoes'                          => view('modelos_relatorios.partials.acoes', compact('m'))->render(),
-                        'mod_rel_descricao'              => e($m->mod_rel_descricao),
-                        'mod_rel_tp_data'                => (int) $m->mod_rel_tp_data,
-                        'tipo_data'                      => ((int) $m->mod_rel_tp_data === 0) ? 'Relatório Diário' : 'Relatório Período',
-                        'mod_rel_ativo'                  => (int) $m->mod_rel_ativo,
-                        'status'                         => $m->mod_rel_ativo ? 'Ativo' : 'Desativado',
-                    ],
-                )
-            );
-        }
+        $busca = trim((string) $request->get('busca', ''));
 
-        return view('modelos_relatorios.index');
+        $modelos = ModeloRelatorio::query()
+            ->when($busca !== '', fn ($query) => $query->where('mod_rel_descricao', 'like', "%{$busca}%"))
+            ->orderBy('mod_rel_descricao')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('modelos_relatorios.index', [
+            'modelos' => $modelos,
+            'busca' => $busca,
+        ]);
     }
 
-    public function store(ModeloRelatorioRequest $request)
+    public function store(ModeloRelatorioRequest $request): RedirectResponse
     {
-        try {
-            $this->repository->create($request->validated());
-            return response()->json(['message' => 'Cadastrado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao cadastrar.'], 500);
-        }
+        $modelo = $this->repository->create($request->validated());
+
+        return redirect()
+            ->route('modelos-de-relatorios.index')
+            ->with('success', 'Modelo de relatório "'.$modelo->mod_rel_descricao.'" cadastrado com sucesso.');
     }
 
-    public function update(ModeloRelatorioRequest $request, int $id)
+    public function update(ModeloRelatorioRequest $request, int $id): RedirectResponse
     {
-        try {
-            $this->repository->update($id, $request->validated());
-            return response()->json(['message' => 'Atualizado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar.'], 500);
-        }
+        $modelo = $this->repository->update($id, $request->validated());
+
+        return redirect()
+            ->route('modelos-de-relatorios.index')
+            ->with('success', 'Modelo de relatório "'.$modelo->mod_rel_descricao.'" atualizado com sucesso.');
     }
 }

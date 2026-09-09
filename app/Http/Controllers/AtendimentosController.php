@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AtendimentoStatus;
 use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
 use App\Http\Requests\AtendimentoEquipamentoRequest;
 use App\Http\Requests\AtendimentoRequest;
@@ -13,7 +12,6 @@ use App\Models\Usuario;
 use App\Repositories\AtendimentoRepository;
 use App\Repositories\AtendimentoEquipamentoRepository;
 use App\Services\AuditService;
-use App\Services\DataTableService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +24,6 @@ class AtendimentosController extends Controller
     public function __construct(
         private AtendimentoRepository $repository,
         private AtendimentoEquipamentoRepository $equipamentoRepository,
-        private DataTableService $dataTable,
     ) {}
 
     // Item 2.2: busca o atendimento já garantindo que o usuário autenticado
@@ -39,57 +36,48 @@ class AtendimentosController extends Controller
         return $atendimento;
     }
 
+    /**
+     * Migrada pro pacote sbadmin/dashboard (ver CLAUDE.md, seção "Template
+     * visual"): sem branch DataTables-JSON, paginação nativa consumida por
+     * <x-sbadmin::table>; busca via ?busca= (cliente/técnico/proposta/
+     * natureza), ordenação descartada (lista sempre por status + período,
+     * igual ao antigo AtendimentoRepository::all()). O filtro "técnico só
+     * vê o seu, admin vê tudo" (Atendimento::idVisivelPara) e o destaque
+     * visual de atendimento em atraso (antes um fnRowCallback client-side
+     * da DataTable) foram preservados na query/view.
+     *
+     * store/update e os demais endpoints AJAX (observações, anexos,
+     * equipamentos) continuam retornando JSON — o modal de cadastro é um
+     * fluxo com abas que precisa do aten_id imediatamente após criar o
+     * atendimento pra liberar as abas de Observações/Equipamentos/Anexos
+     * sem recarregar a página; convertê-los pro padrão redirect+flash das
+     * telas simples removeria essa funcionalidade, não é só uma questão de
+     * template. Ver resources/views/atendimentos/index.blade.php.
+     */
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            try {
-            $usuario = Auth::user();
-            $filtroUsuarioId = Atendimento::idVisivelPara($usuario);
+        $usuarioLogado = Auth::user();
+        $filtroUsuarioId = Atendimento::idVisivelPara($usuarioLogado);
+        $busca = trim((string) $request->get('busca', ''));
 
-            return response()->json(
-                $this->dataTable->process(
-                    $request,
-                    $this->repository->query($filtroUsuarioId),
-                    searchable: [
-                        'clientes.cli_nome',
-                        'usuarios.user_nome',
-                        'atendimentos.aten_nr_proposta',
-                        'naturezas_atendimentos.nat_aten_descricao',
-                    ],
-                    searchableRaw: [
-                        "CASE atendimentos.aten_status WHEN 0 THEN 'Não iniciada' WHEN 1 THEN 'Paralisada' WHEN 2 THEN 'Em andamento' WHEN 3 THEN 'Concluída' END",
-                    ],
-                    orderable:  [
-                        'acoes'       => null,
-                        'natureza'    => null,
-                        'usuario'     => 'usuarios.user_nome',
-                        'cliente'     => null,
-                        'nr_proposta' => 'aten_nr_proposta',
-                        'periodo'     => 'aten_dt_inicio',
-                        'status'      => 'aten_status',
-                    ],
-                    mapper: fn($a) => [
-                        'acoes'        => view('atendimentos.partials.acoes', compact('a'))->render(),
-                        'natureza'     => e(optional($a->natureza)->nat_aten_descricao),
-                        'usuario'      => e(optional($a->usuario)->user_nome),
-                        'cliente'      => e(optional($a->cliente)->cli_nome),
-                        'nr_proposta'  => e($a->aten_nr_proposta ?? ''),
-                        'periodo'      => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
-                        'status'       => ($s = AtendimentoStatus::tryFrom($a->aten_status))
-                            ? '<span class="badge ' . $s->badgeClass() . '">' . $s->label() . '</span>'
-                            : '-',
-                        'aten_status'  => $a->aten_status,
-                        'aten_dt_fim'  => $a->aten_dt_fim->format('Y-m-d'),
-                    ],
-                )
-            );
-            } catch (\Throwable $e) {
-                report($e);
-                return response()->json(['message' => 'DataTable error: ' . $e->getMessage()], 500);
-            }
-        }
+        $atendimentos = $this->repository->query($filtroUsuarioId)
+            ->when($busca !== '', function ($query) use ($busca) {
+                $query->where(function ($q) use ($busca) {
+                    $q->where('clientes.cli_nome', 'like', "%{$busca}%")
+                        ->orWhere('usuarios.user_nome', 'like', "%{$busca}%")
+                        ->orWhere('atendimentos.aten_nr_proposta', 'like', "%{$busca}%")
+                        ->orWhere('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$busca}%");
+                });
+            })
+            ->orderBy('aten_status')
+            ->orderBy('aten_dt_inicio')
+            ->orderBy('usuarios.user_nome')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('atendimentos.index', [
+            'atendimentos'          => $atendimentos,
+            'busca'                 => $busca,
             'usuarios'              => Usuario::where('user_nivel_acesso', 1)->where('user_ativo', 1)->orderBy('user_nome')->get(),
             'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao')
                 ->where('nat_aten_ativo', 1)

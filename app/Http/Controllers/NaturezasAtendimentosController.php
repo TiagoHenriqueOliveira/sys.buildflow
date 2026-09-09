@@ -6,68 +6,62 @@ use App\Http\Requests\NaturezaAtendimentoRequest;
 use App\Models\ModeloRelatorio;
 use App\Models\NaturezaAtendimento;
 use App\Repositories\NaturezaAtendimentoRepository;
-use App\Services\DataTableService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class NaturezasAtendimentosController extends Controller
 {
     public function __construct(
         private NaturezaAtendimentoRepository $repository,
-        private DataTableService $dataTable,
     ) {}
 
-    public function index(Request $request)
+    /**
+     * Migrada pro pacote sbadmin/dashboard (ver CLAUDE.md, seção "Template
+     * visual") seguindo o mesmo padrão de clientes.index(): sem branch
+     * DataTables-JSON, paginação nativa do Eloquent consumida por
+     * <x-sbadmin::table>. Busca client-side e ordenação por coluna que a
+     * DataTables oferecia não têm equivalente direto no novo componente —
+     * busca reimplementada via querystring (?busca=) na descrição,
+     * ordenação descartada nesta fase (lista sempre por descrição).
+     */
+    public function index(Request $request): View
     {
-        if ($request->ajax()) {
-            return response()->json(
-                $this->dataTable->process(
-                    $request,
-                    NaturezaAtendimento::query()->with(['modeloRelatorio']),
-                    searchable: ['nat_aten_descricao'],
-                    orderable:  [
-                        'acoes'              => null,
-                        'nat_aten_descricao' => 'nat_aten_descricao',
-                        'mod_rel_descricao'  => null,
-                        'status'             => 'nat_aten_ativo',
-                    ],
-                    mapper: fn($n) => [
-                        'acoes'                     => view('naturezas_atendimentos.partials.acoes', compact('n'))->render(),
-                        'nat_aten_descricao'        => e($n->nat_aten_descricao),
-                        'mod_rel_descricao'         => e(optional($n->modeloRelatorio)->mod_rel_descricao),
-                        'nat_aten_mod_relatorio_id' => (int) $n->nat_aten_mod_relatorio_id,
-                        'nat_aten_ativo'            => (int) $n->nat_aten_ativo,
-                        'status'                    => $n->nat_aten_ativo ? 'Ativo' : 'Desativado',
-                    ],
-                )
-            );
-        }
+        $busca = trim((string) $request->get('busca', ''));
+
+        $naturezas = NaturezaAtendimento::query()
+            ->with(['modeloRelatorio'])
+            ->when($busca !== '', fn ($query) => $query->where('nat_aten_descricao', 'like', "%{$busca}%"))
+            ->orderBy('nat_aten_descricao')
+            ->paginate(15)
+            ->withQueryString();
 
         $modelosRelatorios = ModeloRelatorio::where('mod_rel_ativo', 1)
             ->orderBy('mod_rel_descricao')
             ->get();
 
-        return view('naturezas_atendimentos.index', compact('modelosRelatorios'));
+        return view('naturezas_atendimentos.index', [
+            'naturezas' => $naturezas,
+            'modelosRelatorios' => $modelosRelatorios,
+            'busca' => $busca,
+        ]);
     }
 
-    public function store(NaturezaAtendimentoRequest $request)
+    public function store(NaturezaAtendimentoRequest $request): RedirectResponse
     {
-        try {
-            $this->repository->create($request->validated());
-            return response()->json(['message' => 'Cadastrado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao cadastrar.'], 500);
-        }
+        $natureza = $this->repository->create($request->validated());
+
+        return redirect()
+            ->route('naturezas-dos-atendimentos.index')
+            ->with('success', 'Natureza de atendimento "'.$natureza->nat_aten_descricao.'" cadastrada com sucesso.');
     }
 
-    public function update(NaturezaAtendimentoRequest $request, int $id)
+    public function update(NaturezaAtendimentoRequest $request, int $id): RedirectResponse
     {
-        try {
-            $this->repository->update($id, $request->validated());
-            return response()->json(['message' => 'Atualizado com sucesso!']);
-        } catch (\Throwable $e) {
-            report($e);
-            return response()->json(['message' => 'Erro ao atualizar.'], 500);
-        }
+        $natureza = $this->repository->update($id, $request->validated());
+
+        return redirect()
+            ->route('naturezas-dos-atendimentos.index')
+            ->with('success', 'Natureza de atendimento "'.$natureza->nat_aten_descricao.'" atualizada com sucesso.');
     }
 }

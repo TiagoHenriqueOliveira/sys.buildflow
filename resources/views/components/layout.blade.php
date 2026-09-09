@@ -44,7 +44,11 @@
         ];
     }
 @endphp
-<x-sbadmin::layout :title="$title ?? null" :menu="$menu">
+<x-sbadmin::layout
+    :title="$title ?? null"
+    :menu="$menu"
+    :user="$usuario ? ['name' => $usuario->user_nome, 'email' => $usuario->user_email] : null"
+>
     {{-- Menu do usuário (topbar): substitui o antigo modal Bootstrap 4
          ("Sair do sistema" / data-toggle="modal") — <x-sbadmin::topbar> já
          expõe o slot `userMenu` justamente pra isso, então usamos ele em vez
