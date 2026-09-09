@@ -61,7 +61,7 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::controller(DashboardController::class)->prefix('dashboard')->group(function () {
-        Route::get('/',                    'index');
+        Route::get('/',                    'index')->name('dashboard');
         Route::get('/data/kpis',           'kpis');
         Route::get('/data/por-status',     'porStatus');
         Route::get('/data/evolucao',       'evolucao');
