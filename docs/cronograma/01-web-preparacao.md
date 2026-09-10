@@ -19,6 +19,15 @@ Documento curto (pode ser um comentário no início da migration de `clientes`, 
 
 Nenhuma migration, controller ou tela ainda — é só a decisão registrada, para servir de especificação de entrada da sessão 02.
 
+## Decisão registrada (adotada em 09/09/2026)
+
+Nenhuma resposta do cliente às pendências 1-4 (seção 9 do documento) foi recebida até esta data. Ficam adotados os defaults abaixo como especificação de entrada da sessão 02 — todos aditivos/reversíveis, sem retrabalho estrutural se a resposta do cliente divergir:
+
+1. **Segmento do cliente** — campo `varchar(255) nullable` em `clientes`, texto livre. Sem tabela de lookup nesta fase.
+2. **Campos do cadastro de cliente** — exatamente os da seção 2 do documento: Nome, Contato principal, Vendedor responsável, CNPJ, Inscrição Estadual, Segmento, Classificação, Alerta de recontato, Status, Contatos adicionais, Geolocalização. Campos específicos do ERP SINPROD ficam fora desta fase.
+3. **Classificação do cliente** — nova tabela `classificacoes_cliente` (lista configurável), populada vazia. UI deve funcionar com zero opções cadastradas.
+4. **Alerta de recontato** — campo numérico `dias_alerta_recontato`, granularidade **por cliente** (coluna em `clientes`, nullable, sem valor default numérico) — decisão de implementação: granularidade por sistema exigiria uma tabela de configuração global sem necessidade clara ainda; por cliente é aditivo e não bloqueia evoluir para global depois.
+
 ## Próxima sessão
 
 [02-web-nucleo-telas.md](02-web-nucleo-telas.md)
