@@ -131,6 +131,8 @@
         font-weight: $sbadmin-font-weight-semibold;
         color: var(--sbadmin-text-muted);
         white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
     }
 
     td, th { padding: $sbadmin-space-3 $sbadmin-space-4; vertical-align: middle; border-color: var(--sbadmin-border); }
