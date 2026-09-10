@@ -9,12 +9,25 @@
      partir do cliente/old() via Js::from() para sobreviver a um retorno de
      validação) e enviada junto no mesmo POST via inputs `contatos[i][campo]`. --}}
 @php
+    // Máscaras de exibição do valor inicial (old()/model) — espelham
+    // window.formatarCnpj()/formatarTelefone() (resources/js/formatters.js),
+    // que só reformatam a partir do evento oninput e por isso não cobrem o
+    // valor já preenchido ao abrir a edição.
+    $mascararCnpj = fn (?string $v) => $v && strlen($v) === 14
+        ? preg_replace('/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/', '$1.$2.$3/$4-$5', $v)
+        : $v;
+    $mascararTelefone = fn (?string $v) => match (strlen((string) $v)) {
+        11 => preg_replace('/^(\d{2})(\d{5})(\d{4})$/', '($1) $2-$3', $v),
+        10 => preg_replace('/^(\d{2})(\d{4})(\d{4})$/', '($1) $2-$3', $v),
+        default => $v,
+    };
+
     $editando = $cliente->exists;
     $contatosIniciais = old('contatos', $editando
         ? $cliente->contatos->map(fn ($c) => [
             'nome' => $c->cli_cont_nome,
             'cargo' => $c->cli_cont_cargo,
-            'telefone' => $c->cli_cont_telefone,
+            'telefone' => $mascararTelefone($c->cli_cont_telefone),
             'email' => $c->cli_cont_email,
             'tipo' => $c->cli_cont_tipo->value,
         ])->values()->all()
@@ -107,7 +120,7 @@
                                     id="cli_cnpj"
                                     name="cli_cnpj"
                                     label="CNPJ"
-                                    :value="old('cli_cnpj', $cliente->cli_cnpj)"
+                                    :value="old('cli_cnpj', $mascararCnpj($cliente->cli_cnpj))"
                                     maxlength="18"
                                     required
                                     placeholder="00.000.000/0000-00"
@@ -191,7 +204,7 @@
                                     id="cli_telefone"
                                     name="cli_telefone"
                                     label="Telefone"
-                                    :value="old('cli_telefone', $cliente->cli_telefone)"
+                                    :value="old('cli_telefone', $mascararTelefone($cliente->cli_telefone))"
                                     maxlength="15"
                                     placeholder="(00) 00000-0000"
                                     oninput="this.value = window.formatarTelefone(this.value)"
