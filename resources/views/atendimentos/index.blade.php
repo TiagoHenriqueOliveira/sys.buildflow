@@ -275,8 +275,14 @@
                 event.preventDefault();
 
                 const form = event.target;
-                const btnSubmit = form.querySelector('button[type="submit"]');
-                btnSubmit.disabled = true;
+                // Feedback de "Salvando..." (spinner + desabilita botao de
+                // fechar/Fechar) igual aos demais modais — ver
+                // resources/js/modal-submit.js. Como este form continua
+                // submetendo via fetch()/JSON (o modal nao fecha nem
+                // recarrega a pagina ao salvar), restauramos manualmente no
+                // sucesso e no erro, em vez do "dispara e esquece" que os
+                // outros modais usam.
+                const estadoFeedback = window.iniciarFeedbackSalvamento(form);
 
                 fetch(form.action, {
                     method: 'POST',
@@ -293,7 +299,7 @@
                     .then((response) => {
                         window.__atendimentoState.dirty = true;
                         mostrarFeedbackModal('success', response.message || 'Salvo com sucesso.');
-                        btnSubmit.disabled = false;
+                        window.pararFeedbackSalvamento(estadoFeedback);
 
                         if (response.aten_id && response.atendimento) {
                             Alpine.$data(document.getElementById('atendimento-root')).editando = true;
@@ -317,7 +323,7 @@
                         }
                     })
                     .catch((payload) => {
-                        btnSubmit.disabled = false;
+                        window.pararFeedbackSalvamento(estadoFeedback);
                         const mensagens = Object.values(payload?.errors || {}).flat();
                         mostrarFeedbackModal('error', mensagens.length ? mensagens.join('<br>') : (payload?.message || 'Erro inesperado ao salvar.'));
                     });
