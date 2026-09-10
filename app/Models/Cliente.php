@@ -23,6 +23,9 @@ class Cliente extends Model
         'cli_cidade',
         'cli_uf',
         'cli_segmento',
+        'cli_equipamento_vendido',
+        'cli_caso_sucesso',
+        'cli_caso_sucesso_descricao',
         'cli_classificacao_id',
         'cli_dias_alerta_recontato',
         'cli_telefone',
@@ -38,6 +41,7 @@ class Cliente extends Model
         'cli_status' => ClienteStatus::class,
         'cli_latitude' => 'float',
         'cli_longitude' => 'float',
+        'cli_caso_sucesso' => 'boolean',
     ];
 
     public function vendedor()

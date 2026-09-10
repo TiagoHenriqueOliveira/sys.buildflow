@@ -48,6 +48,9 @@ class ClienteRequest extends FormRequest
             'cli_cidade' => ['required', 'string', 'max:100'],
             'cli_uf' => ['required', 'string', 'size:2'],
             'cli_segmento' => ['nullable', 'string', 'max:255'],
+            'cli_equipamento_vendido' => ['nullable', 'string', 'max:255'],
+            'cli_caso_sucesso' => ['nullable', 'boolean'],
+            'cli_caso_sucesso_descricao' => ['nullable', 'string'],
             'cli_classificacao_id' => ['nullable', 'integer', Rule::exists('classificacoes_cliente', 'cla_cli_id')],
             'cli_dias_alerta_recontato' => ['nullable', 'integer', 'min:1'],
 

@@ -4,6 +4,10 @@ Ver [00-indice.md](00-indice.md). Pré-requisito: [05-web-configurador-persisten
 
 Este bloco foi **priorizado pelo usuário** — vem antes do Bloco 4 (incrementos de Atendimento/Relatório da assistência técnica), mesmo sendo o maior bloco novo do projeto. Se a sessão ficar grande demais para revisar de uma vez, dividir em duas: **06a** (CRM01-04: orçamento/vínculo/comentários/indicação conjunta) e **06b** (CRM05-08: roteiro de viagem/mapa/indicadores).
 
+> **06a concluída** (commit `3d0e5f0`, `BF_v1.5.0`): CRM01-04 prontos e testados.
+>
+> **06b concluída** (`BF_v1.6.0`): CRM05/06 (roteiro de viagem — saída e retorno por cliente), CRM07 (mapa de relações, Leaflet/OpenStreetMap) e CRM08 (painel de indicadores comerciais — propostas levantadas e clientes visitados reais, propostas fechadas/taxa de conversão mockadas em 70% até a sessão de Persistência trazer um status real de fechamento do orçamento). Bloco 3 (CRM Comercial — Telas) está completo. Próximo bloco de Telas: [08-web-atendimento-telas.md](08-web-atendimento-telas.md).
+
 ## Escopo: CRM01, CRM02, CRM03, CRM04, CRM05, CRM06, CRM07, CRM08
 
 ## Estado atual

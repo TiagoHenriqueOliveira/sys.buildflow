@@ -345,6 +345,34 @@
 
                     {{-- ── Histórico consolidado (placeholder — dados reais na Etapa 2) ── --}}
                     <div x-show="tab === 'historico'" x-cloak>
+                        {{-- CRM07 — dados exibidos no popup do mapa de relações de clientes. --}}
+                        <x-sbadmin::form.input
+                            id="cli_equipamento_vendido"
+                            name="cli_equipamento_vendido"
+                            label="Equipamento vendido"
+                            :value="old('cli_equipamento_vendido', $cliente->cli_equipamento_vendido)"
+                            maxlength="255"
+                            placeholder="Ex.: ETE compacta 50m³/dia"
+                        />
+
+                        <x-sbadmin::form.checkbox
+                            id="cli_caso_sucesso"
+                            name="cli_caso_sucesso"
+                            label="Caso de sucesso"
+                            :checked="old('cli_caso_sucesso', $cliente->cli_caso_sucesso)"
+                            :switch="true"
+                        />
+
+                        <x-sbadmin::form.textarea
+                            id="cli_caso_sucesso_descricao"
+                            name="cli_caso_sucesso_descricao"
+                            label="Descrição do caso de sucesso"
+                            :value="old('cli_caso_sucesso_descricao', $cliente->cli_caso_sucesso_descricao)"
+                            rows="3"
+                        />
+
+                        <hr>
+
                         <p class="text-body-secondary">
                             @if($editando)
                                 Histórico de atendimentos e orçamentos deste cliente — disponível a partir da sessão de persistência do Núcleo/CRM.

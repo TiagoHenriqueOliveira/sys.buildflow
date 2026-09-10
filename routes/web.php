@@ -9,11 +9,14 @@ use App\Http\Controllers\ConfiguradorModelosController;
 use App\Http\Controllers\ConfiguradorPerguntasController;
 use App\Http\Controllers\CrmTiposOrcamentoController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IndicadoresComerciaisController;
 use App\Http\Controllers\LogsAuditoriaController;
+use App\Http\Controllers\MapaRelacoesController;
 use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
+use App\Http\Controllers\RoteirosViagemController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UsuariosController;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +82,15 @@ Route::middleware('auth')->group(function () {
         // Orçamentos (CRM02/03/04) — mesmo perfil de acesso de Clientes.
         Route::resource('orcamentos', OrcamentosController::class)->except(['show', 'destroy']);
         Route::post('/orcamentos/{id}/comentarios', [OrcamentosController::class, 'storeComentario'])->name('orcamentos.store-comentario');
+
+        // Roteiro de viagem (CRM05/06) — saída (clientes a visitar) e retorno.
+        Route::resource('roteiros-viagem', RoteirosViagemController::class)->except(['show', 'destroy']);
+
+        // Mapa de relações de clientes (CRM07) — somente leitura.
+        Route::get('/mapa-relacoes', [MapaRelacoesController::class, 'index'])->name('mapa-relacoes.index');
+
+        // Indicadores comerciais (CRM08) — somente leitura.
+        Route::get('/indicadores-comerciais', [IndicadoresComerciaisController::class, 'index'])->name('indicadores-comerciais.index');
     });
 
     // Atendimentos — leitura disponível para todos os usuários autenticados

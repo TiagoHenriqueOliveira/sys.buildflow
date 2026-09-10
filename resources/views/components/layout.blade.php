@@ -30,6 +30,9 @@
     if ($isAdmin || $isComercial) {
         $menu[] = ['label' => 'Clientes', 'icon' => 'bi-person-vcard', 'route' => 'clientes.index'];
         $menu[] = ['label' => 'Orçamentos', 'icon' => 'bi-cash-coin', 'route' => 'orcamentos.index'];
+        $menu[] = ['label' => 'Roteiro de Viagem', 'icon' => 'bi-signpost-2', 'route' => 'roteiros-viagem.index'];
+        $menu[] = ['label' => 'Mapa de Relações', 'icon' => 'bi-geo-alt', 'route' => 'mapa-relacoes.index'];
+        $menu[] = ['label' => 'Indicadores Comerciais', 'icon' => 'bi-graph-up', 'route' => 'indicadores-comerciais.index'];
     }
 
     $menu[] = ['label' => 'Relatórios', 'icon' => 'bi-bar-chart-line', 'route' => 'atendimentos-relatorios.index'];
