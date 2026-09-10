@@ -58,7 +58,7 @@
                     <td class="text-center">
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                            class="btn btn-sm sbadmin-table-action-btn"
                             data-id="{{ $u->user_id }}"
                             data-nome="{{ e($u->user_nome) }}"
                             data-email="{{ e($u->user_email) }}"

@@ -52,7 +52,7 @@
                     <td class="text-center">
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                            class="btn btn-sm sbadmin-table-action-btn"
                             data-id="{{ $m->mod_rel_id }}"
                             data-descricao="{{ e($m->mod_rel_descricao) }}"
                             data-tp-data="{{ (int) $m->mod_rel_tp_data }}"

@@ -102,7 +102,7 @@
                     <td class="text-center">
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                            class="btn btn-sm sbadmin-table-action-btn"
                             data-id="{{ $c->cli_id }}"
                             data-nome="{{ e($c->cli_nome) }}"
                             data-cnpj="{{ e($c->cli_cnpj) }}"

@@ -89,7 +89,7 @@
                 @endphp
                 <tr>
                     <td class="text-center text-nowrap">
-                        <a href="{{ route('atendimentos-relatorios.show', $r->aten_rel_id) }}" class="btn btn-sm btn-outline-secondary" title="Visualizar relatório">
+                        <a href="{{ route('atendimentos-relatorios.show', $r->aten_rel_id) }}" class="btn btn-sm sbadmin-table-action-btn" title="Visualizar relatório">
                             <i class="bi bi-eye" aria-hidden="true"></i>
                         </a>
                         <a href="{{ route('atendimentos-relatorios.pdf', $r->aten_rel_id) }}" class="btn btn-sm btn-outline-danger" title="Gerar PDF" target="_blank">

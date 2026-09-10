@@ -124,7 +124,7 @@
                     </div>
 
                     <div class="modal-footer px-0 pb-0">
-                        <button type="submit" class="btn btn-primary sbadmin-btn-primary">
+                        <button type="submit" class="btn btn-success">
                             <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
                         </button>
                         <button type="button" class="btn btn-outline-secondary" @click="aberto = false">

@@ -103,7 +103,7 @@
                         <td class="text-center">
                             <button
                                 type="button"
-                                class="btn btn-sm btn-outline-secondary"
+                                class="btn btn-sm sbadmin-table-action-btn"
                                 data-id="{{ $a->aten_id }}"
                                 data-natureza-id="{{ $a->aten_natureza_id }}"
                                 data-cliente-id="{{ $a->aten_cliente_id }}"

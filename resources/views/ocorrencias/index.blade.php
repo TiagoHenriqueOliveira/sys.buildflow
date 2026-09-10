@@ -52,7 +52,7 @@
                     <td class="text-center">
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                            class="btn btn-sm sbadmin-table-action-btn"
                             data-id="{{ $o->ocor_id }}"
                             data-descricao="{{ e($o->ocor_descricao) }}"
                             data-ativo="{{ (int) $o->ocor_ativo }}"

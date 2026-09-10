@@ -52,7 +52,7 @@
                     <td class="text-center">
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                            class="btn btn-sm sbadmin-table-action-btn"
                             data-id="{{ $n->nat_aten_id }}"
                             data-descricao="{{ e($n->nat_aten_descricao) }}"
                             data-mod-rel="{{ (int) $n->nat_aten_mod_relatorio_id }}"
