@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SetorModelo;
 use App\Http\Requests\NaturezaAtendimentoRequest;
+use App\Models\ConfigModelo;
 use App\Models\ModeloRelatorio;
 use App\Models\NaturezaAtendimento;
 use App\Repositories\NaturezaAtendimentoRepository;
@@ -31,7 +33,7 @@ class NaturezasAtendimentosController extends Controller
         $filtroDescricao = trim((string) $request->get('f_descricao', ''));
 
         $naturezas = NaturezaAtendimento::query()
-            ->with(['modeloRelatorio'])
+            ->with(['modeloRelatorio', 'configModelo'])
             ->when($filtroDescricao !== '', fn ($query) => $query->where('nat_aten_descricao', 'like', "%{$filtroDescricao}%"))
             ->orderBy('nat_aten_descricao')
             ->paginate(15)
@@ -41,9 +43,17 @@ class NaturezasAtendimentosController extends Controller
             ->orderBy('mod_rel_descricao')
             ->get();
 
+        // BF04 — só modelos do Configurador de setor Assistência podem ser
+        // vinculados a uma natureza de atendimento.
+        $configModelos = ConfigModelo::where('cfg_mod_ativo', 1)
+            ->where('cfg_mod_setor', SetorModelo::Assistencia->value)
+            ->orderBy('cfg_mod_nome')
+            ->get();
+
         return view('naturezas_atendimentos.index', [
             'naturezas' => $naturezas,
             'modelosRelatorios' => $modelosRelatorios,
+            'configModelos' => $configModelos,
             'filtroDescricao' => $filtroDescricao,
             'temFiltro' => $filtroDescricao !== '',
         ]);

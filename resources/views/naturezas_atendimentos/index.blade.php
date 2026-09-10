@@ -42,7 +42,7 @@
         </form>
 
         <x-sbadmin::table
-            :headers="['Ações', 'Descrição', 'Modelo de Relatório', 'Status']"
+            :headers="['Ações', 'Descrição', 'Modelo de Relatório', 'Modelo (Configurador)', 'Status']"
             :paginator="$naturezas"
             :count="$naturezas->count()"
             empty-message="Nenhuma natureza de atendimento encontrada."
@@ -56,6 +56,7 @@
                             data-id="{{ $n->nat_aten_id }}"
                             data-descricao="{{ e($n->nat_aten_descricao) }}"
                             data-mod-rel="{{ (int) $n->nat_aten_mod_relatorio_id }}"
+                            data-config-modelo="{{ (int) $n->nat_aten_config_modelo_id }}"
                             data-ativo="{{ (int) $n->nat_aten_ativo }}"
                             aria-label="Editar {{ e($n->nat_aten_descricao) }}"
                             @click="editando = true; aberto = true; preencherFormularioNaturezaAtendimento($el.dataset)"
@@ -65,6 +66,7 @@
                     </td>
                     <td>{{ $n->nat_aten_descricao }}</td>
                     <td>{{ optional($n->modeloRelatorio)->mod_rel_descricao }}</td>
+                    <td>{{ optional($n->configModelo)->cfg_mod_nome }}</td>
                     <td>
                         <x-sbadmin::badge :type="$n->nat_aten_ativo ? 'success' : 'error'">
                             {{ $n->nat_aten_ativo ? 'Ativo' : 'Inativo' }}
@@ -83,6 +85,7 @@
                 document.getElementById('nat_aten_id').value = data.id || '';
                 document.getElementById('nat_aten_descricao').value = data.descricao || '';
                 document.getElementById('nat_aten_mod_relatorio_id').value = data.modRel || '';
+                document.getElementById('nat_aten_config_modelo_id').value = data.configModelo || '';
                 document.getElementById('nat_aten_ativo').checked = data.ativo === '1';
 
                 document.getElementById('nat_aten_method').value = 'PUT';
@@ -94,6 +97,7 @@
                 form.reset();
 
                 document.getElementById('nat_aten_id').value = '';
+                document.getElementById('nat_aten_config_modelo_id').value = '';
                 document.getElementById('nat_aten_ativo').checked = true;
                 document.getElementById('nat_aten_method').value = 'POST';
                 form.action = '{{ route('naturezas-dos-atendimentos.store') }}';

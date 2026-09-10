@@ -190,4 +190,18 @@ class AtendimentoRelatorio extends Model
         )->orderBy('aten_rel_desc_id');
     }
 
+    /**
+     * NC02/NC03 — respostas às perguntas do modelo do Configurador
+     * vinculado à natureza deste atendimento (BF04). Conceito novo,
+     * independente do modeloRelatorio()/itensDescricao() legados.
+     */
+    public function respostas()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioResposta::class,
+            'aten_rel_resp_relatorio_id',
+            'aten_rel_id'
+        );
+    }
+
 }

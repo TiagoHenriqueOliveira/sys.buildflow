@@ -5,6 +5,8 @@ use App\Http\Controllers\AtendimentosController;
 use App\Http\Controllers\AtendimentosRelatoriosController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientesController;
+use App\Http\Controllers\ConfiguradorModelosController;
+use App\Http\Controllers\ConfiguradorPerguntasController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\ModelosRelatoriosController;
@@ -113,6 +115,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/atendimentos-relatorios/{id}/anexos', [AtendimentosRelatoriosController::class, 'getAnexos'])->name('atendimentos-relatorios.get-anexos');
     Route::delete('/atendimentos-relatorios/{id}/anexos/{type}/{itemId}', [AtendimentosRelatoriosController::class, 'destroyAnexo'])->name('atendimentos-relatorios.destroy-anexo');
 
+    // NC02/NC03 — rotas de resposta às perguntas do Configurador dentro do
+    // relatório ficam para a sessão 08 (Atendimento/Assistência), junto da
+    // reformulação completa da tela (Configurador substitui modelos_relatorios
+    // — ver memória do projeto). As tabelas já existem
+    // (atendimentos_relatorios_respostas[_fotos]), só a tela/endpoints não.
+
     // Somente administradores
     Route::middleware('admin')->group(function () {
         // Atendimentos — mutações restritas a administradores
@@ -129,6 +137,16 @@ Route::middleware('auth')->group(function () {
         // Configurações
         Route::resource('modelos-de-relatorios', ModelosRelatoriosController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // Configurador (NC02) — perguntas e modelos reutilizáveis
+        Route::resource('configurador/perguntas', ConfiguradorPerguntasController::class)
+            ->except(['create', 'edit', 'show', 'destroy'])
+            ->parameter('perguntas', 'id')
+            ->names('configurador.perguntas');
+        Route::resource('configurador/modelos', ConfiguradorModelosController::class)
+            ->except(['create', 'edit', 'show', 'destroy'])
+            ->parameter('modelos', 'id')
+            ->names('configurador.modelos');
 
         // Usuários
         Route::resource('usuarios', UsuariosController::class)->except(['create', 'edit', 'show', 'destroy']);

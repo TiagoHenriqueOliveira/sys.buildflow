@@ -52,6 +52,16 @@
                         required
                     />
 
+                    <x-sbadmin::form.select
+                        id="nat_aten_config_modelo_id"
+                        name="nat_aten_config_modelo_id"
+                        label="Modelo do Configurador (Assistência)"
+                        :options="$configModelos->pluck('cfg_mod_nome', 'cfg_mod_id')->all()"
+                        :value="old('nat_aten_config_modelo_id')"
+                        placeholder="Nenhum"
+                        help="BF04 — modelo de perguntas reutilizável usado no preenchimento do relatório."
+                    />
+
                     <div x-show="editando" x-cloak>
                         <input type="hidden" name="nat_aten_ativo" value="0">
                         <x-sbadmin::form.checkbox

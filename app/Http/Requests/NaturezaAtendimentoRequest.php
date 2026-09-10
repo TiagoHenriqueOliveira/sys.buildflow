@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\SetorModelo;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,11 @@ class NaturezaAtendimentoRequest extends FormRequest
         return [
             'nat_aten_descricao'        => ['required', 'string', 'max:50'],
             'nat_aten_mod_relatorio_id' => ['required', 'integer', Rule::exists('modelos_relatorios', 'mod_rel_id')],
+            'nat_aten_config_modelo_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('config_modelos', 'cfg_mod_id')->where('cfg_mod_setor', SetorModelo::Assistencia->value),
+            ],
             'nat_aten_ativo'            => ['nullable', 'boolean'],
         ];
     }
@@ -23,6 +29,7 @@ class NaturezaAtendimentoRequest extends FormRequest
             'nat_aten_descricao.max'             => 'A descrição deve ter no máximo 50 caracteres.',
             'nat_aten_mod_relatorio_id.required' => 'Selecione um modelo de relatório.',
             'nat_aten_mod_relatorio_id.exists'   => 'O modelo de relatório selecionado é inválido.',
+            'nat_aten_config_modelo_id.exists'   => 'O modelo do Configurador selecionado é inválido.',
         ];
     }
 }

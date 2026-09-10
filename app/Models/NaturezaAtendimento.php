@@ -16,6 +16,7 @@ class NaturezaAtendimento extends Model
 
     protected $fillable = [
         'nat_aten_mod_relatorio_id',
+        'nat_aten_config_modelo_id',
         'nat_aten_descricao',
         'nat_aten_ativo',
     ];
@@ -27,5 +28,14 @@ class NaturezaAtendimento extends Model
             'nat_aten_mod_relatorio_id',
             'mod_rel_id'
         );
+    }
+
+    /**
+     * BF04 — modelo do Configurador (setor Assistência) vinculado a esta
+     * natureza. Conceito diferente de modeloRelatorio() acima (flags).
+     */
+    public function configModelo()
+    {
+        return $this->belongsTo(ConfigModelo::class, 'nat_aten_config_modelo_id', 'cfg_mod_id');
     }
 }
