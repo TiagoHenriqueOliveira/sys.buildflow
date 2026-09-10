@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class AtendimentosController extends Controller
 {
@@ -104,6 +105,36 @@ class AtendimentosController extends Controller
                 ->orderBy('nat_aten_descricao')
                 ->get(),
         ]);
+    }
+
+    public function create(): View
+    {
+        return view('atendimentos.form', [
+            'atendimento' => new Atendimento(),
+            ...$this->dadosApoioFormulario(),
+        ]);
+    }
+
+    public function edit(int $id): View
+    {
+        $atendimento = $this->atendimentoComPosseGarantida($id);
+        $atendimento->load('cliente');
+
+        return view('atendimentos.form', [
+            'atendimento' => $atendimento,
+            ...$this->dadosApoioFormulario(),
+        ]);
+    }
+
+    private function dadosApoioFormulario(): array
+    {
+        return [
+            'usuarios' => Usuario::where('user_nivel_acesso', 1)->where('user_ativo', 1)->orderBy('user_nome')->get(),
+            'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao')
+                ->where('nat_aten_ativo', 1)
+                ->orderBy('nat_aten_descricao')
+                ->get(),
+        ];
     }
 
     public function store(AtendimentoRequest $request)

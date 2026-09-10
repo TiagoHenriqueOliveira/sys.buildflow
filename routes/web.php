@@ -124,6 +124,8 @@ Route::middleware('auth')->group(function () {
     // Somente administradores
     Route::middleware('admin')->group(function () {
         // Atendimentos — mutações restritas a administradores
+        Route::get('/atendimentos/create', [AtendimentosController::class, 'create'])->name('atendimentos.create');
+        Route::get('/atendimentos/{id}/edit', [AtendimentosController::class, 'edit'])->name('atendimentos.edit');
         Route::post('/atendimentos', [AtendimentosController::class, 'store'])->name('atendimentos.store');
         Route::put('/atendimentos/{atendimento}', [AtendimentosController::class, 'update'])->name('atendimentos.update');
         Route::patch('/atendimentos/{atendimento}', [AtendimentosController::class, 'update']);
