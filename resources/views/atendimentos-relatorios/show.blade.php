@@ -31,7 +31,7 @@
 
         <div class="sbadmin-card">
             <div class="sbadmin-card-body">
-                <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" role="tablist">
+                <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist">
                     @foreach([
                         'dados' => 'Dados',
                         'horarios' => 'Horário',
