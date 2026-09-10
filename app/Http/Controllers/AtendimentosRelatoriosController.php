@@ -17,6 +17,8 @@ use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
+use App\Models\NaturezaAtendimento;
+use App\Models\Usuario;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioHorario;
@@ -77,21 +79,23 @@ class AtendimentosRelatoriosController extends Controller
 
         // Filtros individuais por coluna (combinaveis em AND entre si): um
         // por coluna exibida em <x-sbadmin::table>, exceto "Ações". "Data" é
-        // um valor exato (coluna DATE), os demais texto livre (LIKE) ou o
-        // select de Status.
+        // um valor exato (coluna DATE); "Natureza" e "Técnico" são <select>
+        // pelo id (aten_natureza_id/aten_usuario_id, ja disponiveis via join
+        // em AtendimentoRelatorioRepository::query()), nao mais texto livre;
+        // os demais texto livre (LIKE) ou o select de Status.
         $filtroData = trim((string) $request->get('f_data', ''));
         $filtroCliente = trim((string) $request->get('f_cliente', ''));
         $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
-        $filtroNatureza = trim((string) $request->get('f_natureza', ''));
-        $filtroTecnico = trim((string) $request->get('f_tecnico', ''));
+        $filtroNatureza = $request->get('f_natureza', '');
+        $filtroTecnico = $request->get('f_tecnico', '');
         $filtroStatus = $request->get('f_status', '');
 
         $relatorios = $this->repo->query($filters)
             ->when($filtroData !== '', fn ($q) => $q->where('atendimentos_relatorios.aten_rel_data', $filtroData))
             ->when($filtroCliente !== '', fn ($q) => $q->where('clientes.cli_nome', 'like', "%{$filtroCliente}%"))
             ->when($filtroNrProposta !== '', fn ($q) => $q->where('atendimentos.aten_nr_proposta', 'like', "%{$filtroNrProposta}%"))
-            ->when($filtroNatureza !== '', fn ($q) => $q->where('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$filtroNatureza}%"))
-            ->when($filtroTecnico !== '', fn ($q) => $q->where('usuarios.user_nome', 'like', "%{$filtroTecnico}%"))
+            ->when($filtroNatureza !== '', fn ($q) => $q->where('atendimentos.aten_natureza_id', (int) $filtroNatureza))
+            ->when($filtroTecnico !== '', fn ($q) => $q->where('atendimentos.aten_usuario_id', (int) $filtroTecnico))
             ->when($filtroStatus !== '', fn ($q) => $q->where('atendimentos_relatorios.aten_rel_status', (int) $filtroStatus))
             ->paginate(15)
             ->withQueryString();
@@ -106,6 +110,11 @@ class AtendimentosRelatoriosController extends Controller
             'filtroStatus' => $filtroStatus,
             'temFiltro' => $filtroData !== '' || $filtroCliente !== '' || $filtroNrProposta !== ''
                 || $filtroNatureza !== '' || $filtroTecnico !== '' || $filtroStatus !== '',
+            'naturezasAtendimentos' => NaturezaAtendimento::select('nat_aten_id', 'nat_aten_descricao')
+                ->where('nat_aten_ativo', 1)
+                ->orderBy('nat_aten_descricao')
+                ->get(),
+            'usuarios' => Usuario::where('user_nivel_acesso', 1)->where('user_ativo', 1)->orderBy('user_nome')->get(),
         ]);
     }
 

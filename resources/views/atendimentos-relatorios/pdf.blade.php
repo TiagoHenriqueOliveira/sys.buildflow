@@ -151,8 +151,20 @@
     </style>
 </head>
 @php
-    $logoBase64  = base64_encode(file_get_contents(public_path('img/mcl_logo.png')));
-    $marcaBase64 = base64_encode(file_get_contents(public_path('img/mcl_marca.jpg')));
+    // Bug real encontrado em 09/2026: os arquivos MCL (mcl_logo.png/
+    // mcl_marca.jpg) que este template referenciava desde a herança do fork
+    // nao existem neste worktree — file_get_contents() falhava silenciosamente
+    // (retorna false, sem exception) e o PDF saia sem logo/marca-d'agua, sem
+    // nenhum erro visivel. Trocado pra logo-fae.png (fornecida pelo cliente,
+    // ver config/sbadmin.php) nos dois usos (cabecalho e marca-d'agua) — nao
+    // existe ainda um asset dedicado de marca-d'agua pra FAE (o logo.png tem
+    // baixa resolucao pra ser esticado a 700px, ver .watermark img no CSS
+    // acima), mas evita o path quebrado; revisar quando o cliente fornecer
+    // uma marca-d'agua propria. file_exists() evita quebrar o PDF de novo se
+    // o arquivo sumir outra vez.
+    $logoPath = public_path('img/logo-fae.png');
+    $logoBase64  = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : '';
+    $marcaBase64 = $logoBase64;
 
     $climaOrg = $relatorio->climas->keyBy('aten_rel_clima_periodo');
     $condMap  = [1 => 'Ensolarado', 2 => 'Nublado', 3 => 'Chuvoso'];
@@ -239,7 +251,7 @@
 
 {{-- MARCA D'ÁGUA --}}
 <div class="watermark">
-    <img src="data:image/jpeg;base64,{{ $marcaBase64 }}" alt="">
+    <img src="data:image/png;base64,{{ $marcaBase64 }}" alt="">
 </div>
 
 {{-- RODAPÉ --}}
@@ -253,7 +265,7 @@
 <table class="header" width="100%">
     <tr>
         <td class="header-logo">
-            <img src="data:image/jpeg;base64,{{ $logoBase64 }}" alt="Logo MCL">
+            <img src="data:image/png;base64,{{ $logoBase64 }}" alt="Logo FAÉ Bioenergia">
         </td>
         <td class="header-info">
             <div class="header-titulo">{{ $relatorio->modeloRelatorio->mod_rel_descricao }}</div>

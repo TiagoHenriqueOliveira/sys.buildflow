@@ -61,7 +61,11 @@ body.sbadmin-body {
     min-width: 0;
 }
 
-.sbadmin-brand-logo { height: 28px; width: auto; }
+// 44px (nao 28px) porque a logo real da FAE Bioenergia e um lockup
+// icone+texto (97x117px, retrato) - em 28px o "BIOENERGIA" embutido na
+// imagem fica ilegivel. Cabe confortavelmente na faixa de 64px
+// ($sbadmin-topbar-height) do .sbadmin-sidebar-brand.
+.sbadmin-brand-logo { height: 44px; width: auto; }
 // Reserva o mesmo espaco do logo real enquanto nenhum estiver configurado
 // (config('sbadmin.brand.logo')), pra o layout nao pular quando ele for
 // adicionado.

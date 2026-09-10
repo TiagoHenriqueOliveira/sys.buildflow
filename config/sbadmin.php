@@ -9,7 +9,11 @@ return [
     */
     'brand' => [
         'name' => 'Buildflow',
-        'logo' => null,
+        // Logo do cliente FAÉ Bioenergia (fornecida em 09/2026) — ver
+        // packages/sbadmin/resources/views/components/sidebar.blade.php,
+        // que já tinha o branch @if(config('sbadmin.brand.logo')) pronto
+        // pra isso, só faltava o arquivo.
+        'logo' => '/img/logo-fae.png',
     ],
 
     /*

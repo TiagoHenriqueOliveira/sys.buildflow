@@ -40,8 +40,6 @@ class ClientesController extends Controller
         $filtroCnpj = trim((string) $request->get('f_cnpj', ''));
         $filtroCidade = trim((string) $request->get('f_cidade', ''));
         $filtroUf = trim((string) $request->get('f_uf', ''));
-        $filtroTelefone = trim((string) $request->get('f_telefone', ''));
-        $filtroEmail = trim((string) $request->get('f_email', ''));
         $filtroStatus = $request->get('f_status', '');
 
         $clientes = Cliente::query()
@@ -49,8 +47,6 @@ class ClientesController extends Controller
             ->when($filtroCnpj !== '', fn ($q) => $q->where('cli_cnpj', 'like', "%{$filtroCnpj}%"))
             ->when($filtroCidade !== '', fn ($q) => $q->where('cli_cidade', 'like', "%{$filtroCidade}%"))
             ->when($filtroUf !== '', fn ($q) => $q->where('cli_uf', 'like', "%{$filtroUf}%"))
-            ->when($filtroTelefone !== '', fn ($q) => $q->where('cli_telefone', 'like', "%{$filtroTelefone}%"))
-            ->when($filtroEmail !== '', fn ($q) => $q->where('cli_email', 'like', "%{$filtroEmail}%"))
             ->when($filtroStatus !== '', fn ($q) => $q->where('cli_ativo', (int) $filtroStatus))
             ->orderBy('cli_nome')
             ->paginate(15)
@@ -62,11 +58,9 @@ class ClientesController extends Controller
             'filtroCnpj' => $filtroCnpj,
             'filtroCidade' => $filtroCidade,
             'filtroUf' => $filtroUf,
-            'filtroTelefone' => $filtroTelefone,
-            'filtroEmail' => $filtroEmail,
             'filtroStatus' => $filtroStatus,
             'temFiltro' => $filtroNome !== '' || $filtroCnpj !== '' || $filtroCidade !== ''
-                || $filtroUf !== '' || $filtroTelefone !== '' || $filtroEmail !== '' || $filtroStatus !== '',
+                || $filtroUf !== '' || $filtroStatus !== '',
         ]);
     }
 

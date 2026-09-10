@@ -62,9 +62,10 @@ class AtendimentosController extends Controller
 
         // Filtros individuais por coluna (combinaveis em AND entre si): um
         // por coluna exibida em <x-sbadmin::table>, exceto "Ações". "Período"
-        // é um intervalo (aten_dt_inicio/aten_dt_fim), os
-        // demais texto livre (LIKE) ou o select de Status.
-        $filtroNatureza = trim((string) $request->get('f_natureza', ''));
+        // é um intervalo (aten_dt_inicio/aten_dt_fim); "Natureza" é um
+        // <select> pelo id (nat_aten_id), os demais texto livre (LIKE) ou o
+        // select de Status.
+        $filtroNatureza = $request->get('f_natureza', '');
         $filtroTecnico = trim((string) $request->get('f_tecnico', ''));
         $filtroCliente = trim((string) $request->get('f_cliente', ''));
         $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
@@ -73,7 +74,7 @@ class AtendimentosController extends Controller
         $filtroStatus = $request->get('f_status', '');
 
         $atendimentos = $this->repository->query($filtroUsuarioId)
-            ->when($filtroNatureza !== '', fn ($q) => $q->where('naturezas_atendimentos.nat_aten_descricao', 'like', "%{$filtroNatureza}%"))
+            ->when($filtroNatureza !== '', fn ($q) => $q->where('atendimentos.aten_natureza_id', (int) $filtroNatureza))
             ->when($filtroTecnico !== '', fn ($q) => $q->where('usuarios.user_nome', 'like', "%{$filtroTecnico}%"))
             ->when($filtroCliente !== '', fn ($q) => $q->where('clientes.cli_nome', 'like', "%{$filtroCliente}%"))
             ->when($filtroNrProposta !== '', fn ($q) => $q->where('atendimentos.aten_nr_proposta', 'like', "%{$filtroNrProposta}%"))

@@ -41,15 +41,25 @@
                         <label for="f_nr_proposta" class="sbadmin-form-label">Nº Proposta</label>
                         <input type="text" id="f_nr_proposta" name="f_nr_proposta" value="{{ $filtroNrProposta }}" class="form-control sbadmin-form-control" placeholder="Nº Proposta">
                     </div>
-                    <div class="col-6 col-md-3">
+                    <div class="col-6 col-md-2">
                         <label for="f_natureza" class="sbadmin-form-label">Natureza</label>
-                        <input type="text" id="f_natureza" name="f_natureza" value="{{ $filtroNatureza }}" class="form-control sbadmin-form-control" placeholder="Natureza">
+                        <select id="f_natureza" name="f_natureza" class="form-select sbadmin-form-control">
+                            <option value="">Todas</option>
+                            @foreach($naturezasAtendimentos as $natureza)
+                                <option value="{{ $natureza->nat_aten_id }}" @selected((string) $filtroNatureza === (string) $natureza->nat_aten_id)>{{ $natureza->nat_aten_descricao }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="col-6 col-md-3">
+                    <div class="col-6 col-md-2">
                         <label for="f_tecnico" class="sbadmin-form-label">Técnico</label>
-                        <input type="text" id="f_tecnico" name="f_tecnico" value="{{ $filtroTecnico }}" class="form-control sbadmin-form-control" placeholder="Técnico">
+                        <select id="f_tecnico" name="f_tecnico" class="form-select sbadmin-form-control">
+                            <option value="">Todos</option>
+                            @foreach($usuarios as $tecnico)
+                                <option value="{{ $tecnico->user_id }}" @selected((string) $filtroTecnico === (string) $tecnico->user_id)>{{ $tecnico->user_nome }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="col-6 col-md-3">
+                    <div class="col-6 col-md-1">
                         <label for="f_status" class="sbadmin-form-label">Status</label>
                         <select id="f_status" name="f_status" class="form-select sbadmin-form-control">
                             <option value="">Todos</option>
@@ -58,13 +68,10 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-12 col-md-3 d-flex gap-2">
+                    <div class="col-12 col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-info">
-                            <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar Filtro
+                            <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                         </button>
-                        @if($temFiltro)
-                            <a href="{{ route('atendimentos-relatorios.index') }}" class="btn btn-link">Limpar</a>
-                        @endif
                     </div>
                 </div>
             </div>
