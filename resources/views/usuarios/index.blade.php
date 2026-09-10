@@ -75,7 +75,7 @@
                     <td>{{ (int) $u->user_nivel_acesso === 0 ? 'Administrador' : 'Técnico' }}</td>
                     <td>
                         <x-sbadmin::badge :type="$u->user_ativo ? 'success' : 'error'">
-                            {{ $u->user_ativo ? 'Ativo' : 'Desativado' }}
+                            {{ $u->user_ativo ? 'Ativo' : 'Inativo' }}
                         </x-sbadmin::badge>
                     </td>
                 </tr>

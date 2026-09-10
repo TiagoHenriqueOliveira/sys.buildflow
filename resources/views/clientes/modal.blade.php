@@ -119,6 +119,7 @@
                             id="cli_ativo"
                             name="cli_ativo"
                             label="Ativo"
+                            off-label="Inativo"
                             :checked="old('cli_ativo', true)"
                             :switch="true"
                         />

@@ -149,22 +149,17 @@
     color: var(--sbadmin-text-muted);
 }
 
-// Botoes de acao das linhas (editar/visualizar/etc.), tipicamente
-// icon-only e com a classe Bootstrap `.btn-outline-secondary`. Essa classe
-// usa a cor "secondary" do tema ($sbadmin-color-primary, um slate escuro) —
-// no modo claro contrasta bem com o fundo branco, mas no modo escuro essa
-// mesma cor e praticamente identica a --sbadmin-surface (o fundo da propria
-// linha/celula), deixando o icone quase invisivel. Sobrescrevemos aqui com
-// os tokens de tema (que ja se adaptam claro/escuro) em vez da cor fixa do
-// Bootstrap, garantindo contraste nos dois temas.
-//
-// `.btn-toggle-password` (botao de mostrar/ocultar senha do modal de
-// usuarios, ver usuarios/modal.blade.php) sofre exatamente do mesmo
-// problema — mesma classe `.btn-outline-secondary`, mesma cor identica ao
-// fundo do modal — entao reaproveita a mesma correcao aqui em vez de um
-// fix duplicado so pra aquele modal.
-.sbadmin-table .btn-outline-secondary,
-.btn-toggle-password {
+// `.btn-outline-secondary` (Bootstrap) usa a cor "secondary" do tema
+// ($sbadmin-color-primary, um slate escuro) — no modo claro contrasta bem
+// com fundo branco, mas no modo escuro essa mesma cor e praticamente
+// identica a --sbadmin-surface/--sbadmin-sidebar-bg (o fundo de qualquer
+// linha/celula/modal deste app, que e sempre escuro — ver decisao de
+// produto de tema unico), deixando o botao quase invisivel em repouso.
+// Ja apareceu em 3 contextos diferentes (linhas de tabela, mostrar/ocultar
+// senha, "Fechar"/"Cancelar" no rodape dos modais) — corrigido aqui de
+// uma vez pra classe inteira, global, em vez de ir caçando seletor por
+// seletor cada vez que aparece em um lugar novo.
+.btn-outline-secondary {
     color: var(--sbadmin-text-muted);
     border-color: var(--sbadmin-border);
 

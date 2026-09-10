@@ -79,7 +79,7 @@
                         <select id="f_status" name="f_status" class="form-select sbadmin-form-control">
                             <option value="">Todos</option>
                             <option value="1" @selected($filtroStatus === '1')>Ativo</option>
-                            <option value="0" @selected($filtroStatus === '0')>Desativado</option>
+                            <option value="0" @selected($filtroStatus === '0')>Inativo</option>
                         </select>
                     </div>
                     <div class="col-12 col-md-2 d-flex gap-2">
@@ -125,7 +125,7 @@
                     <td>{{ $c->cli_email }}</td>
                     <td>
                         <x-sbadmin::badge :type="$c->cli_ativo ? 'success' : 'error'">
-                            {{ $c->cli_ativo ? 'Ativo' : 'Desativado' }}
+                            {{ $c->cli_ativo ? 'Ativo' : 'Inativo' }}
                         </x-sbadmin::badge>
                     </td>
                 </tr>

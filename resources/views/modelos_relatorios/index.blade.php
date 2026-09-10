@@ -67,7 +67,7 @@
                     <td>{{ (int) $m->mod_rel_tp_data === 0 ? 'Relatório Diário' : 'Relatório Período' }}</td>
                     <td>
                         <x-sbadmin::badge :type="$m->mod_rel_ativo ? 'success' : 'error'">
-                            {{ $m->mod_rel_ativo ? 'Ativo' : 'Desativado' }}
+                            {{ $m->mod_rel_ativo ? 'Ativo' : 'Inativo' }}
                         </x-sbadmin::badge>
                     </td>
                 </tr>

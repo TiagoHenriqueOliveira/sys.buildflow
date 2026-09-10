@@ -67,7 +67,7 @@
                     <td>{{ optional($n->modeloRelatorio)->mod_rel_descricao }}</td>
                     <td>
                         <x-sbadmin::badge :type="$n->nat_aten_ativo ? 'success' : 'error'">
-                            {{ $n->nat_aten_ativo ? 'Ativo' : 'Desativado' }}
+                            {{ $n->nat_aten_ativo ? 'Ativo' : 'Inativo' }}
                         </x-sbadmin::badge>
                     </td>
                 </tr>

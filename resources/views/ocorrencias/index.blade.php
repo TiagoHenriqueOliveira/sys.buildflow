@@ -65,7 +65,7 @@
                     <td>{{ $o->ocor_descricao }}</td>
                     <td>
                         <x-sbadmin::badge :type="$o->ocor_ativo ? 'success' : 'error'">
-                            {{ $o->ocor_ativo ? 'Ativo' : 'Desativado' }}
+                            {{ $o->ocor_ativo ? 'Ativo' : 'Inativo' }}
                         </x-sbadmin::badge>
                     </td>
                 </tr>

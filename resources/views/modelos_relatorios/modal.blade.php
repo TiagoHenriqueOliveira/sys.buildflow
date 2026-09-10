@@ -59,6 +59,7 @@
                             id="mod_rel_ativo"
                             name="mod_rel_ativo"
                             label="Ativo"
+                            off-label="Inativo"
                             :checked="old('mod_rel_ativo', true)"
                             :switch="true"
                         />

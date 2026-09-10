@@ -46,6 +46,7 @@
                             id="ocor_ativo"
                             name="ocor_ativo"
                             label="Ativo"
+                            off-label="Inativo"
                             :checked="old('ocor_ativo', true)"
                             :switch="true"
                         />

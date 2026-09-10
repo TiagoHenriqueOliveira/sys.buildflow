@@ -126,6 +126,7 @@
                             id="user_ativo"
                             name="user_ativo"
                             label="Ativo"
+                            off-label="Inativo"
                             :checked="old('user_ativo', true)"
                             :switch="true"
                         />

@@ -58,6 +58,7 @@
                             id="nat_aten_ativo"
                             name="nat_aten_ativo"
                             label="Ativo"
+                            off-label="Inativo"
                             :checked="old('nat_aten_ativo', true)"
                             :switch="true"
                         />
