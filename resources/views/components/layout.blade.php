@@ -25,10 +25,11 @@
         ['label' => 'Atendimentos', 'icon' => 'bi-headset', 'route' => 'atendimentos.index'],
     ];
 
-    // Clientes: Administrador (gestão completa) e Comercial (BF02 — dono do
-    // relacionamento com o cliente no CRM) têm acesso; Técnico não.
+    // Clientes/Orçamentos: Administrador (gestão completa) e Comercial
+    // (BF02/CRM — dono do relacionamento comercial) têm acesso; Técnico não.
     if ($isAdmin || $isComercial) {
         $menu[] = ['label' => 'Clientes', 'icon' => 'bi-person-vcard', 'route' => 'clientes.index'];
+        $menu[] = ['label' => 'Orçamentos', 'icon' => 'bi-cash-coin', 'route' => 'orcamentos.index'];
     }
 
     $menu[] = ['label' => 'Relatórios', 'icon' => 'bi-bar-chart-line', 'route' => 'atendimentos-relatorios.index'];
@@ -38,6 +39,7 @@
             'label' => 'Configurações',
             'icon' => 'bi-gear',
             'children' => [
+                ['label' => 'Tipos de Orçamento (CRM)', 'icon' => 'bi-tags', 'route' => 'crm.tipos-orcamento.index'],
                 ['label' => 'Perguntas (Configurador)', 'icon' => 'bi-question-circle', 'route' => 'configurador.perguntas.index'],
                 ['label' => 'Modelos (Configurador)', 'icon' => 'bi-diagram-3', 'route' => 'configurador.modelos.index'],
                 ['label' => 'Modelos de Relatórios', 'icon' => 'bi-file-earmark-text', 'route' => 'modelos-de-relatorios.index'],

@@ -7,11 +7,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientesController;
 use App\Http\Controllers\ConfiguradorModelosController;
 use App\Http\Controllers\ConfiguradorPerguntasController;
+use App\Http\Controllers\CrmTiposOrcamentoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
+use App\Http\Controllers\OrcamentosController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UsuariosController;
 use Illuminate\Support\Facades\Route;
@@ -73,6 +75,10 @@ Route::middleware('auth')->group(function () {
     // Clientes — CRUD completo (Administrador ou perfil Comercial, BF02)
     Route::middleware('comercial')->group(function () {
         Route::resource('clientes', ClientesController::class)->except(['show', 'destroy']);
+
+        // Orçamentos (CRM02/03/04) — mesmo perfil de acesso de Clientes.
+        Route::resource('orcamentos', OrcamentosController::class)->except(['show', 'destroy']);
+        Route::post('/orcamentos/{id}/comentarios', [OrcamentosController::class, 'storeComentario'])->name('orcamentos.store-comentario');
     });
 
     // Atendimentos — leitura disponível para todos os usuários autenticados
@@ -139,6 +145,12 @@ Route::middleware('auth')->group(function () {
         // Configurações
         Route::resource('modelos-de-relatorios', ModelosRelatoriosController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // CRM01 — tipos de sistema de orçamento
+        Route::resource('crm/tipos-orcamento', CrmTiposOrcamentoController::class)
+            ->except(['create', 'edit', 'show', 'destroy'])
+            ->parameter('tipos-orcamento', 'id')
+            ->names('crm.tipos-orcamento');
 
         // Configurador (NC02) — perguntas e modelos reutilizáveis
         Route::resource('configurador/perguntas', ConfiguradorPerguntasController::class)
