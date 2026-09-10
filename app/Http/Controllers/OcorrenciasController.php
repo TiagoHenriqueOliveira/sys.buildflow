@@ -19,22 +19,24 @@ class OcorrenciasController extends Controller
      * Migrada pro pacote sbadmin/dashboard — mesmo padrão de
      * clientes/naturezas_atendimentos (ver CLAUDE.md, seção "Template
      * visual"): sem branch DataTables-JSON, paginação nativa consumida por
-     * <x-sbadmin::table>; busca via ?busca= na descrição, ordenação
-     * descartada (lista sempre por descrição).
+     * <x-sbadmin::table>; ordenação descartada (lista sempre por
+     * descrição). A busca única (?busca=) foi substituída pelo filtro
+     * individual de descrição abaixo, mesmo padrão de clientes/atendimentos.
      */
     public function index(Request $request): View
     {
-        $busca = trim((string) $request->get('busca', ''));
+        $filtroDescricao = trim((string) $request->get('f_descricao', ''));
 
         $ocorrencias = Ocorrencia::query()
-            ->when($busca !== '', fn ($query) => $query->where('ocor_descricao', 'like', "%{$busca}%"))
+            ->when($filtroDescricao !== '', fn ($query) => $query->where('ocor_descricao', 'like', "%{$filtroDescricao}%"))
             ->orderBy('ocor_descricao')
             ->paginate(15)
             ->withQueryString();
 
         return view('ocorrencias.index', [
             'ocorrencias' => $ocorrencias,
-            'busca' => $busca,
+            'filtroDescricao' => $filtroDescricao,
+            'temFiltro' => $filtroDescricao !== '',
         ]);
     }
 

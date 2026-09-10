@@ -36,12 +36,9 @@
                     <x-sbadmin::form.input id="data_ate" type="date" name="data_ate" label="Até" :value="request('data_ate')" />
                 </div>
                 <div class="col-12 col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary sbadmin-btn-primary">
-                        <i class="bi bi-search" aria-hidden="true"></i> Filtrar
+                    <button type="submit" class="btn btn-info">
+                        <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                     </button>
-                    <a href="{{ route('logs-auditoria.index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg" aria-hidden="true"></i> Limpar
-                    </a>
                 </div>
             </div>
         </div>

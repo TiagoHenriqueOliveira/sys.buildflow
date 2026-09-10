@@ -20,15 +20,20 @@ class UsuariosController extends Controller
      * Migrada pro pacote sbadmin/dashboard — mesmo padrão das demais telas
      * de cadastro simples (ver CLAUDE.md, seção "Template visual"): sem
      * branch DataTables-JSON, paginação nativa consumida por
-     * <x-sbadmin::table>; busca via ?busca= (nome/e-mail), ordenação
-     * descartada (lista sempre por nome). O filtro de usuário "protegido"
-     * (admin master, só visível/editável por si mesmo — ver
-     * Usuario::isProtegido()) que antes era feito no mapper de linha da
-     * DataTables virou uma cláusula WHERE equivalente na query.
+     * <x-sbadmin::table>; ordenação descartada (lista sempre por nome). O
+     * filtro de usuário "protegido" (admin master, só visível/editável por
+     * si mesmo — ver Usuario::isProtegido()) que antes era feito no mapper
+     * de linha da DataTables virou uma cláusula WHERE equivalente na query.
+     *
+     * A busca única (?busca=, que casava nome OU e-mail) foi substituída
+     * pelos filtros individuais por coluna abaixo (Nome e E-mail,
+     * combináveis entre si em AND), seguindo o mesmo padrão de
+     * clientes/atendimentos.
      */
     public function index(Request $request): View
     {
-        $busca = trim((string) $request->get('busca', ''));
+        $filtroNome = trim((string) $request->get('f_nome', ''));
+        $filtroEmail = trim((string) $request->get('f_email', ''));
         $loggedUserId = Auth::user()->user_id;
 
         $usuarios = Usuario::query()
@@ -36,19 +41,17 @@ class UsuariosController extends Controller
                 $query->where('user_protegido', 0)
                     ->orWhere('user_id', $loggedUserId);
             })
-            ->when($busca !== '', function ($query) use ($busca) {
-                $query->where(function ($q) use ($busca) {
-                    $q->where('user_nome', 'like', "%{$busca}%")
-                        ->orWhere('user_email', 'like', "%{$busca}%");
-                });
-            })
+            ->when($filtroNome !== '', fn ($q) => $q->where('user_nome', 'like', "%{$filtroNome}%"))
+            ->when($filtroEmail !== '', fn ($q) => $q->where('user_email', 'like', "%{$filtroEmail}%"))
             ->orderBy('user_nome')
             ->paginate(15)
             ->withQueryString();
 
         return view('usuarios.index', [
             'usuarios' => $usuarios,
-            'busca' => $busca,
+            'filtroNome' => $filtroNome,
+            'filtroEmail' => $filtroEmail,
+            'temFiltro' => $filtroNome !== '' || $filtroEmail !== '',
         ]);
     }
 

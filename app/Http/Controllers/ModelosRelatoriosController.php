@@ -19,22 +19,24 @@ class ModelosRelatoriosController extends Controller
      * Migrada pro pacote sbadmin/dashboard — mesmo padrão das demais telas
      * de cadastro simples (ver CLAUDE.md, seção "Template visual"): sem
      * branch DataTables-JSON, paginação nativa consumida por
-     * <x-sbadmin::table>; busca via ?busca= na descrição, ordenação
-     * descartada (lista sempre por descrição).
+     * <x-sbadmin::table>; ordenação descartada (lista sempre por
+     * descrição). A busca única (?busca=) foi substituída pelo filtro
+     * individual de descrição abaixo, mesmo padrão de clientes/atendimentos.
      */
     public function index(Request $request): View
     {
-        $busca = trim((string) $request->get('busca', ''));
+        $filtroDescricao = trim((string) $request->get('f_descricao', ''));
 
         $modelos = ModeloRelatorio::query()
-            ->when($busca !== '', fn ($query) => $query->where('mod_rel_descricao', 'like', "%{$busca}%"))
+            ->when($filtroDescricao !== '', fn ($query) => $query->where('mod_rel_descricao', 'like', "%{$filtroDescricao}%"))
             ->orderBy('mod_rel_descricao')
             ->paginate(15)
             ->withQueryString();
 
         return view('modelos_relatorios.index', [
             'modelos' => $modelos,
-            'busca' => $busca,
+            'filtroDescricao' => $filtroDescricao,
+            'temFiltro' => $filtroDescricao !== '',
         ]);
     }
 

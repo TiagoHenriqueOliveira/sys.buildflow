@@ -22,16 +22,17 @@ class NaturezasAtendimentosController extends Controller
      * DataTables-JSON, paginação nativa do Eloquent consumida por
      * <x-sbadmin::table>. Busca client-side e ordenação por coluna que a
      * DataTables oferecia não têm equivalente direto no novo componente —
-     * busca reimplementada via querystring (?busca=) na descrição,
-     * ordenação descartada nesta fase (lista sempre por descrição).
+     * ordenação descartada nesta fase (lista sempre por descrição). A busca
+     * única (?busca=) foi substituída pelo filtro individual de descrição
+     * abaixo, mesmo padrão de clientes/atendimentos.
      */
     public function index(Request $request): View
     {
-        $busca = trim((string) $request->get('busca', ''));
+        $filtroDescricao = trim((string) $request->get('f_descricao', ''));
 
         $naturezas = NaturezaAtendimento::query()
             ->with(['modeloRelatorio'])
-            ->when($busca !== '', fn ($query) => $query->where('nat_aten_descricao', 'like', "%{$busca}%"))
+            ->when($filtroDescricao !== '', fn ($query) => $query->where('nat_aten_descricao', 'like', "%{$filtroDescricao}%"))
             ->orderBy('nat_aten_descricao')
             ->paginate(15)
             ->withQueryString();
@@ -43,7 +44,8 @@ class NaturezasAtendimentosController extends Controller
         return view('naturezas_atendimentos.index', [
             'naturezas' => $naturezas,
             'modelosRelatorios' => $modelosRelatorios,
-            'busca' => $busca,
+            'filtroDescricao' => $filtroDescricao,
+            'temFiltro' => $filtroDescricao !== '',
         ]);
     }
 

@@ -24,26 +24,18 @@
         @endif
 
         <form method="GET" action="{{ route('modelos-de-relatorios.index') }}" class="sbadmin-card mb-4">
+            {{-- Filtro individual por coluna — substitui a busca unica que
+                 existia antes (removida a pedido do cliente). --}}
             <div class="sbadmin-card-body">
                 <div class="row g-2 align-items-end">
-                    <div class="col-12 col-md-4">
-                        <label for="busca" class="sbadmin-form-label">Buscar</label>
-                        <input
-                            type="text"
-                            id="busca"
-                            name="busca"
-                            value="{{ $busca }}"
-                            class="form-control sbadmin-form-control"
-                            placeholder="Descrição"
-                        >
+                    <div class="col-6 col-md-4">
+                        <label for="f_descricao" class="sbadmin-form-label">Descrição</label>
+                        <input type="text" id="f_descricao" name="f_descricao" value="{{ $filtroDescricao }}" class="form-control sbadmin-form-control" placeholder="Descrição">
                     </div>
-                    <div class="col-12 col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-outline-secondary">
-                            <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                    <div class="col-12 col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                         </button>
-                        @if($busca !== '')
-                            <a href="{{ route('modelos-de-relatorios.index') }}" class="btn btn-link">Limpar</a>
-                        @endif
                     </div>
                 </div>
             </div>

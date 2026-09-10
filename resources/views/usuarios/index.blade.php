@@ -24,26 +24,24 @@
         @endif
 
         <form method="GET" action="{{ route('usuarios.index') }}" class="sbadmin-card mb-4">
+            {{-- Filtros individuais por coluna — combinaveis entre si (AND:
+                 cada filtro preenchido restringe ainda mais o resultado).
+                 Substituem a busca unica que existia antes (removida a
+                 pedido do cliente). --}}
             <div class="sbadmin-card-body">
                 <div class="row g-2 align-items-end">
-                    <div class="col-12 col-md-4">
-                        <label for="busca" class="sbadmin-form-label">Buscar</label>
-                        <input
-                            type="text"
-                            id="busca"
-                            name="busca"
-                            value="{{ $busca }}"
-                            class="form-control sbadmin-form-control"
-                            placeholder="Nome ou e-mail"
-                        >
+                    <div class="col-6 col-md-5">
+                        <label for="f_nome" class="sbadmin-form-label">Nome</label>
+                        <input type="text" id="f_nome" name="f_nome" value="{{ $filtroNome }}" class="form-control sbadmin-form-control" placeholder="Nome">
                     </div>
-                    <div class="col-12 col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-outline-secondary">
-                            <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                    <div class="col-6 col-md-5">
+                        <label for="f_email" class="sbadmin-form-label">E-mail</label>
+                        <input type="text" id="f_email" name="f_email" value="{{ $filtroEmail }}" class="form-control sbadmin-form-control" placeholder="E-mail">
+                    </div>
+                    <div class="col-12 col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                         </button>
-                        @if($busca !== '')
-                            <a href="{{ route('usuarios.index') }}" class="btn btn-link">Limpar</a>
-                        @endif
                     </div>
                 </div>
             </div>
