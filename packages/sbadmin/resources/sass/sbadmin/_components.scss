@@ -180,8 +180,12 @@
 // prominente (ex.: editar em todas as telas de listagem). Quadrado
 // (cantos levemente arredondados, $sbadmin-radius-sm, igual aos demais
 // botoes/inputs do tema — pedido explicito do cliente pra nao ser
-// circular), com um fundo sutil na cor de destaque em repouso, ficando
-// solido no hover/focus como reforco visual de interacao. Sempre icon-only.
+// circular). Cor $sbadmin-color-warning (ambar) em vez de secondary —
+// o azul secondary e proximo demais da propria paleta escura de fundo do
+// tema e ficava discreto demais em repouso (so o hover chamava atencao);
+// ambar contrasta contra o fundo azul-marinho tanto em repouso quanto no
+// hover, sem repetir o significado de nenhum outro botao (primary=criar,
+// success=salvar, info=aplicar filtro). Sempre icon-only.
 .sbadmin-table-action-btn {
     display: inline-flex;
     align-items: center;
@@ -190,17 +194,17 @@
     height: 2.25rem;
     padding: 0;
     border-radius: $sbadmin-radius-sm;
-    border: 1px solid rgba($sbadmin-color-secondary, 0.25);
-    background-color: rgba($sbadmin-color-secondary, 0.12);
-    color: $sbadmin-color-secondary;
+    border: 1px solid rgba($sbadmin-color-warning, 0.4);
+    background-color: rgba($sbadmin-color-warning, 0.18);
+    color: $sbadmin-color-warning;
     transition: background-color $sbadmin-transition, color $sbadmin-transition, border-color $sbadmin-transition;
 
     .bi { font-size: 0.95rem; line-height: 1; }
 
     &:hover, &:focus {
-        background-color: $sbadmin-color-secondary;
-        border-color: $sbadmin-color-secondary;
-        color: #fff;
+        background-color: $sbadmin-color-warning;
+        border-color: $sbadmin-color-warning;
+        color: #1E293B;
     }
 
     &:focus {
