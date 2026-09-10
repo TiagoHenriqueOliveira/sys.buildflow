@@ -37,15 +37,30 @@
                     <input type="hidden" name="_method" id="user_method" value="{{ old('user_id') ? 'PUT' : 'POST' }}">
                     <input type="hidden" id="user_id" name="user_id" value="{{ old('user_id') }}">
 
-                    <x-sbadmin::form.input
-                        id="user_nome"
-                        name="user_nome"
-                        label="Nome"
-                        :value="old('user_nome')"
-                        maxlength="50"
-                        required
-                        placeholder="Ex.: João da Silva"
-                    />
+                    <div class="row g-2">
+                        <div class="col-4 col-md-2">
+                            <x-sbadmin::form.select
+                                id="user_nivel_acesso"
+                                name="user_nivel_acesso"
+                                label="Nível"
+                                :options="['0' => 'Administrador', '1' => 'Técnico']"
+                                :value="old('user_nivel_acesso')"
+                                placeholder="Selecione..."
+                                required
+                            />
+                        </div>
+                        <div class="col-8 col-md-10">
+                            <x-sbadmin::form.input
+                                id="user_nome"
+                                name="user_nome"
+                                label="Nome"
+                                :value="old('user_nome')"
+                                maxlength="50"
+                                required
+                                placeholder="Ex.: João da Silva"
+                            />
+                        </div>
+                    </div>
 
                     <x-sbadmin::form.input
                         id="user_email"
@@ -58,55 +73,50 @@
                         placeholder="Ex.: joao@email.com"
                     />
 
-                    <x-sbadmin::form.select
-                        id="user_nivel_acesso"
-                        name="user_nivel_acesso"
-                        label="Nível"
-                        :options="['0' => 'Administrador', '1' => 'Técnico']"
-                        :value="old('user_nivel_acesso')"
-                        placeholder="Selecione..."
-                        required
-                    />
-
-                    <div class="sbadmin-form-group">
-                        <label for="user_senha" class="sbadmin-form-label">Senha</label>
-                        <div class="input-group">
-                            <input
-                                type="password"
-                                class="form-control sbadmin-form-control @error('user_senha') is-invalid @enderror"
-                                id="user_senha"
-                                name="user_senha"
-                                maxlength="50"
-                                placeholder="Informe uma senha"
-                            >
-                            <button type="button" class="btn btn-outline-primary" id="btnSugerirSenha">Sugerir</button>
-                            <button type="button" class="btn btn-outline-secondary btn-toggle-password" data-target="#user_senha" aria-label="Mostrar/ocultar senha">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
-                            </button>
-                            @error('user_senha')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="sbadmin-form-group">
+                                <label for="user_senha" class="sbadmin-form-label">Senha</label>
+                                <div class="input-group">
+                                    <input
+                                        type="password"
+                                        class="form-control sbadmin-form-control @error('user_senha') is-invalid @enderror"
+                                        id="user_senha"
+                                        name="user_senha"
+                                        maxlength="50"
+                                        placeholder="Informe uma senha"
+                                    >
+                                    <button type="button" class="btn btn-outline-primary" id="btnSugerirSenha">Sugerir</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-toggle-password" data-target="#user_senha" aria-label="Mostrar/ocultar senha">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                    @error('user_senha')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="sbadmin-form-help" id="senha_help">No cadastro a senha é obrigatória. Na edição, preencha apenas se desejar alterá-la.</div>
+                            </div>
                         </div>
-                        <div class="sbadmin-form-help" id="senha_help">No cadastro a senha é obrigatória. Na edição, preencha apenas se desejar alterá-la.</div>
-                    </div>
-
-                    <div class="sbadmin-form-group">
-                        <label for="user_senha_confirmation" class="sbadmin-form-label">Confirmar</label>
-                        <div class="input-group">
-                            <input
-                                type="password"
-                                class="form-control sbadmin-form-control @error('user_senha_confirmation') is-invalid @enderror"
-                                id="user_senha_confirmation"
-                                name="user_senha_confirmation"
-                                maxlength="50"
-                                placeholder="Confirme a senha"
-                            >
-                            <button type="button" class="btn btn-outline-secondary btn-toggle-password" data-target="#user_senha_confirmation" aria-label="Mostrar/ocultar senha">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
-                            </button>
-                            @error('user_senha_confirmation')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-6">
+                            <div class="sbadmin-form-group">
+                                <label for="user_senha_confirmation" class="sbadmin-form-label">Confirmar</label>
+                                <div class="input-group">
+                                    <input
+                                        type="password"
+                                        class="form-control sbadmin-form-control @error('user_senha_confirmation') is-invalid @enderror"
+                                        id="user_senha_confirmation"
+                                        name="user_senha_confirmation"
+                                        maxlength="50"
+                                        placeholder="Confirme a senha"
+                                    >
+                                    <button type="button" class="btn btn-outline-secondary btn-toggle-password" data-target="#user_senha_confirmation" aria-label="Mostrar/ocultar senha">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                    @error('user_senha_confirmation')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -117,6 +127,7 @@
                             name="user_ativo"
                             label="Ativo"
                             :checked="old('user_ativo', true)"
+                            :switch="true"
                         />
                     </div>
 

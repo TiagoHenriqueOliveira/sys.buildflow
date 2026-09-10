@@ -120,6 +120,7 @@
                             name="cli_ativo"
                             label="Ativo"
                             :checked="old('cli_ativo', true)"
+                            :switch="true"
                         />
                     </div>
 

@@ -60,6 +60,7 @@
                             name="mod_rel_ativo"
                             label="Ativo"
                             :checked="old('mod_rel_ativo', true)"
+                            :switch="true"
                         />
                     </div>
 

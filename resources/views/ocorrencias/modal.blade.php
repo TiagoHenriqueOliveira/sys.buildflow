@@ -47,6 +47,7 @@
                             name="ocor_ativo"
                             label="Ativo"
                             :checked="old('ocor_ativo', true)"
+                            :switch="true"
                         />
                     </div>
 

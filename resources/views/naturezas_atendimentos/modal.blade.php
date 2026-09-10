@@ -59,6 +59,7 @@
                             name="nat_aten_ativo"
                             label="Ativo"
                             :checked="old('nat_aten_ativo', true)"
+                            :switch="true"
                         />
                     </div>
 
