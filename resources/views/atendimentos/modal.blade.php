@@ -107,6 +107,16 @@
                             >
                         </div>
 
+                        {{-- BF03 — dados do cliente vinculado, sem navegação adicional. --}}
+                        <div id="cliente-resumo-box" class="sbadmin-card mb-3" hidden>
+                            <div class="sbadmin-card-body py-2 small">
+                                <div><strong>Segmento:</strong> <span id="cliente-resumo-segmento">—</span></div>
+                                <div><strong>Classificação:</strong> <span id="cliente-resumo-classificacao">—</span></div>
+                                <div><strong>Contato principal:</strong> <span id="cliente-resumo-contato">—</span></div>
+                                <div><strong>Cidade/UF:</strong> <span id="cliente-resumo-cidade">—</span></div>
+                            </div>
+                        </div>
+
                         <x-sbadmin::form.input id="aten_nr_proposta" name="aten_nr_proposta" label="Nº Proposta" maxlength="20" />
                         <x-sbadmin::form.input id="aten_contato" name="aten_contato" label="Contato" maxlength="50" />
                         <x-sbadmin::form.input id="aten_responsavel" name="aten_responsavel" label="Responsável" maxlength="50" />

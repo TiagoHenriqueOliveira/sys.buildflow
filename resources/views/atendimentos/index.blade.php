@@ -179,6 +179,7 @@
                 document.getElementById('aten_natureza_id').value = data.naturezaId || '';
                 document.getElementById('aten_cliente_id').value = data.clienteId || '';
                 document.getElementById('aten_cliente_nome').value = data.cliente || '';
+                carregarResumoCliente(data.clienteId);
                 document.getElementById('aten_usuario_id').value = data.usuarioId || '';
                 document.getElementById('aten_nr_proposta').value = data.nrProposta || '';
                 document.getElementById('aten_contato').value = data.contato || '';
@@ -210,6 +211,7 @@
 
                 document.getElementById('aten_id').value = '';
                 document.getElementById('aten_cliente_id').value = '';
+                carregarResumoCliente(null);
                 document.getElementById('aten_method').value = 'POST';
                 form.action = '{{ route('atendimentos.store') }}';
 
@@ -505,9 +507,32 @@
                     .catch(() => mostrarFeedbackModal('error', 'Erro ao remover anexo.'));
             });
 
+            {{-- BF03 — resumo do cliente vinculado, sem navegação extra. --}}
+            function carregarResumoCliente(clienteId) {
+                const box = document.getElementById('cliente-resumo-box');
+                if (!clienteId) {
+                    box.hidden = true;
+                    return;
+                }
+                fetch('{{ url('/clientes') }}/' + clienteId + '/resumo', {
+                    headers: { 'Accept': 'application/json' },
+                })
+                    .then((r) => r.ok ? r.json() : Promise.reject())
+                    .then((d) => {
+                        document.getElementById('cliente-resumo-segmento').textContent = d.cli_segmento || '—';
+                        document.getElementById('cliente-resumo-classificacao').textContent = d.classificacao || '—';
+                        document.getElementById('cliente-resumo-contato').textContent = d.cli_contato_principal || '—';
+                        document.getElementById('cliente-resumo-cidade').textContent = [d.cli_cidade, d.cli_uf].filter(Boolean).join('/') || '—';
+                        box.hidden = false;
+                    })
+                    .catch(() => { box.hidden = true; });
+            }
+
             {{-- Autocomplete de cliente — ver resources/js/autocomplete.js --}}
             document.addEventListener('DOMContentLoaded', function () {
-                window.setupAutocomplete('#aten_cliente_nome', '#aten_cliente_id', '{{ route('clientes.autocomplete') }}');
+                window.setupAutocomplete('#aten_cliente_nome', '#aten_cliente_id', '{{ route('clientes.autocomplete') }}', {
+                    onSelect: (item) => carregarResumoCliente(item.id),
+                });
             });
         </script>
     @endpush

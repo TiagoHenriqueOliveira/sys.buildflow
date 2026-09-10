@@ -62,8 +62,16 @@ Route::middleware('auth')->group(function () {
     // Dashboard (placeholder minimo por ora - ver DashboardController)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Clientes — autocomplete
+    // Clientes — autocomplete e resumo (leitura disponível para todos os
+    // usuários autenticados: usados no formulário de Atendimento por
+    // técnicos, que não têm acesso ao CRUD completo de Clientes — BF03).
     Route::get('/clientes/autocomplete', [ClientesController::class, 'autoComplete'])->name('clientes.autocomplete');
+    Route::get('/clientes/{cliente}/resumo', [ClientesController::class, 'resumo'])->name('clientes.resumo');
+
+    // Clientes — CRUD completo (Administrador ou perfil Comercial, BF02)
+    Route::middleware('comercial')->group(function () {
+        Route::resource('clientes', ClientesController::class)->except(['show', 'destroy']);
+    });
 
     // Atendimentos — leitura disponível para todos os usuários autenticados
     Route::get('/atendimentos', [AtendimentosController::class, 'index'])->name('atendimentos.index');
@@ -113,9 +121,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('/atendimentos/{atendimento}', [AtendimentosController::class, 'update']);
         Route::post('/atendimentos/{id}/equipamentos', [AtendimentosController::class, 'storeEquipamento'])->name('atendimentos.store-equipamentos');
         Route::delete('/atendimentos/{id}/equipamentos/{equipId}', [AtendimentosController::class, 'destroyEquipamento'])->name('atendimentos.destroy-equipamentos');
-
-        // Clientes
-        Route::resource('clientes', ClientesController::class)->except(['create', 'edit', 'show', 'destroy']);
 
         // Ocorrências
         Route::get('/ocorrencias/autocomplete', [OcorrenciasController::class, 'autoComplete'])->name('ocorrencias.autocomplete');

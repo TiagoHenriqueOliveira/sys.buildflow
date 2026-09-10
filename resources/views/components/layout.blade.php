@@ -17,14 +17,17 @@
     // array estático) ou dentro dos componentes do pacote (que devem
     // continuar genéricos/reutilizáveis por outros projetos).
     $usuario = Auth::user();
-    $isAdmin = $usuario && (int) $usuario->user_nivel_acesso === 0;
+    $isAdmin = $usuario && (int) $usuario->user_nivel_acesso === \App\Enums\NivelAcesso::Administrador->value;
+    $isComercial = $usuario && (int) $usuario->user_nivel_acesso === \App\Enums\NivelAcesso::Comercial->value;
 
     $menu = [
         ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'route' => 'dashboard'],
         ['label' => 'Atendimentos', 'icon' => 'bi-headset', 'route' => 'atendimentos.index'],
     ];
 
-    if ($isAdmin) {
+    // Clientes: Administrador (gestão completa) e Comercial (BF02 — dono do
+    // relacionamento com o cliente no CRM) têm acesso; Técnico não.
+    if ($isAdmin || $isComercial) {
         $menu[] = ['label' => 'Clientes', 'icon' => 'bi-person-vcard', 'route' => 'clientes.index'];
     }
 

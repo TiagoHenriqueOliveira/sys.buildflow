@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\NivelAcesso;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,7 @@ class UsuarioRequest extends FormRequest
         $id = $this->route('usuario') ?? $this->route('usuarios') ?? null;
 
         return [
-            'user_nivel_acesso' => ['required', 'integer', Rule::in([0, 1])],
+            'user_nivel_acesso' => ['required', 'integer', Rule::in(array_column(NivelAcesso::cases(), 'value'))],
             'user_nome' => ['required', 'string', 'max:50'],
             'user_email' => [
                 'required',

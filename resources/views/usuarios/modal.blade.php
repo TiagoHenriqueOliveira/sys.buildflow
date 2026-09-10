@@ -43,7 +43,7 @@
                                 id="user_nivel_acesso"
                                 name="user_nivel_acesso"
                                 label="Nível"
-                                :options="['0' => 'Administrador', '1' => 'Técnico']"
+                                :options="['0' => 'Administrador', '1' => 'Técnico', '2' => 'Comercial']"
                                 :value="old('user_nivel_acesso')"
                                 placeholder="Selecione..."
                                 required

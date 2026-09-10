@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\NivelAcesso;
 use App\Http\Requests\ClienteRequest;
+use App\Models\ClassificacaoCliente;
 use App\Models\Cliente;
+use App\Models\Usuario;
 use App\Repositories\ClienteRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,13 +43,18 @@ class ClientesController extends Controller
         $filtroCnpj = trim((string) $request->get('f_cnpj', ''));
         $filtroCidade = trim((string) $request->get('f_cidade', ''));
         $filtroUf = trim((string) $request->get('f_uf', ''));
+        $filtroSegmento = trim((string) $request->get('f_segmento', ''));
+        $filtroClassificacao = $request->get('f_classificacao', '');
         $filtroStatus = $request->get('f_status', '');
 
         $clientes = Cliente::query()
+            ->with('classificacao')
             ->when($filtroNome !== '', fn ($q) => $q->where('cli_nome', 'like', "%{$filtroNome}%"))
             ->when($filtroCnpj !== '', fn ($q) => $q->where('cli_cnpj', 'like', "%{$filtroCnpj}%"))
             ->when($filtroCidade !== '', fn ($q) => $q->where('cli_cidade', 'like', "%{$filtroCidade}%"))
             ->when($filtroUf !== '', fn ($q) => $q->where('cli_uf', 'like', "%{$filtroUf}%"))
+            ->when($filtroSegmento !== '', fn ($q) => $q->where('cli_segmento', 'like', "%{$filtroSegmento}%"))
+            ->when($filtroClassificacao !== '', fn ($q) => $q->where('cli_classificacao_id', (int) $filtroClassificacao))
             ->when($filtroStatus !== '', fn ($q) => $q->where('cli_ativo', (int) $filtroStatus))
             ->orderBy('cli_nome')
             ->paginate(15)
@@ -54,24 +62,48 @@ class ClientesController extends Controller
 
         return view('clientes.index', [
             'clientes' => $clientes,
+            'classificacoes' => ClassificacaoCliente::where('cla_cli_ativo', 1)->orderBy('cla_cli_nome')->get(),
             'filtroNome' => $filtroNome,
             'filtroCnpj' => $filtroCnpj,
             'filtroCidade' => $filtroCidade,
             'filtroUf' => $filtroUf,
+            'filtroSegmento' => $filtroSegmento,
+            'filtroClassificacao' => $filtroClassificacao,
             'filtroStatus' => $filtroStatus,
             'temFiltro' => $filtroNome !== '' || $filtroCnpj !== '' || $filtroCidade !== ''
-                || $filtroUf !== '' || $filtroStatus !== '',
+                || $filtroUf !== '' || $filtroSegmento !== '' || $filtroClassificacao !== '' || $filtroStatus !== '',
         ]);
     }
 
-    /**
-     * O modal de criação/edição deixou de submeter via AJAX (fetch/$.ajax +
-     * JSON de resposta) e passou a ser um <form> comum, com redirect +
-     * mensagem flash em caso de sucesso e o padrão nativo do Laravel
-     * (redirect back + $errors + old()) em caso de validação — os
-     * componentes <x-sbadmin::form.*> já leem old()/$errors sozinhos, sem
-     * precisar de nenhuma renderização de erro feita à mão em JS.
-     */
+    public function create(): View
+    {
+        return view('clientes.form', [
+            'cliente' => new Cliente(),
+            ...$this->dadosApoioFormulario(),
+        ]);
+    }
+
+    public function edit(int $id): View
+    {
+        $cliente = Cliente::with('contatos')->findOrFail($id);
+
+        return view('clientes.form', [
+            'cliente' => $cliente,
+            ...$this->dadosApoioFormulario(),
+        ]);
+    }
+
+    private function dadosApoioFormulario(): array
+    {
+        return [
+            'classificacoes' => ClassificacaoCliente::where('cla_cli_ativo', 1)->orderBy('cla_cli_nome')->get(),
+            'vendedores' => Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
+                ->where('user_ativo', 1)
+                ->orderBy('user_nome')
+                ->get(),
+        ];
+    }
+
     public function store(ClienteRequest $request): RedirectResponse
     {
         $cliente = $this->repository->create($request->validated());
@@ -109,5 +141,27 @@ class ClientesController extends Controller
         })->values()->all();
 
         return response()->json($result);
+    }
+
+    /**
+     * BF03 — resumo somente leitura do cliente, consumido pela tela de
+     * Atendimento (qualquer usuário autenticado, inclusive técnico sem
+     * acesso ao CRUD de Clientes) para exibir os dados sem navegação extra.
+     */
+    public function resumo(Cliente $cliente): JsonResponse
+    {
+        $cliente->load('classificacao');
+
+        return response()->json([
+            'cli_id' => $cliente->cli_id,
+            'cli_nome' => $cliente->cli_nome,
+            'cli_contato_principal' => $cliente->cli_contato_principal,
+            'cli_segmento' => $cliente->cli_segmento,
+            'classificacao' => $cliente->classificacao?->cla_cli_nome,
+            'cli_cidade' => $cliente->cli_cidade,
+            'cli_uf' => $cliente->cli_uf,
+            'cli_telefone' => $cliente->cli_telefone,
+            'cli_email' => $cliente->cli_email,
+        ]);
     }
 }

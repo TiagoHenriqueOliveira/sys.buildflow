@@ -72,7 +72,7 @@
                     </td>
                     <td>{{ $u->user_nome }}</td>
                     <td>{{ $u->user_email }}</td>
-                    <td>{{ (int) $u->user_nivel_acesso === 0 ? 'Administrador' : 'Técnico' }}</td>
+                    <td>{{ \App\Enums\NivelAcesso::from((int) $u->user_nivel_acesso)->label() }}</td>
                     <td>
                         <x-sbadmin::badge :type="$u->user_ativo ? 'success' : 'error'">
                             {{ $u->user_ativo ? 'Ativo' : 'Inativo' }}
