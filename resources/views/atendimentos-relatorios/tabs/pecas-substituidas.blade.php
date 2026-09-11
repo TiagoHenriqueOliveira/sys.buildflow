@@ -2,13 +2,20 @@
 <div id="tab-pecas" role="tabpanel" x-show="tab === 'pecas'">
     <div class="mb-3">
         <div class="row g-2 align-items-end">
-            <div class="col-md-6">
+            <div class="col-md-5">
                 <label for="peca_descricao" class="fw-bold mb-1">Descrição da Peça</label>
                 <input type="text"
                     id="peca_descricao"
                     class="form-control"
                     maxlength="255"
                     placeholder="Descreva a peça substituída">
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-check mt-4">
+                    <input type="checkbox" class="form-check-input" id="peca_trocada">
+                    <label class="form-check-label" for="peca_trocada">Trocada (BF09)</label>
+                </div>
             </div>
 
             <div class="col-md-2">
@@ -28,6 +35,7 @@
                 <tr>
                     <th style="width:10%;">Ações</th>
                     <th>Peça</th>
+                    <th style="width:15%;" class="text-center">Trocada?</th>
                 </tr>
             </thead>
             <tbody></tbody>

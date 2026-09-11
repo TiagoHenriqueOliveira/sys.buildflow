@@ -4,6 +4,8 @@ Ver [00-indice.md](00-indice.md). Pré-requisito: [07-web-crm-persistencia.md](0
 
 Este é o **último bloco do Web** — os incrementos da assistência técnica ficaram para depois do CRM por prioridade do usuário.
 
+> **Concluída** (`BF_v1.7.0`): esta sessão acabou sendo uma reformulação maior do que o "ajustar abas existentes" que o texto abaixo originalmente descrevia — ver a decisão registrada em `project_fae_bioenergia` (memória, 2026-09-10): o Configurador (NC02) substitui `modelos_relatorios` de verdade. `ConfigModelo` ganhou flags de seção (`cfg_mod_usa_horarios/clima/servicos/pecas/ocorrencias/observacoes`) que substituem as flags da tabela legada; `atendimentos_relatorios.aten_rel_config_modelo_id` liga cada relatório ao modelo do Configurador da sua natureza; um backfill migrou todo modelo/natureza já existente sem quebrar relatórios antigos. Dados/Horários/Assinatura/Anexos continuam estruturais (não viram pergunta) por decisão explícita do usuário nesta sessão; Anexos passou a aceitar somente fotos (pedido do cliente). Nova aba "Perguntas" renderiza dinamicamente as perguntas do modelo (NC02/NC03, com foto+comentário por pergunta quando `cfg_perg_permite_anexo`).
+
 ## Escopo: BF06 (ajuste), BF07, BF08, BF09, BF10, BF11
 
 ## Estado atual (ponto de partida)

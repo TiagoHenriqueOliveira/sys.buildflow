@@ -50,7 +50,8 @@ class AtendimentoRelatorioRepository implements CrudRepositoryInterface
     {
         return AtendimentoRelatorio::create([
             'aten_rel_atendimento_id'      => $data['aten_rel_atendimento_id'],
-            'aten_rel_modelo_relatorio_id' => $data['aten_rel_modelo_relatorio_id'],
+            'aten_rel_modelo_relatorio_id' => $data['aten_rel_modelo_relatorio_id'] ?? null,
+            'aten_rel_config_modelo_id'    => $data['aten_rel_config_modelo_id'] ?? null,
             'aten_rel_data'                => $data['aten_rel_data'] ?? now()->toDateString(),
             'aten_rel_status'              => $data['aten_rel_status'] ?? 0,
         ]);

@@ -257,7 +257,7 @@
 {{-- RODAPÉ --}}
 <div class="footer">
     Gerado em {{ now()->format('d/m/Y \à\s H:i') }}
-    &nbsp;|&nbsp; {{ $relatorio->modeloRelatorio->mod_rel_descricao }}
+    &nbsp;|&nbsp; {{ $relatorio->configModelo->cfg_mod_nome ?? $relatorio->modeloRelatorio->mod_rel_descricao }}
     &nbsp;|&nbsp; Nº {{ $relatorio->aten_rel_id }}
 </div>
 
@@ -268,7 +268,7 @@
             <img src="data:image/png;base64,{{ $logoBase64 }}" alt="Logo FAÉ Bioenergia">
         </td>
         <td class="header-info">
-            <div class="header-titulo">{{ $relatorio->modeloRelatorio->mod_rel_descricao }}</div>
+            <div class="header-titulo">{{ $relatorio->configModelo->cfg_mod_nome ?? $relatorio->modeloRelatorio->mod_rel_descricao }}</div>
         </td>
         <td class="header-nr">
             <div class="nr-label">Nº Relatório</div>
@@ -383,6 +383,55 @@
 </div>
 @endif
 
+{{-- 5b. PERGUNTAS DO MODELO (NC02/NC03, BF06) — mesmo padrão "foto ao lado
+     do texto" da Descrição acima; só perguntas realmente respondidas
+     (valor preenchido OU foto anexada) aparecem. --}}
+@php
+    $respostasComConteudo = $relatorio->respostas->filter(
+        fn($r) => filled($r->aten_rel_resp_valor) || $r->fotos->isNotEmpty()
+    );
+@endphp
+@if($respostasComConteudo->isNotEmpty())
+<div class="section section-descricao">
+    <div class="section-title">{{ $secNum() }}. Perguntas do Modelo</div>
+    <table class="descricao-grid">
+        @foreach($respostasComConteudo as $resposta)
+            @php
+                $pergunta = $relatorio->configModelo?->perguntas->firstWhere('cfg_perg_id', $resposta->aten_rel_resp_pergunta_id);
+                $foto = $resposta->fotos->first();
+                $fotoSrc = $foto ? $fotoBase64($foto->aten_rel_resp_foto_path) : '';
+                $textoResposta = ($pergunta && $pergunta->cfg_perg_tipo->temOpcoes())
+                    ? collect(explode(',', (string) $resposta->aten_rel_resp_valor))
+                        ->map(fn($optId) => optional($pergunta->opcoes->firstWhere('cfg_perg_op_id', (int) $optId))->cfg_perg_op_texto)
+                        ->filter()->implode(', ')
+                    : $resposta->aten_rel_resp_valor;
+            @endphp
+            <tr>
+                @if($fotoSrc !== '')
+                    <td class="descricao-foto-col"><img class="descricao-foto" src="{{ $fotoSrc }}" alt="Foto da resposta"></td>
+                    <td>
+                        <div class="descricao-texto-only">
+                            <strong>{{ $pergunta?->cfg_perg_texto }}</strong><br>
+                            {{ $textoResposta }}
+                            @if($foto->aten_rel_resp_foto_comentario)
+                                <br><em>{{ $foto->aten_rel_resp_foto_comentario }}</em>
+                            @endif
+                        </div>
+                    </td>
+                @else
+                    <td colspan="2">
+                        <div class="descricao-texto-only">
+                            <strong>{{ $pergunta?->cfg_perg_texto }}</strong><br>
+                            {{ $textoResposta }}
+                        </div>
+                    </td>
+                @endif
+            </tr>
+        @endforeach
+    </table>
+</div>
+@endif
+
 {{-- 6. SERVIÇOS PRESTADOS — só aparece se houver serviço. --}}
 @if($relatorio->servicos->isNotEmpty())
 <div class="section">
@@ -406,7 +455,8 @@
 </div>
 @endif
 
-{{-- 7. PEÇAS SUBSTITUÍDAS — só aparece se houver peça. --}}
+{{-- 7. PEÇAS SUBSTITUÍDAS — só aparece se houver peça. Coluna "Trocada?"
+     (BF09) adicionada na sessão 08. --}}
 @if($relatorio->pecas->isNotEmpty())
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Peças Substituídas</div>
@@ -415,6 +465,7 @@
             <tr>
                 <th>#</th>
                 <th>Peça</th>
+                <th style="width:100px;">Trocada?</th>
             </tr>
         </thead>
         <tbody>
@@ -422,6 +473,7 @@
             <tr>
                 <td style="width:30px; text-align:center;">{{ $i + 1 }}</td>
                 <td>{{ $p->aten_rel_peca_descricao }}</td>
+                <td style="text-align:center;">{{ $p->aten_rel_peca_trocada ? 'Sim' : 'Não' }}</td>
             </tr>
             @endforeach
         </tbody>

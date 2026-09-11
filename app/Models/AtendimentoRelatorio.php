@@ -23,16 +23,22 @@ class AtendimentoRelatorio extends Model
     protected $fillable = [
         'aten_rel_atendimento_id',
         'aten_rel_modelo_relatorio_id',
+        'aten_rel_config_modelo_id',
         'aten_rel_data',
         'aten_rel_status',
         'aten_rel_descricao',
         'aten_rel_informacoes_adicionais',
+        'aten_rel_observacao_interna',
         'aten_rel_dt_fim',
+        'aten_rel_aprovado_por',
+        'aten_rel_aprovado_em',
+        'aten_rel_observacao_supervisor',
     ];
 
     protected $casts = [
         'aten_rel_data'   => 'date:Y-m-d',
         'aten_rel_status' => 'integer',
+        'aten_rel_aprovado_em' => 'datetime',
     ];
 
     public function atendimento()
@@ -51,6 +57,41 @@ class AtendimentoRelatorio extends Model
             'aten_rel_modelo_relatorio_id',
             'mod_rel_id'
         );
+    }
+
+    /**
+     * Sessao 08 - Configurador substitui modelos_relatorios. Todo relatorio
+     * NOVO recebe este vinculo (copiado de natureza.configModelo na
+     * criacao, ver AtendimentosRelatoriosController::store()); relatorios
+     * antigos, migrados via backfill (2026_09_11_090007), tambem passam a
+     * ter um config_modelo equivalente - so um relatorio orfao (natureza
+     * sem nenhum modelo legado configurado) ficaria sem nenhum dos dois.
+     */
+    public function configModelo()
+    {
+        return $this->belongsTo(
+            ConfigModelo::class,
+            'aten_rel_config_modelo_id',
+            'cfg_mod_id'
+        );
+    }
+
+    public function aprovadoPor()
+    {
+        return $this->belongsTo(
+            Usuario::class,
+            'aten_rel_aprovado_por',
+            'user_id'
+        );
+    }
+
+    public function compartilhamentos()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioCompartilhamento::class,
+            'aten_rel_comp_relatorio_id',
+            'aten_rel_id'
+        )->orderByDesc('aten_rel_comp_criado_em');
     }
 
     public function horarios()

@@ -13,5 +13,10 @@ class AtendimentoRelatorioPeca extends Model
     protected $fillable = [
         'aten_rel_peca_relatorio_id',
         'aten_rel_peca_descricao',
+        'aten_rel_peca_trocada',
+    ];
+
+    protected $casts = [
+        'aten_rel_peca_trocada' => 'boolean',
     ];
 }

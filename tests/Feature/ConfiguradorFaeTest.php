@@ -157,20 +157,42 @@ class ConfiguradorFaeTest extends TestCase
         $response->assertSessionHasErrors('nat_aten_config_modelo_id');
     }
 
-    public function test_natureza_sem_modelo_do_configurador_continua_valida(): void
+    /**
+     * Sessao 08 - Configurador substitui modelos_relatorios (ver
+     * project_fae_bioenergia na memoria): o modelo legado agora e OPCIONAL,
+     * o modelo do Configurador passou a ser o vinculo obrigatorio. Este
+     * teste substitui test_natureza_sem_modelo_do_configurador_continua_valida
+     * (sessao 04), que testava exatamente o comportamento oposto.
+     */
+    public function test_natureza_sem_modelo_relatorio_legado_continua_valida(): void
     {
         $admin = Usuario::factory()->administrador()->create();
-        $modeloRelatorio = ModeloRelatorio::factory()->create();
+        $modeloComercial = ConfigModelo::create([
+            'cfg_mod_nome'  => 'Manutenção preventiva',
+            'cfg_mod_setor' => SetorModelo::Assistencia->value,
+        ]);
 
         $response = $this->actingAs($admin)->post(route('naturezas-dos-atendimentos.store'), [
-            'nat_aten_descricao'        => 'Visita Comercial',
-            'nat_aten_mod_relatorio_id' => $modeloRelatorio->mod_rel_id,
+            'nat_aten_descricao'        => 'Visita Técnica',
+            'nat_aten_config_modelo_id' => $modeloComercial->cfg_mod_id,
         ]);
 
         $response->assertRedirect(route('naturezas-dos-atendimentos.index'));
         $this->assertDatabaseHas('naturezas_atendimentos', [
-            'nat_aten_descricao'        => 'Visita Comercial',
-            'nat_aten_config_modelo_id' => null,
+            'nat_aten_descricao'        => 'Visita Técnica',
+            'nat_aten_mod_relatorio_id' => null,
+            'nat_aten_config_modelo_id' => $modeloComercial->cfg_mod_id,
         ]);
+    }
+
+    public function test_rejeita_natureza_sem_modelo_do_configurador(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+
+        $response = $this->actingAs($admin)->post(route('naturezas-dos-atendimentos.store'), [
+            'nat_aten_descricao' => 'Visita Técnica',
+        ]);
+
+        $response->assertSessionHasErrors('nat_aten_config_modelo_id');
     }
 }

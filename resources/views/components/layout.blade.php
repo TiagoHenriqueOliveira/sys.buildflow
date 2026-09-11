@@ -36,6 +36,7 @@
     }
 
     $menu[] = ['label' => 'Relatórios', 'icon' => 'bi-bar-chart-line', 'route' => 'atendimentos-relatorios.index'];
+    $menu[] = ['label' => 'Mapa de Demandas', 'icon' => 'bi-geo', 'route' => 'mapa-demandas.index'];
 
     if ($isAdmin) {
         $menu[] = [

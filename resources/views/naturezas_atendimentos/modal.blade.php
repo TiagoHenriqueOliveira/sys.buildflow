@@ -43,23 +43,24 @@
                     />
 
                     <x-sbadmin::form.select
-                        id="nat_aten_mod_relatorio_id"
-                        name="nat_aten_mod_relatorio_id"
-                        label="Modelo de Relatório"
-                        :options="$modelosRelatorios->pluck('mod_rel_descricao', 'mod_rel_id')->all()"
-                        :value="old('nat_aten_mod_relatorio_id')"
-                        placeholder="Selecione..."
-                        required
-                    />
-
-                    <x-sbadmin::form.select
                         id="nat_aten_config_modelo_id"
                         name="nat_aten_config_modelo_id"
                         label="Modelo do Configurador (Assistência)"
                         :options="$configModelos->pluck('cfg_mod_nome', 'cfg_mod_id')->all()"
                         :value="old('nat_aten_config_modelo_id')"
+                        placeholder="Selecione..."
+                        required
+                        help="BF04 — controla as seções e perguntas exibidas no preenchimento do relatório (substitui o Modelo de Relatório legado abaixo)."
+                    />
+
+                    <x-sbadmin::form.select
+                        id="nat_aten_mod_relatorio_id"
+                        name="nat_aten_mod_relatorio_id"
+                        label="Modelo de Relatório (legado)"
+                        :options="$modelosRelatorios->pluck('mod_rel_descricao', 'mod_rel_id')->all()"
+                        :value="old('nat_aten_mod_relatorio_id')"
                         placeholder="Nenhum"
-                        help="BF04 — modelo de perguntas reutilizável usado no preenchimento do relatório."
+                        help="Campo antigo, mantido só para relatórios já criados antes do Configurador. Não é mais obrigatório."
                     />
 
                     <div x-show="editando" x-cloak>

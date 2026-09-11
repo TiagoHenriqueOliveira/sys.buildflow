@@ -30,6 +30,9 @@ use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\AtendimentoRelatorioServico;
 use App\Models\AtendimentoRelatorioPeca;
 use App\Models\AtendimentoRelatorioDescricaoItem;
+use App\Models\AtendimentoRelatorioResposta;
+use App\Models\AtendimentoRelatorioRespostaFoto;
+use App\Models\AtendimentoRelatorioCompartilhamento;
 use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
 use App\Services\MediaService;
@@ -129,7 +132,7 @@ class AtendimentosRelatoriosController extends Controller
     public function store(AtendimentoRelatorioStoreRequest $request)
     {
         $atendimento = Atendimento::query()
-            ->with('natureza.modeloRelatorio')
+            ->with(['natureza.modeloRelatorio', 'natureza.configModelo'])
             ->where('aten_id', $request->aten_id)
             ->firstOrFail();
 
@@ -138,16 +141,22 @@ class AtendimentosRelatoriosController extends Controller
         // no corpo da requisição.
         $this->garantirPosse($atendimento);
 
+        // Sessao 08 - Configurador substitui modelos_relatorios: o vinculo
+        // exigido agora e natureza.configModelo (controla as secoes/
+        // perguntas do relatorio). O modelo legado (modeloRelatorio) e
+        // opcional a partir daqui - so usado abaixo para a regra REL-03, que
+        // e sobre o TIPO de relatorio (diario/periodo), nao sobre secoes.
         if (
             !$atendimento->natureza ||
-            !$atendimento->natureza->modeloRelatorio
+            !$atendimento->natureza->configModelo
         ) {
             return back()->withInput()->withErrors([
-                'aten_id' => 'A natureza do atendimento não possui modelo de relatório vinculado.',
+                'aten_id' => 'A natureza do atendimento não possui modelo do Configurador vinculado.',
             ]);
         }
 
-        $modelo = $atendimento->natureza->modeloRelatorio;
+        $configModelo = $atendimento->natureza->configModelo;
+        $modeloLegado = $atendimento->natureza->modeloRelatorio;
 
         // REL-02: Bloquear se atendimento está Paralisado ou Concluído
         if (in_array($atendimento->aten_status, [
@@ -159,8 +168,10 @@ class AtendimentosRelatoriosController extends Controller
             ]);
         }
 
-        // REL-03: Bloquear > 1 relatório de período por atendimento
-        if ((int) $modelo->mod_rel_tp_data === 1) {
+        // REL-03: Bloquear > 1 relatório de período por atendimento (só se
+        // a natureza ainda tiver o modelo legado vinculado - conceito sem
+        // equivalente no Configurador ainda).
+        if ($modeloLegado && (int) $modeloLegado->mod_rel_tp_data === 1) {
             $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
                 ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
                 ->exists();
@@ -175,7 +186,8 @@ class AtendimentosRelatoriosController extends Controller
         try {
             $rel = $this->repo->create([
                 'aten_rel_atendimento_id'      => $atendimento->aten_id,
-                'aten_rel_modelo_relatorio_id' => $modelo->mod_rel_id,
+                'aten_rel_modelo_relatorio_id' => $modeloLegado?->mod_rel_id,
+                'aten_rel_config_modelo_id'    => $configModelo->cfg_mod_id,
                 'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
                 'aten_rel_status'              => 0,
             ]);
@@ -206,6 +218,9 @@ class AtendimentosRelatoriosController extends Controller
 
         $atendimentoRelatorio->load([
             'modeloRelatorio',
+            'configModelo.perguntas.opcoes',
+            'aprovadoPor',
+            'respostas.fotos',
             'atendimento',
             'atendimento.cliente',
             'atendimento.natureza',
@@ -220,17 +235,32 @@ class AtendimentosRelatoriosController extends Controller
 
         $this->garantirPosse($atendimentoRelatorio->atendimento);
 
-        if (!$atendimentoRelatorio->modeloRelatorio) {
+        if (!$atendimentoRelatorio->modeloRelatorio && !$atendimentoRelatorio->configModelo) {
             abort(500, 'Modelo de relatório não encontrado.');
         }
 
         $prazo = $atendimentoRelatorio->calcularPrazo();
+
+        // Sessao 08 - Configurador substitui modelos_relatorios: um
+        // relatorio sem config_modelo (caso raro, so relatorio muito antigo
+        // cuja natureza nunca foi migrada) cai no default "mostra tudo",
+        // igual ao comportamento de sempre antes desta sessao.
+        $secoes = $atendimentoRelatorio->configModelo?->secoesAtivas() ?? [
+            'horarios' => true,
+            'clima' => true,
+            'servicos' => true,
+            'pecas' => true,
+            'ocorrencias' => true,
+            'observacoes' => true,
+        ];
 
         return view('atendimentos-relatorios.show', [
             'atendimentoRelatorio' => $atendimentoRelatorio,
             'prazoTotal'           => $prazo['prazo_total'],
             'prazoDecorrido'       => $prazo['prazo_decorrido'],
             'prazoAVencer'         => $prazo['prazo_a_vencer'],
+            'secoes'               => $secoes,
+            'somenteLeitura'       => $atendimentoRelatorio->aten_rel_status === \App\Enums\AtendimentoRelatorioStatus::Aprovado->value,
             'ocorrencias'          => \App\Models\Ocorrencia::where('ocor_ativo', true)->orderBy('ocor_descricao')->get(),
         ]);
     }
@@ -358,13 +388,20 @@ class AtendimentosRelatoriosController extends Controller
             }
 
             $statusAnterior = $relatorio->aten_rel_status;
-            $relatorio->update(['aten_rel_status' => $novoStatus]);
+            $relatorio->update([
+                'aten_rel_status' => $novoStatus,
+                'aten_rel_observacao_supervisor' => $request->input('observacao_supervisor', $relatorio->aten_rel_observacao_supervisor),
+            ]);
 
             if (
                 $novoStatus === AtendimentoRelatorioStatus::Aprovado->value &&
                 $statusAnterior !== AtendimentoRelatorioStatus::Aprovado->value
             ) {
-                $relatorio->update(['aten_rel_dt_fim' => now()->toDateString()]);
+                $relatorio->update([
+                    'aten_rel_dt_fim' => now()->toDateString(),
+                    'aten_rel_aprovado_por' => auth()->id(),
+                    'aten_rel_aprovado_em' => now(),
+                ]);
             }
 
             AuditService::log('Relatorios', 'APROVAR', $id, ['status' => $statusAnterior], ['status' => $novoStatus]);
@@ -414,7 +451,9 @@ class AtendimentosRelatoriosController extends Controller
         // aten_rel_descricao removido da lista (RF001): agora só é editável
         // via storeDescricaoItem/destroyDescricaoItem, para não contornar a
         // regra de retrocompatibilidade do RF004 (legado x itens novos).
-        $campos = ['aten_rel_informacoes_adicionais'];
+        // aten_rel_observacao_interna (BF11) reaproveita este mesmo endpoint
+        // genérico - nunca aparece no PDF assinado (ver pdf.blade.php).
+        $campos = ['aten_rel_informacoes_adicionais', 'aten_rel_observacao_interna'];
         if (!in_array($campo, $campos)) {
             return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
         }
@@ -533,19 +572,20 @@ class AtendimentosRelatoriosController extends Controller
     {
         $relatorio = $this->relatorioComPosseGarantida($id);
         return response()->json([
-            'data' => $relatorio->pecas()->orderBy('aten_rel_peca_id')->get(['aten_rel_peca_id', 'aten_rel_peca_descricao']),
+            'data' => $relatorio->pecas()->orderBy('aten_rel_peca_id')->get(['aten_rel_peca_id', 'aten_rel_peca_descricao', 'aten_rel_peca_trocada']),
         ]);
     }
 
     public function storePeca(Request $request, int $id): \Illuminate\Http\JsonResponse
     {
-        $request->validate(['descricao' => 'required|string|max:255']);
+        $request->validate(['descricao' => 'required|string|max:255', 'trocada' => 'nullable|boolean']);
         $this->relatorioComPosseGarantida($id);
 
         try {
             $peca = AtendimentoRelatorioPeca::create([
                 'aten_rel_peca_relatorio_id' => $id,
                 'aten_rel_peca_descricao'    => $request->input('descricao'),
+                'aten_rel_peca_trocada'      => $request->boolean('trocada'),
             ]);
             return response()->json(['message' => 'Peça adicionada!', 'item' => $peca]);
         } catch (\Throwable $e) {
@@ -661,6 +701,154 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    // ─── Perguntas do modelo do Configurador (NC02/NC03) ───────────────────
+
+    public function getRespostas(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['configModelo.perguntas.opcoes', 'respostas.fotos']);
+        $respostasPorPergunta = $relatorio->respostas->keyBy('aten_rel_resp_pergunta_id');
+
+        $perguntas = ($relatorio->configModelo?->perguntas ?? collect())->map(function ($pergunta) use ($respostasPorPergunta) {
+            $resposta = $respostasPorPergunta->get($pergunta->cfg_perg_id);
+
+            return [
+                'id' => $pergunta->cfg_perg_id,
+                'texto' => $pergunta->cfg_perg_texto,
+                'tipo' => $pergunta->cfg_perg_tipo->value,
+                'permite_anexo' => $pergunta->cfg_perg_permite_anexo,
+                'opcoes' => $pergunta->opcoes->map(fn ($o) => [
+                    'id' => $o->cfg_perg_op_id,
+                    'texto' => $o->cfg_perg_op_texto,
+                ])->values(),
+                'valor' => $resposta?->aten_rel_resp_valor,
+                'fotos' => $resposta ? $resposta->fotos->map(fn ($f) => [
+                    'id' => $f->aten_rel_resp_foto_id,
+                    'url' => asset('midia/' . $f->aten_rel_resp_foto_path),
+                    'comentario' => $f->aten_rel_resp_foto_comentario,
+                ])->values() : [],
+            ];
+        })->values();
+
+        return response()->json(['data' => $perguntas]);
+    }
+
+    public function storeResposta(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'pergunta_id' => ['required', 'integer', 'exists:config_perguntas,cfg_perg_id'],
+            'valor' => ['nullable', 'string'],
+            'foto' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
+            'foto_comentario' => ['nullable', 'string', 'max:500'],
+        ], [
+            'foto.mimes' => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
+        ]);
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $resposta = AtendimentoRelatorioResposta::updateOrCreate(
+                [
+                    'aten_rel_resp_relatorio_id' => $id,
+                    'aten_rel_resp_pergunta_id' => $request->input('pergunta_id'),
+                ],
+                ['aten_rel_resp_valor' => $request->input('valor')]
+            );
+
+            $fotoUrl = null;
+            if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
+                $file = $request->file('foto');
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $ext = $file->getClientOriginalExtension();
+                $safeName = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
+                $path = $file->storeAs("atendimentos_relatorios/{$id}/perguntas", $safeName, 'public');
+                if ($path === false) {
+                    return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
+                }
+                $foto = $resposta->fotos()->create([
+                    'aten_rel_resp_foto_path' => $path,
+                    'aten_rel_resp_foto_comentario' => $request->input('foto_comentario'),
+                ]);
+                $fotoUrl = asset('midia/' . $path);
+            }
+
+            return response()->json([
+                'message' => 'Resposta salva com sucesso.',
+                'foto_url' => $fotoUrl,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao salvar resposta.'], 500);
+        }
+    }
+
+    public function destroyRespostaFoto(int $id, int $fotoId): \Illuminate\Http\JsonResponse
+    {
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $foto = AtendimentoRelatorioRespostaFoto::whereHas(
+                'resposta',
+                fn ($q) => $q->where('aten_rel_resp_relatorio_id', $id)
+            )->where('aten_rel_resp_foto_id', $fotoId)->firstOrFail();
+
+            if (Storage::disk('public')->exists($foto->aten_rel_resp_foto_path)) {
+                Storage::disk('public')->delete($foto->aten_rel_resp_foto_path);
+            }
+            $foto->delete();
+
+            return response()->json(['message' => 'Foto removida!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover foto.'], 500);
+        }
+    }
+
+    // ─── BF07 - comprovante de compartilhamento ─────────────────────────────
+
+    public function getCompartilhamentos(int $id): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id, ['compartilhamentos.usuario']);
+
+        return response()->json([
+            'data' => $relatorio->compartilhamentos->map(fn ($c) => [
+                'id' => $c->aten_rel_comp_id,
+                'canal' => $c->aten_rel_comp_canal,
+                'hash' => $c->aten_rel_comp_hash,
+                'usuario' => optional($c->usuario)->user_nome,
+                'criado_em' => $c->aten_rel_comp_criado_em->format('d/m/Y H:i'),
+            ])->values(),
+        ]);
+    }
+
+    public function storeCompartilhamento(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['canal' => ['nullable', 'string', 'max:50']]);
+        $relatorio = $this->relatorioComPosseGarantida($id);
+
+        try {
+            $hash = hash('sha256', $relatorio->aten_rel_id . '|' . now()->timestamp . '|' . Str::random(16));
+
+            $comp = AtendimentoRelatorioCompartilhamento::create([
+                'aten_rel_comp_relatorio_id' => $id,
+                'aten_rel_comp_usuario_id' => auth()->id(),
+                'aten_rel_comp_canal' => $request->input('canal', 'painel-web'),
+                'aten_rel_comp_hash' => $hash,
+                'aten_rel_comp_criado_em' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Comprovante de compartilhamento gerado.',
+                'item' => [
+                    'id' => $comp->aten_rel_comp_id,
+                    'canal' => $comp->aten_rel_comp_canal,
+                    'hash' => $comp->aten_rel_comp_hash,
+                    'criado_em' => $comp->aten_rel_comp_criado_em->format('d/m/Y H:i'),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao gerar comprovante.'], 500);
+        }
+    }
     public function getDados(int $id): \Illuminate\Http\JsonResponse
     {
         $relatorio = $this->relatorioComPosseGarantida($id, ['atendimento.cliente']);
@@ -735,6 +923,8 @@ class AtendimentosRelatoriosController extends Controller
     {
         $relatorio = AtendimentoRelatorio::with([
             'modeloRelatorio',
+            'configModelo.perguntas.opcoes',
+            'respostas.fotos',
             'atendimento.cliente',
             'atendimento.natureza',
             'atendimento.usuario',
@@ -785,57 +975,24 @@ class AtendimentosRelatoriosController extends Controller
 
     public function uploadAnexos(Request $request, int $id)
     {
+        // Sessao 08 - pedido do cliente (feedback pos-demo): a aba Anexos
+        // passa a aceitar SOMENTE fotos daqui pra frente. Arquivos/vídeos já
+        // enviados antes continuam listados normalmente (getAnexos/pdf não
+        // mudaram) - só o upload de novos itens desses dois tipos foi
+        // removido.
         $request->validate([
-            'arquivos'   => ['nullable', 'array'],
-            'arquivos.*' => ['file', 'max:20480', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv'],
             'fotos'      => ['nullable', 'array'],
             'fotos.*'    => ['file', 'max:10240', 'mimes:jpg,jpeg,png,webp,gif'],
-            'videos'     => ['nullable', 'array'],
-            'videos.*'   => ['file', 'max:102400', 'mimes:mp4,mov,avi,mkv,webm'],
         ], [
-            'arquivos.*.file'  => 'O arquivo enviado é inválido.',
-            'arquivos.*.max'   => 'Cada arquivo não pode ultrapassar 20 MB.',
-            'arquivos.*.mimes' => 'Tipo de arquivo não permitido. Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV.',
             'fotos.*.file'     => 'A foto enviada é inválida.',
             'fotos.*.max'      => 'Cada foto não pode ultrapassar 10 MB.',
             'fotos.*.mimes'    => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
-            'videos.*.file'    => 'O vídeo enviado é inválido.',
-            'videos.*.max'     => 'Cada vídeo não pode ultrapassar 100 MB.',
-            'videos.*.mimes'   => 'Tipo de vídeo não permitido. Formatos aceitos: MP4, MOV, AVI, MKV, WEBM.',
         ]);
 
         $relatorio = $this->relatorioComPosseGarantida($id);
 
         try {
-            $saved = ['arquivos' => [], 'fotos' => [], 'videos' => [], 'erros' => []];
-
-            // arquivos gerais
-            if ($request->hasFile('arquivos')) {
-                foreach ($request->file('arquivos') as $file) {
-                    if (!$file->isValid()) continue;
-
-                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                    $ext          = $file->getClientOriginalExtension();
-                    $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
-                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
-                    if ($path === false) {
-                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
-                        continue;
-                    }
-
-                    $anexo = AtendimentoRelatorioAnexo::create([
-                        'aten_rel_anexo_relatorio_id' => $id,
-                        'aten_rel_anexo_path' => $path,
-                    ]);
-
-                    $saved['arquivos'][] = [
-                        'id'   => $anexo->aten_rel_anexo_id,
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'url'  => asset('midia/' . $path),
-                    ];
-                }
-            }
+            $saved = ['fotos' => [], 'erros' => []];
 
             // fotos
             if ($request->hasFile('fotos')) {
@@ -866,43 +1023,6 @@ class AtendimentosRelatoriosController extends Controller
 
                     $saved['fotos'][] = [
                         'id'        => $foto->aten_rel_foto_id,
-                        'name'      => $file->getClientOriginalName(),
-                        'path'      => $path,
-                        'url'       => asset('midia/' . $path),
-                        'thumb_url' => asset('midia/' . $thumbPath),
-                    ];
-                }
-            }
-
-            // videos
-            if ($request->hasFile('videos')) {
-                foreach ($request->file('videos') as $file) {
-                    if (!$file->isValid()) continue;
-
-                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                    $ext          = $file->getClientOriginalExtension();
-                    $safeName     = Str::slug($originalName) . '_' . Str::random(8) . '.' . $ext;
-                    $path         = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
-                    if ($path === false) {
-                        $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
-                        continue;
-                    }
-
-                    $full      = storage_path('app/public/' . $path);
-                    $thumbDir  = "atendimentos_relatorios/{$id}/videos/thumbs";
-                    $thumbName = $safeName . '.jpg';
-                    $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = storage_path('app/public/' . $thumbPath);
-
-                    ProcessarMidiaJob::dispatch('video', $full, $thumbFull);
-
-                    $video = AtendimentoRelatorioVideo::create([
-                        'aten_rel_vid_relatorio_id' => $id,
-                        'aten_rel_vid_path'         => $path,
-                    ]);
-
-                    $saved['videos'][] = [
-                        'id'        => $video->aten_rel_vid_id,
                         'name'      => $file->getClientOriginalName(),
                         'path'      => $path,
                         'url'       => asset('midia/' . $path),

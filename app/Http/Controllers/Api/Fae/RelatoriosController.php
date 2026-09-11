@@ -99,14 +99,20 @@ class RelatoriosController extends Controller
     public function store(StoreRelatorioRequest $request, int $atenId): JsonResponse
     {
         $usuario     = $request->user();
-        $atendimento = Atendimento::with('natureza.modeloRelatorio')->findOrFail($atenId);
+        $atendimento = Atendimento::with(['natureza.modeloRelatorio', 'natureza.configModelo'])->findOrFail($atenId);
 
         if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        if (! $atendimento->natureza?->modeloRelatorio) {
-            return response()->json(['message' => 'Natureza do atendimento sem modelo de relatório.'], 422);
+        // Sessao 08 (Web) - Configurador substitui modelos_relatorios; o app
+        // ainda nao consome perguntas dinamicas (isso e Android, sessoes
+        // futuras), mas o vinculo exigido para CRIAR um relatorio ja passou
+        // a ser natureza.configModelo em vez do legado, ver
+        // AtendimentosRelatoriosController::store() (web) e
+        // project_fae_bioenergia na memoria.
+        if (! $atendimento->natureza?->configModelo) {
+            return response()->json(['message' => 'Natureza do atendimento sem modelo do Configurador vinculado.'], 422);
         }
 
         // REL-02: Bloquear se atendimento está Paralisado ou Concluído
@@ -119,8 +125,8 @@ class RelatoriosController extends Controller
             ], 422);
         }
 
-        $modelo = $atendimento->natureza->modeloRelatorio;
-        if ((int) $modelo->mod_rel_tp_data === 1) {
+        $modeloLegado = $atendimento->natureza->modeloRelatorio;
+        if ($modeloLegado && (int) $modeloLegado->mod_rel_tp_data === 1) {
             $existe = AtendimentoRelatorio::where('aten_rel_atendimento_id', $atendimento->aten_id)
                 ->whereHas('modeloRelatorio', fn($q) => $q->where('mod_rel_tp_data', 1))
                 ->exists();
@@ -139,7 +145,8 @@ class RelatoriosController extends Controller
         $rel = DB::transaction(function () use ($request, $atendimento) {
             $rel = AtendimentoRelatorio::create([
                 'aten_rel_atendimento_id'      => $atendimento->aten_id,
-                'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio->mod_rel_id,
+                'aten_rel_modelo_relatorio_id' => $atendimento->natureza->modeloRelatorio?->mod_rel_id,
+                'aten_rel_config_modelo_id'    => $atendimento->natureza->configModelo->cfg_mod_id,
                 'aten_rel_data'                => $request->aten_rel_data ?? now()->toDateString(),
                 'aten_rel_status'              => 0,
             ]);

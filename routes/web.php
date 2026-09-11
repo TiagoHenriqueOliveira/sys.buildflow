@@ -11,6 +11,7 @@ use App\Http\Controllers\CrmTiposOrcamentoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IndicadoresComerciaisController;
 use App\Http\Controllers\LogsAuditoriaController;
+use App\Http\Controllers\MapaDemandasController;
 use App\Http\Controllers\MapaRelacoesController;
 use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
@@ -132,6 +133,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/atendimentos-relatorios/{id}/upload-anexos', [AtendimentosRelatoriosController::class, 'uploadAnexos'])->name('atendimentos-relatorios.upload-anexos');
     Route::get('/atendimentos-relatorios/{id}/anexos', [AtendimentosRelatoriosController::class, 'getAnexos'])->name('atendimentos-relatorios.get-anexos');
     Route::delete('/atendimentos-relatorios/{id}/anexos/{type}/{itemId}', [AtendimentosRelatoriosController::class, 'destroyAnexo'])->name('atendimentos-relatorios.destroy-anexo');
+
+    // Sessao 08 - perguntas dinamicas do Configurador (NC02/NC03) e
+    // comprovante de compartilhamento (BF07).
+    Route::get('/atendimentos-relatorios/{id}/respostas', [AtendimentosRelatoriosController::class, 'getRespostas'])->name('atendimentos-relatorios.get-respostas');
+    Route::post('/atendimentos-relatorios/{id}/respostas', [AtendimentosRelatoriosController::class, 'storeResposta'])->name('atendimentos-relatorios.store-resposta');
+    Route::delete('/atendimentos-relatorios/{id}/respostas-fotos/{fotoId}', [AtendimentosRelatoriosController::class, 'destroyRespostaFoto'])->name('atendimentos-relatorios.destroy-resposta-foto');
+    Route::get('/atendimentos-relatorios/{id}/compartilhamentos', [AtendimentosRelatoriosController::class, 'getCompartilhamentos'])->name('atendimentos-relatorios.get-compartilhamentos');
+    Route::post('/atendimentos-relatorios/{id}/compartilhamentos', [AtendimentosRelatoriosController::class, 'storeCompartilhamento'])->name('atendimentos-relatorios.store-compartilhamento');
+
+    // Mapa de demandas (BF08) - mesma visibilidade de atendimentos-relatorios.index (tecnico ve so o seu, admin ve tudo).
+    Route::get('/mapa-demandas', [MapaDemandasController::class, 'index'])->name('mapa-demandas.index');
 
     // NC02/NC03 — rotas de resposta às perguntas do Configurador dentro do
     // relatório ficam para a sessão 08 (Atendimento/Assistência), junto da

@@ -20,17 +20,10 @@
             </div>
             <div id="collapseArquivos" x-show="anexosAberto === 'arquivos'" x-collapse aria-labelledby="headingArquivos">
                 <div class="card-body">
-                    {{-- Conteúdo de arquivos --}}
-                    <p class="text-muted">Selecione arquivos ou use o botão de upload para adicionar anexos.</p>
-                    <div class="file-upload-box mb-2">
-                        <div class="file-upload-group">
-                            <button type="button" class="btn btn-outline-primary file-upload-button upload-trigger" data-input-id="uploadArquivosInput" aria-label="Upload de arquivos">
-                                <i class="bi bi-upload" aria-hidden="true"></i>
-                            </button>
-                            <input id="uploadArquivosInput" name="arquivos[]" type="file" class="file-upload-input" multiple>
-                            <span class="file-upload-text">Nenhum arquivo selecionado</span>
-                        </div>
-                    </div>
+                    {{-- Sessao 08 - pedido do cliente: novo upload de arquivos
+                         desativado, so fotos daqui pra frente. Lista abaixo
+                         mostra os arquivos ja enviados antes desta mudanca. --}}
+                    <p class="text-muted">Upload de novos arquivos desativado — use a aba Fotos. Os itens abaixo foram enviados antes desta mudança.</p>
                         <div id="anexosArquivosList" class="mt-2">
                             @if(!empty($atendimentoRelatorio->anexos) && $atendimentoRelatorio->anexos->count())
                                 <h6>Anexos</h6>
@@ -112,17 +105,10 @@
             </div>
             <div id="collapseVideos" x-show="anexosAberto === 'videos'" x-collapse aria-labelledby="headingVideos">
                 <div class="card-body">
-                    {{-- Conteúdo de vídeos --}}
-                    <p class="text-muted">Use o botão abaixo para anexar vídeos ao relatório.</p>
-                    <div class="file-upload-box mb-2">
-                        <div class="file-upload-group">
-                            <button type="button" class="btn btn-outline-primary file-upload-button upload-trigger" data-input-id="uploadVideosInput" aria-label="Upload de vídeos">
-                                <i class="bi bi-upload" aria-hidden="true"></i>
-                            </button>
-                            <input id="uploadVideosInput" name="videos[]" type="file" class="file-upload-input" accept="video/*" multiple>
-                            <span class="file-upload-text">Nenhum vídeo selecionado</span>
-                        </div>
-                    </div>
+                    {{-- Sessao 08 - pedido do cliente: novo upload de vídeos
+                         desativado. Lista abaixo mostra os vídeos já enviados
+                         antes desta mudança. --}}
+                    <p class="text-muted">Upload de novos vídeos desativado. Os itens abaixo foram enviados antes desta mudança.</p>
                         <div id="anexosVideosList" class="mt-2">
                             @if(!empty($atendimentoRelatorio->videos) && $atendimentoRelatorio->videos->count())
                                 <h6>Vídeos</h6>

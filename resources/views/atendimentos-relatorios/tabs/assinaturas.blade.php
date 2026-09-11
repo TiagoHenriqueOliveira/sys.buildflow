@@ -80,5 +80,12 @@
                 </div>
             </div>
         </div>
+
+        {{-- BF10 - observação do supervisor no momento da aprovação/revisão. --}}
+        <div class="form-group mt-2">
+            <label class="fw-bold" for="aten_rel_observacao_supervisor">Observação do Supervisor</label>
+            <textarea class="form-control" id="aten_rel_observacao_supervisor" rows="3"
+                placeholder="Observações sobre a aprovação/revisão deste relatório...">{{ $atendimentoRelatorio->aten_rel_observacao_supervisor }}</textarea>
+        </div>
     </form>
 </div>

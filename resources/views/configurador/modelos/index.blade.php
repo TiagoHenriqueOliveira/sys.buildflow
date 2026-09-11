@@ -72,6 +72,7 @@
                             data-setor="{{ $m->cfg_mod_setor->value }}"
                             data-ativo="{{ (int) $m->cfg_mod_ativo }}"
                             data-perguntas="{{ $m->perguntas->pluck('cfg_perg_id')->toJson() }}"
+                            data-secoes="{{ json_encode($m->secoesAtivas()) }}"
                             aria-label="Editar {{ e($m->cfg_mod_nome) }}"
                             @click="editando = true; aberto = true; preencherFormularioModelo($el.dataset)"
                         >
@@ -106,6 +107,15 @@
                     el.checked = selecionadas.includes(el.value);
                 });
 
+                const secoes = JSON.parse(data.secoes || '{}');
+                document.getElementById('cfg_mod_usa_horarios').checked = !!secoes.horarios;
+                document.getElementById('cfg_mod_usa_clima').checked = !!secoes.clima;
+                document.getElementById('cfg_mod_usa_servicos').checked = !!secoes.servicos;
+                document.getElementById('cfg_mod_usa_pecas').checked = !!secoes.pecas;
+                document.getElementById('cfg_mod_usa_ocorrencias').checked = !!secoes.ocorrencias;
+                document.getElementById('cfg_mod_usa_observacoes').checked = !!secoes.observacoes;
+                window.atualizarSecoesRelatorioVisiveis(data.setor);
+
                 document.getElementById('cfg_mod_method').value = 'PUT';
                 document.getElementById('form_modelo').action = '{{ url('/configurador/modelos') }}/' + data.id;
             }
@@ -117,10 +127,18 @@
                 document.getElementById('cfg_mod_id').value = '';
                 document.getElementById('cfg_mod_ativo').checked = true;
                 document.querySelectorAll('.pergunta-checkbox').forEach((el) => { el.checked = false; });
+                document.querySelectorAll('#secoesRelatorioBox input[type="checkbox"]').forEach((el) => { el.checked = true; });
+                window.atualizarSecoesRelatorioVisiveis('');
 
                 document.getElementById('cfg_mod_method').value = 'POST';
                 form.action = '{{ route('configurador.modelos.store') }}';
             }
+
+            // Setor "Assistência" (1) usa as secoes do relatorio; "Comercial" (0)
+            // nao tem essas abas - ver ConfigModelo::secoesAtivas().
+            window.atualizarSecoesRelatorioVisiveis = function (setorValue) {
+                document.getElementById('secoesRelatorioBox').hidden = String(setorValue) !== '1';
+            };
         </script>
     @endpush
 </x-layout>

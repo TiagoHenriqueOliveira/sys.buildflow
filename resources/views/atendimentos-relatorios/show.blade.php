@@ -16,9 +16,28 @@
         data-relatorio-id="{{ $atendimentoRelatorio->aten_rel_id }}"
         x-data="{ tab: 'dados' }"
     >
+        @php
+            $temDescricaoLegado = $atendimentoRelatorio->itensDescricao->isNotEmpty() || $atendimentoRelatorio->aten_rel_descricao;
+            $temPerguntas = (bool) $atendimentoRelatorio->configModelo?->perguntas->isNotEmpty();
+
+            $abas = ['dados' => 'Dados'];
+            if ($secoes['horarios']) $abas['horarios'] = 'Horário';
+            if ($secoes['clima']) $abas['clima'] = 'Clima';
+            if ($temDescricaoLegado) $abas['descricao'] = 'Descrição';
+            if ($temPerguntas) $abas['perguntas'] = 'Perguntas';
+            if ($secoes['servicos']) $abas['servicos'] = 'Serviços Prestados';
+            if ($secoes['pecas']) $abas['pecas'] = 'Peças Substituídas';
+            if ($secoes['ocorrencias']) $abas['ocorrencias'] = 'Ocorrências';
+            if ($secoes['observacoes']) $abas['info-adicionais'] = 'Observações Gerais';
+            $abas['anexos'] = 'Anexos';
+            $abas['observacao-interna'] = 'Observação Interna';
+            $abas['compartilhamento'] = 'Compartilhamento';
+            $abas['assinatura'] = 'Assinatura';
+        @endphp
+
         <div class="sbadmin-page-header d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
-                <h2 class="sbadmin-page-heading">{{ $atendimentoRelatorio->modeloRelatorio->mod_rel_descricao }}</h2>
+                <h2 class="sbadmin-page-heading">{{ $atendimentoRelatorio->configModelo->cfg_mod_nome ?? $atendimentoRelatorio->modeloRelatorio->mod_rel_descricao }}</h2>
                 <p class="sbadmin-page-subheading">Relatório de atendimento #{{ $atendimentoRelatorio->aten_rel_id }}</p>
             </div>
         </div>
@@ -27,23 +46,25 @@
             <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
         @endif
 
+        {{-- BF10 - bloqueio VISUAL (Etapa 1/Telas) de edicao apos aprovacao;
+             regra de negocio fina/servidor fica pra Etapa 2 (Persistencia),
+             ver docs/cronograma/08-web-atendimento-telas.md. --}}
+        @if($somenteLeitura)
+            <div class="sbadmin-alert sbadmin-alert-info mb-3" role="alert">
+                <i class="bi bi-lock-fill" aria-hidden="true"></i>
+                Este relatório já foi <strong>aprovado</strong> e está somente para leitura.
+                @if($atendimentoRelatorio->aprovadoPor)
+                    Aprovado por {{ $atendimentoRelatorio->aprovadoPor->user_nome }} em {{ $atendimentoRelatorio->aten_rel_aprovado_em?->format('d/m/Y H:i') }}.
+                @endif
+            </div>
+        @endif
+
         <div id="relatorio-feedback"></div>
 
-        <div class="sbadmin-card">
+        <div class="sbadmin-card" @if($somenteLeitura) id="relatorio-somente-leitura" @endif>
             <div class="sbadmin-card-body">
                 <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist">
-                    @foreach([
-                        'dados' => 'Dados',
-                        'horarios' => 'Horário',
-                        'clima' => 'Clima',
-                        'descricao' => 'Descrição',
-                        'servicos' => 'Serviços Prestados',
-                        'pecas' => 'Peças Substituídas',
-                        'ocorrencias' => 'Ocorrências',
-                        'info-adicionais' => 'Observações Gerais',
-                        'anexos' => 'Anexos',
-                        'assinatura' => 'Assinatura',
-                    ] as $key => $label)
+                    @foreach($abas as $key => $label)
                         <li class="nav-item text-nowrap">
                             <button
                                 type="button"
@@ -55,24 +76,29 @@
                     @endforeach
                 </ul>
 
-                <div>
+                <fieldset @if($somenteLeitura) disabled @endif>
                     @include('atendimentos-relatorios.tabs.dados')
-                    @include('atendimentos-relatorios.tabs.horarios')
-                    @include('atendimentos-relatorios.tabs.clima')
-                    @include('atendimentos-relatorios.tabs.descricao')
-                    @include('atendimentos-relatorios.tabs.servicos-prestados')
-                    @include('atendimentos-relatorios.tabs.pecas-substituidas')
-                    @include('atendimentos-relatorios.tabs.ocorrencias')
-                    @include('atendimentos-relatorios.tabs.informacoes-adicionais')
+                    @if($secoes['horarios']) @include('atendimentos-relatorios.tabs.horarios') @endif
+                    @if($secoes['clima']) @include('atendimentos-relatorios.tabs.clima') @endif
+                    @if($temDescricaoLegado) @include('atendimentos-relatorios.tabs.descricao') @endif
+                    @if($temPerguntas) @include('atendimentos-relatorios.tabs.perguntas') @endif
+                    @if($secoes['servicos']) @include('atendimentos-relatorios.tabs.servicos-prestados') @endif
+                    @if($secoes['pecas']) @include('atendimentos-relatorios.tabs.pecas-substituidas') @endif
+                    @if($secoes['ocorrencias']) @include('atendimentos-relatorios.tabs.ocorrencias') @endif
+                    @if($secoes['observacoes']) @include('atendimentos-relatorios.tabs.informacoes-adicionais') @endif
                     @include('atendimentos-relatorios.tabs.anexos')
+                    @include('atendimentos-relatorios.tabs.observacao-interna')
+                    @include('atendimentos-relatorios.tabs.compartilhamento')
                     @include('atendimentos-relatorios.tabs.assinaturas')
-                </div>
+                </fieldset>
             </div>
 
             <div class="sbadmin-card-body d-flex justify-content-end gap-2 border-top">
-                <button type="button" id="btnAtualizarRelatorio" class="btn btn-success">
-                    <i class="bi bi-check-lg" aria-hidden="true"></i> Atualizar
-                </button>
+                @unless($somenteLeitura)
+                    <button type="button" id="btnAtualizarRelatorio" class="btn btn-success">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Atualizar
+                    </button>
+                @endunless
                 <a href="{{ route('atendimentos-relatorios.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar
                 </a>
@@ -257,6 +283,18 @@
                     .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
             });
 
+            // ─── Observação Interna (BF11 - nunca aparece no PDF assinado) ─────
+            document.getElementById('form_observacao_interna')?.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const valor = document.getElementById('aten_rel_observacao_interna').value;
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/texto/aten_rel_observacao_interna`, {
+                    method: 'POST',
+                    body: new URLSearchParams({ valor }),
+                })
+                    .then(() => mostrarFeedbackRelatorio('success', 'Observação interna salva com sucesso.'))
+                    .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
+            });
+
             // ─── Serviços ───────────────────────────────────────────────────────
             function renderizarItensTabela(items, tbodySelector, campo, removerClasse, label) {
                 const tbody = document.querySelector(tbodySelector);
@@ -312,14 +350,33 @@
                     .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
             });
 
-            // ─── Peças ──────────────────────────────────────────────────────────
+            // ─── Peças (BF09 - checklist de trocada) ────────────────────────────
+            function renderizarPecasRelatorio(items) {
+                const tbody = document.querySelector('#tablePecas tbody');
+                tbody.innerHTML = '';
+                if (!items || !items.length) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhuma peça cadastrada.</td></tr>';
+                    return;
+                }
+                items.forEach((item) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="text-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm btnRemovePeca" data-id="${item.aten_rel_peca_id}">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                    </td><td></td><td class="text-center">${item.aten_rel_peca_trocada ? '<span class="badge bg-success">Trocada</span>' : '<span class="badge bg-secondary">Não trocada</span>'}</td>`;
+                    tr.querySelector('td:nth-child(2)').textContent = item.aten_rel_peca_descricao;
+                    tbody.appendChild(tr);
+                });
+            }
+
             function carregarPecasRelatorio() {
-                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/pecas`)
-                    .then((r) => renderizarItensTabela(r.data, '#tablePecas tbody', 'peca', 'btnRemovePeca', 'peça'));
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/pecas`).then((r) => renderizarPecasRelatorio(r.data));
             }
 
             document.getElementById('btnAddPeca')?.addEventListener('click', function () {
                 const input = document.getElementById('peca_descricao');
+                const trocada = document.getElementById('peca_trocada');
                 const descricao = input.value.trim();
                 if (!descricao) {
                     mostrarFeedbackRelatorio('error', 'Informe a descrição da peça.');
@@ -327,10 +384,11 @@
                 }
                 fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/pecas`, {
                     method: 'POST',
-                    body: new URLSearchParams({ descricao }),
+                    body: new URLSearchParams({ descricao, trocada: trocada.checked ? '1' : '0' }),
                 })
                     .then((r) => {
                         input.value = '';
+                        trocada.checked = false;
                         input.focus();
                         carregarPecasRelatorio();
                         mostrarFeedbackRelatorio('success', r.message);
@@ -478,6 +536,134 @@
                     .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
             });
 
+            // ─── Perguntas do modelo (NC02/NC03) ────────────────────────────────
+            function renderizarPerguntasRelatorio(perguntas) {
+                const container = document.getElementById('listaPerguntasRelatorio');
+                container.innerHTML = '';
+                if (!perguntas || !perguntas.length) {
+                    container.innerHTML = '<p class="text-body-secondary mb-0">Este modelo não tem perguntas cadastradas.</p>';
+                    return;
+                }
+
+                perguntas.forEach((p) => {
+                    const card = document.createElement('div');
+                    card.className = 'sbadmin-card mb-3';
+                    card.dataset.perguntaId = p.id;
+
+                    let campoResposta = '';
+                    if (p.tipo === 2) {
+                        campoResposta = `<textarea class="form-control sbadmin-form-control resposta-valor" rows="3" placeholder="Resposta...">${p.valor ? escapeHtml(p.valor) : ''}</textarea>`;
+                    } else {
+                        campoResposta = (p.opcoes || []).map((op) => {
+                            const tipoInput = p.tipo === 0 ? 'checkbox' : 'radio';
+                            const selecionadas = (p.valor || '').split(',');
+                            const marcado = selecionadas.includes(String(op.id)) ? 'checked' : '';
+                            return `<div class="form-check">
+                                <input type="${tipoInput}" class="form-check-input resposta-opcao" name="opcao_${p.id}" value="${op.id}" ${marcado}>
+                                <label class="form-check-label">${escapeHtml(op.texto)}</label>
+                            </div>`;
+                        }).join('');
+                    }
+
+                    const fotosHtml = (p.fotos || []).map((f) => `
+                        <div class="d-inline-block m-1 position-relative">
+                            <a href="#" class="anexo-thumb" data-type="image" data-src="${f.url}">
+                                <img src="${f.url}" style="width:100px;height:75px;object-fit:cover;border-radius:.35rem;" alt="foto da resposta">
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger btnRemovePerguntaFoto position-absolute" style="top:2px;right:2px;" data-foto-id="${f.id}" aria-label="Excluir foto">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
+                        </div>`).join('');
+
+                    card.innerHTML = `<div class="sbadmin-card-body">
+                        <p class="fw-bold mb-2">${escapeHtml(p.texto)}</p>
+                        <div class="mb-2 campo-resposta">${campoResposta}</div>
+                        ${p.permite_anexo ? `<div class="mb-2">
+                            <label class="sbadmin-form-label">Foto (opcional)</label>
+                            <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
+                            <div class="fotos-resposta mt-2">${fotosHtml}</div>
+                        </div>` : ''}
+                        <button type="button" class="btn btn-outline-success btn-sm btnSalvarResposta">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar resposta
+                        </button>
+                    </div>`;
+                    container.appendChild(card);
+                });
+            }
+
+            function carregarPerguntasRelatorio() {
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas`).then((r) => renderizarPerguntasRelatorio(r.data));
+            }
+
+            document.getElementById('listaPerguntasRelatorio')?.addEventListener('click', function (event) {
+                const btnFoto = event.target.closest('.btnRemovePerguntaFoto');
+                if (btnFoto) {
+                    fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas-fotos/${btnFoto.dataset.fotoId}`, { method: 'DELETE' })
+                        .then((r) => { carregarPerguntasRelatorio(); mostrarFeedbackRelatorio('success', r.message); })
+                        .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
+                    return;
+                }
+
+                const btnSalvar = event.target.closest('.btnSalvarResposta');
+                if (!btnSalvar) return;
+                const card = btnSalvar.closest('[data-pergunta-id]');
+                const perguntaId = card.dataset.perguntaId;
+
+                let valor = '';
+                const textarea = card.querySelector('.resposta-valor');
+                if (textarea) {
+                    valor = textarea.value;
+                } else {
+                    valor = Array.from(card.querySelectorAll('.resposta-opcao:checked')).map((el) => el.value).join(',');
+                }
+
+                const fd = new FormData();
+                fd.append('pergunta_id', perguntaId);
+                fd.append('valor', valor);
+                const fotoInput = card.querySelector('.resposta-foto');
+                if (fotoInput && fotoInput.files.length) fd.append('foto', fotoInput.files[0]);
+
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas`, { method: 'POST', body: fd })
+                    .then((r) => {
+                        carregarPerguntasRelatorio();
+                        mostrarFeedbackRelatorio('success', r.message);
+                    })
+                    .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
+            });
+
+            // ─── Compartilhamento (BF07) ────────────────────────────────────────
+            function renderizarCompartilhamentosRelatorio(items) {
+                const tbody = document.querySelector('#tableCompartilhamentos tbody');
+                tbody.innerHTML = '';
+                if (!items || !items.length) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum compartilhamento registrado.</td></tr>';
+                    return;
+                }
+                items.forEach((item) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td></td><td></td><td class="text-monospace small"></td>`;
+                    tr.children[0].textContent = item.criado_em;
+                    tr.children[1].textContent = item.canal || '-';
+                    tr.children[2].textContent = item.hash;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function carregarCompartilhamentosRelatorio() {
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/compartilhamentos`).then((r) => renderizarCompartilhamentosRelatorio(r.data));
+            }
+
+            document.getElementById('btnGerarComprovante')?.addEventListener('click', function () {
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/compartilhamentos`, {
+                    method: 'POST',
+                    body: new URLSearchParams({ canal: 'painel-web' }),
+                })
+                    .then((r) => {
+                        carregarCompartilhamentosRelatorio();
+                        mostrarFeedbackRelatorio('success', r.message);
+                    })
+                    .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
+            });
             // ─── Anexos ─────────────────────────────────────────────────────────
             function renderizarAnexosRelatorio(data) {
                 const arquivosList = document.getElementById('anexosArquivosList');
@@ -640,7 +826,8 @@
 
             function salvarAssinatura(tipo, dataUrl) {
                 const status = document.querySelector('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked')?.value;
-                const body = { aten_rel_status: status };
+                const observacaoSupervisor = document.getElementById('aten_rel_observacao_supervisor')?.value ?? '';
+                const body = { aten_rel_status: status, observacao_supervisor: observacaoSupervisor };
                 body[`assinatura_${tipo}`] = dataUrl;
                 if (tipo === 'cliente') {
                     body.assinatura_cliente_nome = document.getElementById('assinatura_cliente_nome').value.trim();
@@ -710,7 +897,9 @@
                     case 'servicos': carregarServicosRelatorio(); break;
                     case 'pecas': carregarPecasRelatorio(); break;
                     case 'descricao': carregarDescricaoItensRelatorio(); break;
+                    case 'perguntas': carregarPerguntasRelatorio(); break;
                     case 'anexos': refreshAnexosRelatorio(); break;
+                    case 'compartilhamento': carregarCompartilhamentosRelatorio(); break;
                     case 'assinatura': carregarAssinaturasRelatorio(); break;
                 }
             }
@@ -719,7 +908,7 @@
             document.getElementById('btnAtualizarRelatorio')?.addEventListener('click', function () {
                 const abaAtiva = Alpine.$data(document.getElementById('relatorio-root')).tab;
 
-                const semFormulario = ['servicos', 'pecas', 'descricao', 'ocorrencias'];
+                const semFormulario = ['servicos', 'pecas', 'descricao', 'ocorrencias', 'perguntas', 'compartilhamento'];
                 if (semFormulario.includes(abaAtiva)) {
                     mostrarFeedbackRelatorio('error', 'Use os botões para adicionar e remover itens nesta aba.');
                     return;
@@ -735,13 +924,22 @@
                     return;
                 }
 
+                if (abaAtiva === 'observacao-interna') {
+                    document.getElementById('form_observacao_interna').requestSubmit();
+                    return;
+                }
+
                 if (abaAtiva === 'assinatura') {
                     const status = document.querySelector('#form_relatorio_assinaturas input[name="aten_rel_status"]:checked')?.value;
+                    const observacaoSupervisor = document.getElementById('aten_rel_observacao_supervisor')?.value ?? '';
                     fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/assinaturas`, {
                         method: 'POST',
-                        body: new URLSearchParams({ aten_rel_status: status }),
+                        body: new URLSearchParams({ aten_rel_status: status, observacao_supervisor: observacaoSupervisor }),
                     })
-                        .then((r) => mostrarFeedbackRelatorio('success', r.message || 'Status atualizado.'))
+                        .then((r) => {
+                            mostrarFeedbackRelatorio('success', r.message || 'Status atualizado.');
+                            if (String(status) === '2') { window.location.reload(); }
+                        })
                         .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
                     return;
                 }

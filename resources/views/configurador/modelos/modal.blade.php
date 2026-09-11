@@ -54,6 +54,7 @@
                                 :value="old('cfg_mod_setor')"
                                 placeholder="Selecione..."
                                 required
+                                onchange="window.atualizarSecoesRelatorioVisiveis(this.value)"
                             />
                         </div>
                     </div>
@@ -81,6 +82,40 @@
                         @empty
                             <p class="text-body-secondary small mb-0">Nenhuma pergunta cadastrada ainda.</p>
                         @endforelse
+                    </div>
+
+                    {{-- Sessao 08 - so relevante para setor Assistencia (o
+                         relatorio de atendimento usa; orcamento nao tem essas
+                         abas). Visibilidade via onchange nativo no <select> de
+                         setor acima (nao x-model - ver feedback_alpine_select_placeholder
+                         na memoria: x-model quebra o placeholder disabled/selected
+                         desse componente). --}}
+                    <div id="secoesRelatorioBox" hidden>
+                        <label class="sbadmin-form-label">Seções do relatório exibidas para este modelo</label>
+                        <div class="row row-cols-2 row-cols-md-3 g-2 mb-3">
+                            @foreach([
+                                'cfg_mod_usa_horarios' => 'Horário',
+                                'cfg_mod_usa_clima' => 'Clima',
+                                'cfg_mod_usa_servicos' => 'Serviços Prestados',
+                                'cfg_mod_usa_pecas' => 'Peças Substituídas',
+                                'cfg_mod_usa_ocorrencias' => 'Ocorrências',
+                                'cfg_mod_usa_observacoes' => 'Observações Gerais',
+                            ] as $campo => $label)
+                                <div class="col">
+                                    <div class="form-check">
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="{{ $campo }}"
+                                            name="{{ $campo }}"
+                                            value="1"
+                                            @checked(old($campo, true))
+                                        >
+                                        <label class="form-check-label" for="{{ $campo }}">{{ $label }}</label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
 
                     <div x-show="editando" x-cloak>
