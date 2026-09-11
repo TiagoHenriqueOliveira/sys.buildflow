@@ -53,6 +53,7 @@
                     ],
                 ],
                 ['label' => 'Naturezas de Atendimentos', 'icon' => 'bi-tags', 'route' => 'naturezas-dos-atendimentos.index'],
+                ['label' => 'Classificações de Cliente', 'icon' => 'bi-tag', 'route' => 'classificacoes-cliente.index'],
                 ['label' => 'Ocorrências', 'icon' => 'bi-exclamation-triangle', 'route' => 'ocorrencias.index'],
                 ['label' => 'Usuários', 'icon' => 'bi-people', 'route' => 'usuarios.index'],
                 ['label' => 'Logs de Auditoria', 'icon' => 'bi-clock-history', 'route' => 'logs-auditoria.index'],

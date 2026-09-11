@@ -21,7 +21,7 @@ class RoteiroViagemRepository implements CrudRepositoryInterface
                 'crm_rot_periodo_inicio' => $data['crm_rot_periodo_inicio'],
                 'crm_rot_periodo_fim' => $data['crm_rot_periodo_fim'],
                 'crm_rot_link_mapa' => $data['crm_rot_link_mapa'] ?? null,
-                'crm_rot_ativo' => 1,
+                'crm_rot_status' => \App\Enums\StatusRoteiroViagem::NaoIniciada->value,
                 'crm_rot_criado_em' => now(),
             ]);
 
@@ -41,7 +41,7 @@ class RoteiroViagemRepository implements CrudRepositoryInterface
                 'crm_rot_periodo_inicio' => $data['crm_rot_periodo_inicio'],
                 'crm_rot_periodo_fim' => $data['crm_rot_periodo_fim'],
                 'crm_rot_link_mapa' => $data['crm_rot_link_mapa'] ?? null,
-                'crm_rot_ativo' => $data['crm_rot_ativo'] ?? $roteiro->crm_rot_ativo,
+                'crm_rot_status' => $data['crm_rot_status'] ?? $roteiro->crm_rot_status?->value,
             ]);
 
             $this->sincronizarClientes($roteiro, $data);

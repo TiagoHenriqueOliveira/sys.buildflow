@@ -89,16 +89,16 @@
                     </div>
 
                     @if($editando)
-                        <div>
-                            <input type="hidden" name="crm_rot_ativo" value="0">
-                            <x-sbadmin::form.checkbox
-                                id="crm_rot_ativo"
-                                name="crm_rot_ativo"
-                                label="Ativo"
-                                off-label="Inativo"
-                                :checked="old('crm_rot_ativo', $roteiro->crm_rot_ativo)"
-                                :switch="true"
-                            />
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <x-sbadmin::form.select
+                                    id="crm_rot_status"
+                                    name="crm_rot_status"
+                                    label="Situação da viagem"
+                                    :options="collect(App\Enums\StatusRoteiroViagem::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()])->all()"
+                                    :value="old('crm_rot_status', $roteiro->crm_rot_status?->value)"
+                                />
+                            </div>
                         </div>
                     @endif
 

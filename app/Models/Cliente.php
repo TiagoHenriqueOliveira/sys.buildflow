@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\ClienteStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,14 +30,12 @@ class Cliente extends Model
         'cli_telefone',
         'cli_email',
         'cli_ativo',
-        'cli_status',
         'cli_latitude',
         'cli_longitude',
     ];
 
     protected $casts = [
         'cli_ativo' => 'boolean',
-        'cli_status' => ClienteStatus::class,
         'cli_latitude' => 'float',
         'cli_longitude' => 'float',
         'cli_caso_sucesso' => 'boolean',

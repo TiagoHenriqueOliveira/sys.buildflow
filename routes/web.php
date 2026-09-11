@@ -14,6 +14,7 @@ use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\MapaDemandasController;
 use App\Http\Controllers\MapaRelacoesController;
 use App\Http\Controllers\NaturezasAtendimentosController;
+use App\Http\Controllers\ClassificacoesClienteController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
 use App\Http\Controllers\RoteirosViagemController;
@@ -168,6 +169,9 @@ Route::middleware('auth')->group(function () {
 
         // Configurações
         Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
+
+        // NC01 (pendencia #3) — opcoes de classificacao de cliente
+        Route::resource('classificacoes-cliente', ClassificacoesClienteController::class)->except(['create', 'edit', 'show', 'destroy']);
 
         // CRM01 — tipos de sistema de orçamento
         Route::resource('crm/tipos-orcamento', CrmTiposOrcamentoController::class)

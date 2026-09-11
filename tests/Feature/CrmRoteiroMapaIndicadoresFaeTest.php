@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\NivelAcesso;
 use App\Enums\ResultadoVisitaRoteiro;
+use App\Enums\StatusRoteiroViagem;
 use App\Models\Cliente;
 use App\Models\Orcamento;
 use App\Models\RoteiroViagem;
@@ -85,6 +86,52 @@ class CrmRoteiroMapaIndicadoresFaeTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('crm_rot_link_mapa');
+    }
+
+    /**
+     * Pedido do cliente (2026-09-11): o campo booleano "Ativo" nao tinha
+     * uso real e foi trocado por um status de viagem de verdade.
+     */
+    public function test_roteiro_novo_comeca_com_status_nao_iniciada(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        $this->actingAs($vendedor)->post(route('roteiros-viagem.store'), [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => '2026-09-15',
+            'crm_rot_periodo_fim' => '2026-09-18',
+            'clientes' => [$cliente->cli_id],
+        ]);
+
+        $roteiro = RoteiroViagem::first();
+        $this->assertSame(StatusRoteiroViagem::NaoIniciada, $roteiro->crm_rot_status);
+    }
+
+    public function test_atualiza_status_do_roteiro(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        $this->actingAs($vendedor)->post(route('roteiros-viagem.store'), [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => '2026-09-15',
+            'crm_rot_periodo_fim' => '2026-09-18',
+            'clientes' => [$cliente->cli_id],
+        ]);
+        $roteiro = RoteiroViagem::first();
+
+        $response = $this->actingAs($vendedor)->put(route('roteiros-viagem.update', $roteiro->crm_rot_id), [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => '2026-09-15',
+            'crm_rot_periodo_fim' => '2026-09-18',
+            'crm_rot_status' => StatusRoteiroViagem::Concluida->value,
+            'clientes' => [$cliente->cli_id],
+        ]);
+
+        $response->assertRedirect();
+        $roteiro->refresh();
+        $this->assertSame(StatusRoteiroViagem::Concluida, $roteiro->crm_rot_status);
     }
 
     public function test_registra_retorno_do_roteiro_por_cliente(): void

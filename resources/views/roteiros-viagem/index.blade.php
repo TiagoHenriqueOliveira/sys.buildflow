@@ -39,7 +39,7 @@
     </form>
 
     <x-sbadmin::table
-        :headers="['Ações', 'Vendedor', 'Período', 'Clientes', 'Status']"
+        :headers="['Ações', 'Vendedor', 'Período', 'Situação', 'Clientes', 'Status']"
         :paginator="$roteiros"
         :count="$roteiros->count()"
         empty-message="Nenhum roteiro de viagem encontrado."
@@ -49,7 +49,7 @@
                 $total = $r->clientes->count();
                 $comRetorno = $r->clientes->whereNotNull('crm_rot_cli_resultado')->count();
             @endphp
-            <tr class="{{ $r->crm_rot_ativo ? '' : 'table-danger' }}">
+            <tr class="{{ $r->crm_rot_status === \App\Enums\StatusRoteiroViagem::Cancelada ? 'table-danger' : '' }}">
                 <td class="text-center">
                     <a href="{{ route('roteiros-viagem.edit', $r->crm_rot_id) }}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Editar roteiro">
                         <i class="bi bi-pencil" aria-hidden="true"></i>
@@ -57,6 +57,9 @@
                 </td>
                 <td>{{ optional($r->vendedor)->user_nome }}</td>
                 <td>{{ $r->crm_rot_periodo_inicio->format('d/m/Y') }} - {{ $r->crm_rot_periodo_fim->format('d/m/Y') }}</td>
+                <td>
+                    <x-sbadmin::badge :type="$r->crm_rot_status->badgeType()">{{ $r->crm_rot_status->label() }}</x-sbadmin::badge>
+                </td>
                 <td>{{ $total }}</td>
                 <td>
                     @if($total === 0)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\StatusRoteiroViagem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,7 +15,7 @@ class RoteiroViagemRequest extends FormRequest
             'crm_rot_periodo_inicio' => ['required', 'date'],
             'crm_rot_periodo_fim' => ['required', 'date', 'after_or_equal:crm_rot_periodo_inicio'],
             'crm_rot_link_mapa' => ['nullable', 'url', 'max:500'],
-            'crm_rot_ativo' => ['nullable', 'boolean'],
+            'crm_rot_status' => ['nullable', Rule::in(array_column(StatusRoteiroViagem::cases(), 'value'))],
 
             // CRM05 — lista de clientes a visitar (saida).
             'clientes' => ['required', 'array', 'min:1'],

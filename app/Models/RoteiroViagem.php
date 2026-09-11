@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StatusRoteiroViagem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,14 +19,14 @@ class RoteiroViagem extends Model
         'crm_rot_periodo_inicio',
         'crm_rot_periodo_fim',
         'crm_rot_link_mapa',
-        'crm_rot_ativo',
+        'crm_rot_status',
         'crm_rot_criado_em',
     ];
 
     protected $casts = [
         'crm_rot_periodo_inicio' => 'date:Y-m-d',
         'crm_rot_periodo_fim' => 'date:Y-m-d',
-        'crm_rot_ativo' => 'boolean',
+        'crm_rot_status' => StatusRoteiroViagem::class,
         'crm_rot_criado_em' => 'datetime',
     ];
 

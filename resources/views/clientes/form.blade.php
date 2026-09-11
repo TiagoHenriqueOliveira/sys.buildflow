@@ -67,9 +67,6 @@
                 <h2 class="sbadmin-page-heading">{{ $editando ? 'Editar Cliente' : 'Novo Cliente' }}</h2>
                 <p class="sbadmin-page-subheading">{{ $editando ? $cliente->cli_nome : 'Cadastre um novo cliente no sistema.' }}</p>
             </div>
-            @if($editando)
-                <x-sbadmin::badge :type="$cliente->cli_status->badgeType()">{{ $cliente->cli_status->label() }}</x-sbadmin::badge>
-            @endif
         </div>
 
         <form
