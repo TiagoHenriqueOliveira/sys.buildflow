@@ -32,6 +32,16 @@
             'tipo' => $c->cli_cont_tipo->value,
         ])->values()->all()
         : []);
+    $equipamentosIniciais = old('equipamentos', $editando
+        ? $cliente->equipamentos->map(fn ($e) => ['descricao' => $e->cli_equip_descricao])->values()->all()
+        : []);
+    $localizacoesIniciais = old('localizacoes', $editando
+        ? $cliente->localizacoes->map(fn ($l) => [
+            'descricao' => $l->cli_loc_descricao,
+            'latitude' => $l->cli_loc_latitude,
+            'longitude' => $l->cli_loc_longitude,
+        ])->values()->all()
+        : []);
     $isComercial = auth()->user()->user_nivel_acesso === \App\Enums\NivelAcesso::Comercial->value;
 @endphp
 <x-layout :title="$editando ? 'Clientes | Editar' : 'Clientes | Novo'">
@@ -40,10 +50,16 @@
         x-data="{
             tab: 'dados',
             contatos: {{ \Illuminate\Support\Js::from($contatosIniciais) }},
+            equipamentos: {{ \Illuminate\Support\Js::from($equipamentosIniciais) }},
+            localizacoes: {{ \Illuminate\Support\Js::from($localizacoesIniciais) }},
             lat: {{ \Illuminate\Support\Js::from(old('cli_latitude', $cliente->cli_latitude)) }},
             lng: {{ \Illuminate\Support\Js::from(old('cli_longitude', $cliente->cli_longitude)) }},
             addContato() { this.contatos.push({ nome: '', cargo: '', telefone: '', email: '', tipo: 0 }); },
             removerContato(i) { this.contatos.splice(i, 1); },
+            addEquipamento() { this.equipamentos.push({ descricao: '' }); },
+            removerEquipamento(i) { this.equipamentos.splice(i, 1); },
+            addLocalizacao() { this.localizacoes.push({ descricao: '', latitude: '', longitude: '' }); },
+            removerLocalizacao(i) { this.localizacoes.splice(i, 1); },
         }"
     >
         <div class="sbadmin-page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -282,12 +298,13 @@
 
                     {{-- ── Geolocalização (BF01) ────────────────────────────────── --}}
                     <div x-show="tab === 'geo'" x-cloak>
+                        <h6 class="fw-bold">Localização principal</h6>
                         <div class="row">
                             <div class="col-sm-6">
-                                <x-sbadmin::form.input id="cli_latitude" name="cli_latitude" label="Latitude" x-model.number="lat" />
+                                <x-sbadmin::form.input id="cli_latitude" name="cli_latitude" label="Latitude" x-model.number="lat" readonly />
                             </div>
                             <div class="col-sm-6">
-                                <x-sbadmin::form.input id="cli_longitude" name="cli_longitude" label="Longitude" x-model.number="lng" />
+                                <x-sbadmin::form.input id="cli_longitude" name="cli_longitude" label="Longitude" x-model.number="lng" readonly />
                             </div>
                         </div>
 
@@ -296,7 +313,7 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="btnAtribuirLocalizacao">
                                     <i class="bi bi-geo-alt" aria-hidden="true"></i> Usar minha localização
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="btnEscolherNoMapa">
+                                <button type="button" class="btn btn-outline-primary btn-sm" @click="abrirMapaPicker(null)">
                                     <i class="bi bi-map" aria-hidden="true"></i> Escolher no mapa
                                 </button>
                                 <a
@@ -311,7 +328,54 @@
                             </div>
                             <div id="geo-feedback" class="small text-body-secondary mt-2"></div>
 
-                            {{-- Picker de mapa (Leaflet/OpenStreetMap — sem chave de API).
+                            <hr>
+
+                            {{-- Pedido do cliente (2026-09-11): lista de localizações
+                                 adicionais do mesmo cliente (empresa, instalação/
+                                 montagem, manutenção...), cada uma com descrição
+                                 livre + ponto próprio escolhido no mesmo picker do
+                                 mapa. Não substitui lat/lng principal acima (ainda
+                                 usada pelo mapa de relações — CRM07), é uma lista à
+                                 parte, mesmo padrão de repetição da aba Contatos. --}}
+                            <h6 class="fw-bold">Outras localizações</h6>
+                            <template x-for="(localizacao, i) in localizacoes" :key="i">
+                                <div class="sbadmin-card mb-3">
+                                    <div class="sbadmin-card-body">
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-md-5">
+                                                <label class="sbadmin-form-label">Descrição</label>
+                                                <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'localizacoes['+i+'][descricao]'" x-model="localizacao.descricao" placeholder="Ex.: Empresa, Instalação/Montagem, Manutenção">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sbadmin-form-label">Local</label>
+                                                <input type="hidden" :name="'localizacoes['+i+'][latitude]'" x-model.number="localizacao.latitude">
+                                                <input type="hidden" :name="'localizacoes['+i+'][longitude]'" x-model.number="localizacao.longitude">
+                                                <div class="form-control sbadmin-form-control bg-transparent" x-text="localizacao.latitude && localizacao.longitude ? Number(localizacao.latitude).toFixed(5) + ', ' + Number(localizacao.longitude).toFixed(5) : 'Não definida'"></div>
+                                            </div>
+                                            <div class="col-md-3 d-flex gap-2">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" @click="abrirMapaPicker(i)">
+                                                    <i class="bi bi-map" aria-hidden="true"></i> Escolher no mapa
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerLocalizacao(i)">
+                                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <p class="text-body-secondary small" x-show="localizacoes.length === 0">Nenhuma outra localização cadastrada.</p>
+
+                            <button type="button" class="btn btn-outline-primary btn-sm" @click="addLocalizacao()">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar localização
+                            </button>
+
+                            {{-- Picker de mapa (Leaflet/OpenStreetMap — sem chave de API),
+                                 com busca por endereço via Nominatim (mesmo provedor,
+                                 também sem chave). Reaproveitado tanto pela localização
+                                 principal quanto por qualquer linha de "Outras
+                                 localizações" — ver mapaPickerTargetIndex no script.
                                  Abre num modal próprio, separado do modal de edição
                                  padrão (não usa Bootstrap .modal pra evitar conflito de
                                  z-index/backdrop com o restante da tela). --}}
@@ -324,10 +388,16 @@
                                             <button type="button" class="btn-close" aria-label="Fechar" id="btnFecharMapaPicker"></button>
                                         </div>
                                         <div class="modal-body p-0">
-                                            <div id="mapaPickerLeaflet" style="height: 400px;"></div>
+                                            <div class="d-flex gap-2 p-2 border-bottom">
+                                                <input type="text" class="form-control sbadmin-form-control" id="mapaPickerBusca" placeholder="Buscar endereço ou local...">
+                                                <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" id="btnBuscarMapaPicker">
+                                                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                                                </button>
+                                            </div>
+                                            <div id="mapaPickerLeaflet" style="height: 380px;"></div>
                                         </div>
                                         <div class="modal-footer">
-                                            <span class="text-body-secondary small me-auto">Clique no mapa para posicionar o marcador.</span>
+                                            <span class="text-body-secondary small me-auto">Busque um endereço ou clique no mapa para posicionar o marcador.</span>
                                             <button type="button" class="btn btn-success" id="btnConfirmarMapaPicker">
                                                 <i class="bi bi-check-lg" aria-hidden="true"></i> Usar esta localização
                                             </button>
@@ -345,15 +415,24 @@
 
                     {{-- ── Histórico consolidado (placeholder — dados reais na Etapa 2) ── --}}
                     <div x-show="tab === 'historico'" x-cloak>
-                        {{-- CRM07 — dados exibidos no popup do mapa de relações de clientes. --}}
-                        <x-sbadmin::form.input
-                            id="cli_equipamento_vendido"
-                            name="cli_equipamento_vendido"
-                            label="Equipamento vendido"
-                            :value="old('cli_equipamento_vendido', $cliente->cli_equipamento_vendido)"
-                            maxlength="255"
-                            placeholder="Ex.: ETE compacta 50m³/dia"
-                        />
+                        {{-- Pedido do cliente (2026-09-11): varios equipamentos, nao
+                             mais um texto unico — mesmo padrao de repeticao da aba
+                             Contatos. `cli_equipamento_vendido` (CRM07, popup do mapa
+                             de relacoes) continua existindo, sincronizado como resumo
+                             desta lista no Repository. --}}
+                        <label class="sbadmin-form-label">Equipamentos</label>
+                        <template x-for="(equipamento, i) in equipamentos" :key="i">
+                            <div class="d-flex gap-2 mb-2">
+                                <input type="text" class="form-control sbadmin-form-control" maxlength="255" :name="'equipamentos['+i+'][descricao]'" x-model="equipamento.descricao" placeholder="Ex.: ETE compacta 50m³/dia">
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerEquipamento(i)">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </template>
+                        <p class="text-body-secondary small" x-show="equipamentos.length === 0">Nenhum equipamento cadastrado.</p>
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-3" @click="addEquipamento()">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar equipamento
+                        </button>
 
                         <x-sbadmin::form.checkbox
                             id="cli_caso_sucesso"
@@ -424,21 +503,31 @@
                 });
 
                 // ─── Escolher no mapa (Leaflet + OpenStreetMap, sem chave de API) ──
+                // Reaproveitado pela localização principal (target = null) e por
+                // qualquer linha de "Outras localizações" (target = índice da
+                // linha) — window.abrirMapaPicker() é chamado direto dos botões
+                // via Alpine (@click), por isso fica em window em vez de fechado
+                // no escopo do <script> (Alpine avalia a expressão no escopo global).
                 let mapaPicker = null;
                 let marcadorPicker = null;
+                let mapaPickerTargetIndex = null;
 
-                function abrirMapaPicker() {
+                window.abrirMapaPicker = function (targetIndex) {
+                    mapaPickerTargetIndex = targetIndex;
                     const root = document.getElementById('cliente-form-root');
                     const alpine = Alpine.$data(root);
-                    const latInicial = alpine.lat || -25.4284;
-                    const lngInicial = alpine.lng || -49.2733;
+                    const alvo = targetIndex === null ? alpine : alpine.localizacoes[targetIndex];
+                    const latInicial = (alvo && alvo.latitude) || alpine.lat || -25.4284;
+                    const lngInicial = (alvo && alvo.longitude) || alpine.lng || -49.2733;
+                    const temPonto = !!(alvo && alvo.latitude);
 
                     document.getElementById('mapaPickerBackdrop').style.display = 'block';
                     document.getElementById('mapaPickerModal').style.display = 'block';
+                    document.getElementById('mapaPickerBusca').value = '';
 
                     setTimeout(function () {
                         if (!mapaPicker) {
-                            mapaPicker = L.map('mapaPickerLeaflet').setView([latInicial, lngInicial], alpine.lat ? 15 : 5);
+                            mapaPicker = L.map('mapaPickerLeaflet').setView([latInicial, lngInicial], temPonto ? 15 : 5);
                             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                                 attribution: '&copy; OpenStreetMap',
                             }).addTo(mapaPicker);
@@ -447,29 +536,67 @@
                                 marcadorPicker.setLatLng(e.latlng);
                             });
                         } else {
-                            mapaPicker.setView([latInicial, lngInicial], alpine.lat ? 15 : 5);
+                            mapaPicker.setView([latInicial, lngInicial], temPonto ? 15 : 5);
                             marcadorPicker.setLatLng([latInicial, lngInicial]);
                             mapaPicker.invalidateSize();
                         }
                     }, 50);
-                }
+                };
 
                 function fecharMapaPicker() {
                     document.getElementById('mapaPickerBackdrop').style.display = 'none';
                     document.getElementById('mapaPickerModal').style.display = 'none';
                 }
 
-                document.getElementById('btnEscolherNoMapa')?.addEventListener('click', abrirMapaPicker);
                 document.getElementById('btnCancelarMapaPicker')?.addEventListener('click', fecharMapaPicker);
                 document.getElementById('btnFecharMapaPicker')?.addEventListener('click', fecharMapaPicker);
                 document.getElementById('mapaPickerBackdrop')?.addEventListener('click', fecharMapaPicker);
 
+                // Busca de endereco via Nominatim (OpenStreetMap) — mesmo provedor
+                // do tileLayer acima, tambem sem chave de API. So centraliza o
+                // mapa/marcador no resultado; a confirmacao continua manual
+                // (botao "Usar esta localização"), pra o usuario poder ajustar o
+                // pino antes de gravar.
+                function buscarEnderecoMapaPicker() {
+                    const termo = document.getElementById('mapaPickerBusca').value.trim();
+                    if (!termo) return;
+
+                    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(termo))
+                        .then((r) => r.json())
+                        .then((resultados) => {
+                            if (!resultados || !resultados.length) {
+                                document.getElementById('geo-feedback').textContent = 'Nenhum resultado encontrado para o endereço buscado.';
+                                return;
+                            }
+                            const lat = parseFloat(resultados[0].lat);
+                            const lon = parseFloat(resultados[0].lon);
+                            mapaPicker.setView([lat, lon], 16);
+                            marcadorPicker.setLatLng([lat, lon]);
+                        })
+                        .catch(() => { document.getElementById('geo-feedback').textContent = 'Erro ao buscar o endereço.'; });
+                }
+
+                document.getElementById('btnBuscarMapaPicker')?.addEventListener('click', buscarEnderecoMapaPicker);
+                document.getElementById('mapaPickerBusca')?.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        buscarEnderecoMapaPicker();
+                    }
+                });
+
                 document.getElementById('btnConfirmarMapaPicker')?.addEventListener('click', function () {
                     const pos = marcadorPicker.getLatLng();
                     const root = document.getElementById('cliente-form-root');
-                    Alpine.$data(root).lat = Number(pos.lat.toFixed(7));
-                    Alpine.$data(root).lng = Number(pos.lng.toFixed(7));
-                    document.getElementById('geo-feedback').textContent = 'Localização atribuída com sucesso.';
+                    const alpine = Alpine.$data(root);
+
+                    if (mapaPickerTargetIndex === null) {
+                        alpine.lat = Number(pos.lat.toFixed(7));
+                        alpine.lng = Number(pos.lng.toFixed(7));
+                        document.getElementById('geo-feedback').textContent = 'Localização atribuída com sucesso.';
+                    } else {
+                        alpine.localizacoes[mapaPickerTargetIndex].latitude = Number(pos.lat.toFixed(7));
+                        alpine.localizacoes[mapaPickerTargetIndex].longitude = Number(pos.lng.toFixed(7));
+                    }
                     fecharMapaPicker();
                 });
             </script>

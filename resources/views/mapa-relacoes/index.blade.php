@@ -5,7 +5,7 @@
 <x-layout title="Mapa de Relações de Clientes">
     <div class="sbadmin-page-header">
         <h2 class="sbadmin-page-heading">Mapa de Relações de Clientes</h2>
-        <p class="sbadmin-page-subheading">Visualize os clientes no mapa, com equipamento vendido e casos de sucesso (CRM07).</p>
+        <p class="sbadmin-page-subheading">Visualize os clientes no mapa, com equipamento vendido e casos de sucesso.</p>
     </div>
 
     <div class="sbadmin-card mb-3">

@@ -59,6 +59,16 @@ class Cliente extends Model
         return $this->hasMany(ClienteContato::class, 'cli_cont_cliente_id', 'cli_id');
     }
 
+    public function equipamentos()
+    {
+        return $this->hasMany(ClienteEquipamento::class, 'cli_equip_cliente_id', 'cli_id');
+    }
+
+    public function localizacoes()
+    {
+        return $this->hasMany(ClienteLocalizacao::class, 'cli_loc_cliente_id', 'cli_id');
+    }
+
     public function temGeolocalizacao(): bool
     {
         return $this->cli_latitude !== null && $this->cli_longitude !== null;

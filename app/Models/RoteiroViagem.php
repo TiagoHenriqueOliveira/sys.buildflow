@@ -17,6 +17,7 @@ class RoteiroViagem extends Model
         'crm_rot_vendedor_id',
         'crm_rot_periodo_inicio',
         'crm_rot_periodo_fim',
+        'crm_rot_link_mapa',
         'crm_rot_ativo',
         'crm_rot_criado_em',
     ];

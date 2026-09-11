@@ -67,6 +67,18 @@ class ClienteRequest extends FormRequest
             'contatos.*.telefone' => ['nullable', 'digits_between:10,11'],
             'contatos.*.email' => ['nullable', 'email', 'max:100'],
             'contatos.*.tipo' => ['nullable', Rule::in(array_column(TipoContatoCliente::cases(), 'value'))],
+
+            'equipamentos' => ['nullable', 'array'],
+            'equipamentos.*.descricao' => ['required_with:equipamentos.*', 'string', 'max:255'],
+
+            // Linha incompleta (so descricao, ou so coordenadas escolhidas no
+            // mapa) e ignorada silenciosamente pelo Repository em vez de
+            // bloquear o salvamento do cadastro inteiro — o usuario pode
+            // preencher a lista aos poucos, em qualquer ordem.
+            'localizacoes' => ['nullable', 'array'],
+            'localizacoes.*.descricao' => ['nullable', 'string', 'max:100'],
+            'localizacoes.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'localizacoes.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 
@@ -87,6 +99,7 @@ class ClienteRequest extends FormRequest
             'contatos.*.nome.required_with' => 'Informe o nome do contato.',
             'contatos.*.telefone.digits_between' => 'Informe um telefone de contato com DDD e 10 ou 11 números.',
             'contatos.*.email.email' => 'Informe um e-mail de contato válido.',
+            'equipamentos.*.descricao.required_with' => 'Informe a descrição do equipamento.',
         ];
     }
 }

@@ -13,6 +13,7 @@ class RoteiroViagemRequest extends FormRequest
             'crm_rot_vendedor_id' => ['required', 'integer', Rule::exists('usuarios', 'user_id')],
             'crm_rot_periodo_inicio' => ['required', 'date'],
             'crm_rot_periodo_fim' => ['required', 'date', 'after_or_equal:crm_rot_periodo_inicio'],
+            'crm_rot_link_mapa' => ['nullable', 'url', 'max:500'],
             'crm_rot_ativo' => ['nullable', 'boolean'],
 
             // CRM05 — lista de clientes a visitar (saida).
@@ -34,6 +35,7 @@ class RoteiroViagemRequest extends FormRequest
             'crm_rot_periodo_inicio.required' => 'Informe a data de início do roteiro.',
             'crm_rot_periodo_fim.required' => 'Informe a data de término do roteiro.',
             'crm_rot_periodo_fim.after_or_equal' => 'A data de término não pode ser anterior ao início.',
+            'crm_rot_link_mapa.url' => 'Informe um link válido (ex.: https://maps.app.goo.gl/...).',
             'clientes.required' => 'Adicione ao menos um cliente ao roteiro.',
             'clientes.min' => 'Adicione ao menos um cliente ao roteiro.',
         ];

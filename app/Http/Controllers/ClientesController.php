@@ -85,7 +85,7 @@ class ClientesController extends Controller
 
     public function edit(int $id): View
     {
-        $cliente = Cliente::with('contatos')->findOrFail($id);
+        $cliente = Cliente::with(['contatos', 'equipamentos', 'localizacoes'])->findOrFail($id);
 
         return view('clientes.form', [
             'cliente' => $cliente,
@@ -117,8 +117,12 @@ class ClientesController extends Controller
     {
         $cliente = $this->repository->update($id, $request->validated());
 
+        // Pedido do cliente (2026-09-11): ao editar, permanece na tela de
+        // edição (para continuar ajustando outras abas) em vez de voltar
+        // pra listagem — diferente do cadastro novo, que ainda redireciona
+        // pra listagem logo abaixo em store().
         return redirect()
-            ->route('clientes.index')
+            ->route('clientes.edit', $cliente->cli_id)
             ->with('success', 'Cliente "'.$cliente->cli_nome.'" atualizado com sucesso.');
     }
 

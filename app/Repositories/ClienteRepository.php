@@ -22,6 +22,8 @@ class ClienteRepository implements CrudRepositoryInterface
             ]);
 
             $this->sincronizarContatos($cliente, $data['contatos'] ?? []);
+            $this->sincronizarEquipamentos($cliente, $data['equipamentos'] ?? []);
+            $this->sincronizarLocalizacoes($cliente, $data['localizacoes'] ?? []);
 
             return $cliente;
         });
@@ -38,6 +40,8 @@ class ClienteRepository implements CrudRepositoryInterface
             ]);
 
             $this->sincronizarContatos($cliente, $data['contatos'] ?? []);
+            $this->sincronizarEquipamentos($cliente, $data['equipamentos'] ?? []);
+            $this->sincronizarLocalizacoes($cliente, $data['localizacoes'] ?? []);
 
             return $cliente;
         });
@@ -54,7 +58,11 @@ class ClienteRepository implements CrudRepositoryInterface
             'cli_cidade' => $data['cli_cidade'],
             'cli_uf' => strtoupper($data['cli_uf']),
             'cli_segmento' => $data['cli_segmento'] ?? null,
-            'cli_equipamento_vendido' => $data['cli_equipamento_vendido'] ?? null,
+            // CRM07 (mapa de relacoes) le este campo como resumo em texto —
+            // mantido sincronizado a partir da lista de equipamentos da aba
+            // Historico em vez de um input de texto proprio (ver
+            // sincronizarEquipamentos), pra nao precisar tocar no popup do mapa.
+            'cli_equipamento_vendido' => $this->resumoEquipamentos($data['equipamentos'] ?? []),
             'cli_caso_sucesso' => $data['cli_caso_sucesso'] ?? false,
             'cli_caso_sucesso_descricao' => $data['cli_caso_sucesso_descricao'] ?? null,
             'cli_classificacao_id' => $data['cli_classificacao_id'] ?? null,
@@ -92,5 +100,53 @@ class ClienteRepository implements CrudRepositoryInterface
         if ($linhas !== []) {
             $cliente->contatos()->insert($linhas);
         }
+    }
+
+    /** Mesmo padrão de sincronizarContatos — substitui a lista inteira a cada save. */
+    private function sincronizarEquipamentos(Cliente $cliente, array $equipamentos): void
+    {
+        $cliente->equipamentos()->delete();
+
+        $linhas = collect($equipamentos)
+            ->filter(fn ($e) => filled($e['descricao'] ?? null))
+            ->map(fn ($e) => [
+                'cli_equip_cliente_id' => $cliente->cli_id,
+                'cli_equip_descricao' => $e['descricao'],
+            ])
+            ->all();
+
+        if ($linhas !== []) {
+            $cliente->equipamentos()->insert($linhas);
+        }
+    }
+
+    /** Mesmo padrão de sincronizarContatos — substitui a lista inteira a cada save. */
+    private function sincronizarLocalizacoes(Cliente $cliente, array $localizacoes): void
+    {
+        $cliente->localizacoes()->delete();
+
+        $linhas = collect($localizacoes)
+            ->filter(fn ($l) => filled($l['descricao'] ?? null) && filled($l['latitude'] ?? null) && filled($l['longitude'] ?? null))
+            ->map(fn ($l) => [
+                'cli_loc_cliente_id' => $cliente->cli_id,
+                'cli_loc_descricao' => $l['descricao'],
+                'cli_loc_latitude' => $l['latitude'],
+                'cli_loc_longitude' => $l['longitude'],
+            ])
+            ->all();
+
+        if ($linhas !== []) {
+            $cliente->localizacoes()->insert($linhas);
+        }
+    }
+
+    private function resumoEquipamentos(array $equipamentos): ?string
+    {
+        $descricoes = collect($equipamentos)
+            ->pluck('descricao')
+            ->filter(fn ($d) => filled($d))
+            ->implode(', ');
+
+        return $descricoes !== '' ? $descricoes : null;
     }
 }

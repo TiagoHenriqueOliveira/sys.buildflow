@@ -45,7 +45,7 @@
                     <x-sbadmin::form.select
                         id="nat_aten_config_modelo_id"
                         name="nat_aten_config_modelo_id"
-                        label="Modelo do Configurador (Assistência)"
+                        label="Modelo do Configurador"
                         :options="$configModelos->pluck('cfg_mod_nome', 'cfg_mod_id')->all()"
                         :value="old('nat_aten_config_modelo_id')"
                         placeholder="Selecione..."

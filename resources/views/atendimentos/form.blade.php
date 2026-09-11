@@ -84,38 +84,69 @@
                     <input type="hidden" name="aten_id" id="aten_id" value="{{ $atendimento->aten_id }}">
 
                     <div x-show="tab === 'dados'">
-                        <x-sbadmin::form.select
-                            id="aten_natureza_id"
-                            name="aten_natureza_id"
-                            label="Natureza"
-                            :options="$naturezasAtendimentos->pluck('nat_aten_descricao', 'nat_aten_id')->all()"
-                            :value="old('aten_natureza_id', $atendimento->aten_natureza_id)"
-                            placeholder="Selecione..."
-                            required
-                        />
+                        <div class="row">
+                            <div class="col-6 col-md-3">
+                                <x-sbadmin::form.select
+                                    id="aten_natureza_id"
+                                    name="aten_natureza_id"
+                                    label="Natureza"
+                                    :options="$naturezasAtendimentos->pluck('nat_aten_descricao', 'nat_aten_id')->all()"
+                                    :value="old('aten_natureza_id', $atendimento->aten_natureza_id)"
+                                    placeholder="Selecione..."
+                                    required
+                                />
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <x-sbadmin::form.select
+                                    id="aten_usuario_id"
+                                    name="aten_usuario_id"
+                                    label="Técnico"
+                                    :options="$usuarios->pluck('user_nome', 'user_id')->all()"
+                                    :value="old('aten_usuario_id', $atendimento->aten_usuario_id)"
+                                    placeholder="Selecione..."
+                                    required
+                                />
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <x-sbadmin::form.input id="aten_dt_inicio" type="date" name="aten_dt_inicio" label="Início" :value="old('aten_dt_inicio', optional($atendimento->aten_dt_inicio)->format('Y-m-d'))" required />
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <x-sbadmin::form.input id="aten_dt_fim" type="date" name="aten_dt_fim" label="Fim" :value="old('aten_dt_fim', optional($atendimento->aten_dt_fim)->format('Y-m-d'))" required />
+                            </div>
+                        </div>
 
-                        <x-sbadmin::form.select
-                            id="aten_usuario_id"
-                            name="aten_usuario_id"
-                            label="Técnico"
-                            :options="$usuarios->pluck('user_nome', 'user_id')->all()"
-                            :value="old('aten_usuario_id', $atendimento->aten_usuario_id)"
-                            placeholder="Selecione..."
-                            required
-                        />
-
-                        <div class="sbadmin-form-group">
-                            <label for="aten_cliente_nome" class="sbadmin-form-label">Cliente<span class="sbadmin-required" aria-hidden="true">*</span></label>
-                            <input type="hidden" id="aten_cliente_id" name="aten_cliente_id" value="{{ old('aten_cliente_id', $atendimento->aten_cliente_id) }}">
-                            <input
-                                type="text"
-                                class="form-control sbadmin-form-control"
-                                id="aten_cliente_nome"
-                                placeholder="Digite o nome do cliente"
-                                value="{{ old('aten_cliente_nome', optional($atendimento->cliente)->cli_nome) }}"
-                                autocomplete="off"
-                                required
-                            >
+                        <div class="row align-items-end">
+                            <div class="col-md-5">
+                                <div class="sbadmin-form-group">
+                                    <label for="aten_cliente_nome" class="sbadmin-form-label">Cliente<span class="sbadmin-required" aria-hidden="true">*</span></label>
+                                    <input type="hidden" id="aten_cliente_id" name="aten_cliente_id" value="{{ old('aten_cliente_id', $atendimento->aten_cliente_id) }}">
+                                    <input
+                                        type="text"
+                                        class="form-control sbadmin-form-control"
+                                        id="aten_cliente_nome"
+                                        placeholder="Digite o nome do cliente"
+                                        value="{{ old('aten_cliente_nome', optional($atendimento->cliente)->cli_nome) }}"
+                                        autocomplete="off"
+                                        required
+                                    >
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <x-sbadmin::form.input
+                                    id="aten_telefone"
+                                    name="aten_telefone"
+                                    label="Telefone"
+                                    :value="old('aten_telefone', $mascararTelefone($atendimento->aten_telefone))"
+                                    maxlength="20"
+                                    placeholder="(00) 00000-0000"
+                                    oninput="this.value = window.formatarTelefone(this.value)"
+                                />
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <a id="btnWhatsapp" href="#" target="_blank" class="btn btn-success btn-sm w-100" title="Abrir WhatsApp">
+                                    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                                </a>
+                            </div>
                         </div>
 
                         {{-- BF03 — dados do cliente vinculado, sem navegação adicional. --}}
@@ -128,73 +159,52 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.input id="aten_nr_proposta" name="aten_nr_proposta" label="Nº Proposta" :value="old('aten_nr_proposta', $atendimento->aten_nr_proposta)" maxlength="20" />
-                            </div>
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.input id="aten_contato" name="aten_contato" label="Contato" :value="old('aten_contato', $atendimento->aten_contato)" maxlength="50" />
-                            </div>
-                        </div>
-                        <x-sbadmin::form.input id="aten_responsavel" name="aten_responsavel" label="Responsável" :value="old('aten_responsavel', $atendimento->aten_responsavel)" maxlength="50" />
-
-                        <div class="row align-items-end">
-                            <div class="col-sm-9">
-                                <x-sbadmin::form.input
-                                    id="aten_telefone"
-                                    name="aten_telefone"
-                                    label="Telefone"
-                                    :value="old('aten_telefone', $mascararTelefone($atendimento->aten_telefone))"
-                                    maxlength="20"
-                                    placeholder="(00) 00000-0000"
-                                    oninput="this.value = window.formatarTelefone(this.value)"
-                                />
-                            </div>
-                            <div class="col-sm-3 mb-3">
-                                <a id="btnWhatsapp" href="#" target="_blank" class="btn btn-success w-100" title="Abrir WhatsApp">
-                                    <i class="bi bi-whatsapp" aria-hidden="true"></i>
-                                </a>
-                            </div>
-                        </div>
-
                         <x-sbadmin::form.input id="aten_endereco" name="aten_endereco" label="Endereço" :value="old('aten_endereco', $atendimento->aten_endereco)" maxlength="100" />
 
-                        <div class="sbadmin-form-group">
-                            <label class="sbadmin-form-label">Entrega Téc.</label>
-                            <div class="form-check form-switch">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input"
-                                    role="switch"
-                                    id="aten_entrega_tecnica"
-                                    name="aten_entrega_tecnica"
-                                    value="1"
-                                    x-model="entregaTecnica"
-                                >
-                                <label class="form-check-label" for="aten_entrega_tecnica">
-                                    <span class="sbadmin-badge sbadmin-badge-pill" :class="entregaTecnica ? 'sbadmin-badge-success' : 'sbadmin-badge-neutral'" x-text="entregaTecnica ? 'Sim' : 'Não'">Não</span>
-                                </label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <x-sbadmin::form.input id="aten_nr_proposta" name="aten_nr_proposta" label="Nº Proposta" :value="old('aten_nr_proposta', $atendimento->aten_nr_proposta)" maxlength="20" />
+                            </div>
+                            <div class="col-md-4">
+                                <x-sbadmin::form.input id="aten_contato" name="aten_contato" label="Contato" :value="old('aten_contato', $atendimento->aten_contato)" maxlength="50" />
+                            </div>
+                            <div class="col-md-4">
+                                <x-sbadmin::form.input id="aten_responsavel" name="aten_responsavel" label="Responsável" :value="old('aten_responsavel', $atendimento->aten_responsavel)" maxlength="50" />
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.input id="aten_dt_inicio" type="date" name="aten_dt_inicio" label="Início" :value="old('aten_dt_inicio', optional($atendimento->aten_dt_inicio)->format('Y-m-d'))" required />
-                            </div>
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.input id="aten_dt_fim" type="date" name="aten_dt_fim" label="Fim" :value="old('aten_dt_fim', optional($atendimento->aten_dt_fim)->format('Y-m-d'))" required />
-                            </div>
-                        </div>
-
-                        <div class="sbadmin-form-group">
-                            <label class="sbadmin-form-label">Status</label>
-                            <div class="pt-1">
-                                @foreach([0 => 'Não iniciada', 1 => 'Paralisada', 2 => 'Em andamento', 3 => 'Concluída'] as $val => $label)
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" id="aten_status_{{ $val }}" name="aten_status" value="{{ $val }}" @checked((int) old('aten_status', $atendimento->aten_status ?? 0) === $val)>
-                                        <label class="form-check-label" for="aten_status_{{ $val }}">{{ $label }}</label>
+                            <div class="col-md-6">
+                                <div class="sbadmin-form-group">
+                                    <label class="sbadmin-form-label">Entrega Téc.</label>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            role="switch"
+                                            id="aten_entrega_tecnica"
+                                            name="aten_entrega_tecnica"
+                                            value="1"
+                                            x-model="entregaTecnica"
+                                        >
+                                        <label class="form-check-label" for="aten_entrega_tecnica">
+                                            <span class="sbadmin-badge sbadmin-badge-pill" :class="entregaTecnica ? 'sbadmin-badge-success' : 'sbadmin-badge-neutral'" x-text="entregaTecnica ? 'Sim' : 'Não'">Não</span>
+                                        </label>
                                     </div>
-                                @endforeach
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="sbadmin-form-group">
+                                    <label class="sbadmin-form-label">Status</label>
+                                    <div class="pt-1">
+                                        @foreach([0 => 'Não iniciada', 1 => 'Paralisada', 2 => 'Em andamento', 3 => 'Concluída'] as $val => $label)
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" id="aten_status_{{ $val }}" name="aten_status" value="{{ $val }}" @checked((int) old('aten_status', $atendimento->aten_status ?? 0) === $val)>
+                                                <label class="form-check-label" for="aten_status_{{ $val }}">{{ $label }}</label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -205,27 +215,20 @@
                         <x-sbadmin::form.textarea id="aten_obs_manutencao" name="aten_obs_manutencao" label="Manutenção" rows="4" />
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 border-top pt-3" x-show="tab === 'dados' || tab === 'observacoes'">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
-                        </button>
-                        <a href="{{ route('atendimentos.index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
-                        </a>
-                    </div>
                 </form>
 
                 {{-- Aba Equipamentos --}}
                 <div x-show="tab === 'equipamentos'" x-cloak>
-                    <div class="sbadmin-form-group">
-                        <label for="aten_equip_descricao" class="sbadmin-form-label">Descrição</label>
-                        <input type="text" class="form-control sbadmin-form-control" id="aten_equip_descricao" maxlength="255" placeholder="Ex.: Ar condicionado">
-                    </div>
-
-                    <div class="text-end mb-3">
-                        <button type="button" id="btnAdicionarEquipamento" class="btn btn-success btn-sm">
-                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar
-                        </button>
+                    <div class="row g-2 align-items-end">
+                        <div class="col">
+                            <label for="aten_equip_descricao" class="sbadmin-form-label">Descrição</label>
+                            <input type="text" class="form-control sbadmin-form-control" id="aten_equip_descricao" maxlength="255" placeholder="Ex.: Ar condicionado">
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" id="btnAdicionarEquipamento" class="btn btn-success btn-sm">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar
+                            </button>
+                        </div>
                     </div>
 
                     <hr>
@@ -235,18 +238,12 @@
                         <table class="table table-sm table-striped table-hover" id="table_equipamentos">
                             <thead>
                                 <tr>
-                                    <th class="text-center" style="width: 50px;">Ações</th>
-                                    <th>Descrição</th>
+                                    <th class="text-center align-middle" style="width: 50px;">Ações</th>
+                                    <th class="align-middle">Descrição</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
-                    </div>
-
-                    <div class="d-flex justify-content-end border-top pt-3">
-                        <a href="{{ route('atendimentos.index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
-                        </a>
                     </div>
                 </div>
 
@@ -263,12 +260,21 @@
                         </button>
                     </div>
                     <div id="aten_anexos_lista"></div>
+                </div>
 
-                    <div class="d-flex justify-content-end border-top pt-3">
-                        <a href="{{ route('atendimentos.index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
-                        </a>
-                    </div>
+                {{-- Rodapé único (Salvar + Voltar), sempre visível independente da
+                     aba ativa — Equipamentos/Anexos salvam na hora via fetch() e
+                     não precisam de um botão Salvar próprio, mas o usuário pediu
+                     um único componente fixo em vez de um "Voltar" avulso por aba.
+                     `form="form_atendimento"` associa o botão ao form sem precisar
+                     ficar dentro dele (ele só teria os campos de Dados/Observações). --}}
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                    <button type="submit" form="form_atendimento" class="btn btn-success">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
+                    </button>
+                    <a href="{{ route('atendimentos.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
+                    </a>
                 </div>
             </div>
         </div>
@@ -414,11 +420,11 @@
 
                 equipamentos.forEach((equip) => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="text-center">
+                    tr.innerHTML = `<td class="text-center align-middle">
                         <button type="button" class="btn btn-sm btn-outline-danger btn-delete-equip" data-equip-id="${equip.aten_equip_id}" data-aten-id="${atenId}">
                             <i class="bi bi-trash" aria-hidden="true"></i>
                         </button>
-                    </td><td></td>`;
+                    </td><td class="align-middle"></td>`;
                     tr.querySelector('td:last-child').textContent = equip.aten_equip_descricao;
                     tbody.appendChild(tr);
                 });

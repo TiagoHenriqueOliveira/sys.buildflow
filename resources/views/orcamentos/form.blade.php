@@ -151,7 +151,7 @@
                                         @if($tipo->configModelo)
                                             O modelo "{{ $tipo->configModelo->cfg_mod_nome }}" ainda não tem perguntas cadastradas.
                                         @else
-                                            Nenhum modelo do Configurador vinculado a este tipo de orçamento (CRM01).
+                                            Nenhum modelo do Configurador vinculado a este tipo de orçamento.
                                         @endif
                                     </p>
                                 @else
@@ -197,7 +197,7 @@
                                 @endif
                             </div>
                         @empty
-                            <p class="text-body-secondary small">Nenhum tipo de orçamento cadastrado (CRM01).</p>
+                            <p class="text-body-secondary small">Nenhum tipo de orçamento cadastrado.</p>
                         @endforelse
                         <p class="text-body-secondary small" x-show="!tipoOrcamentoId">Selecione um tipo de sistema na aba "Dados Gerais" para ver as perguntas.</p>
                     </div>
@@ -205,7 +205,7 @@
                     <div x-show="tab === 'vendedores'" x-cloak>
                         <p class="text-body-secondary small">Indicação conjunta — sem cálculo/divisão de comissão.</p>
                         @forelse($vendedores as $vendedor)
-                            <div class="form-check">
+                            <div class="form-check mb-2">
                                 <input
                                     class="form-check-input"
                                     type="checkbox"
@@ -222,9 +222,10 @@
                         @error('vendedores_adicionais')
                             <div class="sbadmin-alert sbadmin-alert-error mt-2" role="alert">{{ $message }}</div>
                         @enderror
+                        <div class="mb-3"></div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 border-top pt-3" x-show="tab !== 'comentarios'">
+                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
                         </button>

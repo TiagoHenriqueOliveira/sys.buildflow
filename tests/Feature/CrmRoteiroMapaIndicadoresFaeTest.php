@@ -46,6 +46,47 @@ class CrmRoteiroMapaIndicadoresFaeTest extends TestCase
         $this->assertCount(2, $roteiro->clientes);
     }
 
+    /**
+     * Pedido do cliente (2026-09-11): link da rota pronta no Google Maps,
+     * pra o app Android abrir direto (CRM09, ainda nao implementado —
+     * aqui so cobre o cadastro/validacao no web).
+     */
+    public function test_cadastra_roteiro_com_link_do_google_maps(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        $response = $this->actingAs($vendedor)->post(route('roteiros-viagem.store'), [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => '2026-09-15',
+            'crm_rot_periodo_fim' => '2026-09-18',
+            'crm_rot_link_mapa' => 'https://maps.app.goo.gl/abc123',
+            'clientes' => [$cliente->cli_id],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('crm_roteiros_viagem', [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_link_mapa' => 'https://maps.app.goo.gl/abc123',
+        ]);
+    }
+
+    public function test_link_do_google_maps_invalido_e_rejeitado(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        $response = $this->actingAs($vendedor)->post(route('roteiros-viagem.store'), [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => '2026-09-15',
+            'crm_rot_periodo_fim' => '2026-09-18',
+            'crm_rot_link_mapa' => 'nao-e-uma-url',
+            'clientes' => [$cliente->cli_id],
+        ]);
+
+        $response->assertSessionHasErrors('crm_rot_link_mapa');
+    }
+
     public function test_registra_retorno_do_roteiro_por_cliente(): void
     {
         $vendedor = $this->criarVendedor();

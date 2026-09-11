@@ -43,7 +43,7 @@
                     <x-sbadmin::form.select
                         id="crm_tp_orc_config_modelo_id"
                         name="crm_tp_orc_config_modelo_id"
-                        label="Modelo do Configurador (Comercial)"
+                        label="Modelo do Configurador"
                         :options="$modelosComerciais->pluck('cfg_mod_nome', 'cfg_mod_id')->all()"
                         :value="old('crm_tp_orc_config_modelo_id')"
                         placeholder="Nenhum"

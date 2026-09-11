@@ -6,7 +6,7 @@
 <x-layout title="Mapa de Demandas">
     <div class="sbadmin-page-header">
         <h2 class="sbadmin-page-heading">Mapa de Demandas</h2>
-        <p class="sbadmin-page-subheading">Atendimentos no mapa, coloridos por status (BF08).</p>
+        <p class="sbadmin-page-subheading">Atendimentos no mapa, coloridos por status.</p>
     </div>
 
     <div class="sbadmin-card mb-3">

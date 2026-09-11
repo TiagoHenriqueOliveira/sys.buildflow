@@ -170,6 +170,30 @@
     }
 }
 
+// `.btn-outline-primary`/`.btn-outline-danger` (Bootstrap) usam a mesma cor
+// de acento que aparece por toda a UI (links, item ativo do menu, foco de
+// campos) — sobre fundo transparente eles somem no meio dos outros
+// elementos azuis/vermelhos da tela. Cliente relatou baixo contraste nos
+// botoes "Incluir Opção" (Configurador > Perguntas) e Adicionar/Remover
+// contato (Clientes). Mesma receita do `.sbadmin-table-action-btn` abaixo:
+// fundo levemente preenchido em repouso, pra virar um "chip" que se destaca
+// do card em vez de depender so do outline fino.
+.btn-outline-primary {
+    background-color: rgba($sbadmin-color-secondary, 0.12);
+
+    &:hover, &:focus {
+        color: #fff;
+    }
+}
+
+.btn-outline-danger {
+    background-color: rgba($sbadmin-color-error, 0.12);
+
+    &:hover, &:focus {
+        color: #fff;
+    }
+}
+
 // Botao de acao de linha "desenhado" — usado no lugar do simples
 // `.btn-outline-secondary` acima quando se quer um botao de acao mais
 // prominente (ex.: editar em todas as telas de listagem). Quadrado

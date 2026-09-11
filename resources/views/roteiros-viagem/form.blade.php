@@ -43,7 +43,7 @@
             <div class="sbadmin-card">
                 <div class="sbadmin-card-body">
                     <div class="row">
-                        <div class="col-sm-4">
+                        <div class="col-6 col-md-3">
                             <x-sbadmin::form.select
                                 id="crm_rot_vendedor_id"
                                 name="crm_rot_vendedor_id"
@@ -54,7 +54,7 @@
                                 required
                             />
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-6 col-md-3">
                             <x-sbadmin::form.input
                                 id="crm_rot_periodo_inicio"
                                 type="date"
@@ -64,7 +64,7 @@
                                 required
                             />
                         </div>
-                        <div class="col-sm-4">
+                        <div class="col-6 col-md-3">
                             <x-sbadmin::form.input
                                 id="crm_rot_periodo_fim"
                                 type="date"
@@ -72,6 +72,18 @@
                                 label="Período — fim"
                                 :value="old('crm_rot_periodo_fim', optional($roteiro->crm_rot_periodo_fim)->format('Y-m-d'))"
                                 required
+                            />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <x-sbadmin::form.input
+                                id="crm_rot_link_mapa"
+                                type="url"
+                                name="crm_rot_link_mapa"
+                                label="Link do Google Maps"
+                                :value="old('crm_rot_link_mapa', $roteiro->crm_rot_link_mapa)"
+                                maxlength="500"
+                                placeholder="https://maps.app.goo.gl/..."
+                                help="Cole aqui o link da rota compartilhada pelo Google Maps."
                             />
                         </div>
                     </div>
@@ -92,7 +104,7 @@
 
                     <hr>
 
-                    <h6 class="fw-bold">Clientes a visitar (CRM05) e retorno (CRM06)</h6>
+                    <h6 class="fw-bold">Clientes a visitar e retorno da viagem</h6>
                     @error('clientes')
                         <div class="sbadmin-alert sbadmin-alert-error mb-2" role="alert">{{ $message }}</div>
                     @enderror

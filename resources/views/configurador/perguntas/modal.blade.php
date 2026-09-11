@@ -59,6 +59,9 @@
                         @error('opcoes')
                             <div class="sbadmin-alert sbadmin-alert-error mb-2" role="alert">{{ $message }}</div>
                         @enderror
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" @click="addOpcao()">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Incluir Opção
+                        </button>
                         <template x-for="(opcao, i) in opcoes" :key="i">
                             <div class="d-flex gap-2 mb-2">
                                 <input type="text" class="form-control sbadmin-form-control" maxlength="255" :name="'opcoes['+i+'][texto]'" x-model="opcao.texto" placeholder="Texto da opção">
@@ -67,9 +70,6 @@
                                 </button>
                             </div>
                         </template>
-                        <button type="button" class="btn btn-outline-primary btn-sm mb-3" @click="addOpcao()">
-                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar opção
-                        </button>
                     </div>
 
                     <x-sbadmin::form.checkbox

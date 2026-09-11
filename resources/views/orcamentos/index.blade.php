@@ -47,9 +47,9 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-md-1 d-flex gap-2">
+                <div class="col-12 col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-info">
-                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                        <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                     </button>
                 </div>
             </div>

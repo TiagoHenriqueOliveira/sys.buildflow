@@ -3,7 +3,7 @@
 <x-layout title="Indicadores Comerciais">
     <div class="sbadmin-page-header">
         <h2 class="sbadmin-page-heading">Indicadores Comerciais</h2>
-        <p class="sbadmin-page-subheading">Visão geral de propostas, conversão por vendedor e clientes visitados (CRM08).</p>
+        <p class="sbadmin-page-subheading">Visão geral de propostas, conversão por vendedor e clientes visitados.</p>
     </div>
 
     <div class="sbadmin-alert sbadmin-alert-info mb-3" role="alert">
