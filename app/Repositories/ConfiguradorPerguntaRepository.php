@@ -20,6 +20,7 @@ class ConfiguradorPerguntaRepository implements CrudRepositoryInterface
                 'cfg_perg_texto' => $data['cfg_perg_texto'],
                 'cfg_perg_tipo' => $data['cfg_perg_tipo'],
                 'cfg_perg_permite_anexo' => $data['cfg_perg_permite_anexo'] ?? false,
+                'cfg_perg_repetivel' => $data['cfg_perg_repetivel'] ?? false,
                 'cfg_perg_ativo' => 1,
             ]);
 
@@ -38,6 +39,7 @@ class ConfiguradorPerguntaRepository implements CrudRepositoryInterface
                 'cfg_perg_texto' => $data['cfg_perg_texto'],
                 'cfg_perg_tipo' => $data['cfg_perg_tipo'],
                 'cfg_perg_permite_anexo' => $data['cfg_perg_permite_anexo'] ?? false,
+                'cfg_perg_repetivel' => $data['cfg_perg_repetivel'] ?? false,
                 'cfg_perg_ativo' => $data['cfg_perg_ativo'] ?? $pergunta->cfg_perg_ativo,
             ]);
 

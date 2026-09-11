@@ -15,6 +15,7 @@ class ConfiguradorPerguntaRequest extends FormRequest
             'cfg_perg_texto' => ['required', 'string'],
             'cfg_perg_tipo' => ['required', Rule::in(array_column(TipoPergunta::cases(), 'value'))],
             'cfg_perg_permite_anexo' => ['nullable', 'boolean'],
+            'cfg_perg_repetivel' => ['nullable', 'boolean'],
             'cfg_perg_ativo' => ['nullable', 'boolean'],
 
             'opcoes' => ['nullable', 'array'],

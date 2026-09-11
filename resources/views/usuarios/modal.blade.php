@@ -38,7 +38,7 @@
                     <input type="hidden" id="user_id" name="user_id" value="{{ old('user_id') }}">
 
                     <div class="row g-2">
-                        <div class="col-4 col-md-2">
+                        <div class="col-4 col-md-3">
                             <x-sbadmin::form.select
                                 id="user_nivel_acesso"
                                 name="user_nivel_acesso"
@@ -49,7 +49,7 @@
                                 required
                             />
                         </div>
-                        <div class="col-8 col-md-10">
+                        <div class="col-8 col-md-9">
                             <x-sbadmin::form.input
                                 id="user_nome"
                                 name="user_nome"

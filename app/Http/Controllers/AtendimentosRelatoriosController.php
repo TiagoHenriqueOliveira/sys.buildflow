@@ -227,6 +227,10 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento.equipamentos',
             'atendimento.anexos',
             'horarios',
+            'climas',
+            'servicos',
+            'pecas',
+            'ocorrencias',
             'fotos',
             'videos',
             'anexos',
@@ -241,25 +245,11 @@ class AtendimentosRelatoriosController extends Controller
 
         $prazo = $atendimentoRelatorio->calcularPrazo();
 
-        // Sessao 08 - Configurador substitui modelos_relatorios: um
-        // relatorio sem config_modelo (caso raro, so relatorio muito antigo
-        // cuja natureza nunca foi migrada) cai no default "mostra tudo",
-        // igual ao comportamento de sempre antes desta sessao.
-        $secoes = $atendimentoRelatorio->configModelo?->secoesAtivas() ?? [
-            'horarios' => true,
-            'clima' => true,
-            'servicos' => true,
-            'pecas' => true,
-            'ocorrencias' => true,
-            'observacoes' => true,
-        ];
-
         return view('atendimentos-relatorios.show', [
             'atendimentoRelatorio' => $atendimentoRelatorio,
             'prazoTotal'           => $prazo['prazo_total'],
             'prazoDecorrido'       => $prazo['prazo_decorrido'],
             'prazoAVencer'         => $prazo['prazo_a_vencer'],
-            'secoes'               => $secoes,
             'somenteLeitura'       => $atendimentoRelatorio->aten_rel_status === \App\Enums\AtendimentoRelatorioStatus::Aprovado->value,
             'ocorrencias'          => \App\Models\Ocorrencia::where('ocor_ativo', true)->orderBy('ocor_descricao')->get(),
         ]);
@@ -706,26 +696,41 @@ class AtendimentosRelatoriosController extends Controller
     public function getRespostas(int $id): \Illuminate\Http\JsonResponse
     {
         $relatorio = $this->relatorioComPosseGarantida($id, ['configModelo.perguntas.opcoes', 'respostas.fotos']);
-        $respostasPorPergunta = $relatorio->respostas->keyBy('aten_rel_resp_pergunta_id');
+        $respostasPorPergunta = $relatorio->respostas->groupBy('aten_rel_resp_pergunta_id');
 
-        $perguntas = ($relatorio->configModelo?->perguntas ?? collect())->map(function ($pergunta) use ($respostasPorPergunta) {
-            $resposta = $respostasPorPergunta->get($pergunta->cfg_perg_id);
+        $mapaResposta = fn ($resposta) => [
+            'id' => $resposta->aten_rel_resp_id,
+            'valor' => $resposta->aten_rel_resp_valor,
+            'fotos' => $resposta->fotos->map(fn ($f) => [
+                'id' => $f->aten_rel_resp_foto_id,
+                'url' => asset('midia/' . $f->aten_rel_resp_foto_path),
+                'comentario' => $f->aten_rel_resp_foto_comentario,
+            ])->values(),
+        ];
+
+        $perguntas = ($relatorio->configModelo?->perguntas ?? collect())->map(function ($pergunta) use ($respostasPorPergunta, $mapaResposta) {
+            $respostas = ($respostasPorPergunta->get($pergunta->cfg_perg_id) ?? collect())
+                ->sortBy('aten_rel_resp_id')
+                ->map($mapaResposta)
+                ->values();
 
             return [
                 'id' => $pergunta->cfg_perg_id,
                 'texto' => $pergunta->cfg_perg_texto,
                 'tipo' => $pergunta->cfg_perg_tipo->value,
                 'permite_anexo' => $pergunta->cfg_perg_permite_anexo,
+                'repetivel' => $pergunta->cfg_perg_repetivel,
                 'opcoes' => $pergunta->opcoes->map(fn ($o) => [
                     'id' => $o->cfg_perg_op_id,
                     'texto' => $o->cfg_perg_op_texto,
                 ])->values(),
-                'valor' => $resposta?->aten_rel_resp_valor,
-                'fotos' => $resposta ? $resposta->fotos->map(fn ($f) => [
-                    'id' => $f->aten_rel_resp_foto_id,
-                    'url' => asset('midia/' . $f->aten_rel_resp_foto_path),
-                    'comentario' => $f->aten_rel_resp_foto_comentario,
-                ])->values() : [],
+                // Pergunta nao repetivel: no maximo 1 resposta - mantem os
+                // campos 'valor'/'fotos' no nivel da pergunta por
+                // compatibilidade com quem so olha isso. Repetivel: usa
+                // sempre a lista 'respostas'.
+                'valor' => $respostas->first()['valor'] ?? null,
+                'fotos' => $respostas->first()['fotos'] ?? [],
+                'respostas' => $respostas,
             ];
         })->values();
 
@@ -742,16 +747,34 @@ class AtendimentosRelatoriosController extends Controller
         ], [
             'foto.mimes' => 'Tipo de imagem não permitido. Formatos aceitos: JPG, JPEG, PNG, WEBP, GIF.',
         ]);
-        $this->relatorioComPosseGarantida($id);
+        $relatorio = $this->relatorioComPosseGarantida($id, ['configModelo.perguntas']);
 
         try {
-            $resposta = AtendimentoRelatorioResposta::updateOrCreate(
-                [
+            $perguntaId = (int) $request->input('pergunta_id');
+            $pergunta = $relatorio->configModelo?->perguntas->firstWhere('cfg_perg_id', $perguntaId);
+
+            if ($pergunta?->cfg_perg_repetivel) {
+                // Pedido do cliente (2026-09-11): pergunta repetivel sempre
+                // cria uma resposta NOVA - cada "adicionar" e uma linha
+                // independente (mesmo espirito da antiga aba Descricao,
+                // agora por pergunta). Remover uma resposta especifica e
+                // via destroyResposta().
+                $resposta = AtendimentoRelatorioResposta::create([
                     'aten_rel_resp_relatorio_id' => $id,
-                    'aten_rel_resp_pergunta_id' => $request->input('pergunta_id'),
-                ],
-                ['aten_rel_resp_valor' => $request->input('valor')]
-            );
+                    'aten_rel_resp_pergunta_id' => $perguntaId,
+                    'aten_rel_resp_valor' => $request->input('valor'),
+                ]);
+            } else {
+                // Nao repetivel: no maximo 1 resposta por pergunta - sem
+                // constraint unica de banco (dropada pra liberar as
+                // repetiveis), a garantia agora e so na aplicacao.
+                $resposta = AtendimentoRelatorioResposta::firstOrNew([
+                    'aten_rel_resp_relatorio_id' => $id,
+                    'aten_rel_resp_pergunta_id' => $perguntaId,
+                ]);
+                $resposta->aten_rel_resp_valor = $request->input('valor');
+                $resposta->save();
+            }
 
             $fotoUrl = null;
             if ($request->hasFile('foto') && $request->file('foto')->isValid()) {
@@ -763,7 +786,7 @@ class AtendimentosRelatoriosController extends Controller
                 if ($path === false) {
                     return response()->json(['message' => 'Falha ao gravar a foto em disco.'], 500);
                 }
-                $foto = $resposta->fotos()->create([
+                $resposta->fotos()->create([
                     'aten_rel_resp_foto_path' => $path,
                     'aten_rel_resp_foto_comentario' => $request->input('foto_comentario'),
                 ]);
@@ -772,11 +795,41 @@ class AtendimentosRelatoriosController extends Controller
 
             return response()->json([
                 'message' => 'Resposta salva com sucesso.',
+                'resposta_id' => $resposta->aten_rel_resp_id,
                 'foto_url' => $fotoUrl,
             ]);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['message' => 'Erro ao salvar resposta.'], 500);
+        }
+    }
+
+    /**
+     * Remove uma resposta inteira (usado pelo "+ Adicionar outra resposta"
+     * de uma pergunta repetivel - cada entrada e removivel individualmente,
+     * junto com suas fotos em disco).
+     */
+    public function destroyResposta(int $id, int $respostaId): \Illuminate\Http\JsonResponse
+    {
+        $this->relatorioComPosseGarantida($id);
+
+        try {
+            $resposta = AtendimentoRelatorioResposta::with('fotos')
+                ->where('aten_rel_resp_relatorio_id', $id)
+                ->where('aten_rel_resp_id', $respostaId)
+                ->firstOrFail();
+
+            foreach ($resposta->fotos as $foto) {
+                if (Storage::disk('public')->exists($foto->aten_rel_resp_foto_path)) {
+                    Storage::disk('public')->delete($foto->aten_rel_resp_foto_path);
+                }
+            }
+            $resposta->delete();
+
+            return response()->json(['message' => 'Resposta removida!']);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao remover resposta.'], 500);
         }
     }
 

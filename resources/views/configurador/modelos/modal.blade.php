@@ -54,69 +54,29 @@
                                 :value="old('cfg_mod_setor')"
                                 placeholder="Selecione..."
                                 required
-                                onchange="window.atualizarSecoesRelatorioVisiveis(this.value)"
                             />
                         </div>
                     </div>
 
-                    <label class="sbadmin-form-label">Perguntas do modelo</label>
+                    {{-- Pedido do cliente (2026-09-11): banco de perguntas vai
+                         crescer pra ~500 - checklist estatico nao escala, troca
+                         por busca-e-adiciona (mesmo espirito do autocomplete de
+                         cliente ja usado em outras telas). --}}
+                    <label class="sbadmin-form-label" for="pergunta_busca">Perguntas do modelo</label>
                     @error('perguntas')
                         <div class="sbadmin-alert sbadmin-alert-error mb-2" role="alert">{{ $message }}</div>
                     @enderror
-                    <div class="border rounded p-2 mb-3" style="max-height: 260px; overflow-y: auto;">
-                        @forelse($perguntasDisponiveis as $pergunta)
-                            <div class="form-check">
-                                <input
-                                    type="checkbox"
-                                    class="form-check-input pergunta-checkbox"
-                                    id="pergunta_{{ $pergunta->cfg_perg_id }}"
-                                    name="perguntas[]"
-                                    value="{{ $pergunta->cfg_perg_id }}"
-                                    @checked(in_array($pergunta->cfg_perg_id, old('perguntas', [])))
-                                >
-                                <label class="form-check-label" for="pergunta_{{ $pergunta->cfg_perg_id }}">
-                                    {{ \Illuminate\Support\Str::limit($pergunta->cfg_perg_texto, 100) }}
-                                    <span class="text-body-secondary small">({{ $pergunta->cfg_perg_tipo->label() }})</span>
-                                </label>
-                            </div>
-                        @empty
-                            <p class="text-body-secondary small mb-0">Nenhuma pergunta cadastrada ainda.</p>
-                        @endforelse
+                    <input
+                        type="text"
+                        id="pergunta_busca"
+                        class="form-control sbadmin-form-control mb-2"
+                        placeholder="Digite para buscar uma pergunta cadastrada..."
+                        autocomplete="off"
+                    >
+                    <div id="perguntasSelecionadasContainer" class="border rounded p-2 mb-3" style="max-height: 260px; overflow-y: auto;">
+                        <p class="text-body-secondary small mb-0" id="perguntasVazioMsg">Nenhuma pergunta adicionada ainda.</p>
                     </div>
 
-                    {{-- Sessao 08 - so relevante para setor Assistencia (o
-                         relatorio de atendimento usa; orcamento nao tem essas
-                         abas). Visibilidade via onchange nativo no <select> de
-                         setor acima (nao x-model - ver feedback_alpine_select_placeholder
-                         na memoria: x-model quebra o placeholder disabled/selected
-                         desse componente). --}}
-                    <div id="secoesRelatorioBox" hidden>
-                        <label class="sbadmin-form-label">Seções do relatório exibidas para este modelo</label>
-                        <div class="row row-cols-2 row-cols-md-3 g-2 mb-3">
-                            @foreach([
-                                'cfg_mod_usa_horarios' => 'Horário',
-                                'cfg_mod_usa_clima' => 'Clima',
-                                'cfg_mod_usa_servicos' => 'Serviços Prestados',
-                                'cfg_mod_usa_pecas' => 'Peças Substituídas',
-                                'cfg_mod_usa_ocorrencias' => 'Ocorrências',
-                                'cfg_mod_usa_observacoes' => 'Observações Gerais',
-                            ] as $campo => $label)
-                                <div class="col">
-                                    <div class="form-check">
-                                        <input
-                                            type="checkbox"
-                                            class="form-check-input"
-                                            id="{{ $campo }}"
-                                            name="{{ $campo }}"
-                                            value="1"
-                                            @checked(old($campo, true))
-                                        >
-                                        <label class="form-check-label" for="{{ $campo }}">{{ $label }}</label>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
 
                     <div x-show="editando" x-cloak>
                         <input type="hidden" name="cfg_mod_ativo" value="0">

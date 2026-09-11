@@ -17,18 +17,27 @@
         x-data="{ tab: 'dados' }"
     >
         @php
+            // Pedido do cliente (2026-09-11): sem mais checklist de secoes por
+            // modelo. Dados/Horarios/Anexos/Observacoes Gerais/Assinatura sao
+            // SEMPRE fixos; Clima/Servicos/Pecas/Ocorrencias so aparecem se o
+            // relatorio ja tiver dado legado (tabelas antigas, ainda usadas
+            // pelo app mobile atual) - relatorio NOVO usa a aba Perguntas pra
+            // tudo isso, ver project_fae_bioenergia na memoria.
             $temDescricaoLegado = $atendimentoRelatorio->itensDescricao->isNotEmpty() || $atendimentoRelatorio->aten_rel_descricao;
+            $temClimaLegado = $atendimentoRelatorio->climas->isNotEmpty();
+            $temServicosLegado = $atendimentoRelatorio->servicos->isNotEmpty();
+            $temPecasLegado = $atendimentoRelatorio->pecas->isNotEmpty();
+            $temOcorrenciasLegado = $atendimentoRelatorio->ocorrencias->isNotEmpty();
             $temPerguntas = (bool) $atendimentoRelatorio->configModelo?->perguntas->isNotEmpty();
 
-            $abas = ['dados' => 'Dados'];
-            if ($secoes['horarios']) $abas['horarios'] = 'Horário';
-            if ($secoes['clima']) $abas['clima'] = 'Clima';
+            $abas = ['dados' => 'Dados', 'horarios' => 'Horário'];
+            if ($temClimaLegado) $abas['clima'] = 'Clima';
             if ($temDescricaoLegado) $abas['descricao'] = 'Descrição';
             if ($temPerguntas) $abas['perguntas'] = 'Perguntas';
-            if ($secoes['servicos']) $abas['servicos'] = 'Serviços Prestados';
-            if ($secoes['pecas']) $abas['pecas'] = 'Peças Substituídas';
-            if ($secoes['ocorrencias']) $abas['ocorrencias'] = 'Ocorrências';
-            if ($secoes['observacoes']) $abas['info-adicionais'] = 'Observações Gerais';
+            if ($temServicosLegado) $abas['servicos'] = 'Serviços Prestados';
+            if ($temPecasLegado) $abas['pecas'] = 'Peças Substituídas';
+            if ($temOcorrenciasLegado) $abas['ocorrencias'] = 'Ocorrências';
+            $abas['info-adicionais'] = 'Observações Gerais';
             $abas['anexos'] = 'Anexos';
             $abas['observacao-interna'] = 'Observação Interna';
             $abas['compartilhamento'] = 'Compartilhamento';
@@ -78,14 +87,14 @@
 
                 <fieldset @if($somenteLeitura) disabled @endif>
                     @include('atendimentos-relatorios.tabs.dados')
-                    @if($secoes['horarios']) @include('atendimentos-relatorios.tabs.horarios') @endif
-                    @if($secoes['clima']) @include('atendimentos-relatorios.tabs.clima') @endif
+                    @include('atendimentos-relatorios.tabs.horarios')
+                    @if($temClimaLegado) @include('atendimentos-relatorios.tabs.clima') @endif
                     @if($temDescricaoLegado) @include('atendimentos-relatorios.tabs.descricao') @endif
                     @if($temPerguntas) @include('atendimentos-relatorios.tabs.perguntas') @endif
-                    @if($secoes['servicos']) @include('atendimentos-relatorios.tabs.servicos-prestados') @endif
-                    @if($secoes['pecas']) @include('atendimentos-relatorios.tabs.pecas-substituidas') @endif
-                    @if($secoes['ocorrencias']) @include('atendimentos-relatorios.tabs.ocorrencias') @endif
-                    @if($secoes['observacoes']) @include('atendimentos-relatorios.tabs.informacoes-adicionais') @endif
+                    @if($temServicosLegado) @include('atendimentos-relatorios.tabs.servicos-prestados') @endif
+                    @if($temPecasLegado) @include('atendimentos-relatorios.tabs.pecas-substituidas') @endif
+                    @if($temOcorrenciasLegado) @include('atendimentos-relatorios.tabs.ocorrencias') @endif
+                    @include('atendimentos-relatorios.tabs.informacoes-adicionais')
                     @include('atendimentos-relatorios.tabs.anexos')
                     @include('atendimentos-relatorios.tabs.observacao-interna')
                     @include('atendimentos-relatorios.tabs.compartilhamento')
@@ -537,6 +546,38 @@
             });
 
             // ─── Perguntas do modelo (NC02/NC03) ────────────────────────────────
+            // Pedido do cliente (2026-09-11): pergunta "repetivel" (ex.:
+            // "Descricao do servico" com foto) pode ser respondida varias
+            // vezes no mesmo relatorio - cada resposta e uma linha
+            // independente, removivel individualmente, igual a antiga aba
+            // Descricao (RF001), so que agora por pergunta em vez de fixa.
+            function fotosRespostaHtml(fotos) {
+                return (fotos || []).map((f) => `
+                    <div class="d-inline-block m-1 position-relative">
+                        <a href="#" class="anexo-thumb" data-type="image" data-src="${f.url}">
+                            <img src="${f.url}" style="width:100px;height:75px;object-fit:cover;border-radius:.35rem;" alt="foto da resposta">
+                        </a>
+                        <button type="button" class="btn btn-sm btn-danger btnRemovePerguntaFoto position-absolute" style="top:2px;right:2px;" data-foto-id="${f.id}" aria-label="Excluir foto">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>`).join('');
+            }
+
+            function campoRespostaHtml(p, valorAtual) {
+                if (p.tipo === 2) {
+                    return `<textarea class="form-control sbadmin-form-control resposta-valor" rows="3" placeholder="Resposta...">${valorAtual ? escapeHtml(valorAtual) : ''}</textarea>`;
+                }
+                const selecionadas = (valorAtual || '').split(',');
+                return (p.opcoes || []).map((op) => {
+                    const tipoInput = p.tipo === 0 ? 'checkbox' : 'radio';
+                    const marcado = selecionadas.includes(String(op.id)) ? 'checked' : '';
+                    return `<div class="form-check">
+                        <input type="${tipoInput}" class="form-check-input resposta-opcao" name="opcao_${p.id}" value="${op.id}" ${marcado}>
+                        <label class="form-check-label">${escapeHtml(op.texto)}</label>
+                    </div>`;
+                }).join('');
+            }
+
             function renderizarPerguntasRelatorio(perguntas) {
                 const container = document.getElementById('listaPerguntasRelatorio');
                 container.innerHTML = '';
@@ -550,38 +591,48 @@
                     card.className = 'sbadmin-card mb-3';
                     card.dataset.perguntaId = p.id;
 
-                    let campoResposta = '';
-                    if (p.tipo === 2) {
-                        campoResposta = `<textarea class="form-control sbadmin-form-control resposta-valor" rows="3" placeholder="Resposta...">${p.valor ? escapeHtml(p.valor) : ''}</textarea>`;
-                    } else {
-                        campoResposta = (p.opcoes || []).map((op) => {
-                            const tipoInput = p.tipo === 0 ? 'checkbox' : 'radio';
-                            const selecionadas = (p.valor || '').split(',');
-                            const marcado = selecionadas.includes(String(op.id)) ? 'checked' : '';
-                            return `<div class="form-check">
-                                <input type="${tipoInput}" class="form-check-input resposta-opcao" name="opcao_${p.id}" value="${op.id}" ${marcado}>
-                                <label class="form-check-label">${escapeHtml(op.texto)}</label>
-                            </div>`;
-                        }).join('');
-                    }
+                    if (p.repetivel) {
+                        const linhas = (p.respostas || []).map((r) => `
+                            <div class="d-flex align-items-start gap-2 border rounded p-2 mb-2" data-resposta-id="${r.id}">
+                                <div class="flex-grow-1">
+                                    <p class="mb-1" style="white-space:pre-wrap;">${escapeHtml(r.valor || '')}</p>
+                                    <div class="fotos-resposta">${fotosRespostaHtml(r.fotos)}</div>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm btnRemoverResposta" data-resposta-id="${r.id}" aria-label="Remover resposta">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>`).join('');
 
-                    const fotosHtml = (p.fotos || []).map((f) => `
-                        <div class="d-inline-block m-1 position-relative">
-                            <a href="#" class="anexo-thumb" data-type="image" data-src="${f.url}">
-                                <img src="${f.url}" style="width:100px;height:75px;object-fit:cover;border-radius:.35rem;" alt="foto da resposta">
-                            </a>
-                            <button type="button" class="btn btn-sm btn-danger btnRemovePerguntaFoto position-absolute" style="top:2px;right:2px;" data-foto-id="${f.id}" aria-label="Excluir foto">
-                                <i class="bi bi-trash" aria-hidden="true"></i>
-                            </button>
-                        </div>`).join('');
+                        card.innerHTML = `<div class="sbadmin-card-body">
+                            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                                <p class="fw-bold mb-0">${escapeHtml(p.texto)}</p>
+                                <span class="badge bg-info">múltiplas respostas</span>
+                            </div>
+                            <div class="respostas-repetivel mb-2">
+                                ${linhas || '<p class="text-body-secondary small mb-2">Nenhuma resposta adicionada ainda.</p>'}
+                            </div>
+                            <div class="border-top pt-2">
+                                <div class="mb-2 campo-resposta">${campoRespostaHtml(p, '')}</div>
+                                ${p.permite_anexo ? `<div class="mb-2">
+                                    <label class="sbadmin-form-label">Foto (opcional)</label>
+                                    <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
+                                </div>` : ''}
+                                <button type="button" class="btn btn-outline-primary btn-sm btnSalvarResposta">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar outra resposta
+                                </button>
+                            </div>
+                        </div>`;
+                        container.appendChild(card);
+                        return;
+                    }
 
                     card.innerHTML = `<div class="sbadmin-card-body">
                         <p class="fw-bold mb-2">${escapeHtml(p.texto)}</p>
-                        <div class="mb-2 campo-resposta">${campoResposta}</div>
+                        <div class="mb-2 campo-resposta">${campoRespostaHtml(p, p.valor)}</div>
                         ${p.permite_anexo ? `<div class="mb-2">
                             <label class="sbadmin-form-label">Foto (opcional)</label>
                             <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
-                            <div class="fotos-resposta mt-2">${fotosHtml}</div>
+                            <div class="fotos-resposta mt-2">${fotosRespostaHtml(p.fotos)}</div>
                         </div>` : ''}
                         <button type="button" class="btn btn-outline-success btn-sm btnSalvarResposta">
                             <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar resposta
@@ -599,6 +650,14 @@
                 const btnFoto = event.target.closest('.btnRemovePerguntaFoto');
                 if (btnFoto) {
                     fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas-fotos/${btnFoto.dataset.fotoId}`, { method: 'DELETE' })
+                        .then((r) => { carregarPerguntasRelatorio(); mostrarFeedbackRelatorio('success', r.message); })
+                        .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
+                    return;
+                }
+
+                const btnRemoverResposta = event.target.closest('.btnRemoverResposta');
+                if (btnRemoverResposta) {
+                    fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas/${btnRemoverResposta.dataset.respostaId}`, { method: 'DELETE' })
                         .then((r) => { carregarPerguntasRelatorio(); mostrarFeedbackRelatorio('success', r.message); })
                         .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
                     return;

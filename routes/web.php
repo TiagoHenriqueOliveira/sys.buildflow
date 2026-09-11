@@ -13,7 +13,6 @@ use App\Http\Controllers\IndicadoresComerciaisController;
 use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\MapaDemandasController;
 use App\Http\Controllers\MapaRelacoesController;
-use App\Http\Controllers\ModelosRelatoriosController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
@@ -138,6 +137,7 @@ Route::middleware('auth')->group(function () {
     // comprovante de compartilhamento (BF07).
     Route::get('/atendimentos-relatorios/{id}/respostas', [AtendimentosRelatoriosController::class, 'getRespostas'])->name('atendimentos-relatorios.get-respostas');
     Route::post('/atendimentos-relatorios/{id}/respostas', [AtendimentosRelatoriosController::class, 'storeResposta'])->name('atendimentos-relatorios.store-resposta');
+    Route::delete('/atendimentos-relatorios/{id}/respostas/{respostaId}', [AtendimentosRelatoriosController::class, 'destroyResposta'])->name('atendimentos-relatorios.destroy-resposta');
     Route::delete('/atendimentos-relatorios/{id}/respostas-fotos/{fotoId}', [AtendimentosRelatoriosController::class, 'destroyRespostaFoto'])->name('atendimentos-relatorios.destroy-resposta-foto');
     Route::get('/atendimentos-relatorios/{id}/compartilhamentos', [AtendimentosRelatoriosController::class, 'getCompartilhamentos'])->name('atendimentos-relatorios.get-compartilhamentos');
     Route::post('/atendimentos-relatorios/{id}/compartilhamentos', [AtendimentosRelatoriosController::class, 'storeCompartilhamento'])->name('atendimentos-relatorios.store-compartilhamento');
@@ -167,7 +167,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('ocorrencias', OcorrenciasController::class)->except(['create', 'edit', 'show', 'destroy']);
 
         // Configurações
-        Route::resource('modelos-de-relatorios', ModelosRelatoriosController::class)->except(['create', 'edit', 'show', 'destroy']);
         Route::resource('naturezas-dos-atendimentos', NaturezasAtendimentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 
         // CRM01 — tipos de sistema de orçamento
@@ -177,6 +176,7 @@ Route::middleware('auth')->group(function () {
             ->names('crm.tipos-orcamento');
 
         // Configurador (NC02) — perguntas e modelos reutilizáveis
+        Route::get('configurador/perguntas/autocomplete', [ConfiguradorPerguntasController::class, 'autoComplete'])->name('configurador.perguntas.autocomplete');
         Route::resource('configurador/perguntas', ConfiguradorPerguntasController::class)
             ->except(['create', 'edit', 'show', 'destroy'])
             ->parameter('perguntas', 'id')

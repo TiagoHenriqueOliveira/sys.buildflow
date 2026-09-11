@@ -18,28 +18,25 @@ use Tests\TestCase;
 
 /**
  * Sessão 08 do cronograma FAE (Atendimento/Assistência) - reformulação:
- * Configurador substitui modelos_relatorios (secoesAtivas() gate as
- * abas fixas), perguntas dinâmicas do modelo (NC02/NC03), BF07
- * (comprovante de compartilhamento), BF09 (checklist de peça trocada) e
- * BF10 (observação do supervisor na aprovação).
+ * Configurador substitui modelos_relatorios; Dados/Horários/Anexos/
+ * Observações Gerais/Assinatura ficam sempre fixos, o resto (Clima/
+ * Serviços/Peças/Ocorrências) só aparece por dado legado - relatório
+ * novo usa a aba Perguntas (NC02/NC03), inclusive perguntas repetíveis
+ * (cfg_perg_repetivel, pedido do cliente em 2026-09-11). Também cobre
+ * BF07 (comprovante de compartilhamento), BF09 (checklist de peça
+ * trocada) e BF10 (observação do supervisor na aprovação).
  */
 class AtendimentoReformaSessao08FaeTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function criarNaturezaComModelo(array $secoes = []): NaturezaAtendimento
+    private function criarNaturezaComModelo(): NaturezaAtendimento
     {
-        $modelo = ConfigModelo::create(array_merge([
+        $modelo = ConfigModelo::create([
             'cfg_mod_nome' => 'Manutenção Preventiva ETE',
             'cfg_mod_setor' => SetorModelo::Assistencia->value,
             'cfg_mod_ativo' => 1,
-            'cfg_mod_usa_horarios' => true,
-            'cfg_mod_usa_clima' => true,
-            'cfg_mod_usa_servicos' => true,
-            'cfg_mod_usa_pecas' => true,
-            'cfg_mod_usa_ocorrencias' => true,
-            'cfg_mod_usa_observacoes' => true,
-        ], $secoes));
+        ]);
 
         return NaturezaAtendimento::factory()->create([
             'nat_aten_mod_relatorio_id' => null,
@@ -157,16 +154,96 @@ class AtendimentoReformaSessao08FaeTest extends TestCase
         ]);
     }
 
-    public function test_secoes_desativadas_no_modelo_nao_aparecem_no_relatorio(): void
+    public function test_aba_pecas_so_aparece_com_dado_legado(): void
     {
         $tecnico = Usuario::factory()->tecnico()->create();
-        $natureza = $this->criarNaturezaComModelo(['cfg_mod_usa_pecas' => false]);
+        $natureza = $this->criarNaturezaComModelo();
         $relatorio = $this->criarAtendimentoComRelatorio($natureza, $tecnico);
 
-        $response = $this->actingAs($tecnico)->get(route('atendimentos-relatorios.show', $relatorio->aten_rel_id));
+        $semDado = $this->actingAs($tecnico)->get(route('atendimentos-relatorios.show', $relatorio->aten_rel_id));
+        $semDado->assertOk();
+        $semDado->assertDontSee('tab-pecas', false);
 
-        $response->assertOk();
-        $response->assertDontSee('tab-pecas', false);
+        AtendimentoRelatorioPeca::create([
+            'aten_rel_peca_relatorio_id' => $relatorio->aten_rel_id,
+            'aten_rel_peca_descricao' => 'Bomba dosadora (registro antigo)',
+            'aten_rel_peca_trocada' => false,
+        ]);
+
+        $comDado = $this->actingAs($tecnico)->get(route('atendimentos-relatorios.show', $relatorio->aten_rel_id));
+        $comDado->assertOk();
+        $comDado->assertSee('tab-pecas', false);
+    }
+
+    public function test_pergunta_repetivel_permite_varias_respostas_e_remocao_individual(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create();
+        $natureza = $this->criarNaturezaComModelo();
+        $pergunta = ConfigPergunta::create([
+            'cfg_perg_texto' => 'Descrição do serviço realizado',
+            'cfg_perg_tipo' => TipoPergunta::TextoLivre->value,
+            'cfg_perg_repetivel' => true,
+        ]);
+        ConfigModelo::find($natureza->nat_aten_config_modelo_id)->perguntas()->sync([$pergunta->cfg_perg_id]);
+        $relatorio = $this->criarAtendimentoComRelatorio($natureza, $tecnico);
+
+        $primeira = $this->actingAs($tecnico)->postJson(
+            route('atendimentos-relatorios.store-resposta', $relatorio->aten_rel_id),
+            ['pergunta_id' => $pergunta->cfg_perg_id, 'valor' => 'Troca do anel de vedação']
+        )->assertOk()->json();
+
+        $segunda = $this->actingAs($tecnico)->postJson(
+            route('atendimentos-relatorios.store-resposta', $relatorio->aten_rel_id),
+            ['pergunta_id' => $pergunta->cfg_perg_id, 'valor' => 'Limpeza do filtro de entrada']
+        )->assertOk()->json();
+
+        $this->assertNotSame($primeira['resposta_id'], $segunda['resposta_id']);
+        $this->assertDatabaseCount('atendimentos_relatorios_respostas', 2);
+
+        $listagem = $this->actingAs($tecnico)->getJson(
+            route('atendimentos-relatorios.get-respostas', $relatorio->aten_rel_id)
+        )->assertOk()->json('data');
+        $this->assertCount(2, $listagem[0]['respostas']);
+
+        $this->actingAs($tecnico)->deleteJson(
+            route('atendimentos-relatorios.destroy-resposta', ['id' => $relatorio->aten_rel_id, 'respostaId' => $primeira['resposta_id']])
+        )->assertOk();
+
+        $this->assertDatabaseCount('atendimentos_relatorios_respostas', 1);
+        $this->assertDatabaseHas('atendimentos_relatorios_respostas', [
+            'aten_rel_resp_id' => $segunda['resposta_id'],
+            'aten_rel_resp_valor' => 'Limpeza do filtro de entrada',
+        ]);
+    }
+
+    public function test_pergunta_nao_repetivel_mantem_no_maximo_uma_resposta(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create();
+        $natureza = $this->criarNaturezaComModelo();
+        $pergunta = ConfigPergunta::create([
+            'cfg_perg_texto' => 'O equipamento apresentou vazamento?',
+            'cfg_perg_tipo' => TipoPergunta::TextoLivre->value,
+            'cfg_perg_repetivel' => false,
+        ]);
+        ConfigModelo::find($natureza->nat_aten_config_modelo_id)->perguntas()->sync([$pergunta->cfg_perg_id]);
+        $relatorio = $this->criarAtendimentoComRelatorio($natureza, $tecnico);
+
+        $this->actingAs($tecnico)->postJson(
+            route('atendimentos-relatorios.store-resposta', $relatorio->aten_rel_id),
+            ['pergunta_id' => $pergunta->cfg_perg_id, 'valor' => 'Não']
+        )->assertOk();
+
+        $this->actingAs($tecnico)->postJson(
+            route('atendimentos-relatorios.store-resposta', $relatorio->aten_rel_id),
+            ['pergunta_id' => $pergunta->cfg_perg_id, 'valor' => 'Sim']
+        )->assertOk();
+
+        $this->assertDatabaseCount('atendimentos_relatorios_respostas', 1);
+        $this->assertDatabaseHas('atendimentos_relatorios_respostas', [
+            'aten_rel_resp_relatorio_id' => $relatorio->aten_rel_id,
+            'aten_rel_resp_pergunta_id' => $pergunta->cfg_perg_id,
+            'aten_rel_resp_valor' => 'Sim',
+        ]);
     }
 
     public function test_registra_peca_marcada_como_trocada(): void

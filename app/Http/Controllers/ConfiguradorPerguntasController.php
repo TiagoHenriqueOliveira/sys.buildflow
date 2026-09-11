@@ -6,6 +6,7 @@ use App\Enums\TipoPergunta;
 use App\Http\Requests\ConfiguradorPerguntaRequest;
 use App\Models\ConfigPergunta;
 use App\Repositories\ConfiguradorPerguntaRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,6 +16,34 @@ class ConfiguradorPerguntasController extends Controller
     public function __construct(
         private ConfiguradorPerguntaRepository $repository,
     ) {}
+
+    /**
+     * Pedido do cliente (2026-09-11): banco de perguntas vai crescer pra
+     * ~500 registros — um checklist estatico (usado ate aqui no cadastro de
+     * modelo) fica inutilizavel nesse volume. Autocomplete busca por texto
+     * em vez de listar tudo de uma vez, mesmo padrao de
+     * ClientesController::autoComplete().
+     */
+    public function autoComplete(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->get('term', ''));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json([]);
+        }
+
+        $perguntas = ConfigPergunta::where('cfg_perg_ativo', 1)
+            ->where('cfg_perg_texto', 'like', "%{$term}%")
+            ->orderBy('cfg_perg_texto')
+            ->limit(20)
+            ->get();
+
+        return response()->json($perguntas->map(fn ($p) => [
+            'id' => $p->cfg_perg_id,
+            'texto' => $p->cfg_perg_texto,
+            'tipo' => $p->cfg_perg_tipo->label(),
+        ])->values());
+    }
 
     public function index(Request $request): View
     {

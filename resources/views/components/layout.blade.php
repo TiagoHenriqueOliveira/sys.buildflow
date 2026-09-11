@@ -46,7 +46,6 @@
                 ['label' => 'Tipos de Orçamento (CRM)', 'icon' => 'bi-tags', 'route' => 'crm.tipos-orcamento.index'],
                 ['label' => 'Perguntas (Configurador)', 'icon' => 'bi-question-circle', 'route' => 'configurador.perguntas.index'],
                 ['label' => 'Modelos (Configurador)', 'icon' => 'bi-diagram-3', 'route' => 'configurador.modelos.index'],
-                ['label' => 'Modelos de Relatórios', 'icon' => 'bi-file-earmark-text', 'route' => 'modelos-de-relatorios.index'],
                 ['label' => 'Naturezas de Atendimentos', 'icon' => 'bi-tags', 'route' => 'naturezas-dos-atendimentos.index'],
                 ['label' => 'Ocorrências', 'icon' => 'bi-exclamation-triangle', 'route' => 'ocorrencias.index'],
                 ['label' => 'Usuários', 'icon' => 'bi-people', 'route' => 'usuarios.index'],

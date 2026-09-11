@@ -54,7 +54,7 @@
         </form>
 
         <x-sbadmin::table
-            :headers="['Ações', 'Texto', 'Tipo', 'Anexo', 'Status']"
+            :headers="['Ações', 'Texto', 'Tipo', 'Anexo', 'Múltiplas', 'Status']"
             :paginator="$perguntas"
             :count="$perguntas->count()"
             empty-message="Nenhuma pergunta cadastrada."
@@ -69,6 +69,7 @@
                             data-texto="{{ e($p->cfg_perg_texto) }}"
                             data-tipo="{{ $p->cfg_perg_tipo->value }}"
                             data-permite-anexo="{{ (int) $p->cfg_perg_permite_anexo }}"
+                            data-repetivel="{{ (int) $p->cfg_perg_repetivel }}"
                             data-ativo="{{ (int) $p->cfg_perg_ativo }}"
                             data-opcoes="{{ $p->opcoes->map(fn ($o) => ['texto' => $o->cfg_perg_op_texto])->toJson() }}"
                             aria-label="Editar pergunta"
@@ -82,6 +83,11 @@
                     <td>
                         <x-sbadmin::badge :type="$p->cfg_perg_permite_anexo ? 'info' : 'neutral'">
                             {{ $p->cfg_perg_permite_anexo ? 'Sim' : 'Não' }}
+                        </x-sbadmin::badge>
+                    </td>
+                    <td>
+                        <x-sbadmin::badge :type="$p->cfg_perg_repetivel ? 'info' : 'neutral'">
+                            {{ $p->cfg_perg_repetivel ? 'Sim' : 'Não' }}
                         </x-sbadmin::badge>
                     </td>
                     <td>
@@ -103,6 +109,7 @@
                 document.getElementById('cfg_perg_texto').value = data.texto || '';
                 document.getElementById('cfg_perg_ativo').checked = data.ativo === '1';
                 document.getElementById('cfg_perg_permite_anexo').checked = data.permiteAnexo === '1';
+                document.getElementById('cfg_perg_repetivel').checked = data.repetivel === '1';
 
                 const root = document.querySelector('#configurador-perguntas-root');
                 const alpine = Alpine.$data(root);

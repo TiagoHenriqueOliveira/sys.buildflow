@@ -24,7 +24,7 @@
             <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
         @endif
 
-        @if($perguntasDisponiveis->isEmpty())
+        @if(!$temPerguntasCadastradas)
             <x-sbadmin::alert type="warning">
                 Nenhuma pergunta cadastrada ainda. <a href="{{ route('configurador.perguntas.index') }}">Cadastre perguntas no Configurador</a> antes de montar um modelo.
             </x-sbadmin::alert>
@@ -71,8 +71,7 @@
                             data-nome="{{ e($m->cfg_mod_nome) }}"
                             data-setor="{{ $m->cfg_mod_setor->value }}"
                             data-ativo="{{ (int) $m->cfg_mod_ativo }}"
-                            data-perguntas="{{ $m->perguntas->pluck('cfg_perg_id')->toJson() }}"
-                            data-secoes="{{ json_encode($m->secoesAtivas()) }}"
+                            data-perguntas="{{ $m->perguntas->map(fn($p) => ['id' => $p->cfg_perg_id, 'texto' => $p->cfg_perg_texto, 'tipo' => $p->cfg_perg_tipo->label()])->toJson() }}"
                             aria-label="Editar {{ e($m->cfg_mod_nome) }}"
                             @click="editando = true; aberto = true; preencherFormularioModelo($el.dataset)"
                         >
@@ -96,25 +95,104 @@
 
     @push('scripts')
         <script>
+            // ─── Perguntas (autocomplete - ~500 cadastradas, checklist estatico
+            // nao escala) ────────────────────────────────────────────────────────
+            let perguntasSelecionadas = @json($perguntasAntigas).map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo }));
+
+            function renderizarPerguntasSelecionadas() {
+                const container = document.getElementById('perguntasSelecionadasContainer');
+                container.innerHTML = '';
+                if (!perguntasSelecionadas.length) {
+                    container.innerHTML = '<p class="text-body-secondary small mb-0" id="perguntasVazioMsg">Nenhuma pergunta adicionada ainda.</p>';
+                    return;
+                }
+                perguntasSelecionadas.forEach((p, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'd-flex align-items-center justify-content-between border-bottom py-1';
+                    row.innerHTML = '<span></span><input type="hidden" name="perguntas[]" value="' + p.id + '">' +
+                        '<button type="button" class="btn btn-outline-danger btn-sm" aria-label="Remover pergunta"><i class="bi bi-trash" aria-hidden="true"></i></button>';
+                    row.querySelector('span').textContent = p.texto + (p.tipo ? ' (' + p.tipo + ')' : '');
+                    row.querySelector('button').addEventListener('click', function () {
+                        perguntasSelecionadas.splice(index, 1);
+                        renderizarPerguntasSelecionadas();
+                    });
+                    container.appendChild(row);
+                });
+            }
+
+            function adicionarPerguntaSelecionada(p) {
+                p = { id: String(p.id), texto: p.texto, tipo: p.tipo };
+                if (perguntasSelecionadas.some((sel) => sel.id === p.id)) return;
+                perguntasSelecionadas.push(p);
+                renderizarPerguntasSelecionadas();
+            }
+
+            document.addEventListener('DOMContentLoaded', renderizarPerguntasSelecionadas);
+
+            (function configurarBuscaDePerguntas() {
+                const input = document.getElementById('pergunta_busca');
+                const lista = document.createElement('ul');
+                lista.className = 'sbadmin-autocomplete-list';
+                lista.hidden = true;
+                const pai = input.parentElement;
+                if (getComputedStyle(pai).position === 'static') pai.style.position = 'relative';
+                input.insertAdjacentElement('afterend', lista);
+
+                let timer = null;
+                let controller = null;
+
+                function esconder() {
+                    lista.hidden = true;
+                    lista.innerHTML = '';
+                }
+
+                function mostrar(itens) {
+                    lista.innerHTML = '';
+                    if (!itens || !itens.length) { esconder(); return; }
+                    itens.forEach((item) => {
+                        const li = document.createElement('li');
+                        li.textContent = item.texto + ' (' + item.tipo + ')';
+                        li.addEventListener('mousedown', function (event) {
+                            event.preventDefault();
+                            adicionarPerguntaSelecionada(item);
+                            input.value = '';
+                            esconder();
+                        });
+                        lista.appendChild(li);
+                    });
+                    lista.hidden = false;
+                }
+
+                input.addEventListener('input', function () {
+                    clearTimeout(timer);
+                    if (controller) controller.abort();
+                    const termo = input.value.trim();
+                    if (termo.length < 2) { esconder(); return; }
+                    timer = setTimeout(function () {
+                        controller = new AbortController();
+                        fetch('{{ route('configurador.perguntas.autocomplete') }}?term=' + encodeURIComponent(termo), {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            signal: controller.signal,
+                        })
+                            .then((r) => r.json())
+                            .then(mostrar)
+                            .catch((e) => { if (e.name !== 'AbortError') esconder(); });
+                    }, 250);
+                });
+                input.addEventListener('blur', () => setTimeout(esconder, 150));
+                document.addEventListener('click', function (event) {
+                    if (event.target !== input && !lista.contains(event.target)) esconder();
+                });
+            })();
+
             function preencherFormularioModelo(data) {
                 document.getElementById('cfg_mod_id').value = data.id || '';
                 document.getElementById('cfg_mod_nome').value = data.nome || '';
                 document.getElementById('cfg_mod_setor').value = data.setor || '';
                 document.getElementById('cfg_mod_ativo').checked = data.ativo === '1';
 
-                const selecionadas = JSON.parse(data.perguntas || '[]').map(String);
-                document.querySelectorAll('.pergunta-checkbox').forEach((el) => {
-                    el.checked = selecionadas.includes(el.value);
-                });
-
-                const secoes = JSON.parse(data.secoes || '{}');
-                document.getElementById('cfg_mod_usa_horarios').checked = !!secoes.horarios;
-                document.getElementById('cfg_mod_usa_clima').checked = !!secoes.clima;
-                document.getElementById('cfg_mod_usa_servicos').checked = !!secoes.servicos;
-                document.getElementById('cfg_mod_usa_pecas').checked = !!secoes.pecas;
-                document.getElementById('cfg_mod_usa_ocorrencias').checked = !!secoes.ocorrencias;
-                document.getElementById('cfg_mod_usa_observacoes').checked = !!secoes.observacoes;
-                window.atualizarSecoesRelatorioVisiveis(data.setor);
+                perguntasSelecionadas = JSON.parse(data.perguntas || '[]').map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo }));
+                renderizarPerguntasSelecionadas();
 
                 document.getElementById('cfg_mod_method').value = 'PUT';
                 document.getElementById('form_modelo').action = '{{ url('/configurador/modelos') }}/' + data.id;
@@ -126,19 +204,12 @@
 
                 document.getElementById('cfg_mod_id').value = '';
                 document.getElementById('cfg_mod_ativo').checked = true;
-                document.querySelectorAll('.pergunta-checkbox').forEach((el) => { el.checked = false; });
-                document.querySelectorAll('#secoesRelatorioBox input[type="checkbox"]').forEach((el) => { el.checked = true; });
-                window.atualizarSecoesRelatorioVisiveis('');
+                perguntasSelecionadas = [];
+                renderizarPerguntasSelecionadas();
 
                 document.getElementById('cfg_mod_method').value = 'POST';
                 form.action = '{{ route('configurador.modelos.store') }}';
             }
-
-            // Setor "Assistência" (1) usa as secoes do relatorio; "Comercial" (0)
-            // nao tem essas abas - ver ConfigModelo::secoesAtivas().
-            window.atualizarSecoesRelatorioVisiveis = function (setorValue) {
-                document.getElementById('secoesRelatorioBox').hidden = String(setorValue) !== '1';
-            };
         </script>
     @endpush
 </x-layout>

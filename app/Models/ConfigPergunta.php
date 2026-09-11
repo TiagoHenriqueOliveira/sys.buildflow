@@ -18,12 +18,14 @@ class ConfigPergunta extends Model
         'cfg_perg_texto',
         'cfg_perg_tipo',
         'cfg_perg_permite_anexo',
+        'cfg_perg_repetivel',
         'cfg_perg_ativo',
     ];
 
     protected $casts = [
         'cfg_perg_tipo' => TipoPergunta::class,
         'cfg_perg_permite_anexo' => 'boolean',
+        'cfg_perg_repetivel' => 'boolean',
         'cfg_perg_ativo' => 'boolean',
     ];
 

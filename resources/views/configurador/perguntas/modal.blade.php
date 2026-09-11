@@ -80,6 +80,18 @@
                         :switch="true"
                     />
 
+                    {{-- Pedido do cliente (2026-09-11): pergunta respondida
+                         varias vezes no mesmo relatorio (ex.: "Descricao do
+                         servico" com foto, repetida por item feito). --}}
+                    <x-sbadmin::form.checkbox
+                        id="cfg_perg_repetivel"
+                        name="cfg_perg_repetivel"
+                        label="Permite múltiplas respostas"
+                        help="Na tela de relatório, o técnico poderá adicionar quantas respostas quiser para esta pergunta (com foto individual quando aplicável)."
+                        :checked="old('cfg_perg_repetivel', false)"
+                        :switch="true"
+                    />
+
                     <div x-show="editando" x-cloak>
                         <input type="hidden" name="cfg_perg_ativo" value="0">
                         <x-sbadmin::form.checkbox

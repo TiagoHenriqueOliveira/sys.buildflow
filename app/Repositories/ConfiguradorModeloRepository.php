@@ -20,7 +20,6 @@ class ConfiguradorModeloRepository implements CrudRepositoryInterface
                 'cfg_mod_nome' => $data['cfg_mod_nome'],
                 'cfg_mod_setor' => $data['cfg_mod_setor'],
                 'cfg_mod_ativo' => 1,
-                ...$this->flagsDeSecao($data),
             ]);
 
             $this->sincronizarPerguntas($modelo, $data['perguntas']);
@@ -38,30 +37,12 @@ class ConfiguradorModeloRepository implements CrudRepositoryInterface
                 'cfg_mod_nome' => $data['cfg_mod_nome'],
                 'cfg_mod_setor' => $data['cfg_mod_setor'],
                 'cfg_mod_ativo' => $data['cfg_mod_ativo'] ?? $modelo->cfg_mod_ativo,
-                ...$this->flagsDeSecao($data),
             ]);
 
             $this->sincronizarPerguntas($modelo, $data['perguntas']);
 
             return $modelo;
         });
-    }
-
-    /**
-     * Checkboxes desmarcados nao vem no payload (padrao HTML de
-     * checkbox) - por isso o default explicito 'false', em vez de usar
-     * ?? (que so cobre "chave ausente", nao "false vindo do form").
-     */
-    private function flagsDeSecao(array $data): array
-    {
-        return [
-            'cfg_mod_usa_horarios' => $data['cfg_mod_usa_horarios'] ?? false,
-            'cfg_mod_usa_clima' => $data['cfg_mod_usa_clima'] ?? false,
-            'cfg_mod_usa_servicos' => $data['cfg_mod_usa_servicos'] ?? false,
-            'cfg_mod_usa_pecas' => $data['cfg_mod_usa_pecas'] ?? false,
-            'cfg_mod_usa_ocorrencias' => $data['cfg_mod_usa_ocorrencias'] ?? false,
-            'cfg_mod_usa_observacoes' => $data['cfg_mod_usa_observacoes'] ?? false,
-        ];
     }
 
     /**

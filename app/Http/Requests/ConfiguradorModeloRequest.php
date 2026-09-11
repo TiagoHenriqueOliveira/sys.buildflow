@@ -15,15 +15,6 @@ class ConfiguradorModeloRequest extends FormRequest
             'cfg_mod_setor' => ['required', Rule::in(array_column(SetorModelo::cases(), 'value'))],
             'cfg_mod_ativo' => ['nullable', 'boolean'],
 
-            // Secoes fixas do relatorio (so relevante para setor
-            // Assistencia - ver ConfigModelo::secoesAtivas()).
-            'cfg_mod_usa_horarios' => ['nullable', 'boolean'],
-            'cfg_mod_usa_clima' => ['nullable', 'boolean'],
-            'cfg_mod_usa_servicos' => ['nullable', 'boolean'],
-            'cfg_mod_usa_pecas' => ['nullable', 'boolean'],
-            'cfg_mod_usa_ocorrencias' => ['nullable', 'boolean'],
-            'cfg_mod_usa_observacoes' => ['nullable', 'boolean'],
-
             // NC02 — bloquear criação de modelo sem nenhuma pergunta.
             'perguntas' => ['required', 'array', 'min:1'],
             'perguntas.*' => ['integer', Rule::exists('config_perguntas', 'cfg_perg_id')],

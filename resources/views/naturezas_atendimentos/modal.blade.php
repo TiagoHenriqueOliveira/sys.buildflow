@@ -50,17 +50,7 @@
                         :value="old('nat_aten_config_modelo_id')"
                         placeholder="Selecione..."
                         required
-                        help="BF04 — controla as seções e perguntas exibidas no preenchimento do relatório (substitui o Modelo de Relatório legado abaixo)."
-                    />
-
-                    <x-sbadmin::form.select
-                        id="nat_aten_mod_relatorio_id"
-                        name="nat_aten_mod_relatorio_id"
-                        label="Modelo de Relatório (legado)"
-                        :options="$modelosRelatorios->pluck('mod_rel_descricao', 'mod_rel_id')->all()"
-                        :value="old('nat_aten_mod_relatorio_id')"
-                        placeholder="Nenhum"
-                        help="Campo antigo, mantido só para relatórios já criados antes do Configurador. Não é mais obrigatório."
+                        help="BF04 — controla as seções e perguntas exibidas no preenchimento do relatório."
                     />
 
                     <div x-show="editando" x-cloak>
