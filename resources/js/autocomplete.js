@@ -22,10 +22,20 @@ export function setupAutocomplete(inputSelector, hiddenInputSelector, url, optio
     list.className = 'sbadmin-autocomplete-list';
     list.hidden = true;
 
+    // Ancorado no proprio input (offsetTop/offsetHeight), nao em
+    // `top: 100%` do wrapper via CSS — um wrapper com mais conteudo depois
+    // do input (texto de ajuda, erro de validacao) empurraria a lista pra
+    // baixo desse conteudo em vez de ficar logo abaixo do campo (bug
+    // relatado pelo cliente em 2026-09-11: lista aparecendo no rodape do
+    // modal/depois do texto de ajuda).
     const wrapper = input.parentElement;
     if (wrapper && getComputedStyle(wrapper).position === 'static') {
         wrapper.style.position = 'relative';
     }
+    list.style.top = (input.offsetTop + input.offsetHeight) + 'px';
+    list.style.left = input.offsetLeft + 'px';
+    list.style.right = 'auto';
+    list.style.width = input.offsetWidth + 'px';
     input.insertAdjacentElement('afterend', list);
 
     let debounceTimer = null;

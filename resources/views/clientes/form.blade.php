@@ -42,7 +42,18 @@
             'longitude' => $l->cli_loc_longitude,
         ])->values()->all()
         : []);
-    $isComercial = auth()->user()->user_nivel_acesso === \App\Enums\NivelAcesso::Comercial->value;
+    // Geolocalizacao: Administrador, Comercial e Assistencia podem capturar
+    // localizacao; Tecnico nao (pedido do cliente, 2026-09-11). A rota de
+    // Clientes em si continua restrita a Administrador/Comercial (ver
+    // routes/web.php, middleware "comercial") ate a definicao futura das
+    // regras de acesso de Assistencia/Vendedor — este flag so controla o
+    // que aparece DENTRO da aba, ficando pronto pra quando isso mudar.
+    $nivelAtual = auth()->user()->user_nivel_acesso;
+    $podeGeolocalizar = in_array($nivelAtual, [
+        \App\Enums\NivelAcesso::Administrador->value,
+        \App\Enums\NivelAcesso::Comercial->value,
+        \App\Enums\NivelAcesso::Assistencia->value,
+    ], true);
 @endphp
 <x-layout :title="$editando ? 'Clientes | Editar' : 'Clientes | Novo'">
     <div
@@ -54,6 +65,7 @@
             localizacoes: {{ \Illuminate\Support\Js::from($localizacoesIniciais) }},
             lat: {{ \Illuminate\Support\Js::from(old('cli_latitude', $cliente->cli_latitude)) }},
             lng: {{ \Illuminate\Support\Js::from(old('cli_longitude', $cliente->cli_longitude)) }},
+            linkMapa: {{ \Illuminate\Support\Js::from(old('cli_link_mapa', $cliente->cli_link_mapa)) }},
             addContato() { this.contatos.push({ nome: '', cargo: '', telefone: '', email: '', tipo: 0 }); },
             removerContato(i) { this.contatos.splice(i, 1); },
             addEquipamento() { this.equipamentos.push({ descricao: '' }); },
@@ -83,7 +95,7 @@
                 <div class="sbadmin-card-body">
                     <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist">
                         @foreach([
-                            'dados' => 'Dados Gerais',
+                            'dados' => 'Dados',
                             'contatos' => 'Contatos',
                             'geo' => 'Geolocalização',
                             'historico' => 'Histórico',
@@ -305,7 +317,36 @@
                             </div>
                         </div>
 
-                        @if($isComercial)
+                        {{-- Pedido do cliente (2026-09-11): campo de link do Google
+                             Maps, mesmo padrão do Roteiro de Viagem — não substitui
+                             lat/lng acima (ainda usados pelo mapa de relações). --}}
+                        <div class="row">
+                            <div class="col-md-11">
+                                <x-sbadmin::form.input
+                                    id="cli_link_mapa"
+                                    type="url"
+                                    name="cli_link_mapa"
+                                    label="Link do Google Maps"
+                                    maxlength="500"
+                                    placeholder="https://maps.app.goo.gl/..."
+                                    x-model="linkMapa"
+                                />
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end mb-3">
+                                <a
+                                    class="btn btn-outline-primary btn-sm w-100"
+                                    :class="{ disabled: !linkMapa }"
+                                    :href="linkMapa || '#'"
+                                    target="_blank"
+                                    rel="noopener"
+                                    title="Abrir no Google Maps"
+                                >
+                                    <i class="bi bi-map" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        @if($podeGeolocalizar)
                             <div class="d-flex gap-2 flex-wrap">
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="btnAtribuirLocalizacao">
                                     <i class="bi bi-geo-alt" aria-hidden="true"></i> Usar minha localização
@@ -405,8 +446,6 @@
                                     </div>
                                 </div>
                             </div>
-                        @else
-                            <p class="text-body-secondary small">A captura de localização é feita por usuários com perfil Comercial.</p>
                         @endif
                     </div>
 
@@ -422,12 +461,12 @@
                             <div class="d-flex gap-2 mb-2">
                                 <input type="text" class="form-control sbadmin-form-control" maxlength="255" :name="'equipamentos['+i+'][descricao]'" x-model="equipamento.descricao" placeholder="Ex.: ETE compacta 50m³/dia">
                                 <button type="button" class="btn btn-outline-danger btn-sm" @click="removerEquipamento(i)">
-                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                    <i class="bi bi-trash" aria-hidden="true"></i> Remover
                                 </button>
                             </div>
                         </template>
                         <p class="text-body-secondary small" x-show="equipamentos.length === 0">Nenhum equipamento cadastrado.</p>
-                        <button type="button" class="btn btn-outline-primary btn-sm mb-3" @click="addEquipamento()">
+                        <button type="button" class="btn btn-outline-primary btn-sm" @click="addEquipamento()">
                             <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar equipamento
                         </button>
 
@@ -447,15 +486,9 @@
                             rows="3"
                         />
 
-                        <hr>
-
-                        <p class="text-body-secondary">
-                            @if($editando)
-                                Histórico de atendimentos e orçamentos deste cliente — disponível a partir da sessão de persistência do Núcleo/CRM.
-                            @else
-                                Disponível após salvar o cadastro.
-                            @endif
-                        </p>
+                        @if($editando)
+                            <p class="text-body-secondary">Histórico de atendimentos e orçamentos deste cliente — disponível a partir da sessão de persistência do Núcleo/CRM.</p>
+                        @endif
                     </div>
                 </div>
 
@@ -474,7 +507,7 @@
     {{-- Sem @stack('styles') disponivel no layout do sbadmin (só ha
          @stack('scripts')) -- o <link> do Leaflet fica direto aqui no
          corpo da pagina; funciona normalmente fora do <head>. --}}
-    @if($isComercial)
+    @if($podeGeolocalizar)
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         @push('scripts')
             <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

@@ -116,7 +116,7 @@
                         </div>
 
                         <div class="row align-items-end">
-                            <div class="col-md-5">
+                            <div class="col-md-8">
                                 <div class="sbadmin-form-group">
                                     <label for="aten_cliente_nome" class="sbadmin-form-label">Cliente<span class="sbadmin-required" aria-hidden="true">*</span></label>
                                     <input type="hidden" id="aten_cliente_id" name="aten_cliente_id" value="{{ old('aten_cliente_id', $atendimento->aten_cliente_id) }}">
@@ -131,7 +131,7 @@
                                     >
                                 </div>
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-3">
                                 <x-sbadmin::form.input
                                     id="aten_telefone"
                                     name="aten_telefone"
@@ -142,7 +142,7 @@
                                     oninput="this.value = window.formatarTelefone(this.value)"
                                 />
                             </div>
-                            <div class="col-md-2 mb-3">
+                            <div class="col-md-1 mb-3">
                                 <a id="btnWhatsapp" href="#" target="_blank" class="btn btn-success btn-sm w-100" title="Abrir WhatsApp">
                                     <i class="bi bi-whatsapp" aria-hidden="true"></i>
                                 </a>
@@ -220,7 +220,7 @@
                 {{-- Aba Equipamentos --}}
                 <div x-show="tab === 'equipamentos'" x-cloak>
                     <div class="row g-2 align-items-end">
-                        <div class="col">
+                        <div class="col-md-6">
                             <label for="aten_equip_descricao" class="sbadmin-form-label">Descrição</label>
                             <input type="text" class="form-control sbadmin-form-control" id="aten_equip_descricao" maxlength="255" placeholder="Ex.: Ar condicionado">
                         </div>
@@ -255,7 +255,7 @@
                             <input type="file" class="d-none" id="aten_anexo_file" multiple>
                         </label>
                         <span class="text-body-secondary small" id="aten_anexo_nome">Selecione arquivos para upload</span>
-                        <button type="button" class="btn btn-success btn-sm" id="btnUploadAnexoAten">
+                        <button type="button" class="btn btn-success btn-sm ms-auto" id="btnUploadAnexoAten">
                             <i class="bi bi-cloud-upload" aria-hidden="true"></i> Enviar
                         </button>
                     </div>

@@ -60,6 +60,7 @@ class ClienteRequest extends FormRequest
 
             'cli_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'cli_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'cli_link_mapa' => ['nullable', 'url', 'max:500'],
 
             'contatos' => ['nullable', 'array'],
             'contatos.*.nome' => ['required_with:contatos.*', 'string', 'max:100'],

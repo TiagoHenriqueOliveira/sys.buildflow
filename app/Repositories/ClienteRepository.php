@@ -71,6 +71,7 @@ class ClienteRepository implements CrudRepositoryInterface
             'cli_email' => $data['cli_email'] ?? null,
             'cli_latitude' => $data['cli_latitude'] ?? null,
             'cli_longitude' => $data['cli_longitude'] ?? null,
+            'cli_link_mapa' => $data['cli_link_mapa'] ?? null,
         ];
     }
 

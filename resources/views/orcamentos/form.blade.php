@@ -48,7 +48,7 @@
                 <div class="sbadmin-card-body">
                     <ul class="nav nav-tabs mb-3 flex-nowrap overflow-x-auto overflow-y-hidden" role="tablist">
                         <li class="nav-item text-nowrap">
-                            <button type="button" class="nav-link" :class="{ active: tab === 'dados' }" @click="tab = 'dados'">Dados Gerais</button>
+                            <button type="button" class="nav-link" :class="{ active: tab === 'dados' }" @click="tab = 'dados'">Dados</button>
                         </li>
                         <li class="nav-item text-nowrap">
                             <button type="button" class="nav-link" :class="{ active: tab === 'perguntas' }" @click="tab = 'perguntas'">Perguntas</button>
@@ -127,19 +127,6 @@
                             </div>
                         </div>
 
-                        @if($editando)
-                            <div>
-                                <input type="hidden" name="orc_ativo" value="0">
-                                <x-sbadmin::form.checkbox
-                                    id="orc_ativo"
-                                    name="orc_ativo"
-                                    label="Ativo"
-                                    off-label="Inativo"
-                                    :checked="old('orc_ativo', $orcamento->orc_ativo)"
-                                    :switch="true"
-                                />
-                            </div>
-                        @endif
                     </div>
                     {{-- ── Perguntas (dinâmicas por tipo, NC02/CRM01) ──────────────── --}}
                     <div x-show="tab === 'perguntas'" x-cloak>
@@ -225,14 +212,6 @@
                         <div class="mb-3"></div>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2 border-top pt-3">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
-                        </button>
-                        <a href="{{ route('orcamentos.index') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
-                        </a>
-                    </div>
                 </div>
             </div>
         </form>
@@ -261,8 +240,8 @@
                                 />
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i> Adicionar comentário
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar comentário
                         </button>
                     </form>
 
@@ -290,6 +269,22 @@
                 </div>
             </div>
         @endif
+
+        {{-- Rodapé único (Salvar + Voltar), sempre visível independente da
+             aba ativa — mesmo padrão de atendimentos/form.blade.php.
+             `form="form_orcamento"` associa o botão ao form sem precisar
+             ficar dentro dele (o form só envolve Dados/Perguntas/Vendedores;
+             Comentários é sub-recurso à parte, com form próprio). --}}
+        <div class="sbadmin-card mt-3">
+            <div class="sbadmin-card-body d-flex justify-content-end gap-2">
+                <button type="submit" form="form_orcamento" class="btn btn-success">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
+                </button>
+                <a href="{{ route('orcamentos.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
+                </a>
+            </div>
+        </div>
     </div>
 
     @push('scripts')

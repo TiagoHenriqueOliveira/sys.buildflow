@@ -20,6 +20,7 @@
     <div
         x-data="{
             linhas: {{ \Illuminate\Support\Js::from($linhasIniciais) }},
+            linkMapa: {{ \Illuminate\Support\Js::from(old('crm_rot_link_mapa', $roteiro->crm_rot_link_mapa)) }},
             addLinha() { this.linhas.push({ clienteId: '', clienteNome: '', resultado: '', observacao: '' }); },
             removerLinha(i) { this.linhas.splice(i, 1); },
         }"
@@ -43,7 +44,7 @@
             <div class="sbadmin-card">
                 <div class="sbadmin-card-body">
                     <div class="row">
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <x-sbadmin::form.select
                                 id="crm_rot_vendedor_id"
                                 name="crm_rot_vendedor_id"
@@ -54,7 +55,7 @@
                                 required
                             />
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <x-sbadmin::form.input
                                 id="crm_rot_periodo_inicio"
                                 type="date"
@@ -64,7 +65,7 @@
                                 required
                             />
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <x-sbadmin::form.input
                                 id="crm_rot_periodo_fim"
                                 type="date"
@@ -74,23 +75,35 @@
                                 required
                             />
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-md-5">
                             <x-sbadmin::form.input
                                 id="crm_rot_link_mapa"
                                 type="url"
                                 name="crm_rot_link_mapa"
                                 label="Link do Google Maps"
-                                :value="old('crm_rot_link_mapa', $roteiro->crm_rot_link_mapa)"
                                 maxlength="500"
                                 placeholder="https://maps.app.goo.gl/..."
                                 help="Cole aqui o link da rota compartilhada pelo Google Maps."
+                                x-model="linkMapa"
                             />
+                        </div>
+                        <div class="col-md-1 mb-3 d-flex align-items-end">
+                            <a
+                                class="btn btn-outline-primary btn-sm w-100"
+                                :class="{ disabled: !linkMapa }"
+                                :href="linkMapa || '#'"
+                                target="_blank"
+                                rel="noopener"
+                                title="Abrir no Google Maps"
+                            >
+                                <i class="bi bi-map" aria-hidden="true"></i>
+                            </a>
                         </div>
                     </div>
 
                     @if($editando)
                         <div class="row">
-                            <div class="col-sm-6">
+                            <div class="col-md-3">
                                 <x-sbadmin::form.select
                                     id="crm_rot_status"
                                     name="crm_rot_status"

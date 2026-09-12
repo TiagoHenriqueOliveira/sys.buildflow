@@ -32,6 +32,7 @@ class Cliente extends Model
         'cli_ativo',
         'cli_latitude',
         'cli_longitude',
+        'cli_link_mapa',
     ];
 
     protected $casts = [

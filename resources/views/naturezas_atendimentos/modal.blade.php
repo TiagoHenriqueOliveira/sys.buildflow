@@ -50,7 +50,6 @@
                         :value="old('nat_aten_config_modelo_id')"
                         placeholder="Selecione..."
                         required
-                        help="BF04 — controla as seções e perguntas exibidas no preenchimento do relatório."
                     />
 
                     <div x-show="editando" x-cloak>

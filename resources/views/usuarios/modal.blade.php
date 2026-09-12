@@ -43,7 +43,7 @@
                                 id="user_nivel_acesso"
                                 name="user_nivel_acesso"
                                 label="Nível"
-                                :options="['0' => 'Administrador', '1' => 'Técnico', '2' => 'Comercial']"
+                                :options="collect(App\Enums\NivelAcesso::cases())->mapWithKeys(fn ($n) => [$n->value => $n->label()])->all()"
                                 :value="old('user_nivel_acesso')"
                                 placeholder="Selecione..."
                                 required

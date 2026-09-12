@@ -134,8 +134,15 @@
                 const lista = document.createElement('ul');
                 lista.className = 'sbadmin-autocomplete-list';
                 lista.hidden = true;
+                // Ancorado no proprio input, nao em top:100% do wrapper — aqui o
+                // wrapper e o <form> inteiro do modal, entao top:100% jogava a
+                // lista pro rodape (bug relatado pelo cliente em 2026-09-11).
                 const pai = input.parentElement;
                 if (getComputedStyle(pai).position === 'static') pai.style.position = 'relative';
+                lista.style.top = (input.offsetTop + input.offsetHeight) + 'px';
+                lista.style.left = input.offsetLeft + 'px';
+                lista.style.right = 'auto';
+                lista.style.width = input.offsetWidth + 'px';
                 input.insertAdjacentElement('afterend', lista);
 
                 let timer = null;
