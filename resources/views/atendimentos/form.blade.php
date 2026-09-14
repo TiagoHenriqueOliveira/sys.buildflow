@@ -159,17 +159,17 @@
                             </div>
                         </div>
 
-                        <x-sbadmin::form.input id="aten_endereco" name="aten_endereco" label="Endereço" :value="old('aten_endereco', $atendimento->aten_endereco)" maxlength="100" />
+                        <x-sbadmin::form.input id="aten_endereco" name="aten_endereco" label="Endereço" :value="old('aten_endereco', $atendimento->aten_endereco)" maxlength="100" placeholder="Ex.: Rua das Flores, 123 - Centro" />
 
                         <div class="row">
                             <div class="col-md-4">
-                                <x-sbadmin::form.input id="aten_nr_proposta" name="aten_nr_proposta" label="Nº Proposta" :value="old('aten_nr_proposta', $atendimento->aten_nr_proposta)" maxlength="20" />
+                                <x-sbadmin::form.input id="aten_nr_proposta" name="aten_nr_proposta" label="Nº Proposta" :value="old('aten_nr_proposta', $atendimento->aten_nr_proposta)" maxlength="20" placeholder="Ex.: 2026-0123" />
                             </div>
                             <div class="col-md-4">
-                                <x-sbadmin::form.input id="aten_contato" name="aten_contato" label="Contato" :value="old('aten_contato', $atendimento->aten_contato)" maxlength="50" />
+                                <x-sbadmin::form.input id="aten_contato" name="aten_contato" label="Contato" :value="old('aten_contato', $atendimento->aten_contato)" maxlength="50" placeholder="Ex.: João da Silva" />
                             </div>
                             <div class="col-md-4">
-                                <x-sbadmin::form.input id="aten_responsavel" name="aten_responsavel" label="Responsável" :value="old('aten_responsavel', $atendimento->aten_responsavel)" maxlength="50" />
+                                <x-sbadmin::form.input id="aten_responsavel" name="aten_responsavel" label="Responsável" :value="old('aten_responsavel', $atendimento->aten_responsavel)" maxlength="50" placeholder="Ex.: Maria Souza" />
                             </div>
                         </div>
 
@@ -210,9 +210,9 @@
                     </div>
 
                     <div x-show="tab === 'observacoes'" x-cloak>
-                        <x-sbadmin::form.textarea id="aten_obs_tecnica" name="aten_obs_tecnica" label="Técnicas" rows="4" />
-                        <x-sbadmin::form.textarea id="aten_obs_cliente" name="aten_obs_cliente" label="Cliente" rows="4" />
-                        <x-sbadmin::form.textarea id="aten_obs_manutencao" name="aten_obs_manutencao" label="Manutenção" rows="4" />
+                        <x-sbadmin::form.textarea id="aten_obs_tecnica" name="aten_obs_tecnica" label="Técnicas" rows="4" placeholder="Descreva as observações técnicas..." />
+                        <x-sbadmin::form.textarea id="aten_obs_cliente" name="aten_obs_cliente" label="Cliente" rows="4" placeholder="Descreva as observações do cliente..." />
+                        <x-sbadmin::form.textarea id="aten_obs_manutencao" name="aten_obs_manutencao" label="Manutenção" rows="4" placeholder="Descreva as observações de manutenção..." />
                     </div>
 
                 </form>
@@ -233,7 +233,7 @@
 
                     <hr>
 
-                    <h6 class="fw-bold">Equipamentos Cadastrados</h6>
+                    <h6 class="fw-bold">Equipamentos</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped table-hover" id="table_equipamentos">
                             <thead>

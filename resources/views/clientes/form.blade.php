@@ -40,6 +40,7 @@
             'descricao' => $l->cli_loc_descricao,
             'latitude' => $l->cli_loc_latitude,
             'longitude' => $l->cli_loc_longitude,
+            'link_mapa' => $l->cli_loc_link_mapa,
         ])->values()->all()
         : []);
     // Geolocalizacao: Administrador, Comercial e Assistencia podem capturar
@@ -70,7 +71,7 @@
             removerContato(i) { this.contatos.splice(i, 1); },
             addEquipamento() { this.equipamentos.push({ descricao: '' }); },
             removerEquipamento(i) { this.equipamentos.splice(i, 1); },
-            addLocalizacao() { this.localizacoes.push({ descricao: '', latitude: '', longitude: '' }); },
+            addLocalizacao() { this.localizacoes.push({ descricao: '', latitude: '', longitude: '', link_mapa: '' }); },
             removerLocalizacao(i) { this.localizacoes.splice(i, 1); },
         }"
     >
@@ -80,6 +81,10 @@
                 <p class="sbadmin-page-subheading">{{ $editando ? $cliente->cli_nome : 'Cadastre um novo cliente no sistema.' }}</p>
             </div>
         </div>
+
+        @if(session('success'))
+            <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
+        @endif
 
         <form
             id="form_cliente"
@@ -138,6 +143,7 @@
                                     label="Inscrição Estadual"
                                     :value="old('cli_inscricao_estadual', $cliente->cli_inscricao_estadual)"
                                     maxlength="20"
+                                    placeholder="Ex.: 123.456.789.123 ou ISENTO"
                                 />
                             </div>
                             <div class="col-sm-4">
@@ -148,6 +154,7 @@
                                     :value="old('cli_cidade', $cliente->cli_cidade)"
                                     maxlength="100"
                                     required
+                                    placeholder="Ex.: Curitiba"
                                 />
                             </div>
                             <div class="col-sm-2">
@@ -182,6 +189,7 @@
                                     label="Contato principal"
                                     :value="old('cli_contato_principal', $cliente->cli_contato_principal)"
                                     maxlength="100"
+                                    placeholder="Ex.: Maria Souza"
                                 />
                             </div>
                             <div class="col-sm-3">
@@ -203,6 +211,7 @@
                                     label="E-mail"
                                     :value="old('cli_email', $cliente->cli_email)"
                                     maxlength="100"
+                                    placeholder="nome@exemplo.com"
                                 />
                             </div>
                         </div>
@@ -265,19 +274,19 @@
                                     <div class="row g-2">
                                         <div class="col-md-4">
                                             <label class="sbadmin-form-label">Nome</label>
-                                            <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][nome]'" x-model="contato.nome">
+                                            <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][nome]'" x-model="contato.nome" placeholder="Ex.: João da Silva">
                                         </div>
                                         <div class="col-md-3">
                                             <label class="sbadmin-form-label">Cargo</label>
-                                            <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][cargo]'" x-model="contato.cargo">
+                                            <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][cargo]'" x-model="contato.cargo" placeholder="Ex.: Gerente de Manutenção">
                                         </div>
                                         <div class="col-md-2">
                                             <label class="sbadmin-form-label">Telefone</label>
-                                            <input type="text" class="form-control sbadmin-form-control" maxlength="15" :name="'contatos['+i+'][telefone]'" x-model="contato.telefone" oninput="this.value = window.formatarTelefone(this.value)">
+                                            <input type="text" class="form-control sbadmin-form-control" maxlength="15" :name="'contatos['+i+'][telefone]'" x-model="contato.telefone" oninput="this.value = window.formatarTelefone(this.value)" placeholder="(00) 00000-0000">
                                         </div>
                                         <div class="col-md-3">
                                             <label class="sbadmin-form-label">E-mail</label>
-                                            <input type="email" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][email]'" x-model="contato.email">
+                                            <input type="email" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][email]'" x-model="contato.email" placeholder="nome@exemplo.com">
                                         </div>
                                     </div>
                                     <div class="row g-2 mt-1 align-items-end">
@@ -308,18 +317,15 @@
                     {{-- ── Geolocalização (BF01) ────────────────────────────────── --}}
                     <div x-show="tab === 'geo'" x-cloak>
                         <h6 class="fw-bold">Localização principal</h6>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.input id="cli_latitude" name="cli_latitude" label="Latitude" x-model.number="lat" readonly />
-                            </div>
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.input id="cli_longitude" name="cli_longitude" label="Longitude" x-model.number="lng" readonly />
-                            </div>
-                        </div>
+                        <input type="hidden" id="cli_latitude" name="cli_latitude" x-model.number="lat">
+                        <input type="hidden" id="cli_longitude" name="cli_longitude" x-model.number="lng">
 
                         {{-- Pedido do cliente (2026-09-11): campo de link do Google
                              Maps, mesmo padrão do Roteiro de Viagem — não substitui
-                             lat/lng acima (ainda usados pelo mapa de relações). --}}
+                             lat/lng acima (ainda usados pelo mapa de relações).
+                             Pedido do cliente (2026-09-14): latitude/longitude não
+                             ficam mais visíveis como campos de texto — só o link e
+                             os botões abaixo. --}}
                         <div class="row">
                             <div class="col-md-11">
                                 <x-sbadmin::form.input
@@ -332,7 +338,8 @@
                                     x-model="linkMapa"
                                 />
                             </div>
-                            <div class="col-md-1 d-flex align-items-end mb-3">
+                            <div class="col-md-1">
+                                <label class="sbadmin-form-label d-block">&nbsp;</label>
                                 <a
                                     class="btn btn-outline-primary btn-sm w-100"
                                     :class="{ disabled: !linkMapa }"
@@ -379,25 +386,39 @@
                             <template x-for="(localizacao, i) in localizacoes" :key="i">
                                 <div class="sbadmin-card mb-3">
                                     <div class="sbadmin-card-body">
-                                        <div class="row g-2 align-items-end">
-                                            <div class="col-md-5">
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
                                                 <label class="sbadmin-form-label">Descrição</label>
                                                 <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'localizacoes['+i+'][descricao]'" x-model="localizacao.descricao" placeholder="Ex.: Empresa, Instalação/Montagem, Manutenção">
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="sbadmin-form-label">Local</label>
+                                                <label class="sbadmin-form-label">Link do Google Maps</label>
+                                                <input type="url" class="form-control sbadmin-form-control" maxlength="500" :name="'localizacoes['+i+'][link_mapa]'" x-model="localizacao.link_mapa" placeholder="https://maps.app.goo.gl/...">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sbadmin-form-label">Escolhida no mapa</label>
                                                 <input type="hidden" :name="'localizacoes['+i+'][latitude]'" x-model.number="localizacao.latitude">
                                                 <input type="hidden" :name="'localizacoes['+i+'][longitude]'" x-model.number="localizacao.longitude">
                                                 <div class="form-control sbadmin-form-control bg-transparent" x-text="localizacao.latitude && localizacao.longitude ? Number(localizacao.latitude).toFixed(5) + ', ' + Number(localizacao.longitude).toFixed(5) : 'Não definida'"></div>
                                             </div>
-                                            <div class="col-md-3 d-flex gap-2">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" @click="abrirMapaPicker(i)">
-                                                    <i class="bi bi-map" aria-hidden="true"></i> Escolher no mapa
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerLocalizacao(i)">
-                                                    <i class="bi bi-trash" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-end gap-2 mt-2">
+                                            <a
+                                                class="btn btn-outline-primary btn-sm"
+                                                :class="{ disabled: !localizacao.link_mapa }"
+                                                :href="localizacao.link_mapa || '#'"
+                                                target="_blank"
+                                                rel="noopener"
+                                                title="Abrir no Google Maps"
+                                            >
+                                                <i class="bi bi-map" aria-hidden="true"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" @click="abrirMapaPicker(i)">
+                                                <i class="bi bi-geo-alt" aria-hidden="true"></i> Escolher no mapa
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" @click="removerLocalizacao(i)">
+                                                <i class="bi bi-trash" aria-hidden="true"></i> Remover
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -466,7 +487,7 @@
                             </div>
                         </template>
                         <p class="text-body-secondary small" x-show="equipamentos.length === 0">Nenhum equipamento cadastrado.</p>
-                        <button type="button" class="btn btn-outline-primary btn-sm" @click="addEquipamento()">
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-4" @click="addEquipamento()">
                             <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar equipamento
                         </button>
 
@@ -484,6 +505,7 @@
                             label="Descrição do caso de sucesso"
                             :value="old('cli_caso_sucesso_descricao', $cliente->cli_caso_sucesso_descricao)"
                             rows="3"
+                            placeholder="Descreva o caso de sucesso..."
                         />
 
                         @if($editando)
@@ -518,6 +540,10 @@
                         feedback.textContent = 'Geolocalização não é suportada neste navegador.';
                         return;
                     }
+                    if (!window.isSecureContext) {
+                        feedback.textContent = 'Este navegador só libera a localização em conexão segura (HTTPS/localhost) — verifique o certificado do site.';
+                        return;
+                    }
                     feedback.textContent = 'Obtendo localização...';
                     navigator.geolocation.getCurrentPosition(
                         function (pos) {
@@ -526,8 +552,18 @@
                             Alpine.$data(root).lng = Number(pos.coords.longitude.toFixed(7));
                             feedback.textContent = 'Localização atribuída com sucesso.';
                         },
-                        function () {
-                            feedback.textContent = 'Não foi possível obter a localização. Verifique a permissão do navegador.';
+                        function (erro) {
+                            // Mensagens especificas por codigo (PERMISSION_DENIED=1,
+                            // POSITION_UNAVAILABLE=2, TIMEOUT=3) — a mensagem generica
+                            // anterior aparecia mesmo quando o navegador nunca chegou
+                            // a pedir permissao (ex.: negada permanentemente antes, ou
+                            // certificado nao confiavel bloqueando a API em silencio).
+                            const mensagens = {
+                                1: 'Permissão de localização negada. Se o navegador não perguntou, verifique nas configurações do site (ícone de cadeado na barra de endereço) se a localização já não foi bloqueada antes.',
+                                2: 'Não foi possível determinar a localização (sinal de GPS/rede indisponível).',
+                                3: 'Tempo esgotado ao tentar obter a localização.',
+                            };
+                            feedback.textContent = mensagens[erro.code] || 'Não foi possível obter a localização.';
                         }
                     );
                 });
@@ -591,7 +627,11 @@
                     const termo = document.getElementById('mapaPickerBusca').value.trim();
                     if (!termo) return;
 
-                    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(termo))
+                    // countrycodes=br + limit maior: endereços rurais/cidades
+                    // pequenas do Brasil às vezes só aparecem em resultados mais
+                    // abaixo na lista do Nominatim; sem o filtro de país, a
+                    // busca também competia com homônimos em outros países.
+                    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=br&addressdetails=1&q=' + encodeURIComponent(termo))
                         .then((r) => r.json())
                         .then((resultados) => {
                             if (!resultados || !resultados.length) {

@@ -10,7 +10,7 @@
             <span class="icon text-white-50">
                 <i class="bi bi-share" aria-hidden="true"></i>
             </span>
-            <span class="text">Registrar compartilhamento</span>
+            <span class="text">Compartilhar</span>
         </button>
     </div>
 

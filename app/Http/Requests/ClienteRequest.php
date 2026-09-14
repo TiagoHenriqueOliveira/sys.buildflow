@@ -80,6 +80,7 @@ class ClienteRequest extends FormRequest
             'localizacoes.*.descricao' => ['nullable', 'string', 'max:100'],
             'localizacoes.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'localizacoes.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'localizacoes.*.link_mapa' => ['nullable', 'url', 'max:500'],
         ];
     }
 

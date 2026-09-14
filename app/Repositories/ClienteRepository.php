@@ -133,6 +133,7 @@ class ClienteRepository implements CrudRepositoryInterface
                 'cli_loc_descricao' => $l['descricao'],
                 'cli_loc_latitude' => $l['latitude'],
                 'cli_loc_longitude' => $l['longitude'],
+                'cli_loc_link_mapa' => $l['link_mapa'] ?? null,
             ])
             ->all();
 

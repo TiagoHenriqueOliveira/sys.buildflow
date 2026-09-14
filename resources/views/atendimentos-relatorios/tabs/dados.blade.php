@@ -1,114 +1,123 @@
 <div id="tab-dados" role="tabpanel" x-show="tab === 'dados'">
     <form id="form_relatorio_dados" data-action="{{ route('atendimentos-relatorios.update-dados', $atendimentoRelatorio->aten_rel_id) }}">
         @csrf
-        {{-- LINHA: Data | Dia da Semana | Prazo | Decorrido | À Vencer --}}
+        {{-- LINHA: Data | Dia da Semana --}}
         <div class="row mb-3">
             <div class="col-md-3">
-                <label class="fw-bold">Data</label>
-                <input type="date" name="aten_rel_data" class="form-control"
-                    value="{{ $atendimentoRelatorio->aten_rel_data->format('Y-m-d') }}"
-                    max="{{ now()->format('Y-m-d') }}">
+                <x-sbadmin::form.input
+                    id="aten_rel_data"
+                    type="date"
+                    name="aten_rel_data"
+                    label="Data"
+                    :value="$atendimentoRelatorio->aten_rel_data->format('Y-m-d')"
+                    max="{{ now()->format('Y-m-d') }}"
+                />
             </div>
 
             <div class="col-md-3">
-                <label class="fw-bold">Dia da Semana</label>
-                <span class="readonly-field dia-semana form-control-plaintext">
-                    {{ getFormatDiaSemana($atendimentoRelatorio->aten_rel_data) }}
-                </span>
-            </div>
-
-            <div class="col-md-2">
-                <label class="fw-bold">Prazo (dias)</label>
-                <span class="readonly-field prazo-total form-control-plaintext text-indigo">
-                    {{ $prazoTotal }} dias
-                </span>
-            </div>
-
-            <div class="col-md-2">
-                <label class="fw-bold">Prazo Decorrido</label>
-                <span class="readonly-field prazo-decorrido form-control-plaintext text-warning">
-                    {{ $prazoDecorrido }} dias
-                </span>
-            </div>
-
-            <div class="col-md-2">
-                <label class="fw-bold">Prazo à Vencer</label>
-                <span class="readonly-field prazo-vencer form-control-plaintext text-success">
-                    {{ $prazoAVencer }} dias
-                </span>
+                <x-sbadmin::form.input
+                    id="dia_semana_relatorio"
+                    name="dia_semana_relatorio"
+                    label="Dia da Semana"
+                    :value="getFormatDiaSemana($atendimentoRelatorio->aten_rel_data)"
+                    readonly
+                />
             </div>
         </div>
 
         {{-- LINHA: Cliente | Contato | Responsável | Nº Proposta --}}
         <div class="row mb-3">
             <div class="col-md-4">
-                <label class="fw-bold">Cliente</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->cliente->cli_nome }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_cliente"
+                    name="rel_dados_cliente"
+                    label="Cliente"
+                    :value="$atendimentoRelatorio->atendimento->cliente->cli_nome"
+                    readonly
+                />
             </div>
 
             <div class="col-md-3">
-                <label class="fw-bold">Contato</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_contato }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_contato"
+                    name="rel_dados_contato"
+                    label="Contato"
+                    :value="$atendimentoRelatorio->atendimento->aten_contato"
+                    readonly
+                />
             </div>
 
             <div class="col-md-3">
-                <label class="fw-bold">Responsável</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_responsavel }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_responsavel"
+                    name="rel_dados_responsavel"
+                    label="Responsável"
+                    :value="$atendimentoRelatorio->atendimento->aten_responsavel"
+                    readonly
+                />
             </div>
 
             <div class="col-md-2">
-                <label class="fw-bold">Nº Proposta</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_nr_proposta }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_proposta"
+                    name="rel_dados_proposta"
+                    label="Nº Proposta"
+                    :value="$atendimentoRelatorio->atendimento->aten_nr_proposta"
+                    readonly
+                />
             </div>
         </div>
 
         {{-- LINHA: Endereço | Cidade | UF --}}
         <div class="row mb-3">
             <div class="col-md-6">
-                <label class="fw-bold">Endereço</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->aten_endereco }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_endereco"
+                    name="rel_dados_endereco"
+                    label="Endereço"
+                    :value="$atendimentoRelatorio->atendimento->aten_endereco"
+                    readonly
+                />
             </div>
             <div class="col-md-4">
-                <label class="fw-bold">Cidade</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->cliente->cli_cidade }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_cidade"
+                    name="rel_dados_cidade"
+                    label="Cidade"
+                    :value="$atendimentoRelatorio->atendimento->cliente->cli_cidade"
+                    readonly
+                />
             </div>
             <div class="col-md-2">
-                <label class="fw-bold">UF</label>
-                <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->cliente->cli_uf }}
-                </span>
+                <x-sbadmin::form.input
+                    id="rel_dados_uf"
+                    name="rel_dados_uf"
+                    label="UF"
+                    :value="$atendimentoRelatorio->atendimento->cliente->cli_uf"
+                    readonly
+                />
             </div>
         </div>
     </form>
 
-    {{-- Equipamentos do atendimento --}}
+    {{-- Equipamentos do atendimento — mesmo padrão visual da aba Equipamentos
+         do cadastro de Atendimento (tabela sempre somente leitura aqui, já
+         que pertence ao atendimento, não ao relatório). --}}
     @php $equipamentos = $atendimentoRelatorio->atendimento->equipamentos; @endphp
     @if($equipamentos->isNotEmpty())
     <hr class="my-3">
     <h6 class="fw-bold mb-2"><i class="bi bi-tools me-1 text-secondary" aria-hidden="true"></i> Equipamentos</h6>
     <div class="table-responsive">
-        <table class="table table-sm table-bordered mb-0">
-            <thead class="table-light">
+        <table class="table table-sm table-striped table-hover mb-0">
+            <thead>
                 <tr>
-                    <th>Descrição</th>
+                    <th class="align-middle">Descrição</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($equipamentos as $eq)
                 <tr>
-                    <td>{{ $eq->aten_equip_descricao }}</td>
+                    <td class="align-middle">{{ $eq->aten_equip_descricao }}</td>
                 </tr>
                 @endforeach
             </tbody>

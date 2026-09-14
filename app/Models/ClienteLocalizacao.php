@@ -18,6 +18,7 @@ class ClienteLocalizacao extends Model
         'cli_loc_descricao',
         'cli_loc_latitude',
         'cli_loc_longitude',
+        'cli_loc_link_mapa',
     ];
 
     protected $casts = [

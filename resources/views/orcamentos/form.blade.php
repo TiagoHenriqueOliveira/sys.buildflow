@@ -34,6 +34,10 @@
             </div>
         </div>
 
+        @if(session('success'))
+            <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
+        @endif
+
         <form
             id="form_orcamento"
             method="POST"
@@ -149,7 +153,7 @@
                                                 $valorAntigo = old('respostas.'.$pergunta->cfg_perg_id, $respostasExistentes->get($pergunta->cfg_perg_id));
                                             @endphp
                                             @if($pergunta->cfg_perg_tipo->value === 2)
-                                                <textarea name="respostas[{{ $pergunta->cfg_perg_id }}]" class="form-control sbadmin-form-control" rows="2">{{ is_array($valorAntigo) ? '' : $valorAntigo }}</textarea>
+                                                <textarea name="respostas[{{ $pergunta->cfg_perg_id }}]" class="form-control sbadmin-form-control" rows="2" placeholder="Digite sua resposta...">{{ is_array($valorAntigo) ? '' : $valorAntigo }}</textarea>
                                             @elseif($pergunta->cfg_perg_tipo->value === 1)
                                                 @foreach($pergunta->opcoes as $opcao)
                                                     <div class="form-check">
@@ -212,77 +216,77 @@
                         <div class="mb-3"></div>
                     </div>
 
-                </div>
-            </div>
-        </form>
+                </form>
 
-        @if($editando)
-            {{-- ── Comentários (CRM03) — log próprio, fora do <form> principal ── --}}
-            <div class="sbadmin-card mt-3" x-show="tab === 'comentarios'" x-cloak>
-                <div class="sbadmin-card-body">
-                    <form method="POST" action="{{ route('orcamentos.store-comentario', $orcamento->orc_id) }}" class="mb-4">
-                        @csrf
-                        <x-sbadmin::form.textarea
-                            id="orc_com_texto"
-                            name="orc_com_texto"
-                            label="Novo comentário"
-                            rows="3"
-                            required
-                        />
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <x-sbadmin::form.select
-                                    id="orc_com_alerta_usuario_id"
-                                    name="orc_com_alerta_usuario_id"
-                                    label="Alertar usuário (opcional)"
-                                    :options="$vendedores->pluck('user_nome', 'user_id')->all()"
-                                    placeholder="Nenhum"
-                                />
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar comentário
-                        </button>
-                    </form>
-
-                    <hr>
-
-                    <h6 class="fw-bold">Histórico</h6>
-                    @forelse($orcamento->comentarios as $comentario)
-                        <div class="sbadmin-card mb-2">
-                            <div class="sbadmin-card-body py-2">
-                                <div class="d-flex justify-content-between small text-body-secondary">
-                                    <span>{{ optional($comentario->autor)->user_nome }}</span>
-                                    <span>{{ $comentario->orc_com_criado_em->format('d/m/Y H:i') }}</span>
+                @if($editando)
+                    {{-- ── Comentários (CRM03) — log próprio, fora do <form> principal
+                         (form próprio abaixo), mas dentro do MESMO card das outras
+                         abas — mesmo padrão de Atendimentos > Equipamentos/Anexos.
+                         Antes ficava num <div class="sbadmin-card mt-3"> separado,
+                         dando a impressão de tela "dividida" em dois componentes. --}}
+                    <div x-show="tab === 'comentarios'" x-cloak>
+                        <form method="POST" action="{{ route('orcamentos.store-comentario', $orcamento->orc_id) }}" class="mb-4">
+                            @csrf
+                            <x-sbadmin::form.textarea
+                                id="orc_com_texto"
+                                name="orc_com_texto"
+                                label="Novo comentário"
+                                rows="3"
+                                required
+                                placeholder="Escreva o comentário..."
+                            />
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <x-sbadmin::form.select
+                                        id="orc_com_alerta_usuario_id"
+                                        name="orc_com_alerta_usuario_id"
+                                        label="Alertar usuário (opcional)"
+                                        :options="$vendedores->pluck('user_nome', 'user_id')->all()"
+                                        placeholder="Nenhum"
+                                    />
                                 </div>
-                                <p class="mb-0" style="white-space:pre-wrap;">{{ $comentario->orc_com_texto }}</p>
-                                @if($comentario->orc_com_alerta_usuario_id)
-                                    <span class="sbadmin-badge sbadmin-badge-warning sbadmin-badge-pill">
-                                        <i class="bi bi-bell" aria-hidden="true"></i> Alerta para {{ optional($comentario->usuarioAlertado)->user_nome }}
-                                    </span>
-                                @endif
                             </div>
-                        </div>
-                    @empty
-                        <p class="text-body-secondary small">Nenhum comentário registrado ainda.</p>
-                    @endforelse
-                </div>
-            </div>
-        @endif
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar comentário
+                            </button>
+                        </form>
 
-        {{-- Rodapé único (Salvar + Voltar), sempre visível independente da
-             aba ativa — mesmo padrão de atendimentos/form.blade.php.
-             `form="form_orcamento"` associa o botão ao form sem precisar
-             ficar dentro dele (o form só envolve Dados/Perguntas/Vendedores;
-             Comentários é sub-recurso à parte, com form próprio). --}}
-        <div class="sbadmin-card mt-3">
-            <div class="sbadmin-card-body d-flex justify-content-end gap-2">
-                <button type="submit" form="form_orcamento" class="btn btn-success">
-                    <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
-                </button>
-                <a href="{{ route('orcamentos.index') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
-                </a>
+                        <hr>
+
+                        <h6 class="fw-bold">Histórico</h6>
+                        @forelse($orcamento->comentarios as $comentario)
+                            <div class="sbadmin-card mb-2">
+                                <div class="sbadmin-card-body py-2">
+                                    <div class="d-flex justify-content-between small text-body-secondary">
+                                        <span>{{ optional($comentario->autor)->user_nome }}</span>
+                                        <span>{{ $comentario->orc_com_criado_em->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                    <p class="mb-0" style="white-space:pre-wrap;">{{ $comentario->orc_com_texto }}</p>
+                                    @if($comentario->orc_com_alerta_usuario_id)
+                                        <span class="sbadmin-badge sbadmin-badge-warning sbadmin-badge-pill">
+                                            <i class="bi bi-bell" aria-hidden="true"></i> Alerta para {{ optional($comentario->usuarioAlertado)->user_nome }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-body-secondary small">Nenhum comentário registrado ainda.</p>
+                        @endforelse
+                    </div>
+                @endif
+
+                {{-- Rodapé único (Salvar + Voltar), sempre visível independente da
+                     aba ativa, dentro do MESMO card — mesmo padrão de
+                     atendimentos/form.blade.php. `form="form_orcamento"` associa o
+                     botão ao form sem precisar ficar dentro dele. --}}
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                    <button type="submit" form="form_orcamento" class="btn btn-success">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
+                    </button>
+                    <a href="{{ route('orcamentos.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
+                    </a>
+                </div>
             </div>
         </div>
     </div>

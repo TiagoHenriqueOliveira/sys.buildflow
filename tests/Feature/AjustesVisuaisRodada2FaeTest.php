@@ -90,4 +90,28 @@ class AjustesVisuaisRodada2FaeTest extends TestCase
 
         $response->assertSessionHasErrors('cli_link_mapa');
     }
+
+    public function test_outra_localizacao_do_cliente_salva_link_do_mapa_proprio(): void
+    {
+        $comercial = Usuario::factory()->create(['user_nivel_acesso' => NivelAcesso::Comercial->value]);
+
+        $response = $this->actingAs($comercial)->post(route('clientes.store'), [
+            'cli_nome' => 'Cliente Localizacao Com Link',
+            'cli_cnpj' => '55566677000199',
+            'cli_cidade' => 'Joinville',
+            'cli_uf' => 'SC',
+            'localizacoes' => [
+                [
+                    'descricao' => 'Instalação/Montagem',
+                    'latitude' => -26.3,
+                    'longitude' => -48.8,
+                    'link_mapa' => 'https://maps.app.goo.gl/instalacao',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $cliente = Cliente::first();
+        $this->assertSame('https://maps.app.goo.gl/instalacao', $cliente->localizacoes->first()->cli_loc_link_mapa);
+    }
 }

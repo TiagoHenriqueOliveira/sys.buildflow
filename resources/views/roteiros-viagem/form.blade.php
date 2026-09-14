@@ -32,6 +32,10 @@
             </div>
         </div>
 
+        @if(session('success'))
+            <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
+        @endif
+
         <form
             method="POST"
             action="{{ $editando ? route('roteiros-viagem.update', $roteiro->crm_rot_id) : route('roteiros-viagem.store') }}"
@@ -87,7 +91,8 @@
                                 x-model="linkMapa"
                             />
                         </div>
-                        <div class="col-md-1 mb-3 d-flex align-items-end">
+                        <div class="col-md-1">
+                            <label class="sbadmin-form-label d-block">&nbsp;</label>
                             <a
                                 class="btn btn-outline-primary btn-sm w-100"
                                 :class="{ disabled: !linkMapa }"
@@ -146,7 +151,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="sbadmin-form-label">Observação</label>
-                                        <input type="text" class="form-control sbadmin-form-control" :name="'observacoes['+linha.clienteId+']'" x-model="linha.observacao">
+                                        <input type="text" class="form-control sbadmin-form-control" :name="'observacoes['+linha.clienteId+']'" x-model="linha.observacao" placeholder="Observações sobre a visita...">
                                     </div>
                                 </div>
                                 <div class="text-end mt-2">

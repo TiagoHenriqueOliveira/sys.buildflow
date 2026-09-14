@@ -139,11 +139,19 @@
                 // lista pro rodape (bug relatado pelo cliente em 2026-09-11).
                 const pai = input.parentElement;
                 if (getComputedStyle(pai).position === 'static') pai.style.position = 'relative';
-                lista.style.top = (input.offsetTop + input.offsetHeight) + 'px';
-                lista.style.left = input.offsetLeft + 'px';
-                lista.style.right = 'auto';
-                lista.style.width = input.offsetWidth + 'px';
                 input.insertAdjacentElement('afterend', lista);
+
+                // Recalculado a cada exibicao (dentro de mostrar()), nao uma unica
+                // vez aqui — o modal comeca com display:none (Alpine), onde os
+                // offsets sempre retornam 0; calcular soh na inicializacao travava
+                // a lista com largura 0 pro resto da sessao (regressao relatada
+                // pelo cliente em 2026-09-14 na correcao anterior deste bug).
+                function posicionarLista() {
+                    lista.style.top = (input.offsetTop + input.offsetHeight) + 'px';
+                    lista.style.left = input.offsetLeft + 'px';
+                    lista.style.right = 'auto';
+                    lista.style.width = input.offsetWidth + 'px';
+                }
 
                 let timer = null;
                 let controller = null;
@@ -167,6 +175,7 @@
                         });
                         lista.appendChild(li);
                     });
+                    posicionarLista();
                     lista.hidden = false;
                 }
 

@@ -99,7 +99,8 @@
                             value="{{ old('email') }}"
                             required
                             autofocus
-                            autocomplete="email">
+                            autocomplete="email"
+                            placeholder="nome@exemplo.com">
                     </div>
 
                     <div class="mb-3">

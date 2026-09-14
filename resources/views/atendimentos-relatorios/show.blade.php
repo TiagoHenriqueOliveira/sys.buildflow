@@ -254,10 +254,7 @@
             function carregarDadosRelatorio() {
                 fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/dados`).then((d) => {
                     document.querySelector('input[name="aten_rel_data"]').value = d.aten_rel_data_iso;
-                    document.querySelector('#tab-dados .dia-semana').textContent = d.dia_semana;
-                    document.querySelector('#tab-dados .prazo-total').textContent = d.prazo_total + ' dias';
-                    document.querySelector('#tab-dados .prazo-decorrido').textContent = d.prazo_decorrido + ' dias';
-                    document.querySelector('#tab-dados .prazo-vencer').textContent = d.prazo_vencer + ' dias';
+                    document.getElementById('dia_semana_relatorio').value = d.dia_semana;
                 });
             }
 
@@ -723,25 +720,28 @@
                     })
                     .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
             });
-            // ─── Anexos ─────────────────────────────────────────────────────────
+            // ─── Anexos (só fotos — pedido do cliente, 2026-09-14) ─────────────────
             function renderizarAnexosRelatorio(data) {
+                // Arquivos/vídeos legados (enviados antes desta tela virar
+                // "só fotos") continuam listados, só sem opção de novo upload.
                 const arquivosList = document.getElementById('anexosArquivosList');
-                arquivosList.innerHTML = '';
-                if (data.arquivos && data.arquivos.length) {
-                    const ul = document.createElement('ul');
-                    ul.className = 'list-unstyled';
-                    data.arquivos.forEach((item) => {
-                        const li = document.createElement('li');
-                        li.className = 'd-flex align-items-center justify-content-between mb-1';
-                        li.innerHTML = `<a href="${item.url}" target="_blank"></a>
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-anexo" data-type="arquivo" data-id="${item.id}" aria-label="Excluir anexo">
-                                <i class="bi bi-trash" aria-hidden="true"></i>
-                            </button>`;
-                        li.querySelector('a').textContent = item.name;
-                        ul.appendChild(li);
-                    });
-                    arquivosList.innerHTML = '<h6>Anexos</h6>';
-                    arquivosList.appendChild(ul);
+                if (arquivosList) {
+                    arquivosList.innerHTML = '';
+                    if (data.arquivos && data.arquivos.length) {
+                        const ul = document.createElement('ul');
+                        ul.className = 'list-unstyled';
+                        data.arquivos.forEach((item) => {
+                            const li = document.createElement('li');
+                            li.className = 'd-flex align-items-center justify-content-between mb-1';
+                            li.innerHTML = `<a href="${item.url}" target="_blank"></a>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-anexo" data-type="arquivo" data-id="${item.id}" aria-label="Excluir anexo">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                </button>`;
+                            li.querySelector('a').textContent = item.name;
+                            ul.appendChild(li);
+                        });
+                        arquivosList.appendChild(ul);
+                    }
                 }
 
                 const fotosContainer = document.getElementById('anexosFotosContainer');
@@ -760,19 +760,21 @@
                 });
 
                 const videosContainer = document.getElementById('anexosVideosContainer');
-                videosContainer.innerHTML = '';
-                (data.videos || []).forEach((item) => {
-                    const div = document.createElement('div');
-                    div.className = 'm-1 position-relative';
-                    div.style.width = '160px';
-                    div.innerHTML = `<a href="#" class="anexo-thumb" data-type="video" data-src="${item.url}">
-                        <img src="${item.thumb_url}" style="width:160px;height:90px;object-fit:cover;border-radius:.35rem;" alt="video">
-                    </a>
-                    <button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="video" data-id="${item.id}" aria-label="Excluir vídeo">
-                        <i class="bi bi-trash" aria-hidden="true"></i>
-                    </button>`;
-                    videosContainer.appendChild(div);
-                });
+                if (videosContainer) {
+                    videosContainer.innerHTML = '';
+                    (data.videos || []).forEach((item) => {
+                        const div = document.createElement('div');
+                        div.className = 'm-1 position-relative';
+                        div.style.width = '160px';
+                        div.innerHTML = `<a href="#" class="anexo-thumb" data-type="video" data-src="${item.url}">
+                            <img src="${item.thumb_url}" style="width:160px;height:90px;object-fit:cover;border-radius:.35rem;" alt="video">
+                        </a>
+                        <button type="button" class="btn btn-sm btn-danger btn-delete-anexo position-absolute" style="top:4px;right:4px;" data-type="video" data-id="${item.id}" aria-label="Excluir vídeo">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>`;
+                        videosContainer.appendChild(div);
+                    });
+                }
             }
 
             function refreshAnexosRelatorio() {
@@ -787,29 +789,29 @@
                     .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
             });
 
+            document.getElementById('uploadFotosInput')?.addEventListener('change', function () {
+                const nomes = Array.from(this.files).map((f) => f.name).join(', ');
+                document.getElementById('uploadFotosNome').textContent = nomes || 'Selecione fotos para upload';
+            });
+
             function enviarAnexosRelatorio() {
-                const arquivos = document.getElementById('uploadArquivosInput');
                 const fotos = document.getElementById('uploadFotosInput');
-                const videos = document.getElementById('uploadVideosInput');
+                if (!fotos || !fotos.files.length) return;
 
                 const fd = new FormData();
-                Array.from(arquivos?.files || []).forEach((f) => fd.append('arquivos[]', f));
-                Array.from(fotos?.files || []).forEach((f) => fd.append('fotos[]', f));
-                Array.from(videos?.files || []).forEach((f) => fd.append('videos[]', f));
+                Array.from(fotos.files).forEach((f) => fd.append('fotos[]', f));
 
                 fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/upload-anexos`, { method: 'POST', body: fd })
                     .then((r) => {
                         mostrarFeedbackRelatorio('success', r.message || 'Uploads concluídos.');
-                        [arquivos, fotos, videos].forEach((input) => {
-                            if (!input) return;
-                            input.value = '';
-                            const label = input.closest('.file-upload-group')?.querySelector('.file-upload-text');
-                            if (label) label.textContent = 'Nenhum arquivo selecionado';
-                        });
+                        fotos.value = '';
+                        document.getElementById('uploadFotosNome').textContent = 'Selecione fotos para upload';
                         refreshAnexosRelatorio();
                     })
                     .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
             }
+
+            document.getElementById('btnEnviarAnexosRelatorio')?.addEventListener('click', enviarAnexosRelatorio);
 
             // ─── Assinaturas ────────────────────────────────────────────────────
             function setupSignatureCanvas(canvasId) {
@@ -967,14 +969,9 @@
             document.getElementById('btnAtualizarRelatorio')?.addEventListener('click', function () {
                 const abaAtiva = Alpine.$data(document.getElementById('relatorio-root')).tab;
 
-                const semFormulario = ['servicos', 'pecas', 'descricao', 'ocorrencias', 'perguntas', 'compartilhamento'];
+                const semFormulario = ['servicos', 'pecas', 'descricao', 'ocorrencias', 'perguntas', 'compartilhamento', 'anexos'];
                 if (semFormulario.includes(abaAtiva)) {
                     mostrarFeedbackRelatorio('error', 'Use os botões para adicionar e remover itens nesta aba.');
-                    return;
-                }
-
-                if (abaAtiva === 'anexos') {
-                    enviarAnexosRelatorio();
                     return;
                 }
 

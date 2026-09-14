@@ -32,11 +32,21 @@ export function setupAutocomplete(inputSelector, hiddenInputSelector, url, optio
     if (wrapper && getComputedStyle(wrapper).position === 'static') {
         wrapper.style.position = 'relative';
     }
-    list.style.top = (input.offsetTop + input.offsetHeight) + 'px';
-    list.style.left = input.offsetLeft + 'px';
-    list.style.right = 'auto';
-    list.style.width = input.offsetWidth + 'px';
     input.insertAdjacentElement('afterend', list);
+
+    // Recalculado a cada exibicao (dentro de renderItems), nao uma unica
+    // vez aqui na inicializacao — varios desses campos vivem dentro de um
+    // modal que comeca com `display:none` (Alpine), onde offsetTop/Left/
+    // Width sempre retornam 0. Calcular soh aqui travava a lista com
+    // largura 0 (aparecia "lateral", quase invisivel) pro resto da sessao,
+    // mesmo depois do modal abrir (regressao relatada pelo cliente em
+    // 2026-09-14 na correcao anterior deste mesmo bug).
+    function posicionarLista() {
+        list.style.top = (input.offsetTop + input.offsetHeight) + 'px';
+        list.style.left = input.offsetLeft + 'px';
+        list.style.right = 'auto';
+        list.style.width = input.offsetWidth + 'px';
+    }
 
     let debounceTimer = null;
     let abortController = null;
@@ -69,6 +79,7 @@ export function setupAutocomplete(inputSelector, hiddenInputSelector, url, optio
             list.appendChild(li);
         });
 
+        posicionarLista();
         list.hidden = false;
     }
 
