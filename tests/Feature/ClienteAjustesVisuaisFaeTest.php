@@ -114,14 +114,36 @@ class ClienteAjustesVisuaisFaeTest extends TestCase
         $this->assertSame('Empresa', $cliente->localizacoes->first()->cli_loc_descricao);
     }
 
-    public function test_localizacao_sem_coordenadas_e_ignorada(): void
+    /**
+     * Pedido do cliente (2026-09-14): removido o picker de mapa (busca +
+     * clique no Leaflet) — localização passou a ser só descrição + link do
+     * Google Maps colado, sem coordenadas coletadas no formulário.
+     */
+    public function test_localizacao_sem_link_do_mapa_ainda_e_salva_so_com_descricao(): void
     {
         $usuario = $this->criarComercial();
 
         $response = $this->actingAs($usuario)->post(route('clientes.store'), [
             ...$this->payloadBase(),
             'localizacoes' => [
-                ['descricao' => 'Sem ponto no mapa ainda', 'latitude' => '', 'longitude' => ''],
+                ['descricao' => 'Sem link ainda'],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $cliente = Cliente::first();
+        $this->assertCount(1, $cliente->localizacoes);
+        $this->assertNull($cliente->localizacoes->first()->cli_loc_latitude);
+    }
+
+    public function test_localizacao_sem_descricao_e_ignorada(): void
+    {
+        $usuario = $this->criarComercial();
+
+        $response = $this->actingAs($usuario)->post(route('clientes.store'), [
+            ...$this->payloadBase(),
+            'localizacoes' => [
+                ['descricao' => '', 'link_mapa' => 'https://maps.app.goo.gl/xyz'],
             ],
         ]);
 

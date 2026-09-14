@@ -121,18 +121,24 @@ class ClienteRepository implements CrudRepositoryInterface
         }
     }
 
-    /** Mesmo padrão de sincronizarContatos — substitui a lista inteira a cada save. */
+    /**
+     * Mesmo padrão de sincronizarContatos — substitui a lista inteira a
+     * cada save. Pedido do cliente (2026-09-14): localização definida só
+     * por descrição + link do Google Maps colado — coordenadas não são
+     * mais coletadas no formulário (removido o "Escolher no mapa"), por
+     * isso só a descrição é exigida aqui.
+     */
     private function sincronizarLocalizacoes(Cliente $cliente, array $localizacoes): void
     {
         $cliente->localizacoes()->delete();
 
         $linhas = collect($localizacoes)
-            ->filter(fn ($l) => filled($l['descricao'] ?? null) && filled($l['latitude'] ?? null) && filled($l['longitude'] ?? null))
+            ->filter(fn ($l) => filled($l['descricao'] ?? null))
             ->map(fn ($l) => [
                 'cli_loc_cliente_id' => $cliente->cli_id,
                 'cli_loc_descricao' => $l['descricao'],
-                'cli_loc_latitude' => $l['latitude'],
-                'cli_loc_longitude' => $l['longitude'],
+                'cli_loc_latitude' => $l['latitude'] ?? null,
+                'cli_loc_longitude' => $l['longitude'] ?? null,
                 'cli_loc_link_mapa' => $l['link_mapa'] ?? null,
             ])
             ->all();

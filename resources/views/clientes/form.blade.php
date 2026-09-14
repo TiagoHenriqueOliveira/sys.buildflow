@@ -38,8 +38,6 @@
     $localizacoesIniciais = old('localizacoes', $editando
         ? $cliente->localizacoes->map(fn ($l) => [
             'descricao' => $l->cli_loc_descricao,
-            'latitude' => $l->cli_loc_latitude,
-            'longitude' => $l->cli_loc_longitude,
             'link_mapa' => $l->cli_loc_link_mapa,
         ])->values()->all()
         : []);
@@ -71,7 +69,7 @@
             removerContato(i) { this.contatos.splice(i, 1); },
             addEquipamento() { this.equipamentos.push({ descricao: '' }); },
             removerEquipamento(i) { this.equipamentos.splice(i, 1); },
-            addLocalizacao() { this.localizacoes.push({ descricao: '', latitude: '', longitude: '', link_mapa: '' }); },
+            addLocalizacao() { this.localizacoes.push({ descricao: '', link_mapa: '' }); },
             removerLocalizacao(i) { this.localizacoes.splice(i, 1); },
         }"
     >
@@ -315,17 +313,23 @@
                     </div>
 
                     {{-- ── Geolocalização (BF01) ────────────────────────────────── --}}
+                    {{-- Pedido do cliente (2026-09-14): removido o "Escolher no
+                         mapa" (busca via Nominatim + clique num Leaflet embutido)
+                         de toda a tela — a busca nunca vai igualar a experiência
+                         do app do Google (confirmado testando um endereço real que
+                         o OSM não tem cadastrado), e o botão "Abrir no Google Maps"
+                         derivado de lat/lng também foi removido por não servir pra
+                         nada na prática. Localização agora é só: (a) "Usar minha
+                         localização" quando o usuário está fisicamente no lugar
+                         (grava lat/lng nos bastidores, ainda usados pelo mapa de
+                         relações — CRM07), ou (b) colar o link de um lugar já
+                         pesquisado no Google Maps de verdade — mesmo padrão do
+                         Roteiro de Viagem. --}}
                     <div x-show="tab === 'geo'" x-cloak>
                         <h6 class="fw-bold">Localização principal</h6>
                         <input type="hidden" id="cli_latitude" name="cli_latitude" x-model.number="lat">
                         <input type="hidden" id="cli_longitude" name="cli_longitude" x-model.number="lng">
 
-                        {{-- Pedido do cliente (2026-09-11): campo de link do Google
-                             Maps, mesmo padrão do Roteiro de Viagem — não substitui
-                             lat/lng acima (ainda usados pelo mapa de relações).
-                             Pedido do cliente (2026-09-14): latitude/longitude não
-                             ficam mais visíveis como campos de texto — só o link e
-                             os botões abaixo. --}}
                         <div class="row">
                             <div class="col-md-11">
                                 <x-sbadmin::form.input
@@ -358,18 +362,6 @@
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="btnAtribuirLocalizacao">
                                     <i class="bi bi-geo-alt" aria-hidden="true"></i> Usar minha localização
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" @click="abrirMapaPicker(null)">
-                                    <i class="bi bi-map" aria-hidden="true"></i> Escolher no mapa
-                                </button>
-                                <a
-                                    class="btn btn-outline-secondary btn-sm"
-                                    :class="{ disabled: !lat || !lng }"
-                                    :href="lat && lng ? ('https://www.google.com/maps?q=' + lat + ',' + lng) : '#'"
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Abrir no Google Maps
-                                </a>
                             </div>
                             <div id="geo-feedback" class="small text-body-secondary mt-2"></div>
 
@@ -378,28 +370,19 @@
                             {{-- Pedido do cliente (2026-09-11): lista de localizações
                                  adicionais do mesmo cliente (empresa, instalação/
                                  montagem, manutenção...), cada uma com descrição
-                                 livre + ponto próprio escolhido no mesmo picker do
-                                 mapa. Não substitui lat/lng principal acima (ainda
-                                 usada pelo mapa de relações — CRM07), é uma lista à
-                                 parte, mesmo padrão de repetição da aba Contatos. --}}
+                                 livre + link do Google Maps próprio. --}}
                             <h6 class="fw-bold">Outras localizações</h6>
                             <template x-for="(localizacao, i) in localizacoes" :key="i">
                                 <div class="sbadmin-card mb-3">
                                     <div class="sbadmin-card-body">
                                         <div class="row g-2">
-                                            <div class="col-md-4">
+                                            <div class="col-md-6">
                                                 <label class="sbadmin-form-label">Descrição</label>
                                                 <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'localizacoes['+i+'][descricao]'" x-model="localizacao.descricao" placeholder="Ex.: Empresa, Instalação/Montagem, Manutenção">
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-md-6">
                                                 <label class="sbadmin-form-label">Link do Google Maps</label>
                                                 <input type="url" class="form-control sbadmin-form-control" maxlength="500" :name="'localizacoes['+i+'][link_mapa]'" x-model="localizacao.link_mapa" placeholder="https://maps.app.goo.gl/...">
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="sbadmin-form-label">Escolhida no mapa</label>
-                                                <input type="hidden" :name="'localizacoes['+i+'][latitude]'" x-model.number="localizacao.latitude">
-                                                <input type="hidden" :name="'localizacoes['+i+'][longitude]'" x-model.number="localizacao.longitude">
-                                                <div class="form-control sbadmin-form-control bg-transparent" x-text="localizacao.latitude && localizacao.longitude ? Number(localizacao.latitude).toFixed(5) + ', ' + Number(localizacao.longitude).toFixed(5) : 'Não definida'"></div>
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-end gap-2 mt-2">
@@ -413,9 +396,6 @@
                                             >
                                                 <i class="bi bi-map" aria-hidden="true"></i>
                                             </a>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" @click="abrirMapaPicker(i)">
-                                                <i class="bi bi-geo-alt" aria-hidden="true"></i> Escolher no mapa
-                                            </button>
                                             <button type="button" class="btn btn-outline-danger btn-sm" @click="removerLocalizacao(i)">
                                                 <i class="bi bi-trash" aria-hidden="true"></i> Remover
                                             </button>
@@ -429,44 +409,6 @@
                             <button type="button" class="btn btn-outline-primary btn-sm" @click="addLocalizacao()">
                                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar localização
                             </button>
-
-                            {{-- Picker de mapa (Leaflet/OpenStreetMap — sem chave de API),
-                                 com busca por endereço via Nominatim (mesmo provedor,
-                                 também sem chave). Reaproveitado tanto pela localização
-                                 principal quanto por qualquer linha de "Outras
-                                 localizações" — ver mapaPickerTargetIndex no script.
-                                 Abre num modal próprio, separado do modal de edição
-                                 padrão (não usa Bootstrap .modal pra evitar conflito de
-                                 z-index/backdrop com o restante da tela). --}}
-                            <div id="mapaPickerBackdrop" class="modal-backdrop show" style="display:none;"></div>
-                            <div id="mapaPickerModal" class="modal" style="display:none;" tabindex="-1" role="dialog" aria-modal="true">
-                                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Escolher localização no mapa</h5>
-                                            <button type="button" class="btn-close" aria-label="Fechar" id="btnFecharMapaPicker"></button>
-                                        </div>
-                                        <div class="modal-body p-0">
-                                            <div class="d-flex gap-2 p-2 border-bottom">
-                                                <input type="text" class="form-control sbadmin-form-control" id="mapaPickerBusca" placeholder="Buscar endereço ou local...">
-                                                <button type="button" class="btn btn-outline-primary btn-sm text-nowrap" id="btnBuscarMapaPicker">
-                                                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
-                                                </button>
-                                            </div>
-                                            <div id="mapaPickerLeaflet" style="height: 380px;"></div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <span class="text-body-secondary small me-auto">Busque um endereço ou clique no mapa para posicionar o marcador.</span>
-                                            <button type="button" class="btn btn-success" id="btnConfirmarMapaPicker">
-                                                <i class="bi bi-check-lg" aria-hidden="true"></i> Usar esta localização
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary" id="btnCancelarMapaPicker">
-                                                <i class="bi bi-x-lg" aria-hidden="true"></i> Cancelar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         @endif
                     </div>
 
@@ -526,13 +468,13 @@
         </form>
     </div>
 
-    {{-- Sem @stack('styles') disponivel no layout do sbadmin (só ha
-         @stack('scripts')) -- o <link> do Leaflet fica direto aqui no
-         corpo da pagina; funciona normalmente fora do <head>. --}}
+    {{-- Pedido do cliente (2026-09-14): removido o picker de mapa (Leaflet)
+         e a busca de endereço (Nominatim) — não iguala a experiência do
+         Google Maps de verdade. Só resta "Usar minha localização" (GPS do
+         navegador, grava lat/lng nos bastidores pro mapa de relações) e o
+         link colável (ver bloco acima). --}}
     @if($podeGeolocalizar)
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
         @push('scripts')
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
             <script>
                 document.getElementById('btnAtribuirLocalizacao')?.addEventListener('click', function () {
                     const feedback = document.getElementById('geo-feedback');
@@ -566,135 +508,6 @@
                             feedback.textContent = mensagens[erro.code] || 'Não foi possível obter a localização.';
                         }
                     );
-                });
-
-                // ─── Escolher no mapa (Leaflet + OpenStreetMap, sem chave de API) ──
-                // Reaproveitado pela localização principal (target = null) e por
-                // qualquer linha de "Outras localizações" (target = índice da
-                // linha) — window.abrirMapaPicker() é chamado direto dos botões
-                // via Alpine (@click), por isso fica em window em vez de fechado
-                // no escopo do <script> (Alpine avalia a expressão no escopo global).
-                let mapaPicker = null;
-                let marcadorPicker = null;
-                let mapaPickerTargetIndex = null;
-
-                window.abrirMapaPicker = function (targetIndex) {
-                    mapaPickerTargetIndex = targetIndex;
-                    const root = document.getElementById('cliente-form-root');
-                    const alpine = Alpine.$data(root);
-                    const alvo = targetIndex === null ? alpine : alpine.localizacoes[targetIndex];
-                    const latInicial = (alvo && alvo.latitude) || alpine.lat || -25.4284;
-                    const lngInicial = (alvo && alvo.longitude) || alpine.lng || -49.2733;
-                    const temPonto = !!(alvo && alvo.latitude);
-
-                    document.getElementById('mapaPickerBackdrop').style.display = 'block';
-                    document.getElementById('mapaPickerModal').style.display = 'block';
-                    document.getElementById('mapaPickerBusca').value = '';
-
-                    setTimeout(function () {
-                        if (!mapaPicker) {
-                            mapaPicker = L.map('mapaPickerLeaflet').setView([latInicial, lngInicial], temPonto ? 15 : 5);
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '&copy; OpenStreetMap',
-                            }).addTo(mapaPicker);
-                            marcadorPicker = L.marker([latInicial, lngInicial], { draggable: true }).addTo(mapaPicker);
-                            mapaPicker.on('click', function (e) {
-                                marcadorPicker.setLatLng(e.latlng);
-                            });
-                        } else {
-                            mapaPicker.setView([latInicial, lngInicial], temPonto ? 15 : 5);
-                            marcadorPicker.setLatLng([latInicial, lngInicial]);
-                            mapaPicker.invalidateSize();
-                        }
-                    }, 50);
-                };
-
-                function fecharMapaPicker() {
-                    document.getElementById('mapaPickerBackdrop').style.display = 'none';
-                    document.getElementById('mapaPickerModal').style.display = 'none';
-                }
-
-                document.getElementById('btnCancelarMapaPicker')?.addEventListener('click', fecharMapaPicker);
-                document.getElementById('btnFecharMapaPicker')?.addEventListener('click', fecharMapaPicker);
-                document.getElementById('mapaPickerBackdrop')?.addEventListener('click', fecharMapaPicker);
-
-                // Busca de endereco via Nominatim (OpenStreetMap) — mesmo provedor
-                // do tileLayer acima, tambem sem chave de API. So centraliza o
-                // mapa/marcador no resultado; a confirmacao continua manual
-                // (botao "Usar esta localização"), pra o usuario poder ajustar o
-                // pino antes de gravar.
-                function buscarNominatim(termo) {
-                    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=br&addressdetails=1&q=' + encodeURIComponent(termo))
-                        .then((r) => r.json());
-                }
-
-                // Endereços rurais/de cidades pequenas do Brasil (rua+número)
-                // muitas vezes nao tem cobertura no OpenStreetMap, mesmo a
-                // cidade existindo la (confirmado testando a API direto em
-                // 2026-09-14 com "Rua Martin Isoton, xaxim sc" - a rua nao e
-                // encontrada, mas "Xaxim, SC" sozinho e). Em vez de simplesmente
-                // falhar, tenta de novo removendo o primeiro pedaço (rua/numero)
-                // ate sobrar so bairro/cidade/UF, que tem chance bem maior de
-                // ser encontrado - o usuario ajusta o pino manualmente a partir
-                // dali.
-                function buscarEnderecoMapaPicker() {
-                    const termoOriginal = document.getElementById('mapaPickerBusca').value.trim();
-                    if (!termoOriginal) return;
-
-                    const feedback = document.getElementById('geo-feedback');
-                    feedback.textContent = 'Buscando...';
-
-                    const partes = termoOriginal.split(',').map((p) => p.trim()).filter(Boolean);
-
-                    function tentar(indice) {
-                        if (indice >= partes.length) {
-                            feedback.textContent = 'Endereço não encontrado no mapa (OpenStreetMap não tem essa rua cadastrada). Tente buscar só o bairro/cidade e ajuste o pino manualmente.';
-                            return;
-                        }
-
-                        const termo = partes.slice(indice).join(', ');
-                        buscarNominatim(termo)
-                            .then((resultados) => {
-                                if (!resultados || !resultados.length) {
-                                    tentar(indice + 1);
-                                    return;
-                                }
-                                const lat = parseFloat(resultados[0].lat);
-                                const lon = parseFloat(resultados[0].lon);
-                                mapaPicker.setView([lat, lon], indice === 0 ? 16 : 13);
-                                marcadorPicker.setLatLng([lat, lon]);
-                                feedback.textContent = indice === 0
-                                    ? 'Endereço encontrado.'
-                                    : 'Endereço exato não encontrado — centralizado em "' + termo + '". Ajuste o pino manualmente.';
-                            })
-                            .catch(() => { feedback.textContent = 'Erro ao buscar o endereço.'; });
-                    }
-
-                    tentar(0);
-                }
-
-                document.getElementById('btnBuscarMapaPicker')?.addEventListener('click', buscarEnderecoMapaPicker);
-                document.getElementById('mapaPickerBusca')?.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        buscarEnderecoMapaPicker();
-                    }
-                });
-
-                document.getElementById('btnConfirmarMapaPicker')?.addEventListener('click', function () {
-                    const pos = marcadorPicker.getLatLng();
-                    const root = document.getElementById('cliente-form-root');
-                    const alpine = Alpine.$data(root);
-
-                    if (mapaPickerTargetIndex === null) {
-                        alpine.lat = Number(pos.lat.toFixed(7));
-                        alpine.lng = Number(pos.lng.toFixed(7));
-                        document.getElementById('geo-feedback').textContent = 'Localização atribuída com sucesso.';
-                    } else {
-                        alpine.localizacoes[mapaPickerTargetIndex].latitude = Number(pos.lat.toFixed(7));
-                        alpine.localizacoes[mapaPickerTargetIndex].longitude = Number(pos.lng.toFixed(7));
-                    }
-                    fecharMapaPicker();
                 });
             </script>
         @endpush
