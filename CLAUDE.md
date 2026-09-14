@@ -1,5 +1,7 @@
 # FAÉ Bioenergia — Buildflow (Atendimentos e Relatórios) + CRM Comercial
 
+**Idioma: responder sempre em pt-BR nesta pasta/branch** — pedido explícito do cliente/usuário (2026-09-14). Vale para respostas em texto/chat; nomes de variáveis, rotas, tabelas etc. continuam em português técnico como já é o padrão do projeto (ver convenções abaixo).
+
 ## Contexto do projeto
 
 Esta é a pasta/branch (`feature/fae`) dedicada ao cliente **FAÉ Bioenergia**, dentro do mesmo repositório multi-cliente do Buildflow (`sys.buildflow`, remoto `https://github.com/TiagoHenriqueOliveira/sys.buildflow.git`). Cada cliente tem sua própria branch de longa duração e seu próprio banco de dados — nunca aplicar uma migration desta branch em outro banco, nem supor que o schema de outro cliente (ex.: MCL Vale) é igual ao daqui.
