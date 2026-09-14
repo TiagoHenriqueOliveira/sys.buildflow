@@ -252,6 +252,9 @@ class AtendimentosRelatoriosController extends Controller
             'prazoAVencer'         => $prazo['prazo_a_vencer'],
             'somenteLeitura'       => $atendimentoRelatorio->aten_rel_status === \App\Enums\AtendimentoRelatorioStatus::Aprovado->value,
             'ocorrencias'          => \App\Models\Ocorrencia::where('ocor_ativo', true)->orderBy('ocor_descricao')->get(),
+            // Pedido do cliente (2026-09-14) — perguntas marcadas como Sessão
+            // viram abas próprias; ver ConfigModelo::sessoes()/perguntasAgrupadasPorSessao().
+            'sessoesPerguntas'     => $atendimentoRelatorio->configModelo?->sessoes() ?? collect(),
         ]);
     }
 
@@ -708,7 +711,7 @@ class AtendimentosRelatoriosController extends Controller
             ])->values(),
         ];
 
-        $perguntas = ($relatorio->configModelo?->perguntas ?? collect())->map(function ($pergunta) use ($respostasPorPergunta, $mapaResposta) {
+        $mapaPergunta = function ($pergunta) use ($respostasPorPergunta, $mapaResposta) {
             $respostas = ($respostasPorPergunta->get($pergunta->cfg_perg_id) ?? collect())
                 ->sortBy('aten_rel_resp_id')
                 ->map($mapaResposta)
@@ -732,9 +735,21 @@ class AtendimentosRelatoriosController extends Controller
                 'fotos' => $respostas->first()['fotos'] ?? [],
                 'respostas' => $respostas,
             ];
-        })->values();
+        };
 
-        return response()->json(['data' => $perguntas]);
+        // Pedido do cliente (2026-09-14) — perguntas marcadas como Sessão nao
+        // sao perguntas de verdade (nao tem resposta); as demais sao
+        // agrupadas na aba "Perguntas" generica ou na aba da sessao a que
+        // pertencem, ver ConfigModelo::perguntasAgrupadasPorSessao().
+        $grupos = $relatorio->configModelo?->perguntasAgrupadasPorSessao() ?? ['genericas' => collect(), 'por_sessao' => collect()];
+
+        $perguntas = $grupos['genericas']->map(fn ($p) => [...$mapaPergunta($p), 'sessao_id' => null])->values();
+
+        $porSessao = $grupos['por_sessao']->map(
+            fn ($perguntasDaSessao) => $perguntasDaSessao->map($mapaPergunta)->values()
+        );
+
+        return response()->json(['data' => $perguntas, 'por_sessao' => $porSessao]);
     }
 
     public function storeResposta(Request $request, int $id): \Illuminate\Http\JsonResponse

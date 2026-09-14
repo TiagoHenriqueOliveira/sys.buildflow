@@ -39,4 +39,43 @@ class ConfigModelo extends Model
     {
         return $this->hasMany(NaturezaAtendimento::class, 'nat_aten_config_modelo_id', 'cfg_mod_id');
     }
+
+    /**
+     * Pedido do cliente (2026-09-14) — perguntas marcadas como "Sessão"
+     * (cfg_perg_e_sessao), em ordem (mesma ordem de `perguntas()`).
+     */
+    public function sessoes()
+    {
+        return $this->perguntas->where('cfg_perg_e_sessao', true)->values();
+    }
+
+    /**
+     * Agrupa as perguntas de verdade (não-sessão) em "genéricas" (antes de
+     * qualquer marcador de Sessão) e "por sessão" (id da pergunta-sessão =>
+     * perguntas que vêm logo depois dela, na ordem, até a próxima Sessão ou
+     * o fim da lista). Usado tanto para montar as abas do relatório quanto
+     * para agrupar as respostas retornadas ao preencher.
+     */
+    public function perguntasAgrupadasPorSessao(): array
+    {
+        $sessaoAtualId = null;
+        $genericas = collect();
+        $porSessao = collect();
+
+        foreach ($this->perguntas as $pergunta) {
+            if ($pergunta->cfg_perg_e_sessao) {
+                $sessaoAtualId = $pergunta->cfg_perg_id;
+                $porSessao[$sessaoAtualId] = collect();
+                continue;
+            }
+
+            if ($sessaoAtualId === null) {
+                $genericas->push($pergunta);
+            } else {
+                $porSessao[$sessaoAtualId]->push($pergunta);
+            }
+        }
+
+        return ['genericas' => $genericas, 'por_sessao' => $porSessao];
+    }
 }

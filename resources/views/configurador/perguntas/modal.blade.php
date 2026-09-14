@@ -44,6 +44,34 @@
                         placeholder="Ex.: O equipamento apresentou vazamento?"
                     />
 
+                    {{-- Pedido do cliente (2026-09-14): uma pergunta pode virar
+                         uma SESSÃO — não tem tipo de resposta, é um marcador que
+                         vira uma aba no preenchimento do relatório, agrupando as
+                         perguntas cadastradas logo depois dela no modelo (até a
+                         próxima Sessão ou o fim da lista). --}}
+                    <input type="hidden" name="cfg_perg_e_sessao" value="0">
+                    <x-sbadmin::form.checkbox
+                        id="cfg_perg_e_sessao"
+                        name="cfg_perg_e_sessao"
+                        label="É uma sessão (vira uma aba no relatório)"
+                        help="Perguntas cadastradas depois desta no modelo entram dentro dessa aba, até a próxima sessão."
+                        :checked="old('cfg_perg_e_sessao', false)"
+                        x-model="eSessao"
+                        :switch="true"
+                    />
+
+                    <div x-show="eSessao" x-cloak>
+                        <x-sbadmin::form.input
+                            id="cfg_perg_sessao_nome"
+                            name="cfg_perg_sessao_nome"
+                            label="Nome da aba"
+                            :value="old('cfg_perg_sessao_nome')"
+                            maxlength="100"
+                            placeholder="Ex.: Peças Substituídas"
+                        />
+                    </div>
+
+                    <div x-show="!eSessao" x-cloak>
                     <x-sbadmin::form.select
                         id="cfg_perg_tipo"
                         name="cfg_perg_tipo"
@@ -51,10 +79,10 @@
                         :options="collect(App\Enums\TipoPergunta::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()])->all()"
                         :value="old('cfg_perg_tipo', 2)"
                         x-model.number="tipo"
-                        required
                     />
+                    </div>
 
-                    <div x-show="tipo !== 2" x-cloak>
+                    <div x-show="!eSessao && tipo !== 2" x-cloak>
                         <label class="sbadmin-form-label">Opções de resposta</label>
                         @error('opcoes')
                             <div class="sbadmin-alert sbadmin-alert-error mb-2" role="alert">{{ $message }}</div>
@@ -72,25 +100,27 @@
                         </template>
                     </div>
 
-                    <x-sbadmin::form.checkbox
-                        id="cfg_perg_permite_anexo"
-                        name="cfg_perg_permite_anexo"
-                        label="Permite anexo de imagem"
-                        :checked="old('cfg_perg_permite_anexo', false)"
-                        :switch="true"
-                    />
+                    <div x-show="!eSessao" x-cloak>
+                        <x-sbadmin::form.checkbox
+                            id="cfg_perg_permite_anexo"
+                            name="cfg_perg_permite_anexo"
+                            label="Permite anexo de imagem"
+                            :checked="old('cfg_perg_permite_anexo', false)"
+                            :switch="true"
+                        />
 
-                    {{-- Pedido do cliente (2026-09-11): pergunta respondida
-                         varias vezes no mesmo relatorio (ex.: "Descricao do
-                         servico" com foto, repetida por item feito). --}}
-                    <x-sbadmin::form.checkbox
-                        id="cfg_perg_repetivel"
-                        name="cfg_perg_repetivel"
-                        label="Permite múltiplas respostas"
-                        help="Na tela de relatório, o técnico poderá adicionar quantas respostas quiser para esta pergunta (com foto individual quando aplicável)."
-                        :checked="old('cfg_perg_repetivel', false)"
-                        :switch="true"
-                    />
+                        {{-- Pedido do cliente (2026-09-11): pergunta respondida
+                             varias vezes no mesmo relatorio (ex.: "Descricao do
+                             servico" com foto, repetida por item feito). --}}
+                        <x-sbadmin::form.checkbox
+                            id="cfg_perg_repetivel"
+                            name="cfg_perg_repetivel"
+                            label="Permite múltiplas respostas"
+                            help="Na tela de relatório, o técnico poderá adicionar quantas respostas quiser para esta pergunta (com foto individual quando aplicável)."
+                            :checked="old('cfg_perg_repetivel', false)"
+                            :switch="true"
+                        />
+                    </div>
 
                     <div x-show="editando" x-cloak>
                         <input type="hidden" name="cfg_perg_ativo" value="0">

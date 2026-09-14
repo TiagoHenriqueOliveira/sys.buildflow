@@ -13,10 +13,14 @@ class ConfiguradorPerguntaRequest extends FormRequest
     {
         return [
             'cfg_perg_texto' => ['required', 'string'],
-            'cfg_perg_tipo' => ['required', Rule::in(array_column(TipoPergunta::cases(), 'value'))],
+            // Sessão não é uma pergunta de resposta de verdade — tipo/opções
+            // não se aplicam quando cfg_perg_e_sessao=true.
+            'cfg_perg_tipo' => ['required_if:cfg_perg_e_sessao,0', 'nullable', Rule::in(array_column(TipoPergunta::cases(), 'value'))],
             'cfg_perg_permite_anexo' => ['nullable', 'boolean'],
             'cfg_perg_repetivel' => ['nullable', 'boolean'],
             'cfg_perg_ativo' => ['nullable', 'boolean'],
+            'cfg_perg_e_sessao' => ['nullable', 'boolean'],
+            'cfg_perg_sessao_nome' => ['required_if:cfg_perg_e_sessao,1', 'nullable', 'string', 'max:100'],
 
             'opcoes' => ['nullable', 'array'],
             'opcoes.*.texto' => ['required_with:opcoes.*', 'string', 'max:255'],
@@ -27,7 +31,8 @@ class ConfiguradorPerguntaRequest extends FormRequest
     {
         return [
             'cfg_perg_texto.required' => 'Informe o texto da pergunta.',
-            'cfg_perg_tipo.required' => 'Selecione o tipo de resposta.',
+            'cfg_perg_tipo.required_if' => 'Selecione o tipo de resposta.',
+            'cfg_perg_sessao_nome.required_if' => 'Informe o nome da aba desta sessão.',
             'opcoes.*.texto.required_with' => 'Informe o texto de cada opção.',
         ];
     }
@@ -39,6 +44,10 @@ class ConfiguradorPerguntaRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            if ($this->boolean('cfg_perg_e_sessao')) {
+                return;
+            }
+
             $tipo = TipoPergunta::tryFrom((int) $this->input('cfg_perg_tipo'));
             $opcoes = collect($this->input('opcoes', []))->filter(fn ($o) => filled($o['texto'] ?? null));
 

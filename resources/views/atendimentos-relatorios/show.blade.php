@@ -28,12 +28,23 @@
             $temServicosLegado = $atendimentoRelatorio->servicos->isNotEmpty();
             $temPecasLegado = $atendimentoRelatorio->pecas->isNotEmpty();
             $temOcorrenciasLegado = $atendimentoRelatorio->ocorrencias->isNotEmpty();
-            $temPerguntas = (bool) $atendimentoRelatorio->configModelo?->perguntas->isNotEmpty();
+
+            // Pedido do cliente (2026-09-14): perguntas marcadas como Sessão
+            // viram abas próprias, com as perguntas cadastradas logo depois
+            // delas no modelo dentro de cada uma — "Perguntas" (genérica) só
+            // aparece se houver alguma pergunta ANTES da primeira sessão (ou
+            // se não houver sessão nenhuma no modelo).
+            $gruposPerguntas = $atendimentoRelatorio->configModelo?->perguntasAgrupadasPorSessao()
+                ?? ['genericas' => collect(), 'por_sessao' => collect()];
+            $temPerguntas = $gruposPerguntas['genericas']->isNotEmpty();
 
             $abas = ['dados' => 'Dados', 'horarios' => 'Horário'];
             if ($temClimaLegado) $abas['clima'] = 'Clima';
             if ($temDescricaoLegado) $abas['descricao'] = 'Descrição';
             if ($temPerguntas) $abas['perguntas'] = 'Perguntas';
+            foreach ($sessoesPerguntas as $sessao) {
+                $abas['sessao-'.$sessao->cfg_perg_id] = $sessao->cfg_perg_sessao_nome;
+            }
             if ($temServicosLegado) $abas['servicos'] = 'Serviços Prestados';
             if ($temPecasLegado) $abas['pecas'] = 'Peças Substituídas';
             if ($temOcorrenciasLegado) $abas['ocorrencias'] = 'Ocorrências';
@@ -91,6 +102,9 @@
                     @if($temClimaLegado) @include('atendimentos-relatorios.tabs.clima') @endif
                     @if($temDescricaoLegado) @include('atendimentos-relatorios.tabs.descricao') @endif
                     @if($temPerguntas) @include('atendimentos-relatorios.tabs.perguntas') @endif
+                    @foreach($sessoesPerguntas as $sessao)
+                        @include('atendimentos-relatorios.tabs.sessao', ['sessao' => $sessao])
+                    @endforeach
                     @if($temServicosLegado) @include('atendimentos-relatorios.tabs.servicos-prestados') @endif
                     @if($temPecasLegado) @include('atendimentos-relatorios.tabs.pecas-substituidas') @endif
                     @if($temOcorrenciasLegado) @include('atendimentos-relatorios.tabs.ocorrencias') @endif
@@ -575,75 +589,91 @@
                 }).join('');
             }
 
-            function renderizarPerguntasRelatorio(perguntas) {
-                const container = document.getElementById('listaPerguntasRelatorio');
-                container.innerHTML = '';
-                if (!perguntas || !perguntas.length) {
-                    container.innerHTML = '<p class="text-body-secondary mb-0">Este modelo não tem perguntas cadastradas.</p>';
-                    return;
-                }
+            function criarCardPergunta(p) {
+                const card = document.createElement('div');
+                card.className = 'sbadmin-card mb-3';
+                card.dataset.perguntaId = p.id;
 
-                perguntas.forEach((p) => {
-                    const card = document.createElement('div');
-                    card.className = 'sbadmin-card mb-3';
-                    card.dataset.perguntaId = p.id;
-
-                    if (p.repetivel) {
-                        const linhas = (p.respostas || []).map((r) => `
-                            <div class="d-flex align-items-start gap-2 border rounded p-2 mb-2" data-resposta-id="${r.id}">
-                                <div class="flex-grow-1">
-                                    <p class="mb-1" style="white-space:pre-wrap;">${escapeHtml(r.valor || '')}</p>
-                                    <div class="fotos-resposta">${fotosRespostaHtml(r.fotos)}</div>
-                                </div>
-                                <button type="button" class="btn btn-outline-danger btn-sm btnRemoverResposta" data-resposta-id="${r.id}" aria-label="Remover resposta">
-                                    <i class="bi bi-trash" aria-hidden="true"></i>
-                                </button>
-                            </div>`).join('');
-
-                        card.innerHTML = `<div class="sbadmin-card-body">
-                            <div class="d-flex justify-content-between align-items-baseline mb-2">
-                                <p class="fw-bold mb-0">${escapeHtml(p.texto)}</p>
-                                <span class="badge bg-info">múltiplas respostas</span>
+                if (p.repetivel) {
+                    const linhas = (p.respostas || []).map((r) => `
+                        <div class="d-flex align-items-start gap-2 border rounded p-2 mb-2" data-resposta-id="${r.id}">
+                            <div class="flex-grow-1">
+                                <p class="mb-1" style="white-space:pre-wrap;">${escapeHtml(r.valor || '')}</p>
+                                <div class="fotos-resposta">${fotosRespostaHtml(r.fotos)}</div>
                             </div>
-                            <div class="respostas-repetivel mb-2">
-                                ${linhas || '<p class="text-body-secondary small mb-2">Nenhuma resposta adicionada ainda.</p>'}
-                            </div>
-                            <div class="border-top pt-2">
-                                <div class="mb-2 campo-resposta">${campoRespostaHtml(p, '')}</div>
-                                ${p.permite_anexo ? `<div class="mb-2">
-                                    <label class="sbadmin-form-label">Foto (opcional)</label>
-                                    <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
-                                </div>` : ''}
-                                <button type="button" class="btn btn-outline-primary btn-sm btnSalvarResposta">
-                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar outra resposta
-                                </button>
-                            </div>
-                        </div>`;
-                        container.appendChild(card);
-                        return;
-                    }
+                            <button type="button" class="btn btn-outline-danger btn-sm btnRemoverResposta" data-resposta-id="${r.id}" aria-label="Remover resposta">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
+                        </div>`).join('');
 
                     card.innerHTML = `<div class="sbadmin-card-body">
-                        <p class="fw-bold mb-2">${escapeHtml(p.texto)}</p>
-                        <div class="mb-2 campo-resposta">${campoRespostaHtml(p, p.valor)}</div>
-                        ${p.permite_anexo ? `<div class="mb-2">
-                            <label class="sbadmin-form-label">Foto (opcional)</label>
-                            <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
-                            <div class="fotos-resposta mt-2">${fotosRespostaHtml(p.fotos)}</div>
-                        </div>` : ''}
-                        <button type="button" class="btn btn-outline-success btn-sm btnSalvarResposta">
-                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar resposta
-                        </button>
+                        <div class="d-flex justify-content-between align-items-baseline mb-2">
+                            <p class="fw-bold mb-0">${escapeHtml(p.texto)}</p>
+                            <span class="badge bg-info">múltiplas respostas</span>
+                        </div>
+                        <div class="respostas-repetivel mb-2">
+                            ${linhas || '<p class="text-body-secondary small mb-2">Nenhuma resposta adicionada ainda.</p>'}
+                        </div>
+                        <div class="border-top pt-2">
+                            <div class="mb-2 campo-resposta">${campoRespostaHtml(p, '')}</div>
+                            ${p.permite_anexo ? `<div class="mb-2">
+                                <label class="sbadmin-form-label">Foto (opcional)</label>
+                                <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
+                            </div>` : ''}
+                            <button type="button" class="btn btn-outline-primary btn-sm btnSalvarResposta">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar outra resposta
+                            </button>
+                        </div>
                     </div>`;
-                    container.appendChild(card);
+                    return card;
+                }
+
+                card.innerHTML = `<div class="sbadmin-card-body">
+                    <p class="fw-bold mb-2">${escapeHtml(p.texto)}</p>
+                    <div class="mb-2 campo-resposta">${campoRespostaHtml(p, p.valor)}</div>
+                    ${p.permite_anexo ? `<div class="mb-2">
+                        <label class="sbadmin-form-label">Foto (opcional)</label>
+                        <input type="file" class="form-control sbadmin-form-control resposta-foto" accept="image/*">
+                        <div class="fotos-resposta mt-2">${fotosRespostaHtml(p.fotos)}</div>
+                    </div>` : ''}
+                    <button type="button" class="btn btn-outline-success btn-sm btnSalvarResposta">
+                        <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar resposta
+                    </button>
+                </div>`;
+                return card;
+            }
+
+            function renderizarListaPerguntasEm(containerId, perguntas, mensagemVazio) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+                if (!perguntas || !perguntas.length) {
+                    container.innerHTML = `<p class="text-body-secondary mb-0">${mensagemVazio}</p>`;
+                    return;
+                }
+                perguntas.forEach((p) => container.appendChild(criarCardPergunta(p)));
+            }
+
+            // Pedido do cliente (2026-09-14): perguntas marcadas como Sessão
+            // agrupam as perguntas seguintes numa aba própria — o backend já
+            // devolve tudo separado (r.data = genéricas, r.por_sessao =
+            // {perguntaSessaoId: [...]}), aqui só distribui pros containers
+            // certos (um por aba, ver tabs/sessao.blade.php).
+            function renderizarPerguntasRelatorio(r) {
+                renderizarListaPerguntasEm('listaPerguntasRelatorio', r.data, 'Este modelo não tem perguntas cadastradas.');
+                Object.keys(r.por_sessao || {}).forEach((sessaoId) => {
+                    renderizarListaPerguntasEm(`listaPerguntasRelatorio-${sessaoId}`, r.por_sessao[sessaoId], 'Nenhuma pergunta cadastrada nesta sessão.');
                 });
             }
 
             function carregarPerguntasRelatorio() {
-                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas`).then((r) => renderizarPerguntasRelatorio(r.data));
+                fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas`).then((r) => renderizarPerguntasRelatorio(r));
             }
 
-            document.getElementById('listaPerguntasRelatorio')?.addEventListener('click', function (event) {
+            // Delegado no document (não só no container "Perguntas" genérico)
+            // porque agora existe um container por aba de Sessão também.
+            document.addEventListener('click', function (event) {
+                if (!event.target.closest('#listaPerguntasRelatorio, .lista-perguntas-sessao')) return;
                 const btnFoto = event.target.closest('.btnRemovePerguntaFoto');
                 if (btnFoto) {
                     fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/respostas-fotos/${btnFoto.dataset.fotoId}`, { method: 'DELETE' })
@@ -950,6 +980,13 @@
 
             // ─── Dispatcher de aba (chamado ao clicar numa aba, ver show.blade.php) ──
             function carregarAbaRelatorio(aba) {
+                // Abas de Sessão são dinâmicas (uma por pergunta-sessão do
+                // modelo, ver tabs/sessao.blade.php) — mesmo endpoint/render
+                // da aba "Perguntas" genérica, só o container muda.
+                if (aba.startsWith('sessao-')) {
+                    carregarPerguntasRelatorio();
+                    return;
+                }
                 switch (aba) {
                     case 'dados': carregarDadosRelatorio(); break;
                     case 'horarios': carregarHorariosRelatorio(); break;
@@ -970,7 +1007,7 @@
                 const abaAtiva = Alpine.$data(document.getElementById('relatorio-root')).tab;
 
                 const semFormulario = ['servicos', 'pecas', 'descricao', 'ocorrencias', 'perguntas', 'compartilhamento', 'anexos'];
-                if (semFormulario.includes(abaAtiva)) {
+                if (semFormulario.includes(abaAtiva) || abaAtiva.startsWith('sessao-')) {
                     mostrarFeedbackRelatorio('error', 'Use os botões para adicionar e remover itens nesta aba.');
                     return;
                 }

@@ -20,6 +20,8 @@ class ConfigPergunta extends Model
         'cfg_perg_permite_anexo',
         'cfg_perg_repetivel',
         'cfg_perg_ativo',
+        'cfg_perg_e_sessao',
+        'cfg_perg_sessao_nome',
     ];
 
     protected $casts = [
@@ -27,6 +29,7 @@ class ConfigPergunta extends Model
         'cfg_perg_permite_anexo' => 'boolean',
         'cfg_perg_repetivel' => 'boolean',
         'cfg_perg_ativo' => 'boolean',
+        'cfg_perg_e_sessao' => 'boolean',
     ];
 
     public function opcoes()

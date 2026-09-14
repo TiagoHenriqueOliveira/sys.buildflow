@@ -6,6 +6,7 @@
             editando: {{ old('cfg_perg_id') ? 'true' : 'false' }},
             tipo: {{ (int) old('cfg_perg_tipo', 2) }},
             opcoes: {{ Illuminate\Support\Js::from(old('opcoes', [])) }},
+            eSessao: {{ old('cfg_perg_e_sessao') ? 'true' : 'false' }},
             addOpcao() { this.opcoes.push({ texto: '' }); },
             removerOpcao(i) { this.opcoes.splice(i, 1); },
         }"
@@ -54,7 +55,7 @@
         </form>
 
         <x-sbadmin::table
-            :headers="['Ações', 'Texto', 'Tipo', 'Anexo', 'Múltiplas', 'Status']"
+            :headers="['Ações', 'Texto', 'Tipo/Sessão', 'Anexo', 'Múltiplas', 'Status']"
             :paginator="$perguntas"
             :count="$perguntas->count()"
             empty-message="Nenhuma pergunta cadastrada."
@@ -71,6 +72,8 @@
                             data-permite-anexo="{{ (int) $p->cfg_perg_permite_anexo }}"
                             data-repetivel="{{ (int) $p->cfg_perg_repetivel }}"
                             data-ativo="{{ (int) $p->cfg_perg_ativo }}"
+                            data-e-sessao="{{ (int) $p->cfg_perg_e_sessao }}"
+                            data-sessao-nome="{{ e($p->cfg_perg_sessao_nome) }}"
                             data-opcoes="{{ $p->opcoes->map(fn ($o) => ['texto' => $o->cfg_perg_op_texto])->toJson() }}"
                             aria-label="Editar pergunta"
                             @click="editando = true; aberto = true; preencherFormularioPergunta($el.dataset)"
@@ -79,7 +82,13 @@
                         </button>
                     </td>
                     <td>{{ \Illuminate\Support\Str::limit($p->cfg_perg_texto, 80) }}</td>
-                    <td>{{ $p->cfg_perg_tipo->label() }}</td>
+                    <td>
+                        @if($p->cfg_perg_e_sessao)
+                            <x-sbadmin::badge type="warning">Sessão: {{ $p->cfg_perg_sessao_nome }}</x-sbadmin::badge>
+                        @else
+                            {{ $p->cfg_perg_tipo->label() }}
+                        @endif
+                    </td>
                     <td>
                         <x-sbadmin::badge :type="$p->cfg_perg_permite_anexo ? 'info' : 'neutral'">
                             {{ $p->cfg_perg_permite_anexo ? 'Sim' : 'Não' }}
@@ -110,11 +119,13 @@
                 document.getElementById('cfg_perg_ativo').checked = data.ativo === '1';
                 document.getElementById('cfg_perg_permite_anexo').checked = data.permiteAnexo === '1';
                 document.getElementById('cfg_perg_repetivel').checked = data.repetivel === '1';
+                document.getElementById('cfg_perg_sessao_nome').value = data.sessaoNome || '';
 
                 const root = document.querySelector('#configurador-perguntas-root');
                 const alpine = Alpine.$data(root);
                 alpine.tipo = parseInt(data.tipo || '2', 10);
                 alpine.opcoes = JSON.parse(data.opcoes || '[]');
+                alpine.eSessao = data.eSessao === '1';
 
                 document.getElementById('cfg_perg_method').value = 'PUT';
                 document.getElementById('form_pergunta').action = '{{ url('/configurador/perguntas') }}/' + data.id;
@@ -131,6 +142,7 @@
                 const alpine = Alpine.$data(root);
                 alpine.tipo = 2;
                 alpine.opcoes = [];
+                alpine.eSessao = false;
 
                 document.getElementById('cfg_perg_method').value = 'POST';
                 form.action = '{{ route('configurador.perguntas.store') }}';
