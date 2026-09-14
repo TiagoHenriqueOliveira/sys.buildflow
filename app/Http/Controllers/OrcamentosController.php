@@ -121,8 +121,13 @@ class OrcamentosController extends Controller
             'orc_com_criado_em' => now(),
         ]);
 
+        // Pedido do cliente (2026-09-14): apos adicionar um comentario, a
+        // pagina recarrega (form comum, sem AJAX) e a aba ativa (estado do
+        // Alpine, perdido no reload) voltava sempre pra "Dados" — flash
+        // 'tab' lido no x-data da view pra reabrir direto em "Comentários".
         return redirect()
             ->route('orcamentos.edit', $id)
-            ->with('success', 'Comentário adicionado com sucesso.');
+            ->with('success', 'Comentário adicionado com sucesso.')
+            ->with('tab', 'comentarios');
     }
 }

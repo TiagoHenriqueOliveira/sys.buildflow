@@ -69,6 +69,23 @@ class SessaoPerguntasFaeTest extends TestCase
         $response->assertSessionHasErrors('cfg_perg_tipo');
     }
 
+    public function test_autocomplete_de_perguntas_indica_quando_e_sessao(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+        ConfigPergunta::create([
+            'cfg_perg_texto' => 'Peças Substituídas',
+            'cfg_perg_tipo' => TipoPergunta::TextoLivre->value,
+            'cfg_perg_ativo' => 1,
+            'cfg_perg_e_sessao' => true,
+            'cfg_perg_sessao_nome' => 'Peças Substituídas',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('configurador.perguntas.autocomplete', ['term' => 'Peças']));
+
+        $response->assertOk();
+        $response->assertJsonFragment(['eSessao' => true, 'sessaoNome' => 'Peças Substituídas']);
+    }
+
     private function criarModeloComSessao(): array
     {
         $modelo = ConfigModelo::create([

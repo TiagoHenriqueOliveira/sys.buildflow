@@ -23,7 +23,7 @@
     <div
         id="orcamento-form-root"
         x-data="{
-            tab: 'dados',
+            tab: '{{ session('tab', 'dados') }}',
             tipoOrcamentoId: null,
         }"
     >

@@ -42,6 +42,8 @@ class ConfiguradorPerguntasController extends Controller
             'id' => $p->cfg_perg_id,
             'texto' => $p->cfg_perg_texto,
             'tipo' => $p->cfg_perg_tipo->label(),
+            'eSessao' => $p->cfg_perg_e_sessao,
+            'sessaoNome' => $p->cfg_perg_sessao_nome,
         ])->values());
     }
 

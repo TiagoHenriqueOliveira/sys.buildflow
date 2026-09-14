@@ -623,27 +623,54 @@
                 // mapa/marcador no resultado; a confirmacao continua manual
                 // (botao "Usar esta localização"), pra o usuario poder ajustar o
                 // pino antes de gravar.
-                function buscarEnderecoMapaPicker() {
-                    const termo = document.getElementById('mapaPickerBusca').value.trim();
-                    if (!termo) return;
+                function buscarNominatim(termo) {
+                    return fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=br&addressdetails=1&q=' + encodeURIComponent(termo))
+                        .then((r) => r.json());
+                }
 
-                    // countrycodes=br + limit maior: endereços rurais/cidades
-                    // pequenas do Brasil às vezes só aparecem em resultados mais
-                    // abaixo na lista do Nominatim; sem o filtro de país, a
-                    // busca também competia com homônimos em outros países.
-                    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=br&addressdetails=1&q=' + encodeURIComponent(termo))
-                        .then((r) => r.json())
-                        .then((resultados) => {
-                            if (!resultados || !resultados.length) {
-                                document.getElementById('geo-feedback').textContent = 'Nenhum resultado encontrado para o endereço buscado.';
-                                return;
-                            }
-                            const lat = parseFloat(resultados[0].lat);
-                            const lon = parseFloat(resultados[0].lon);
-                            mapaPicker.setView([lat, lon], 16);
-                            marcadorPicker.setLatLng([lat, lon]);
-                        })
-                        .catch(() => { document.getElementById('geo-feedback').textContent = 'Erro ao buscar o endereço.'; });
+                // Endereços rurais/de cidades pequenas do Brasil (rua+número)
+                // muitas vezes nao tem cobertura no OpenStreetMap, mesmo a
+                // cidade existindo la (confirmado testando a API direto em
+                // 2026-09-14 com "Rua Martin Isoton, xaxim sc" - a rua nao e
+                // encontrada, mas "Xaxim, SC" sozinho e). Em vez de simplesmente
+                // falhar, tenta de novo removendo o primeiro pedaço (rua/numero)
+                // ate sobrar so bairro/cidade/UF, que tem chance bem maior de
+                // ser encontrado - o usuario ajusta o pino manualmente a partir
+                // dali.
+                function buscarEnderecoMapaPicker() {
+                    const termoOriginal = document.getElementById('mapaPickerBusca').value.trim();
+                    if (!termoOriginal) return;
+
+                    const feedback = document.getElementById('geo-feedback');
+                    feedback.textContent = 'Buscando...';
+
+                    const partes = termoOriginal.split(',').map((p) => p.trim()).filter(Boolean);
+
+                    function tentar(indice) {
+                        if (indice >= partes.length) {
+                            feedback.textContent = 'Endereço não encontrado no mapa (OpenStreetMap não tem essa rua cadastrada). Tente buscar só o bairro/cidade e ajuste o pino manualmente.';
+                            return;
+                        }
+
+                        const termo = partes.slice(indice).join(', ');
+                        buscarNominatim(termo)
+                            .then((resultados) => {
+                                if (!resultados || !resultados.length) {
+                                    tentar(indice + 1);
+                                    return;
+                                }
+                                const lat = parseFloat(resultados[0].lat);
+                                const lon = parseFloat(resultados[0].lon);
+                                mapaPicker.setView([lat, lon], indice === 0 ? 16 : 13);
+                                marcadorPicker.setLatLng([lat, lon]);
+                                feedback.textContent = indice === 0
+                                    ? 'Endereço encontrado.'
+                                    : 'Endereço exato não encontrado — centralizado em "' + termo + '". Ajuste o pino manualmente.';
+                            })
+                            .catch(() => { feedback.textContent = 'Erro ao buscar o endereço.'; });
+                    }
+
+                    tentar(0);
                 }
 
                 document.getElementById('btnBuscarMapaPicker')?.addEventListener('click', buscarEnderecoMapaPicker);

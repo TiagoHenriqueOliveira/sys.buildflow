@@ -39,7 +39,13 @@ class ConfiguradorModelosController extends Controller
         // no autocomplete ao reenviar o form.
         $perguntasAntigas = \App\Models\ConfigPergunta::whereIn('cfg_perg_id', old('perguntas', []))
             ->get()
-            ->map(fn ($p) => ['id' => $p->cfg_perg_id, 'texto' => $p->cfg_perg_texto, 'tipo' => $p->cfg_perg_tipo->label()]);
+            ->map(fn ($p) => [
+                'id' => $p->cfg_perg_id,
+                'texto' => $p->cfg_perg_texto,
+                'tipo' => $p->cfg_perg_tipo->label(),
+                'eSessao' => $p->cfg_perg_e_sessao,
+                'sessaoNome' => $p->cfg_perg_sessao_nome,
+            ]);
 
         return view('configurador.modelos.index', [
             'modelos' => $modelos,

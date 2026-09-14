@@ -106,7 +106,7 @@
     @php $equipamentos = $atendimentoRelatorio->atendimento->equipamentos; @endphp
     @if($equipamentos->isNotEmpty())
     <hr class="my-3">
-    <h6 class="fw-bold mb-2"><i class="bi bi-tools me-1 text-secondary" aria-hidden="true"></i> Equipamentos</h6>
+    <h6 class="fw-bold mb-2 d-flex align-items-center gap-1"><i class="bi bi-tools text-secondary" aria-hidden="true"></i><span>Equipamentos</span></h6>
     <div class="table-responsive">
         <table class="table table-sm table-striped table-hover mb-0">
             <thead>
@@ -129,7 +129,7 @@
     @php $anexosAten = $atendimentoRelatorio->atendimento->anexos; @endphp
     @if($anexosAten->isNotEmpty())
     <hr class="my-3">
-    <h6 class="fw-bold mb-2"><i class="bi bi-paperclip me-1 text-secondary" aria-hidden="true"></i> Anexos do Atendimento</h6>
+    <h6 class="fw-bold mb-2 d-flex align-items-center gap-1"><i class="bi bi-paperclip text-secondary" aria-hidden="true"></i><span>Anexos do Atendimento</span></h6>
     <ul class="list-unstyled mb-0">
         @foreach($anexosAten as $anx)
         <li class="mb-1">

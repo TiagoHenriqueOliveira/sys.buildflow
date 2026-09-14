@@ -142,6 +142,10 @@ class CrmOrcamentoFaeTest extends TestCase
         ]);
 
         $response->assertRedirect(route('orcamentos.edit', $orcamento->orc_id));
+        // Pedido do cliente (2026-09-14): apos comentar, a pagina deve
+        // reabrir na aba Comentarios (nao voltar pra Dados) - via sessao
+        // flash 'tab', lida no x-data de orcamentos/form.blade.php.
+        $response->assertSessionHas('tab', 'comentarios');
         $this->assertDatabaseHas('orcamentos_comentarios', [
             'orc_com_orcamento_id' => $orcamento->orc_id,
             'orc_com_autor_id' => $vendedor->user_id,

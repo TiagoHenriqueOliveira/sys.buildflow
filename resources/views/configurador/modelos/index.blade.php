@@ -71,7 +71,7 @@
                             data-nome="{{ e($m->cfg_mod_nome) }}"
                             data-setor="{{ $m->cfg_mod_setor->value }}"
                             data-ativo="{{ (int) $m->cfg_mod_ativo }}"
-                            data-perguntas="{{ $m->perguntas->map(fn($p) => ['id' => $p->cfg_perg_id, 'texto' => $p->cfg_perg_texto, 'tipo' => $p->cfg_perg_tipo->label()])->toJson() }}"
+                            data-perguntas="{{ $m->perguntas->map(fn($p) => ['id' => $p->cfg_perg_id, 'texto' => $p->cfg_perg_texto, 'tipo' => $p->cfg_perg_tipo->label(), 'eSessao' => $p->cfg_perg_e_sessao, 'sessaoNome' => $p->cfg_perg_sessao_nome])->toJson() }}"
                             aria-label="Editar {{ e($m->cfg_mod_nome) }}"
                             @click="editando = true; aberto = true; preencherFormularioModelo($el.dataset)"
                         >
@@ -97,7 +97,14 @@
         <script>
             // ─── Perguntas (autocomplete - ~500 cadastradas, checklist estatico
             // nao escala) ────────────────────────────────────────────────────────
-            let perguntasSelecionadas = @json($perguntasAntigas).map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo }));
+            // A ORDEM desta lista é o que define os grupos de "Sessão" (ver
+            // ConfigModelo::perguntasAgrupadasPorSessao() / BF_v1.8.0): tudo
+            // que vem logo depois de uma pergunta marcada como Sessão entra
+            // na aba dela, até a próxima Sessão ou o fim da lista. Por isso
+            // cada linha tem botões de mover pra cima/baixo — sem eles, a
+            // única forma de "encaixar" algo no meio seria remover e
+            // readicionar tudo que vem depois, na ordem certa.
+            let perguntasSelecionadas = @json($perguntasAntigas).map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo, eSessao: !!p.eSessao, sessaoNome: p.sessaoNome || '' }));
 
             function renderizarPerguntasSelecionadas() {
                 const container = document.getElementById('perguntasSelecionadasContainer');
@@ -108,11 +115,29 @@
                 }
                 perguntasSelecionadas.forEach((p, index) => {
                     const row = document.createElement('div');
-                    row.className = 'd-flex align-items-center justify-content-between border-bottom py-1';
+                    row.className = p.eSessao
+                        ? 'd-flex align-items-center justify-content-between border-bottom py-1 bg-warning bg-opacity-10'
+                        : 'd-flex align-items-center justify-content-between border-bottom py-1';
                     row.innerHTML = '<span></span><input type="hidden" name="perguntas[]" value="' + p.id + '">' +
-                        '<button type="button" class="btn btn-outline-danger btn-sm" aria-label="Remover pergunta"><i class="bi bi-trash" aria-hidden="true"></i></button>';
-                    row.querySelector('span').textContent = p.texto + (p.tipo ? ' (' + p.tipo + ')' : '');
-                    row.querySelector('button').addEventListener('click', function () {
+                        '<div class="d-flex gap-1">' +
+                        '<button type="button" class="btn btn-outline-secondary btn-sm btn-mover-cima" aria-label="Mover para cima"' + (index === 0 ? ' disabled' : '') + '><i class="bi bi-arrow-up" aria-hidden="true"></i></button>' +
+                        '<button type="button" class="btn btn-outline-secondary btn-sm btn-mover-baixo" aria-label="Mover para baixo"' + (index === perguntasSelecionadas.length - 1 ? ' disabled' : '') + '><i class="bi bi-arrow-down" aria-hidden="true"></i></button>' +
+                        '<button type="button" class="btn btn-outline-danger btn-sm btn-remover-pergunta" aria-label="Remover pergunta"><i class="bi bi-trash" aria-hidden="true"></i></button>' +
+                        '</div>';
+                    row.querySelector('span').textContent = p.eSessao
+                        ? 'Sessão (aba): ' + p.sessaoNome
+                        : p.texto + (p.tipo ? ' (' + p.tipo + ')' : '');
+                    row.querySelector('.btn-mover-cima').addEventListener('click', function () {
+                        if (index === 0) return;
+                        [perguntasSelecionadas[index - 1], perguntasSelecionadas[index]] = [perguntasSelecionadas[index], perguntasSelecionadas[index - 1]];
+                        renderizarPerguntasSelecionadas();
+                    });
+                    row.querySelector('.btn-mover-baixo').addEventListener('click', function () {
+                        if (index === perguntasSelecionadas.length - 1) return;
+                        [perguntasSelecionadas[index + 1], perguntasSelecionadas[index]] = [perguntasSelecionadas[index], perguntasSelecionadas[index + 1]];
+                        renderizarPerguntasSelecionadas();
+                    });
+                    row.querySelector('.btn-remover-pergunta').addEventListener('click', function () {
                         perguntasSelecionadas.splice(index, 1);
                         renderizarPerguntasSelecionadas();
                     });
@@ -121,7 +146,7 @@
             }
 
             function adicionarPerguntaSelecionada(p) {
-                p = { id: String(p.id), texto: p.texto, tipo: p.tipo };
+                p = { id: String(p.id), texto: p.texto, tipo: p.tipo, eSessao: !!p.eSessao, sessaoNome: p.sessaoNome || '' };
                 if (perguntasSelecionadas.some((sel) => sel.id === p.id)) return;
                 perguntasSelecionadas.push(p);
                 renderizarPerguntasSelecionadas();
@@ -166,7 +191,7 @@
                     if (!itens || !itens.length) { esconder(); return; }
                     itens.forEach((item) => {
                         const li = document.createElement('li');
-                        li.textContent = item.texto + ' (' + item.tipo + ')';
+                        li.textContent = item.eSessao ? ('Sessão (aba): ' + item.sessaoNome) : (item.texto + ' (' + item.tipo + ')');
                         li.addEventListener('mousedown', function (event) {
                             event.preventDefault();
                             adicionarPerguntaSelecionada(item);
@@ -207,7 +232,7 @@
                 document.getElementById('cfg_mod_setor').value = data.setor || '';
                 document.getElementById('cfg_mod_ativo').checked = data.ativo === '1';
 
-                perguntasSelecionadas = JSON.parse(data.perguntas || '[]').map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo }));
+                perguntasSelecionadas = JSON.parse(data.perguntas || '[]').map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo, eSessao: !!p.eSessao, sessaoNome: p.sessaoNome || '' }));
                 renderizarPerguntasSelecionadas();
 
                 document.getElementById('cfg_mod_method').value = 'PUT';
