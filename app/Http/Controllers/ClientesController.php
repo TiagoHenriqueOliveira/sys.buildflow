@@ -121,9 +121,15 @@ class ClientesController extends Controller
         // edição (para continuar ajustando outras abas) em vez de voltar
         // pra listagem — diferente do cadastro novo, que ainda redireciona
         // pra listagem logo abaixo em store().
+        // Pedido do cliente (2026-09-14): "Geral" - o mesmo problema de perder
+        // a aba ativa apos o redirect (corrigido antes em Orcamento >
+        // Comentarios) se aplica a qualquer form com abas que faz POST/PUT
+        // comum (sem AJAX); aqui a aba ativa vem num input hidden
+        // (tab_ativa, setado via x-model) e volta via flash pro x-data ler.
         return redirect()
             ->route('clientes.edit', $cliente->cli_id)
-            ->with('success', 'Cliente "'.$cliente->cli_nome.'" atualizado com sucesso.');
+            ->with('success', 'Cliente "'.$cliente->cli_nome.'" atualizado com sucesso.')
+            ->with('tab', $request->input('tab_ativa', 'dados'));
     }
 
     public function autoComplete(Request $request): JsonResponse

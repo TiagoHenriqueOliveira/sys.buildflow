@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
         // Orçamentos (CRM02/03/04) — mesmo perfil de acesso de Clientes.
         Route::resource('orcamentos', OrcamentosController::class)->except(['show', 'destroy']);
         Route::post('/orcamentos/{id}/comentarios', [OrcamentosController::class, 'storeComentario'])->name('orcamentos.store-comentario');
+        Route::delete('/orcamentos/{id}/comentarios/{comentarioId}', [OrcamentosController::class, 'destroyComentario'])->name('orcamentos.destroy-comentario');
 
         // Roteiro de viagem (CRM05/06) — saída (clientes a visitar) e retorno.
         Route::resource('roteiros-viagem', RoteirosViagemController::class)->except(['show', 'destroy']);

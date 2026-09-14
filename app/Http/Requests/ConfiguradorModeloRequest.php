@@ -18,6 +18,12 @@ class ConfiguradorModeloRequest extends FormRequest
             // NC02 — bloquear criação de modelo sem nenhuma pergunta.
             'perguntas' => ['required', 'array', 'min:1'],
             'perguntas.*' => ['integer', Rule::exists('config_perguntas', 'cfg_perg_id')],
+
+            // Pedido do cliente (2026-09-14): vínculo explícito pergunta ->
+            // sessão (índice alinhado com "perguntas", ver
+            // ConfiguradorModeloRepository::sincronizarPerguntas()).
+            'perguntas_sessao' => ['nullable', 'array'],
+            'perguntas_sessao.*' => ['nullable', 'integer'],
         ];
     }
 

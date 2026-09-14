@@ -37,7 +37,14 @@ class ConfiguradorModelosController extends Controller
         // old('perguntas') sobrevive a um retorno de validacao (ex.: nome
         // vazio) - sem isso, o usuario perderia as perguntas ja escolhidas
         // no autocomplete ao reenviar o form.
-        $perguntasAntigas = \App\Models\ConfigPergunta::whereIn('cfg_perg_id', old('perguntas', []))
+        $perguntaIdsAntigas = old('perguntas', []);
+        $sessaoIdsAntigas = old('perguntas_sessao', []);
+        $sessaoPorPerguntaId = [];
+        foreach ($perguntaIdsAntigas as $i => $pid) {
+            $sessaoPorPerguntaId[$pid] = $sessaoIdsAntigas[$i] ?? null;
+        }
+
+        $perguntasAntigas = \App\Models\ConfigPergunta::whereIn('cfg_perg_id', $perguntaIdsAntigas)
             ->get()
             ->map(fn ($p) => [
                 'id' => $p->cfg_perg_id,
@@ -45,6 +52,7 @@ class ConfiguradorModelosController extends Controller
                 'tipo' => $p->cfg_perg_tipo->label(),
                 'eSessao' => $p->cfg_perg_e_sessao,
                 'sessaoNome' => $p->cfg_perg_sessao_nome,
+                'sessaoId' => $sessaoPorPerguntaId[$p->cfg_perg_id] ?? null,
             ]);
 
         return view('configurador.modelos.index', [

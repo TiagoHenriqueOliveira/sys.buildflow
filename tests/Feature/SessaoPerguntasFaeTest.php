@@ -57,6 +57,26 @@ class SessaoPerguntasFaeTest extends TestCase
         $response->assertSessionHasErrors('cfg_perg_sessao_nome');
     }
 
+    public function test_sessao_pode_ser_cadastrada_sem_texto_da_pergunta(): void
+    {
+        // Pedido do cliente (2026-09-14): texto da pergunta nao e mais
+        // obrigatorio quando e uma Sessao (campo fica desabilitado no modal;
+        // quem identifica a sessao e o "Nome da aba").
+        $admin = Usuario::factory()->administrador()->create();
+
+        $response = $this->actingAs($admin)->post(route('configurador.perguntas.store'), [
+            'cfg_perg_e_sessao' => 1,
+            'cfg_perg_sessao_nome' => 'Fotos do Local',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors('cfg_perg_texto');
+        $this->assertDatabaseHas('config_perguntas', [
+            'cfg_perg_e_sessao' => 1,
+            'cfg_perg_sessao_nome' => 'Fotos do Local',
+        ]);
+    }
+
     public function test_pergunta_normal_ainda_exige_tipo_de_resposta(): void
     {
         $admin = Usuario::factory()->administrador()->create();
@@ -114,11 +134,14 @@ class SessaoPerguntasFaeTest extends TestCase
             'cfg_perg_ativo' => 1,
         ]);
 
-        // Ordem explicita na pivot: generica (0) -> sessao (1) -> daSessao (2).
+        // Pedido do cliente (2026-09-14): agrupamento passou a ser por
+        // vinculo EXPLICITO (cfg_mod_perg_sessao_id), nao mais por
+        // ordem/adjacencia na lista - por isso o insert abaixo ja grava o
+        // vinculo de $daSessao com $sessao diretamente.
         DB::table('config_modelos_perguntas')->insert([
-            ['cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id, 'cfg_mod_perg_pergunta_id' => $generica->cfg_perg_id, 'cfg_mod_perg_ordem' => 0],
-            ['cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id, 'cfg_mod_perg_pergunta_id' => $sessao->cfg_perg_id, 'cfg_mod_perg_ordem' => 1],
-            ['cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id, 'cfg_mod_perg_pergunta_id' => $daSessao->cfg_perg_id, 'cfg_mod_perg_ordem' => 2],
+            ['cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id, 'cfg_mod_perg_pergunta_id' => $generica->cfg_perg_id, 'cfg_mod_perg_ordem' => 0, 'cfg_mod_perg_sessao_id' => null],
+            ['cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id, 'cfg_mod_perg_pergunta_id' => $sessao->cfg_perg_id, 'cfg_mod_perg_ordem' => 1, 'cfg_mod_perg_sessao_id' => null],
+            ['cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id, 'cfg_mod_perg_pergunta_id' => $daSessao->cfg_perg_id, 'cfg_mod_perg_ordem' => 2, 'cfg_mod_perg_sessao_id' => $sessao->cfg_perg_id],
         ]);
 
         return compact('modelo', 'generica', 'sessao', 'daSessao');
@@ -134,6 +157,51 @@ class SessaoPerguntasFaeTest extends TestCase
         $this->assertSame($generica->cfg_perg_id, $grupos['genericas']->first()->cfg_perg_id);
 
         $this->assertCount(1, $grupos['por_sessao']);
+        $this->assertCount(1, $grupos['por_sessao'][$sessao->cfg_perg_id]);
+        $this->assertSame($daSessao->cfg_perg_id, $grupos['por_sessao'][$sessao->cfg_perg_id]->first()->cfg_perg_id);
+    }
+
+    public function test_configurador_vincula_pergunta_a_sessao_independente_da_ordem_na_lista(): void
+    {
+        // Pedido do cliente (2026-09-14): vinculo pergunta -> sessao agora e
+        // EXPLICITO (select "Vincular a sessão" em Configurador > Modelos),
+        // nao depende mais de vir logo depois da sessao na lista - aqui a
+        // pergunta vinculada aparece ANTES da sessao na ordem, de proposito.
+        $admin = Usuario::factory()->administrador()->create();
+
+        $sessao = ConfigPergunta::create([
+            'cfg_perg_texto' => '',
+            'cfg_perg_tipo' => TipoPergunta::TextoLivre->value,
+            'cfg_perg_ativo' => 1,
+            'cfg_perg_e_sessao' => true,
+            'cfg_perg_sessao_nome' => 'Fotos',
+        ]);
+        $daSessao = ConfigPergunta::create([
+            'cfg_perg_texto' => 'Foto do equipamento',
+            'cfg_perg_tipo' => TipoPergunta::TextoLivre->value,
+            'cfg_perg_ativo' => 1,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('configurador.modelos.store'), [
+            'cfg_mod_nome' => 'Modelo com vínculo explícito',
+            'cfg_mod_setor' => SetorModelo::Assistencia->value,
+            // $daSessao vem ANTES de $sessao na lista - so o vinculo
+            // explicito (perguntas_sessao) e' o que deve definir o grupo.
+            'perguntas' => [$daSessao->cfg_perg_id, $sessao->cfg_perg_id],
+            'perguntas_sessao' => [$sessao->cfg_perg_id, ''],
+        ]);
+
+        $response->assertRedirect();
+
+        $modelo = ConfigModelo::where('cfg_mod_nome', 'Modelo com vínculo explícito')->firstOrFail();
+        $this->assertDatabaseHas('config_modelos_perguntas', [
+            'cfg_mod_perg_modelo_id' => $modelo->cfg_mod_id,
+            'cfg_mod_perg_pergunta_id' => $daSessao->cfg_perg_id,
+            'cfg_mod_perg_sessao_id' => $sessao->cfg_perg_id,
+        ]);
+
+        $grupos = $modelo->fresh()->perguntasAgrupadasPorSessao();
+        $this->assertCount(0, $grupos['genericas']);
         $this->assertCount(1, $grupos['por_sessao'][$sessao->cfg_perg_id]);
         $this->assertSame($daSessao->cfg_perg_id, $grupos['por_sessao'][$sessao->cfg_perg_id]->first()->cfg_perg_id);
     }

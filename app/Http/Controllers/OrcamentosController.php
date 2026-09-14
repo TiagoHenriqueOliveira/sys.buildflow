@@ -130,4 +130,21 @@ class OrcamentosController extends Controller
             ->with('success', 'Comentário adicionado com sucesso.')
             ->with('tab', 'comentarios');
     }
+
+    /**
+     * Pedido do cliente (2026-09-14): precisa dar pra excluir um comentário
+     * (deixou de ser log 100% imutável). Mesmo perfil de acesso da tela
+     * (middleware "comercial") — sem checagem de autoria, mesma regra já
+     * usada nos outros destroy* deste sistema (ex.: equipamentos, anexos).
+     */
+    public function destroyComentario(int $id, int $comentarioId): RedirectResponse
+    {
+        $orcamento = Orcamento::findOrFail($id);
+        $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail()->delete();
+
+        return redirect()
+            ->route('orcamentos.edit', $id)
+            ->with('success', 'Comentário removido com sucesso.')
+            ->with('tab', 'comentarios');
+    }
 }

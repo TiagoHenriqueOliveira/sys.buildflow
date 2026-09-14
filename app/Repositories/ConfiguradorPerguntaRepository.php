@@ -19,7 +19,10 @@ class ConfiguradorPerguntaRepository implements CrudRepositoryInterface
             $eSessao = $data['cfg_perg_e_sessao'] ?? false;
 
             $pergunta = ConfigPergunta::create([
-                'cfg_perg_texto' => $data['cfg_perg_texto'],
+                // Sessao: campo texto fica desabilitado no modal (nao e
+                // submetido pelo navegador) - grava vazio so pra satisfazer a
+                // coluna NOT NULL; quem identifica a sessao e o "Nome da aba".
+                'cfg_perg_texto' => $eSessao ? ($data['cfg_perg_texto'] ?? '') : $data['cfg_perg_texto'],
                 // Sessão não tem tipo de resposta de verdade — grava um
                 // valor neutro (Texto livre) só pra satisfazer a coluna
                 // NOT NULL; a UI nunca renderiza isso como pergunta.
@@ -45,7 +48,7 @@ class ConfiguradorPerguntaRepository implements CrudRepositoryInterface
             $eSessao = $data['cfg_perg_e_sessao'] ?? false;
 
             $pergunta->update([
-                'cfg_perg_texto' => $data['cfg_perg_texto'],
+                'cfg_perg_texto' => $eSessao ? ($data['cfg_perg_texto'] ?? '') : $data['cfg_perg_texto'],
                 'cfg_perg_tipo' => $eSessao ? \App\Enums\TipoPergunta::TextoLivre->value : $data['cfg_perg_tipo'],
                 'cfg_perg_permite_anexo' => $data['cfg_perg_permite_anexo'] ?? false,
                 'cfg_perg_repetivel' => $data['cfg_perg_repetivel'] ?? false,

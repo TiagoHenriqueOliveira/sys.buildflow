@@ -71,7 +71,7 @@
                             data-nome="{{ e($m->cfg_mod_nome) }}"
                             data-setor="{{ $m->cfg_mod_setor->value }}"
                             data-ativo="{{ (int) $m->cfg_mod_ativo }}"
-                            data-perguntas="{{ $m->perguntas->map(fn($p) => ['id' => $p->cfg_perg_id, 'texto' => $p->cfg_perg_texto, 'tipo' => $p->cfg_perg_tipo->label(), 'eSessao' => $p->cfg_perg_e_sessao, 'sessaoNome' => $p->cfg_perg_sessao_nome])->toJson() }}"
+                            data-perguntas="{{ $m->perguntas->map(fn($p) => ['id' => $p->cfg_perg_id, 'texto' => $p->cfg_perg_texto, 'tipo' => $p->cfg_perg_tipo->label(), 'eSessao' => $p->cfg_perg_e_sessao, 'sessaoNome' => $p->cfg_perg_sessao_nome, 'sessaoId' => $p->pivot->cfg_mod_perg_sessao_id])->toJson() }}"
                             aria-label="Editar {{ e($m->cfg_mod_nome) }}"
                             @click="editando = true; aberto = true; preencherFormularioModelo($el.dataset)"
                         >
@@ -97,14 +97,27 @@
         <script>
             // ─── Perguntas (autocomplete - ~500 cadastradas, checklist estatico
             // nao escala) ────────────────────────────────────────────────────────
-            // A ORDEM desta lista é o que define os grupos de "Sessão" (ver
-            // ConfigModelo::perguntasAgrupadasPorSessao() / BF_v1.8.0): tudo
-            // que vem logo depois de uma pergunta marcada como Sessão entra
-            // na aba dela, até a próxima Sessão ou o fim da lista. Por isso
-            // cada linha tem botões de mover pra cima/baixo — sem eles, a
-            // única forma de "encaixar" algo no meio seria remover e
-            // readicionar tudo que vem depois, na ordem certa.
-            let perguntasSelecionadas = @json($perguntasAntigas).map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo, eSessao: !!p.eSessao, sessaoNome: p.sessaoNome || '' }));
+            // Pedido do cliente (2026-09-14): cada pergunta comum guarda um
+            // vínculo EXPLÍCITO com uma sessão (sessaoId, salvo em
+            // cfg_mod_perg_sessao_id) — antes o agrupamento era só por
+            // ordem/adjacência na lista, difícil de usar (não dava pra
+            // reordenar uma pergunta pra dentro de uma sessão sem mexer em
+            // tudo que vinha no meio). A ordem da lista ainda controla a
+            // ordem de exibição dentro de cada grupo (por isso os botões de
+            // mover pra cima/baixo continuam), mas não define mais o
+            // agrupamento em si — ver ConfigModelo::perguntasAgrupadasPorSessao().
+            function normalizarPergunta(p) {
+                return {
+                    id: String(p.id),
+                    texto: p.texto,
+                    tipo: p.tipo,
+                    eSessao: !!p.eSessao,
+                    sessaoNome: p.sessaoNome || '',
+                    sessaoId: (p.sessaoId !== undefined && p.sessaoId !== null && p.sessaoId !== '') ? String(p.sessaoId) : null,
+                };
+            }
+
+            let perguntasSelecionadas = @json($perguntasAntigas).map(normalizarPergunta);
 
             function renderizarPerguntasSelecionadas() {
                 const container = document.getElementById('perguntasSelecionadasContainer');
@@ -113,20 +126,42 @@
                     container.innerHTML = '<p class="text-body-secondary small mb-0" id="perguntasVazioMsg">Nenhuma pergunta adicionada ainda.</p>';
                     return;
                 }
+                const sessoes = perguntasSelecionadas.filter((s) => s.eSessao);
                 perguntasSelecionadas.forEach((p, index) => {
                     const row = document.createElement('div');
                     row.className = p.eSessao
-                        ? 'd-flex align-items-center justify-content-between border-bottom py-1 bg-warning bg-opacity-10'
-                        : 'd-flex align-items-center justify-content-between border-bottom py-1';
-                    row.innerHTML = '<span></span><input type="hidden" name="perguntas[]" value="' + p.id + '">' +
-                        '<div class="d-flex gap-1">' +
-                        '<button type="button" class="btn btn-outline-secondary btn-sm btn-mover-cima" aria-label="Mover para cima"' + (index === 0 ? ' disabled' : '') + '><i class="bi bi-arrow-up" aria-hidden="true"></i></button>' +
-                        '<button type="button" class="btn btn-outline-secondary btn-sm btn-mover-baixo" aria-label="Mover para baixo"' + (index === perguntasSelecionadas.length - 1 ? ' disabled' : '') + '><i class="bi bi-arrow-down" aria-hidden="true"></i></button>' +
-                        '<button type="button" class="btn btn-outline-danger btn-sm btn-remover-pergunta" aria-label="Remover pergunta"><i class="bi bi-trash" aria-hidden="true"></i></button>' +
-                        '</div>';
+                        ? 'd-flex align-items-center justify-content-between border-bottom py-1 bg-warning bg-opacity-10 gap-2'
+                        : 'd-flex align-items-center justify-content-between border-bottom py-1 gap-2';
+
+                    let vinculoHtml = '';
+                    if (!p.eSessao && sessoes.length) {
+                        vinculoHtml = '<select class="form-select form-select-sm sessao-vinculo" style="max-width:220px" aria-label="Vincular à sessão">'
+                            + '<option value="">Sem sessão (geral)</option>'
+                            + sessoes.map((s) => '<option value="' + s.id + '"' + (p.sessaoId === s.id ? ' selected' : '') + '>' + s.sessaoNome + '</option>').join('')
+                            + '</select>';
+                    }
+
+                    row.innerHTML = '<span class="flex-grow-1"></span>'
+                        + vinculoHtml
+                        + '<input type="hidden" name="perguntas[]" value="' + p.id + '">'
+                        + '<input type="hidden" name="perguntas_sessao[]" value="' + (p.eSessao ? '' : (p.sessaoId || '')) + '">'
+                        + '<div class="d-flex gap-1">'
+                        + '<button type="button" class="btn btn-outline-secondary btn-sm btn-mover-cima" aria-label="Mover para cima"' + (index === 0 ? ' disabled' : '') + '><i class="bi bi-arrow-up" aria-hidden="true"></i></button>'
+                        + '<button type="button" class="btn btn-outline-secondary btn-sm btn-mover-baixo" aria-label="Mover para baixo"' + (index === perguntasSelecionadas.length - 1 ? ' disabled' : '') + '><i class="bi bi-arrow-down" aria-hidden="true"></i></button>'
+                        + '<button type="button" class="btn btn-outline-danger btn-sm btn-remover-pergunta" aria-label="Remover pergunta"><i class="bi bi-trash" aria-hidden="true"></i></button>'
+                        + '</div>';
                     row.querySelector('span').textContent = p.eSessao
                         ? 'Sessão (aba): ' + p.sessaoNome
                         : p.texto + (p.tipo ? ' (' + p.tipo + ')' : '');
+
+                    const selectVinculo = row.querySelector('.sessao-vinculo');
+                    if (selectVinculo) {
+                        selectVinculo.addEventListener('change', function () {
+                            p.sessaoId = selectVinculo.value || null;
+                            renderizarPerguntasSelecionadas();
+                        });
+                    }
+
                     row.querySelector('.btn-mover-cima').addEventListener('click', function () {
                         if (index === 0) return;
                         [perguntasSelecionadas[index - 1], perguntasSelecionadas[index]] = [perguntasSelecionadas[index], perguntasSelecionadas[index - 1]];
@@ -138,7 +173,17 @@
                         renderizarPerguntasSelecionadas();
                     });
                     row.querySelector('.btn-remover-pergunta').addEventListener('click', function () {
+                        const removida = perguntasSelecionadas[index];
                         perguntasSelecionadas.splice(index, 1);
+                        if (removida.eSessao) {
+                            // Pedido do cliente (2026-09-14): se a sessão sai da
+                            // lista, as perguntas vinculadas a ela voltam a ser
+                            // "gerais" em vez de ficar apontando pra uma sessão
+                            // que não existe mais no modelo.
+                            perguntasSelecionadas.forEach((item) => {
+                                if (item.sessaoId === removida.id) item.sessaoId = null;
+                            });
+                        }
                         renderizarPerguntasSelecionadas();
                     });
                     container.appendChild(row);
@@ -146,7 +191,7 @@
             }
 
             function adicionarPerguntaSelecionada(p) {
-                p = { id: String(p.id), texto: p.texto, tipo: p.tipo, eSessao: !!p.eSessao, sessaoNome: p.sessaoNome || '' };
+                p = normalizarPergunta(p);
                 if (perguntasSelecionadas.some((sel) => sel.id === p.id)) return;
                 perguntasSelecionadas.push(p);
                 renderizarPerguntasSelecionadas();
@@ -232,7 +277,7 @@
                 document.getElementById('cfg_mod_setor').value = data.setor || '';
                 document.getElementById('cfg_mod_ativo').checked = data.ativo === '1';
 
-                perguntasSelecionadas = JSON.parse(data.perguntas || '[]').map((p) => ({ id: String(p.id), texto: p.texto, tipo: p.tipo, eSessao: !!p.eSessao, sessaoNome: p.sessaoNome || '' }));
+                perguntasSelecionadas = JSON.parse(data.perguntas || '[]').map(normalizarPergunta);
                 renderizarPerguntasSelecionadas();
 
                 document.getElementById('cfg_mod_method').value = 'PUT';

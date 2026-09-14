@@ -153,6 +153,31 @@ class CrmOrcamentoFaeTest extends TestCase
         ]);
     }
 
+    public function test_exclui_comentario_do_orcamento(): void
+    {
+        // Pedido do cliente (2026-09-14): precisa dar pra excluir um
+        // comentario (deixou de ser log 100% imutavel).
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+        $orcamento = \App\Models\Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_ativo' => 1,
+            'orc_criado_em' => now(),
+        ]);
+        $comentario = $orcamento->comentarios()->create([
+            'orc_com_autor_id' => $vendedor->user_id,
+            'orc_com_texto' => 'Comentário a ser removido.',
+            'orc_com_criado_em' => now(),
+        ]);
+
+        $response = $this->actingAs($vendedor)->delete(route('orcamentos.destroy-comentario', [$orcamento->orc_id, $comentario->orc_com_id]));
+
+        $response->assertRedirect(route('orcamentos.edit', $orcamento->orc_id));
+        $response->assertSessionHas('tab', 'comentarios');
+        $this->assertDatabaseMissing('orcamentos_comentarios', ['orc_com_id' => $comentario->orc_com_id]);
+    }
+
     public function test_tecnico_nao_acessa_orcamentos(): void
     {
         $tecnico = Usuario::factory()->tecnico()->create();

@@ -126,7 +126,7 @@
                                     name="orc_prazo_envio"
                                     label="Prazo de envio"
                                     :value="old('orc_prazo_envio', optional($orcamento->orc_prazo_envio)->format('Y-m-d'))"
-                                    help="Deixe em branco para usar a sugestão automática (mockada) a partir do nível — a fórmula real vem na sessão de persistência."
+                                    help="Deixe em branco para usar a sugestão automática a partir do nível."
                                 />
                             </div>
                         </div>
@@ -257,9 +257,15 @@
                         @forelse($orcamento->comentarios as $comentario)
                             <div class="sbadmin-card mb-2">
                                 <div class="sbadmin-card-body py-2">
-                                    <div class="d-flex justify-content-between small text-body-secondary">
-                                        <span>{{ optional($comentario->autor)->user_nome }}</span>
-                                        <span>{{ $comentario->orc_com_criado_em->format('d/m/Y H:i') }}</span>
+                                    <div class="d-flex justify-content-between align-items-start small text-body-secondary">
+                                        <span>{{ optional($comentario->autor)->user_nome }} — {{ $comentario->orc_com_criado_em->format('d/m/Y H:i') }}</span>
+                                        <form method="POST" action="{{ route('orcamentos.destroy-comentario', [$orcamento->orc_id, $comentario->orc_com_id]) }}" class="m-0">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Excluir comentário">
+                                                <i class="bi bi-trash" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                     <p class="mb-0" style="white-space:pre-wrap;">{{ $comentario->orc_com_texto }}</p>
                                     @if($comentario->orc_com_alerta_usuario_id)

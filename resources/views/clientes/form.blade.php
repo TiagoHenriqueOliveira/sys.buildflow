@@ -58,7 +58,7 @@
     <div
         id="cliente-form-root"
         x-data="{
-            tab: 'dados',
+            tab: '{{ session('tab', 'dados') }}',
             contatos: {{ \Illuminate\Support\Js::from($contatosIniciais) }},
             equipamentos: {{ \Illuminate\Support\Js::from($equipamentosIniciais) }},
             localizacoes: {{ \Illuminate\Support\Js::from($localizacoesIniciais) }},
@@ -93,6 +93,7 @@
             @if($editando)
                 @method('PUT')
             @endif
+            <input type="hidden" name="tab_ativa" x-model="tab">
 
             <div class="sbadmin-card">
                 <div class="sbadmin-card-body">
@@ -423,8 +424,8 @@
                         <template x-for="(equipamento, i) in equipamentos" :key="i">
                             <div class="d-flex gap-2 mb-2">
                                 <input type="text" class="form-control sbadmin-form-control" maxlength="255" :name="'equipamentos['+i+'][descricao]'" x-model="equipamento.descricao" placeholder="Ex.: ETE compacta 50m³/dia">
-                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerEquipamento(i)">
-                                    <i class="bi bi-trash" aria-hidden="true"></i> Remover
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerEquipamento(i)" title="Remover">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </template>

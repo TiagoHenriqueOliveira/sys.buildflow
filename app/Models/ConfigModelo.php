@@ -32,7 +32,7 @@ class ConfigModelo extends Model
             'config_modelos_perguntas',
             'cfg_mod_perg_modelo_id',
             'cfg_mod_perg_pergunta_id'
-        )->withPivot(['cfg_mod_perg_id', 'cfg_mod_perg_ordem'])->orderBy('cfg_mod_perg_ordem');
+        )->withPivot(['cfg_mod_perg_id', 'cfg_mod_perg_ordem', 'cfg_mod_perg_sessao_id'])->orderBy('cfg_mod_perg_ordem');
     }
 
     public function naturezasAtendimentos()
@@ -50,29 +50,36 @@ class ConfigModelo extends Model
     }
 
     /**
-     * Agrupa as perguntas de verdade (não-sessão) em "genéricas" (antes de
-     * qualquer marcador de Sessão) e "por sessão" (id da pergunta-sessão =>
-     * perguntas que vêm logo depois dela, na ordem, até a próxima Sessão ou
-     * o fim da lista). Usado tanto para montar as abas do relatório quanto
-     * para agrupar as respostas retornadas ao preencher.
+     * Agrupa as perguntas de verdade (não-sessão) em "genéricas" (sem
+     * sessão vinculada) e "por sessão" (id da pergunta-sessão => perguntas
+     * vinculadas a ela via cfg_mod_perg_sessao_id — vínculo explícito,
+     * escolhido em Configurador > Modelos, não mais por ordem/adjacência
+     * na lista - pedido do cliente em 2026-09-14, ver migration
+     * add_sessao_id_to_config_modelos_perguntas_table). Usado tanto para
+     * montar as abas do relatório quanto para agrupar as respostas
+     * retornadas ao preencher.
      */
     public function perguntasAgrupadasPorSessao(): array
     {
-        $sessaoAtualId = null;
         $genericas = collect();
         $porSessao = collect();
 
         foreach ($this->perguntas as $pergunta) {
             if ($pergunta->cfg_perg_e_sessao) {
-                $sessaoAtualId = $pergunta->cfg_perg_id;
-                $porSessao[$sessaoAtualId] = collect();
+                $porSessao[$pergunta->cfg_perg_id] = collect();
+            }
+        }
+
+        foreach ($this->perguntas as $pergunta) {
+            if ($pergunta->cfg_perg_e_sessao) {
                 continue;
             }
 
-            if ($sessaoAtualId === null) {
-                $genericas->push($pergunta);
+            $sessaoId = $pergunta->pivot->cfg_mod_perg_sessao_id;
+            if ($sessaoId && $porSessao->has($sessaoId)) {
+                $porSessao[$sessaoId]->push($pergunta);
             } else {
-                $porSessao[$sessaoAtualId]->push($pergunta);
+                $genericas->push($pergunta);
             }
         }
 

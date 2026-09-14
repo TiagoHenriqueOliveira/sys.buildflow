@@ -12,7 +12,10 @@ class ConfiguradorPerguntaRequest extends FormRequest
     public function rules()
     {
         return [
-            'cfg_perg_texto' => ['required', 'string'],
+            // Pedido do cliente (2026-09-14): texto so e obrigatorio quando NAO
+            // e uma Sessao (o campo fica desabilitado no modal nesse caso, ver
+            // configurador/perguntas/modal.blade.php).
+            'cfg_perg_texto' => ['required_if:cfg_perg_e_sessao,0', 'nullable', 'string'],
             // Sessão não é uma pergunta de resposta de verdade — tipo/opções
             // não se aplicam quando cfg_perg_e_sessao=true.
             'cfg_perg_tipo' => ['required_if:cfg_perg_e_sessao,0', 'nullable', Rule::in(array_column(TipoPergunta::cases(), 'value'))],

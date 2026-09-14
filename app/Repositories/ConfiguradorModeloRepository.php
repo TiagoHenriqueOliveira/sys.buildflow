@@ -22,7 +22,7 @@ class ConfiguradorModeloRepository implements CrudRepositoryInterface
                 'cfg_mod_ativo' => 1,
             ]);
 
-            $this->sincronizarPerguntas($modelo, $data['perguntas']);
+            $this->sincronizarPerguntas($modelo, $data['perguntas'], $data['perguntas_sessao'] ?? []);
 
             return $modelo;
         });
@@ -39,7 +39,7 @@ class ConfiguradorModeloRepository implements CrudRepositoryInterface
                 'cfg_mod_ativo' => $data['cfg_mod_ativo'] ?? $modelo->cfg_mod_ativo,
             ]);
 
-            $this->sincronizarPerguntas($modelo, $data['perguntas']);
+            $this->sincronizarPerguntas($modelo, $data['perguntas'], $data['perguntas_sessao'] ?? []);
 
             return $modelo;
         });
@@ -50,11 +50,17 @@ class ConfiguradorModeloRepository implements CrudRepositoryInterface
      * edição do modelo simplesmente sobrescreve o vínculo com perguntas,
      * como o próprio cronograma da sessão 04 orienta.
      */
-    private function sincronizarPerguntas(ConfigModelo $modelo, array $perguntaIds): void
+    private function sincronizarPerguntas(ConfigModelo $modelo, array $perguntaIds, array $sessaoIds = []): void
     {
+        $perguntaIds = array_values($perguntaIds);
+        $sessaoIds = array_values($sessaoIds);
+
         $sync = [];
-        foreach (array_values($perguntaIds) as $ordem => $perguntaId) {
-            $sync[$perguntaId] = ['cfg_mod_perg_ordem' => $ordem];
+        foreach ($perguntaIds as $ordem => $perguntaId) {
+            $sync[$perguntaId] = [
+                'cfg_mod_perg_ordem' => $ordem,
+                'cfg_mod_perg_sessao_id' => $sessaoIds[$ordem] ?? null,
+            ];
         }
 
         $modelo->perguntas()->sync($sync);

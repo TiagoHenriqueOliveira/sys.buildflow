@@ -102,11 +102,15 @@
 
     {{-- Equipamentos do atendimento — mesmo padrão visual da aba Equipamentos
          do cadastro de Atendimento (tabela sempre somente leitura aqui, já
-         que pertence ao atendimento, não ao relatório). --}}
+         que pertence ao atendimento, não ao relatório). Pedido do cliente
+         (2026-09-14): tirado o ícone antes do label "Equipamentos" (não
+         renderizava, ficando um espaço vazio antes do texto) — o cadastro de
+         Atendimento (referência) também não usa ícone aqui, então manter
+         h6 simples evita reintroduzir o mesmo problema. --}}
     @php $equipamentos = $atendimentoRelatorio->atendimento->equipamentos; @endphp
     @if($equipamentos->isNotEmpty())
     <hr class="my-3">
-    <h6 class="fw-bold mb-2 d-flex align-items-center gap-1"><i class="bi bi-tools text-secondary" aria-hidden="true"></i><span>Equipamentos</span></h6>
+    <h6 class="fw-bold mb-2">Equipamentos</h6>
     <div class="table-responsive">
         <table class="table table-sm table-striped table-hover mb-0">
             <thead>
@@ -129,7 +133,7 @@
     @php $anexosAten = $atendimentoRelatorio->atendimento->anexos; @endphp
     @if($anexosAten->isNotEmpty())
     <hr class="my-3">
-    <h6 class="fw-bold mb-2 d-flex align-items-center gap-1"><i class="bi bi-paperclip text-secondary" aria-hidden="true"></i><span>Anexos do Atendimento</span></h6>
+    <h6 class="fw-bold mb-2">Anexos do Atendimento</h6>
     <ul class="list-unstyled mb-0">
         @foreach($anexosAten as $anx)
         <li class="mb-1">

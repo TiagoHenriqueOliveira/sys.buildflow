@@ -34,14 +34,20 @@
                     <input type="hidden" name="_method" id="cfg_perg_method" value="{{ old('cfg_perg_id') ? 'PUT' : 'POST' }}">
                     <input type="hidden" id="cfg_perg_id" name="cfg_perg_id" value="{{ old('cfg_perg_id') }}">
 
+                    {{-- Pedido do cliente (2026-09-14): texto da pergunta deixa de
+                         ser obrigatório/editável quando é uma Sessão (o nome que
+                         importa ali é "Nome da aba", abaixo) — desabilitado em vez
+                         de escondido, já que continua sendo o campo de destaque do
+                         modal. Obrigatoriedade real fica só no backend
+                         (required_if:cfg_perg_e_sessao,0, ver ConfiguradorPerguntaRequest). --}}
                     <x-sbadmin::form.textarea
                         id="cfg_perg_texto"
                         name="cfg_perg_texto"
                         label="Texto da pergunta"
                         :value="old('cfg_perg_texto')"
                         rows="2"
-                        required
                         placeholder="Ex.: O equipamento apresentou vazamento?"
+                        x-bind:disabled="eSessao"
                     />
 
                     {{-- Pedido do cliente (2026-09-14): uma pergunta pode virar
@@ -79,6 +85,7 @@
                         :options="collect(App\Enums\TipoPergunta::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()])->all()"
                         :value="old('cfg_perg_tipo', 2)"
                         x-model.number="tipo"
+                        x-bind:disabled="eSessao"
                     />
                     </div>
 
@@ -87,13 +94,13 @@
                         @error('opcoes')
                             <div class="sbadmin-alert sbadmin-alert-error mb-2" role="alert">{{ $message }}</div>
                         @enderror
-                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" @click="addOpcao()">
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-2" @click="addOpcao()" x-bind:disabled="eSessao">
                             <i class="bi bi-plus-lg" aria-hidden="true"></i> Incluir Opção
                         </button>
                         <template x-for="(opcao, i) in opcoes" :key="i">
                             <div class="d-flex gap-2 mb-2">
-                                <input type="text" class="form-control sbadmin-form-control" maxlength="255" :name="'opcoes['+i+'][texto]'" x-model="opcao.texto" placeholder="Texto da opção">
-                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerOpcao(i)">
+                                <input type="text" class="form-control sbadmin-form-control" maxlength="255" :name="'opcoes['+i+'][texto]'" x-model="opcao.texto" placeholder="Texto da opção" x-bind:disabled="eSessao">
+                                <button type="button" class="btn btn-outline-danger btn-sm" @click="removerOpcao(i)" x-bind:disabled="eSessao">
                                     <i class="bi bi-trash" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -107,6 +114,7 @@
                             label="Permite anexo de imagem"
                             :checked="old('cfg_perg_permite_anexo', false)"
                             :switch="true"
+                            x-bind:disabled="eSessao"
                         />
 
                         {{-- Pedido do cliente (2026-09-11): pergunta respondida
@@ -119,6 +127,7 @@
                             help="Na tela de relatório, o técnico poderá adicionar quantas respostas quiser para esta pergunta (com foto individual quando aplicável)."
                             :checked="old('cfg_perg_repetivel', false)"
                             :switch="true"
+                            x-bind:disabled="eSessao"
                         />
                     </div>
 

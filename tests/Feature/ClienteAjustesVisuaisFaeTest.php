@@ -57,6 +57,24 @@ class ClienteAjustesVisuaisFaeTest extends TestCase
         $response->assertRedirect(route('clientes.edit', $cliente->cli_id));
     }
 
+    public function test_edicao_preserva_aba_ativa_apos_redirect(): void
+    {
+        // Pedido do cliente (2026-09-14): "Geral" - o mesmo problema de
+        // perder a aba ativa apos o redirect (corrigido antes em Orcamento >
+        // Comentarios) tambem se aplica ao form de Cliente.
+        $usuario = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+
+        $response = $this->actingAs($usuario)->put(route('clientes.update', $cliente->cli_id), [
+            ...$this->payloadBase(),
+            'cli_cnpj' => $cliente->cli_cnpj,
+            'tab_ativa' => 'historico',
+        ]);
+
+        $response->assertRedirect(route('clientes.edit', $cliente->cli_id));
+        $response->assertSessionHas('tab', 'historico');
+    }
+
     public function test_cadastra_varios_equipamentos_e_sincroniza_resumo_legado(): void
     {
         $usuario = $this->criarComercial();
