@@ -611,9 +611,7 @@
                             <p class="fw-bold mb-0">${escapeHtml(p.texto)}</p>
                             <span class="badge bg-info">múltiplas respostas</span>
                         </div>
-                        <div class="respostas-repetivel mb-2">
-                            ${linhas || '<p class="text-body-secondary small mb-2">Nenhuma resposta adicionada ainda.</p>'}
-                        </div>
+                        <div class="respostas-repetivel mb-2">${linhas}</div>
                         <div class="border-top pt-2">
                             <div class="mb-2 campo-resposta">${campoRespostaHtml(p, '')}</div>
                             ${p.permite_anexo ? `<div class="mb-2">
