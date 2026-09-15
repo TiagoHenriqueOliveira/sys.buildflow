@@ -232,6 +232,7 @@ class RelatoriosController extends Controller
                 'criado_em' => optional($it->aten_rel_desc_criado_em)->format('Y-m-d H:i:s'),
             ])->values() : [],
             'informacoes_adicionais'   => $relatorio->aten_rel_informacoes_adicionais,
+            'observacao_interna'       => $relatorio->aten_rel_observacao_interna,
             'prazo'                    => $prazo,
             'atendimento' => [
                 'id'              => $relatorio->atendimento->aten_id,
