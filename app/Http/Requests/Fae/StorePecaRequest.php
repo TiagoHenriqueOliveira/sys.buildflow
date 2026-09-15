@@ -15,6 +15,10 @@ class StorePecaRequest extends FormRequest
     {
         return [
             'descricao' => ['required', 'string', 'max:500'],
+            // BF09 - checklist de pecas. So "trocada" existe hoje (nem no
+            // Web "levada" foi implementada - decisao do usuario,
+            // 15/09/2026: manter so o que ja existe).
+            'trocada' => ['nullable', 'boolean'],
         ];
     }
 }

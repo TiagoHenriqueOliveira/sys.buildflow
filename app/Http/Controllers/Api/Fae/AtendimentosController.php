@@ -99,6 +99,47 @@ class AtendimentosController extends Controller
         return response()->json(['message' => "Status alterado para: {$label}."]);
     }
 
+    /**
+     * BF08 - mapa de demandas: atendimentos cujo CLIENTE tem geolocalizacao
+     * (o atendimento em si nao tem lat/lng proprio, acontece no endereco do
+     * cliente - mesma logica de MapaDemandasController::index(), web).
+     * Mesmo nivel de acesso da listagem normal de atendimentos (nao e
+     * exclusivo de Comercial/Administrador no web, entao tambem nao aqui).
+     *
+     * GET /api/fae/v1/mapa-demandas
+     */
+    public function mapaDemandas(Request $request): JsonResponse
+    {
+        $usuario = $request->user();
+
+        $atendimentos = Atendimento::query()
+            ->visivelPara($usuario)
+            ->with(['cliente', 'natureza', 'usuario'])
+            ->whereHas('cliente', fn ($q) => $q->whereNotNull('cli_latitude')->whereNotNull('cli_longitude'))
+            ->orderByDesc('aten_id')
+            ->get();
+
+        return response()->json([
+            'data' => $atendimentos->map(fn ($a) => [
+                'id' => $a->aten_id,
+                'descricao' => $a->aten_endereco,
+                'status' => $a->aten_status,
+                'status_label' => AtendimentoStatus::tryFrom($a->aten_status)?->label() ?? '-',
+                'natureza' => optional($a->natureza)->nat_aten_descricao,
+                'tecnico' => optional($a->usuario)->user_nome,
+                'cliente' => [
+                    'id' => optional($a->cliente)->cli_id,
+                    'nome' => optional($a->cliente)->cli_nome,
+                    'cidade' => optional($a->cliente)->cli_cidade,
+                    'uf' => optional($a->cliente)->cli_uf,
+                    'latitude' => optional($a->cliente)->cli_latitude,
+                    'longitude' => optional($a->cliente)->cli_longitude,
+                    'link_mapa' => optional($a->cliente)->cli_link_mapa,
+                ],
+            ])->values(),
+        ]);
+    }
+
     private function format(Atendimento $a, bool $detalhes = false): array
     {
         $naturezaDesc = optional($a->natureza)->nat_aten_descricao ?? '';

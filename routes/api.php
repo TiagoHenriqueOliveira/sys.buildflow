@@ -213,6 +213,7 @@ Route::prefix('fae/v1')->group(function () {
         Route::get('/atendimentos',      [FaeAtendimentosController::class, 'index']);
         Route::get('/atendimentos/{id}', [FaeAtendimentosController::class, 'show']);
         Route::put('/atendimentos/{id}/status', [FaeAtendimentosController::class, 'updateStatus']);
+        Route::get('/mapa-demandas', [FaeAtendimentosController::class, 'mapaDemandas']);
 
         // RelatÃ³rios de um atendimento
         Route::get('/atendimentos/{aten_id}/relatorios',  [FaeRelatoriosController::class, 'index']);
@@ -232,6 +233,7 @@ Route::prefix('fae/v1')->group(function () {
 
         // RelatÃ³rio â€” seÃ§Ãµes de escrita
         Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais']);
+        Route::put('/relatorios/{id}/observacao-interna',      [FaeRelatoriosController::class, 'updateObservacaoInterna']);
         Route::put('/relatorios/{id}/horarios',                [FaeRelatoriosController::class, 'updateHorarios']);
         Route::put('/relatorios/{id}/clima',                   [FaeRelatoriosController::class, 'updateClima']);
         Route::put('/relatorios/{id}/status',                  [FaeRelatoriosController::class, 'updateStatus']);
@@ -251,6 +253,10 @@ Route::prefix('fae/v1')->group(function () {
         // OcorrÃªncias
         Route::post('/relatorios/{id}/ocorrencias',                    [FaeRelatoriosController::class, 'storeOcorrencia']);
         Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}',  [FaeRelatoriosController::class, 'destroyOcorrencia']);
+
+        // Comprovante de compartilhamento (BF07)
+        Route::get('/relatorios/{id}/compartilhamentos',  [FaeRelatoriosController::class, 'getCompartilhamentos']);
+        Route::post('/relatorios/{id}/compartilhamentos', [FaeRelatoriosController::class, 'storeCompartilhamento']);
 
         // Assinaturas (base64)
         Route::post('/relatorios/{id}/assinaturas', [FaeRelatoriosController::class, 'storeAssinaturas']);

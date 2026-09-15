@@ -20,6 +20,7 @@ use App\Http\Requests\Fae\UploadAnexosRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Models\AtendimentoRelatorioCompartilhamento;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioDescricaoItem;
@@ -332,6 +333,83 @@ class RelatoriosController extends Controller
     }
 
     /**
+     * BF11 - observacao interna do relatorio (nao do atendimento). Nunca
+     * aparece no PDF assinado nem no comprovante de compartilhamento (ver
+     * pdf.blade.php e storeCompartilhamento abaixo, que nao referenciam
+     * este campo).
+     *
+     * PUT /api/fae/v1/relatorios/{id}/observacao-interna
+     */
+    public function updateObservacaoInterna(Request $request, int $id): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
+
+        $request->validate(['valor' => ['nullable', 'string']]);
+        $relatorio->update(['aten_rel_observacao_interna' => $request->input('valor')]);
+
+        return response()->json(['message' => 'Observação interna salva.']);
+    }
+
+    /**
+     * BF07 - comprovante de compartilhamento. Mesma regra do web
+     * (AtendimentosRelatoriosController::getCompartilhamentos/
+     * storeCompartilhamento) - hash SHA-256 por compartilhamento.
+     *
+     * GET /api/fae/v1/relatorios/{id}/compartilhamentos
+     */
+    public function getCompartilhamentos(Request $request, int $id): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::with('compartilhamentos')->findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
+
+        return response()->json([
+            'data' => $relatorio->compartilhamentos->map(fn ($c) => [
+                'id' => $c->aten_rel_comp_id,
+                'canal' => $c->aten_rel_comp_canal,
+                'hash' => $c->aten_rel_comp_hash,
+                'criado_em' => $c->aten_rel_comp_criado_em?->format('d/m/Y H:i'),
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * POST /api/fae/v1/relatorios/{id}/compartilhamentos
+     * Body: { canal? } - "whatsapp"/"outro-app"/etc, informativo.
+     */
+    public function storeCompartilhamento(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['canal' => ['nullable', 'string', 'max:50']]);
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
+
+        try {
+            $hash = hash('sha256', $relatorio->aten_rel_id . '|' . now()->timestamp . '|' . Str::random(16));
+
+            $comp = AtendimentoRelatorioCompartilhamento::create([
+                'aten_rel_comp_relatorio_id' => $id,
+                'aten_rel_comp_usuario_id' => $request->user()->user_id,
+                'aten_rel_comp_canal' => $request->input('canal', 'app-mobile'),
+                'aten_rel_comp_hash' => $hash,
+                'aten_rel_comp_criado_em' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Comprovante de compartilhamento gerado.',
+                'data' => [
+                    'id' => $comp->aten_rel_comp_id,
+                    'canal' => $comp->aten_rel_comp_canal,
+                    'hash' => $comp->aten_rel_comp_hash,
+                    'criado_em' => $comp->aten_rel_comp_criado_em->format('d/m/Y H:i'),
+                ],
+            ], 201);
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao gerar comprovante.'], 500);
+        }
+    }
+
+    /**
      * Atualiza horários.
      *
      * PUT /api/fae/v1/relatorios/{id}/horarios
@@ -432,11 +510,13 @@ class RelatoriosController extends Controller
         $row = AtendimentoRelatorioPeca::create([
             'aten_rel_peca_relatorio_id' => $id,
             'aten_rel_peca_descricao'    => $request->descricao,
+            // BF09 - mesmo campo do endpoint web (AtendimentosRelatoriosController::storePeca).
+            'aten_rel_peca_trocada'      => $request->boolean('trocada'),
         ]);
 
         return response()->json([
             'message' => 'Peça adicionada.',
-            'data'    => ['id' => $row->aten_rel_peca_id, 'descricao' => $row->aten_rel_peca_descricao],
+            'data'    => ['id' => $row->aten_rel_peca_id, 'descricao' => $row->aten_rel_peca_descricao, 'trocada' => $row->aten_rel_peca_trocada],
         ], 201);
     }
 
