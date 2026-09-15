@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Fae\AppController as FaeAppController;
 use App\Http\Controllers\Api\Fae\AtendimentosController as FaeAtendimentosController;
 use App\Http\Controllers\Api\Fae\RelatoriosController as FaeRelatoriosController;
 use App\Http\Controllers\Api\Fae\CatalogoController as FaeCatalogoController;
+use App\Http\Controllers\Api\Fae\ClientesController as FaeClientesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -167,6 +168,14 @@ Route::prefix('fae/v1')->group(function () {
 
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me',      [AuthController::class, 'me']);
+
+        // Clientes (NC01) - CRUD consumido pelo app; create/update restrito
+        // a Comercial/Administrador (middleware `comercial`, mesma regra do web).
+        Route::get('/clientes',              [FaeClientesController::class, 'index']);
+        Route::get('/clientes/autocomplete', [FaeClientesController::class, 'autocomplete']);
+        Route::get('/clientes/{cliente}',    [FaeClientesController::class, 'show']);
+        Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('comercial');
+        Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('comercial');
 
         // CatÃ¡logos (somente leitura)
         Route::get('/catalogos/ocorrencias', [FaeCatalogoController::class, 'ocorrencias']);

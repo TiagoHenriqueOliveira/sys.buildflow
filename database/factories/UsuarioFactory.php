@@ -31,6 +31,11 @@ class UsuarioFactory extends Factory
         return $this->state(['user_nivel_acesso' => 1]);
     }
 
+    public function comercial(): static
+    {
+        return $this->state(['user_nivel_acesso' => 2]);
+    }
+
     public function inativo(): static
     {
         return $this->state(['user_ativo' => false]);
