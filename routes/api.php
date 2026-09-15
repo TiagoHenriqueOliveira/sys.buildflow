@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Fae\AtendimentosController as FaeAtendimentosContro
 use App\Http\Controllers\Api\Fae\RelatoriosController as FaeRelatoriosController;
 use App\Http\Controllers\Api\Fae\CatalogoController as FaeCatalogoController;
 use App\Http\Controllers\Api\Fae\ClientesController as FaeClientesController;
+use App\Http\Controllers\Api\Fae\RelatorioFormularioController as FaeRelatorioFormularioController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -177,6 +178,8 @@ Route::prefix('fae/v1')->group(function () {
         Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('comercial');
         Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('comercial');
 
+        Route::get('/catalogos/classificacoes-cliente', [FaeCatalogoController::class, 'classificacoesCliente']);
+
         // CatÃ¡logos (somente leitura)
         Route::get('/catalogos/ocorrencias', [FaeCatalogoController::class, 'ocorrencias']);
 
@@ -191,6 +194,15 @@ Route::prefix('fae/v1')->group(function () {
 
         // RelatÃ³rio â€” leitura
         Route::get('/relatorios/{id}', [FaeRelatoriosController::class, 'show']);
+
+        // Formulario dinamico (BF05/NC03) - motor novo, consome o mesmo
+        // modelo/respostas do Configurador; os endpoints fixos abaixo
+        // (horarios/clima/servicos/pecas/ocorrencias) ficam so pra
+        // relatorios com dado legado (decisao da sessao 13).
+        Route::get('/relatorios/{id}/formulario', [FaeRelatorioFormularioController::class, 'formulario']);
+        Route::post('/relatorios/{id}/respostas', [FaeRelatorioFormularioController::class, 'storeResposta']);
+        Route::delete('/relatorios/{id}/respostas/{respostaId}', [FaeRelatorioFormularioController::class, 'destroyResposta']);
+        Route::delete('/relatorios/{id}/respostas-fotos/{fotoId}', [FaeRelatorioFormularioController::class, 'destroyRespostaFoto']);
 
         // RelatÃ³rio â€” seÃ§Ãµes de escrita
         Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais']);
