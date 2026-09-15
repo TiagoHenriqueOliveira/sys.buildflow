@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\Fae\RelatoriosController as FaeRelatoriosController
 use App\Http\Controllers\Api\Fae\CatalogoController as FaeCatalogoController;
 use App\Http\Controllers\Api\Fae\ClientesController as FaeClientesController;
 use App\Http\Controllers\Api\Fae\RelatorioFormularioController as FaeRelatorioFormularioController;
+use App\Http\Controllers\Api\Fae\OrcamentosController as FaeOrcamentosController;
+use App\Http\Controllers\Api\Fae\RoteirosViagemController as FaeRoteirosViagemController;
+use App\Http\Controllers\Api\Fae\CrmController as FaeCrmController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -177,6 +180,29 @@ Route::prefix('fae/v1')->group(function () {
         Route::get('/clientes/{cliente}',    [FaeClientesController::class, 'show']);
         Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('comercial');
         Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('comercial');
+
+        // CRM09 - Orcamento/Roteiro de Viagem/Mapa de Relacoes/Indicadores,
+        // perfil Comercial (ou Administrador) em todo o bloco - nenhum uso
+        // por tecnico, ao contrario de Clientes acima.
+        Route::middleware('comercial')->group(function () {
+            Route::get('/orcamentos',                          [FaeOrcamentosController::class, 'index']);
+            Route::post('/orcamentos',                         [FaeOrcamentosController::class, 'store']);
+            Route::get('/orcamentos/{orcamento}',               [FaeOrcamentosController::class, 'show']);
+            Route::put('/orcamentos/{orcamento}',               [FaeOrcamentosController::class, 'update']);
+            Route::post('/orcamentos/{id}/comentarios',         [FaeOrcamentosController::class, 'storeComentario']);
+            Route::delete('/orcamentos/{id}/comentarios/{comentarioId}', [FaeOrcamentosController::class, 'destroyComentario']);
+
+            Route::get('/roteiros-viagem',              [FaeRoteirosViagemController::class, 'index']);
+            Route::post('/roteiros-viagem',              [FaeRoteirosViagemController::class, 'store']);
+            Route::get('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'show']);
+            Route::put('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'update']);
+
+            Route::get('/mapa-relacoes',          [FaeCrmController::class, 'mapaRelacoes']);
+            Route::get('/indicadores-comerciais', [FaeCrmController::class, 'indicadores']);
+
+            Route::get('/catalogos/vendedores-comerciais', [FaeCatalogoController::class, 'vendedoresComerciais']);
+            Route::get('/catalogos/tipos-orcamento',       [FaeCatalogoController::class, 'tiposOrcamento']);
+        });
 
         Route::get('/catalogos/classificacoes-cliente', [FaeCatalogoController::class, 'classificacoesCliente']);
 

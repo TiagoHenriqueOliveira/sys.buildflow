@@ -1,0 +1,177 @@
+<?php
+
+namespace Tests\Feature\Api;
+
+use App\Enums\NivelOrcamento;
+use App\Enums\SetorModelo;
+use App\Enums\TipoPergunta;
+use App\Models\Cliente;
+use App\Models\ConfigModelo;
+use App\Models\ConfigPergunta;
+use App\Models\CrmTipoOrcamento;
+use App\Models\Orcamento;
+use App\Models\RoteiroViagem;
+use App\Models\Usuario;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class CrmApiFaeTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function token(Usuario $usuario): string
+    {
+        return $usuario->createToken('test')->plainTextToken;
+    }
+
+    private function criarComercial(): Usuario
+    {
+        return Usuario::factory()->comercial()->create();
+    }
+
+    public function test_lista_orcamentos_sem_token_retorna_401(): void
+    {
+        $response = $this->getJson('/api/fae/v1/orcamentos');
+        $response->assertUnauthorized();
+    }
+
+    public function test_tecnico_nao_acessa_orcamentos(): void
+    {
+        $tecnico = Usuario::factory()->tecnico()->create();
+
+        $response = $this->withToken($this->token($tecnico))->getJson('/api/fae/v1/orcamentos');
+
+        $response->assertForbidden();
+    }
+
+    public function test_comercial_cria_orcamento_com_resposta_de_pergunta_dinamica(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        $pergunta = ConfigPergunta::create(['cfg_perg_texto' => 'Volume?', 'cfg_perg_tipo' => TipoPergunta::TextoLivre->value]);
+        $modelo = ConfigModelo::create(['cfg_mod_nome' => 'Orcamento Padrao', 'cfg_mod_setor' => SetorModelo::Comercial->value]);
+        $modelo->perguntas()->sync([$pergunta->cfg_perg_id]);
+        $tipo = CrmTipoOrcamento::create(['crm_tp_orc_nome' => 'ETE Teste', 'crm_tp_orc_config_modelo_id' => $modelo->cfg_mod_id]);
+
+        $response = $this->withToken($this->token($vendedor))->postJson('/api/fae/v1/orcamentos', [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_tipo_orcamento_id' => $tipo->crm_tp_orc_id,
+            'orc_nivel' => NivelOrcamento::Medio->value,
+            'respostas' => [$pergunta->cfg_perg_id => 'Cinquenta m3/dia'],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.cliente.id', $cliente->cli_id)
+            ->assertJsonPath("data.respostas.{$pergunta->cfg_perg_id}", 'Cinquenta m3/dia');
+        $this->assertDatabaseHas('orcamentos_respostas', [
+            'orc_resp_pergunta_id' => $pergunta->cfg_perg_id,
+            'orc_resp_valor' => 'Cinquenta m3/dia',
+        ]);
+    }
+
+    public function test_comercial_comenta_e_exclui_comentario_do_orcamento(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        $orcamento = Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_ativo' => 1,
+            'orc_criado_em' => now(),
+        ]);
+
+        $comentar = $this->withToken($this->token($vendedor))->postJson(
+            "/api/fae/v1/orcamentos/{$orcamento->orc_id}/comentarios",
+            ['orc_com_texto' => 'Cliente pediu revisão de prazo.']
+        );
+        $comentar->assertCreated();
+        $comentarioId = $comentar->json('data.id');
+        $this->assertDatabaseHas('orcamentos_comentarios', ['orc_com_id' => $comentarioId]);
+
+        $excluir = $this->withToken($this->token($vendedor))->deleteJson(
+            "/api/fae/v1/orcamentos/{$orcamento->orc_id}/comentarios/{$comentarioId}"
+        );
+        $excluir->assertOk();
+        $this->assertDatabaseMissing('orcamentos_comentarios', ['orc_com_id' => $comentarioId]);
+    }
+
+    public function test_comercial_cria_roteiro_de_viagem_com_clientes(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente1 = Cliente::factory()->create();
+        $cliente2 = Cliente::factory()->create();
+
+        $response = $this->withToken($this->token($vendedor))->postJson('/api/fae/v1/roteiros-viagem', [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => now()->toDateString(),
+            'crm_rot_periodo_fim' => now()->addDays(3)->toDateString(),
+            'crm_rot_link_mapa' => 'https://maps.google.com/?q=1,1',
+            'clientes' => [$cliente1->cli_id, $cliente2->cli_id],
+        ]);
+
+        $response->assertCreated()->assertJsonCount(2, 'data.clientes');
+        $this->assertDatabaseHas('crm_roteiros_viagem_clientes', [
+            'crm_rot_cli_cliente_id' => $cliente1->cli_id,
+            'crm_rot_cli_ordem' => 0,
+        ]);
+    }
+
+    public function test_roteiro_sem_cliente_retorna_422(): void
+    {
+        $vendedor = $this->criarComercial();
+
+        $response = $this->withToken($this->token($vendedor))->postJson('/api/fae/v1/roteiros-viagem', [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => now()->toDateString(),
+            'crm_rot_periodo_fim' => now()->addDays(1)->toDateString(),
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('clientes');
+    }
+
+    public function test_lista_mapa_relacoes_retorna_so_clientes_com_coordenada(): void
+    {
+        $vendedor = $this->criarComercial();
+        Cliente::factory()->create(['cli_latitude' => -23.5, 'cli_longitude' => -46.6, 'cli_nome' => 'Com coordenada']);
+        Cliente::factory()->create(['cli_latitude' => null, 'cli_longitude' => null, 'cli_nome' => 'Sem coordenada']);
+
+        $response = $this->withToken($this->token($vendedor))->getJson('/api/fae/v1/mapa-relacoes');
+
+        $response->assertOk();
+        $nomes = collect($response->json('data'))->pluck('nome')->all();
+        $this->assertSame(['Com coordenada'], $nomes);
+    }
+
+    public function test_indicadores_comerciais_soma_orcamentos_por_vendedor(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        Orcamento::create(['orc_cliente_id' => $cliente->cli_id, 'orc_vendedor_id' => $vendedor->user_id, 'orc_ativo' => 1, 'orc_criado_em' => now()]);
+        Orcamento::create(['orc_cliente_id' => $cliente->cli_id, 'orc_vendedor_id' => $vendedor->user_id, 'orc_ativo' => 1, 'orc_criado_em' => now()]);
+
+        $response = $this->withToken($this->token($vendedor))->getJson('/api/fae/v1/indicadores-comerciais');
+
+        $response->assertOk()
+            ->assertJsonPath('total_levantadas', 2)
+            ->assertJsonPath('por_vendedor.0.levantadas', 2);
+    }
+
+    public function test_catalogo_tipos_orcamento_inclui_perguntas_do_modelo(): void
+    {
+        $vendedor = $this->criarComercial();
+        $pergunta = ConfigPergunta::create(['cfg_perg_texto' => 'Volume?', 'cfg_perg_tipo' => TipoPergunta::TextoLivre->value]);
+        $modelo = ConfigModelo::create(['cfg_mod_nome' => 'Orcamento Padrao', 'cfg_mod_setor' => SetorModelo::Comercial->value]);
+        $modelo->perguntas()->sync([$pergunta->cfg_perg_id]);
+        CrmTipoOrcamento::create(['crm_tp_orc_nome' => 'ETE Teste', 'crm_tp_orc_config_modelo_id' => $modelo->cfg_mod_id, 'crm_tp_orc_ativo' => 1]);
+
+        $response = $this->withToken($this->token($vendedor))->getJson('/api/fae/v1/catalogos/tipos-orcamento');
+
+        $response->assertOk();
+        $tipos = collect($response->json('data'));
+        $item = $tipos->firstWhere('nome', 'ETE Teste');
+        $this->assertNotNull($item, 'tipo "ETE Teste" nao encontrado na resposta');
+        $this->assertCount(1, $item['perguntas']);
+        $this->assertSame($pergunta->cfg_perg_id, $item['perguntas'][0]['id']);
+    }
+}
