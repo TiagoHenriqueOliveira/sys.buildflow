@@ -117,7 +117,14 @@ class OrcamentosController extends Controller
             'cliente_id' => $o->orc_cliente_id,
             'vendedor_id' => $o->orc_vendedor_id,
             'tipo_orcamento_id' => $o->orc_tipo_orcamento_id,
-            'respostas' => $o->respostas->mapWithKeys(fn ($r) => [(string) $r->orc_resp_pergunta_id => $r->orc_resp_valor]),
+            // Multipla escolha vem serializada em JSON (ver
+            // OrcamentoRepository::sincronizarRespostas) - decodifica pro
+            // cliente receber array de verdade, igual ao Web
+            // (orcamentos/form.blade.php, $respostasExistentes).
+            'respostas' => $o->respostas->mapWithKeys(function ($r) {
+                $decodificado = json_decode((string) $r->orc_resp_valor, true);
+                return [(string) $r->orc_resp_pergunta_id => is_array($decodificado) ? $decodificado : $r->orc_resp_valor];
+            }),
             'vendedores_adicionais' => $o->vendedoresAdicionais->map(fn ($v) => ['id' => $v->user_id, 'nome' => $v->user_nome])->values(),
             'comentarios' => $o->comentarios->map(fn ($c) => $this->formatComentario($c))->values(),
         ];

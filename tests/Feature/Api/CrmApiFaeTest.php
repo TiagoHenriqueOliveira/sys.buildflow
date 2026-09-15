@@ -157,6 +157,30 @@ class CrmApiFaeTest extends TestCase
             ->assertJsonPath('por_vendedor.0.levantadas', 2);
     }
 
+    public function test_resposta_de_multipla_escolha_volta_como_array_decodificado(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        $pergunta = ConfigPergunta::create(['cfg_perg_texto' => 'Quais equipamentos?', 'cfg_perg_tipo' => TipoPergunta::MultiplaEscolha->value]);
+        $op1 = $pergunta->opcoes()->create(['cfg_perg_op_texto' => 'Bomba']);
+        $op2 = $pergunta->opcoes()->create(['cfg_perg_op_texto' => 'Filtro']);
+
+        $criar = $this->withToken($this->token($vendedor))->postJson('/api/fae/v1/orcamentos', [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'respostas' => [$pergunta->cfg_perg_id => [$op1->cfg_perg_op_id, $op2->cfg_perg_op_id]],
+        ]);
+        $criar->assertCreated();
+        $orcamentoId = $criar->json('data.id');
+
+        $show = $this->withToken($this->token($vendedor))->getJson("/api/fae/v1/orcamentos/{$orcamentoId}");
+
+        $show->assertOk();
+        $valor = $show->json("data.respostas.{$pergunta->cfg_perg_id}");
+        $this->assertIsArray($valor);
+        $this->assertEqualsCanonicalizing([(string) $op1->cfg_perg_op_id, (string) $op2->cfg_perg_op_id], array_map('strval', $valor));
+    }
+
     public function test_catalogo_tipos_orcamento_inclui_perguntas_do_modelo(): void
     {
         $vendedor = $this->criarComercial();
