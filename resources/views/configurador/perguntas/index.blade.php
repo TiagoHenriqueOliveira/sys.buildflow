@@ -81,7 +81,7 @@
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
                     </td>
-                    <td>{{ \Illuminate\Support\Str::limit($p->cfg_perg_texto, 80) }}</td>
+                    <td>{{ \Illuminate\Support\Str::limit($p->cfg_perg_e_sessao ? $p->cfg_perg_sessao_nome : $p->cfg_perg_texto, 80) }}</td>
                     <td>
                         @if($p->cfg_perg_e_sessao)
                             <x-sbadmin::badge type="warning">Sessão: {{ $p->cfg_perg_sessao_nome }}</x-sbadmin::badge>

@@ -32,8 +32,17 @@ class ConfiguradorPerguntasController extends Controller
             return response()->json([]);
         }
 
+        // Pedido do cliente (2026-09-14): pergunta tipo Sessao tem o texto
+        // desabilitado/vazio (quem identifica ela e' o "Nome da aba",
+        // cfg_perg_sessao_nome) - buscar so por cfg_perg_texto deixava
+        // Sessoes cadastradas depois da BF_v1.8.3 impossiveis de encontrar
+        // aqui (bug reportado pelo cliente: "a partir do passo 3 nao lista
+        // o que e sessao").
         $perguntas = ConfigPergunta::where('cfg_perg_ativo', 1)
-            ->where('cfg_perg_texto', 'like', "%{$term}%")
+            ->where(function ($query) use ($term) {
+                $query->where('cfg_perg_texto', 'like', "%{$term}%")
+                    ->orWhere('cfg_perg_sessao_nome', 'like', "%{$term}%");
+            })
             ->orderBy('cfg_perg_texto')
             ->limit(20)
             ->get();
@@ -54,7 +63,10 @@ class ConfiguradorPerguntasController extends Controller
 
         $perguntas = ConfigPergunta::query()
             ->with('opcoes')
-            ->when($filtroTexto !== '', fn ($q) => $q->where('cfg_perg_texto', 'like', "%{$filtroTexto}%"))
+            ->when($filtroTexto !== '', fn ($q) => $q->where(function ($sub) use ($filtroTexto) {
+                $sub->where('cfg_perg_texto', 'like', "%{$filtroTexto}%")
+                    ->orWhere('cfg_perg_sessao_nome', 'like', "%{$filtroTexto}%");
+            }))
             ->when($filtroTipo !== '', fn ($q) => $q->where('cfg_perg_tipo', (int) $filtroTipo))
             ->orderBy('cfg_perg_id', 'desc')
             ->paginate(15)

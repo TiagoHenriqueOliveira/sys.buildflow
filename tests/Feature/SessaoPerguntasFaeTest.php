@@ -106,6 +106,26 @@ class SessaoPerguntasFaeTest extends TestCase
         $response->assertJsonFragment(['eSessao' => true, 'sessaoNome' => 'Peças Substituídas']);
     }
 
+    public function test_autocomplete_encontra_sessao_sem_texto_buscando_pelo_nome_da_aba(): void
+    {
+        // Bug reportado pelo cliente apos a BF_v1.8.3: sessao cadastrada sem
+        // texto (campo desabilitado no modal) ficava impossivel de achar em
+        // Configurador > Modelos, pois a busca so olhava cfg_perg_texto.
+        $admin = Usuario::factory()->administrador()->create();
+        ConfigPergunta::create([
+            'cfg_perg_texto' => '',
+            'cfg_perg_tipo' => TipoPergunta::TextoLivre->value,
+            'cfg_perg_ativo' => 1,
+            'cfg_perg_e_sessao' => true,
+            'cfg_perg_sessao_nome' => 'Fotos do Local',
+        ]);
+
+        $response = $this->actingAs($admin)->getJson(route('configurador.perguntas.autocomplete', ['term' => 'Fotos do']));
+
+        $response->assertOk();
+        $response->assertJsonFragment(['eSessao' => true, 'sessaoNome' => 'Fotos do Local']);
+    }
+
     private function criarModeloComSessao(): array
     {
         $modelo = ConfigModelo::create([
