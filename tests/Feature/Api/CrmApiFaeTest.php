@@ -143,6 +143,71 @@ class CrmApiFaeTest extends TestCase
         $this->assertSame(['Com coordenada'], $nomes);
     }
 
+    /**
+     * Regressao: o app reenvia o `prazo_envio` recebido do servidor sem
+     * alteracao quando o usuario nao troca a data - se a API devolvesse a
+     * data com hora/timezone (bug real: Carbon->jsonSerialize() ignora o
+     * cast `date:Y-m-d` do model fora do toArray() padrao do Eloquent), o
+     * reenvio quebrava o UPDATE com SQLSTATE[22007] (coluna e' `date`, nao
+     * `datetime`). Ver OrcamentosController::formatResumo().
+     */
+    public function test_prazo_envio_volta_so_com_data_e_atualizar_sem_mudar_nao_quebra(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        $orcamento = Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_prazo_envio' => '2026-09-17',
+            'orc_ativo' => 1,
+            'orc_criado_em' => now(),
+        ]);
+
+        $mostrar = $this->withToken($this->token($vendedor))->getJson("/api/fae/v1/orcamentos/{$orcamento->orc_id}");
+        $mostrar->assertOk()->assertJsonPath('data.prazo_envio', '2026-09-17');
+
+        $atualizar = $this->withToken($this->token($vendedor))->putJson("/api/fae/v1/orcamentos/{$orcamento->orc_id}", [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_prazo_envio' => $mostrar->json('data.prazo_envio'),
+        ]);
+
+        $atualizar->assertOk()->assertJsonPath('data.prazo_envio', '2026-09-17');
+    }
+
+    /**
+     * Mesma regressao do teste acima, para RoteiroViagem (periodo_inicio/fim).
+     * Ver RoteirosViagemController::formatResumo().
+     */
+    public function test_periodo_roteiro_volta_so_com_data_e_atualizar_sem_mudar_nao_quebra(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        $roteiro = $this->withToken($this->token($vendedor))->postJson('/api/fae/v1/roteiros-viagem', [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => '2026-09-15',
+            'crm_rot_periodo_fim' => '2026-09-18',
+            'crm_rot_link_mapa' => 'https://maps.google.com/?q=1,1',
+            'clientes' => [$cliente->cli_id],
+        ])->json('data');
+
+        $mostrar = $this->withToken($this->token($vendedor))->getJson("/api/fae/v1/roteiros-viagem/{$roteiro['id']}");
+        $mostrar->assertOk()
+            ->assertJsonPath('data.periodo_inicio', '2026-09-15')
+            ->assertJsonPath('data.periodo_fim', '2026-09-18');
+
+        $atualizar = $this->withToken($this->token($vendedor))->putJson("/api/fae/v1/roteiros-viagem/{$roteiro['id']}", [
+            'crm_rot_vendedor_id' => $vendedor->user_id,
+            'crm_rot_periodo_inicio' => $mostrar->json('data.periodo_inicio'),
+            'crm_rot_periodo_fim' => $mostrar->json('data.periodo_fim'),
+            'crm_rot_link_mapa' => $mostrar->json('data.link_mapa'),
+            'clientes' => [$cliente->cli_id],
+        ]);
+
+        $atualizar->assertOk()
+            ->assertJsonPath('data.periodo_inicio', '2026-09-15')
+            ->assertJsonPath('data.periodo_fim', '2026-09-18');
+    }
 
     public function test_resposta_de_multipla_escolha_volta_como_array_decodificado(): void
     {

@@ -105,7 +105,7 @@ class OrcamentosController extends Controller
             'tipo_orcamento' => optional($o->tipoOrcamento)->crm_tp_orc_nome,
             'nivel' => $o->orc_nivel?->value,
             'nivel_label' => $o->orc_nivel?->label(),
-            'prazo_envio' => $o->orc_prazo_envio,
+            'prazo_envio' => $o->orc_prazo_envio?->format('Y-m-d'),
             'criado_em' => $o->orc_criado_em?->format('d/m/Y H:i'),
         ];
     }

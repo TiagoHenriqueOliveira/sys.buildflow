@@ -60,8 +60,8 @@ class RoteirosViagemController extends Controller
         return [
             'id' => $r->crm_rot_id,
             'vendedor' => ['id' => optional($r->vendedor)->user_id, 'nome' => optional($r->vendedor)->user_nome],
-            'periodo_inicio' => $r->crm_rot_periodo_inicio,
-            'periodo_fim' => $r->crm_rot_periodo_fim,
+            'periodo_inicio' => $r->crm_rot_periodo_inicio?->format('Y-m-d'),
+            'periodo_fim' => $r->crm_rot_periodo_fim?->format('Y-m-d'),
             'status' => $r->crm_rot_status?->value,
             'status_label' => $r->crm_rot_status?->label(),
         ];
