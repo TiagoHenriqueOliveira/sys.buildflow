@@ -48,10 +48,15 @@
     // regras de acesso de Assistencia/Vendedor — este flag so controla o
     // que aparece DENTRO da aba, ficando pronto pra quando isso mudar.
     $nivelAtual = auth()->user()->user_nivel_acesso;
+    // Pedido do cliente (2026-09-16): cadastro de Cliente aberto a todos os
+    // perfis exceto Tecnico - Vendedor incluido aqui tambem (e quem mais
+    // provavelmente vai estar em campo, visitando cliente, precisando
+    // capturar localizacao).
     $podeGeolocalizar = in_array($nivelAtual, [
         \App\Enums\NivelAcesso::Administrador->value,
         \App\Enums\NivelAcesso::Comercial->value,
         \App\Enums\NivelAcesso::Assistencia->value,
+        \App\Enums\NivelAcesso::Vendedor->value,
     ], true);
 @endphp
 <x-layout :title="$editando ? 'Clientes | Editar' : 'Clientes | Novo'">
@@ -452,7 +457,33 @@
                         />
 
                         @if($editando)
-                            <p class="text-body-secondary">Histórico de atendimentos e orçamentos deste cliente — disponível a partir da sessão de persistência do Núcleo/CRM.</p>
+                            <hr>
+                            <h6 class="fw-bold mb-2">Histórico</h6>
+                            @php $historico = $cliente->historico(); @endphp
+                            @if($historico->isEmpty())
+                                <p class="text-body-secondary small">Nenhum atendimento, relatório ou orçamento registrado para este cliente ainda.</p>
+                            @else
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="align-middle">Data</th>
+                                                <th class="align-middle">Tipo</th>
+                                                <th class="align-middle">Descrição</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($historico as $item)
+                                            <tr>
+                                                <td class="align-middle">{{ \Illuminate\Support\Carbon::parse($item['data'])->format('d/m/Y') }}</td>
+                                                <td class="align-middle">{{ $item['tipo'] }}</td>
+                                                <td class="align-middle"><a href="{{ $item['link'] }}">{{ $item['descricao'] }}</a></td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
                         @endif
                     </div>
                 </div>

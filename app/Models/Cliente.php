@@ -71,4 +71,72 @@ class Cliente extends Model
     {
         return $this->cli_latitude !== null && $this->cli_longitude !== null;
     }
+
+    public function atendimentos()
+    {
+        return $this->hasMany(Atendimento::class, 'aten_cliente_id', 'cli_id');
+    }
+
+    public function orcamentos()
+    {
+        return $this->hasMany(Orcamento::class, 'orc_cliente_id', 'cli_id');
+    }
+
+    /**
+     * NC01 - historico consolidado (atendimentos + relatorios + orcamentos),
+     * em ordem cronologica decrescente. Sem UNION SQL - poucas linhas por
+     * cliente, 3 queries + merge em colecao resolve sem custo extra.
+     */
+    public function historico()
+    {
+        $itensAtendimento = $this->atendimentos()->with('relatorios')->get()->flatMap(function ($atendimento) {
+            $itens = collect([[
+                'tipo' => 'Atendimento',
+                'data' => $atendimento->aten_dt_inicio,
+                'descricao' => trim('Atendimento aberto '.($atendimento->aten_responsavel ? '- '.$atendimento->aten_responsavel : '')),
+                'link' => route('atendimentos.edit', $atendimento->aten_id),
+            ]]);
+
+            foreach ($atendimento->relatorios as $relatorio) {
+                $itens->push([
+                    'tipo' => 'Relatório',
+                    'data' => $relatorio->aten_rel_data,
+                    'descricao' => 'Relatório de atendimento',
+                    'link' => route('atendimentos-relatorios.show', $relatorio->aten_rel_id),
+                ]);
+            }
+
+            return $itens;
+        });
+
+        $itensOrcamento = $this->orcamentos->map(fn ($orcamento) => [
+            'tipo' => 'Orçamento',
+            'data' => $orcamento->orc_criado_em,
+            'descricao' => 'Orçamento'.(optional($orcamento->tipoOrcamento)->crm_tp_orc_nome ? ' - '.$orcamento->tipoOrcamento->crm_tp_orc_nome : ''),
+            'link' => route('orcamentos.edit', $orcamento->orc_id),
+        ]);
+
+        return $itensAtendimento->concat($itensOrcamento)
+            ->filter(fn ($item) => $item['data'] !== null)
+            ->sortByDesc('data')
+            ->values();
+    }
+
+    /**
+     * Data do ultimo contato real com o cliente (atendimento OU orcamento) -
+     * usado pelo comando de alerta de recontato. Nao monta o historico
+     * inteiro (mais barato pra rodar em lote todo dia sobre todos os
+     * clientes ativos).
+     */
+    public function dataUltimoContato(): ?\Illuminate\Support\Carbon
+    {
+        $ultimoAtendimento = $this->atendimentos()->max('aten_dt_inicio');
+        $ultimoOrcamento = $this->orcamentos()->max('orc_criado_em');
+
+        $datas = collect([$ultimoAtendimento, $ultimoOrcamento])
+            ->filter()
+            ->map(fn ($d) => \Illuminate\Support\Carbon::parse($d));
+
+        return $datas->isEmpty() ? null : $datas->max();
+    }
 }

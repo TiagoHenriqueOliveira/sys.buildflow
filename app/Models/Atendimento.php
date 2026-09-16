@@ -59,6 +59,11 @@ class Atendimento extends Model
         return $this->belongsTo(Usuario::class, 'aten_usuario_id', 'user_id');
     }
 
+    public function relatorios()
+    {
+        return $this->hasMany(AtendimentoRelatorio::class, 'aten_rel_atendimento_id', 'aten_id');
+    }
+
     public function equipamentos()
     {
         return $this->hasMany(AtendimentoEquipamento::class, 'aten_equip_atendimento_id', 'aten_id');

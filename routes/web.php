@@ -14,6 +14,7 @@ use App\Http\Controllers\LogsAuditoriaController;
 use App\Http\Controllers\MapaDemandasController;
 use App\Http\Controllers\MapaRelacoesController;
 use App\Http\Controllers\NaturezasAtendimentosController;
+use App\Http\Controllers\NotificacoesController;
 use App\Http\Controllers\ClassificacoesClienteController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
@@ -70,17 +71,30 @@ Route::middleware('auth')->group(function () {
     // Dashboard (placeholder minimo por ora - ver DashboardController)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Notificacoes (sino do topbar) - disponivel pra qualquer usuario
+    // autenticado, sem restricao de perfil (o proprio conteudo ja e
+    // filtrado pelo usuario logado dentro do controller).
+    Route::get('/notificacoes', [NotificacoesController::class, 'index'])->name('notificacoes.index');
+    Route::post('/notificacoes/{id}/marcar-lida', [NotificacoesController::class, 'marcarLida'])->name('notificacoes.marcar-lida');
+
     // Clientes — autocomplete e resumo (leitura disponível para todos os
     // usuários autenticados: usados no formulário de Atendimento por
     // técnicos, que não têm acesso ao CRUD completo de Clientes — BF03).
     Route::get('/clientes/autocomplete', [ClientesController::class, 'autoComplete'])->name('clientes.autocomplete');
     Route::get('/clientes/{cliente}/resumo', [ClientesController::class, 'resumo'])->name('clientes.resumo');
 
-    // Clientes — CRUD completo (Administrador ou perfil Comercial, BF02)
-    Route::middleware('comercial')->group(function () {
+    // Clientes — CRUD completo. Pedido do cliente (2026-09-16): aberto a
+    // todos os perfis exceto Tecnico (Administrador/Comercial/Assistencia/
+    // Vendedor) — por isso fica FORA do grupo "comercial" abaixo, que
+    // continua restrito a Administrador/Comercial pro resto do CRM.
+    Route::middleware('nao-tecnico')->group(function () {
         Route::resource('clientes', ClientesController::class)->except(['show', 'destroy']);
+    });
 
-        // Orçamentos (CRM02/03/04) — mesmo perfil de acesso de Clientes.
+    // Orçamentos, Roteiro de Viagem, Mapa de Relações, Indicadores —
+    // restritos a Administrador/Comercial (BF02).
+    Route::middleware('comercial')->group(function () {
+        // Orçamentos (CRM02/03/04)
         Route::resource('orcamentos', OrcamentosController::class)->except(['show', 'destroy']);
         Route::post('/orcamentos/{id}/comentarios', [OrcamentosController::class, 'storeComentario'])->name('orcamentos.store-comentario');
         Route::delete('/orcamentos/{id}/comentarios/{comentarioId}', [OrcamentosController::class, 'destroyComentario'])->name('orcamentos.destroy-comentario');

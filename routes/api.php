@@ -173,13 +173,15 @@ Route::prefix('fae/v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me',      [AuthController::class, 'me']);
 
-        // Clientes (NC01) - CRUD consumido pelo app; create/update restrito
-        // a Comercial/Administrador (middleware `comercial`, mesma regra do web).
+        // Clientes (NC01) - CRUD consumido pelo app. Pedido do cliente
+        // (2026-09-16): create/update aberto a todos os perfis exceto Tecnico
+        // (middleware `nao-tecnico`) - era `comercial`/Administrador+Comercial
+        // antes dessa mudanca, mesma regra aplicada no Web em routes/web.php.
         Route::get('/clientes',              [FaeClientesController::class, 'index']);
         Route::get('/clientes/autocomplete', [FaeClientesController::class, 'autocomplete']);
         Route::get('/clientes/{cliente}',    [FaeClientesController::class, 'show']);
-        Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('comercial');
-        Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('comercial');
+        Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('nao-tecnico');
+        Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('nao-tecnico');
 
         // CRM09 - Orcamento/Roteiro de Viagem/Mapa de Relacoes/Indicadores,
         // perfil Comercial (ou Administrador) em todo o bloco - nenhum uso

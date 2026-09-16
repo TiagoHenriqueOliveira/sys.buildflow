@@ -2,7 +2,7 @@ import collapse from '@alpinejs/collapse';
 import { sidebarState } from './sidebar';
 
 /**
- * Registra os componentes Alpine.js do SB Admin (sidebar).
+ * Registra os componentes Alpine.js do SB Admin (sidebar, notificacoes).
  * Chame a partir do resources/js/app.js do seu projeto:
  *
  *   import Alpine from 'alpinejs';
@@ -22,8 +22,41 @@ export function registerSbAdmin(Alpine) {
     Alpine.data('sbAdmin', () => ({
         ...sidebarState(),
 
+        // Pedido do cliente (2026-09-16): sino de notificacoes no topbar
+        // (Sistema de Notificacoes, App\Models\Notificacao no backend).
+        // Poll simples (sem websocket/infra de tempo real no projeto) a
+        // cada 60s, mais uma carga inicial no init().
+        notificacoes: [],
+        notificacoesNaoLidas: 0,
+
         init() {
             this.initSidebar();
+            this.carregarNotificacoes();
+            setInterval(() => this.carregarNotificacoes(), 60000);
+        },
+
+        carregarNotificacoes() {
+            fetch('/notificacoes', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then((r) => r.json())
+                .then((data) => {
+                    this.notificacoes = data.notificacoes;
+                    this.notificacoesNaoLidas = data.nao_lidas;
+                })
+                .catch(() => {});
+        },
+
+        marcarNotificacaoLida(notificacao) {
+            if (notificacao.lida) return;
+            const token = document.querySelector('meta[name="csrf-token"]')?.content;
+            fetch(`/notificacoes/${notificacao.id}/marcar-lida`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token },
+            })
+                .then(() => {
+                    notificacao.lida = true;
+                    this.notificacoesNaoLidas = Math.max(0, this.notificacoesNaoLidas - 1);
+                })
+                .catch(() => {});
         },
     }));
 }

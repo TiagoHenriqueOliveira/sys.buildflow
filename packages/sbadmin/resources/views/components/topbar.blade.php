@@ -29,6 +29,12 @@
     <div class="sbadmin-topbar-end">
         {{ $slot }}
 
+        {{-- Pedido do cliente (2026-09-16): Sistema de Notificacoes (alerta de
+             recontato de cliente + alerta de comentario de orcamento, ver
+             App\Models\Notificacao). Estado (notificacoes/notificacoesNaoLidas)
+             e as funcoes de carregar/marcar como lida vivem no componente raiz
+             sbAdmin() (resources/js/sbadmin/app.js), carregado uma vez por
+             pagina. --}}
         <div class="sbadmin-dropdown" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
             <button
                 type="button"
@@ -39,7 +45,7 @@
                 aria-label="Ver notificacoes"
             >
                 <i class="bi bi-bell" aria-hidden="true"></i>
-                <span class="sbadmin-notif-dot" aria-hidden="true"></span>
+                <span class="sbadmin-notif-dot" x-show="notificacoesNaoLidas > 0" x-cloak aria-hidden="true"></span>
             </button>
             <div
                 class="sbadmin-dropdown-menu sbadmin-dropdown-menu-end"
@@ -49,8 +55,20 @@
                 role="menu"
                 aria-label="Notificacoes"
             >
-                <div class="sbadmin-dropdown-header">Notificacoes</div>
-                <div class="sbadmin-dropdown-empty">Nenhuma notificacao por aqui ainda.</div>
+                <div class="sbadmin-dropdown-header">Notificações</div>
+                <div class="sbadmin-dropdown-empty" x-show="!notificacoes.length">Nenhuma notificação por aqui ainda.</div>
+                <template x-for="notif in notificacoes" :key="notif.id">
+                    <a
+                        :href="notif.link || '#'"
+                        class="sbadmin-notif-item"
+                        :class="{ 'sbadmin-notif-item-unread': !notif.lida }"
+                        @click="marcarNotificacaoLida(notif)"
+                        role="menuitem"
+                    >
+                        <span class="sbadmin-notif-item-titulo" x-text="notif.titulo"></span>
+                        <span class="sbadmin-notif-item-mensagem" x-text="notif.mensagem"></span>
+                    </a>
+                </template>
             </div>
         </div>
 

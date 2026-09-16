@@ -121,6 +121,19 @@ class OrcamentosController extends Controller
             'orc_com_criado_em' => now(),
         ]);
 
+        // Pedido do cliente (2026-09-16): o alerta de comentario (CRM03) so
+        // gravava o destinatario sem nunca notificar de verdade - agora usa
+        // o Sistema de Notificacoes generico (sino do topbar).
+        if ($alertaUsuarioId = $request->input('orc_com_alerta_usuario_id')) {
+            \App\Models\Notificacao::notificar(
+                (int) $alertaUsuarioId,
+                'comentario_orcamento',
+                'Novo comentário em orçamento',
+                Auth::user()->user_nome.' comentou no orçamento de '.$orcamento->cliente->cli_nome,
+                route('orcamentos.edit', $orcamento->orc_id)
+            );
+        }
+
         // Pedido do cliente (2026-09-14): apos adicionar um comentario, a
         // pagina recarrega (form comum, sem AJAX) e a aba ativa (estado do
         // Alpine, perdido no reload) voltava sempre pra "Dados" — flash

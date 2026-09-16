@@ -69,6 +69,25 @@ class ClientesApiFaeTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_assistencia_e_vendedor_criam_cliente_via_api(): void
+    {
+        // Pedido do cliente (2026-09-16): cadastro de cliente aberto a todos
+        // os perfis exceto Tecnico - alinhado com a mesma regra no Web.
+        $assistencia = Usuario::factory()->assistencia()->create();
+        $vendedor = Usuario::factory()->vendedor()->create();
+
+        foreach ([$assistencia, $vendedor] as $indice => $usuario) {
+            $response = $this->withToken($this->token($usuario))->postJson('/api/fae/v1/clientes', [
+                'cli_nome' => 'Cliente Novo '.$indice,
+                'cli_cnpj' => str_pad((string) (12345678000100 + $indice), 14, '0', STR_PAD_LEFT),
+                'cli_cidade' => 'Sao Paulo',
+                'cli_uf' => 'SP',
+            ]);
+
+            $response->assertCreated();
+        }
+    }
+
     public function test_comercial_cria_cliente_com_contatos_equipamentos_localizacoes(): void
     {
         $comercial = Usuario::factory()->comercial()->create();

@@ -332,6 +332,33 @@ body.sbadmin-body {
     text-align: center;
 }
 
+.sbadmin-notif-item {
+    display: block;
+    padding: $sbadmin-space-2 $sbadmin-space-4;
+    text-decoration: none;
+    color: var(--sbadmin-text);
+    max-width: 320px;
+
+    &:hover { background-color: var(--sbadmin-surface-muted); }
+
+    &.sbadmin-notif-item-unread {
+        background-color: rgba($sbadmin-color-primary, 0.08);
+    }
+}
+
+.sbadmin-notif-item-titulo {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: $sbadmin-font-weight-medium;
+}
+
+.sbadmin-notif-item-mensagem {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--sbadmin-text-muted);
+    white-space: normal;
+}
+
 .sbadmin-dropdown-item {
     display: block;
     width: 100%;
