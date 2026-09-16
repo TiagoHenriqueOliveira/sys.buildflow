@@ -143,19 +143,6 @@ class CrmApiFaeTest extends TestCase
         $this->assertSame(['Com coordenada'], $nomes);
     }
 
-    public function test_indicadores_comerciais_soma_orcamentos_por_vendedor(): void
-    {
-        $vendedor = $this->criarComercial();
-        $cliente = Cliente::factory()->create();
-        Orcamento::create(['orc_cliente_id' => $cliente->cli_id, 'orc_vendedor_id' => $vendedor->user_id, 'orc_ativo' => 1, 'orc_criado_em' => now()]);
-        Orcamento::create(['orc_cliente_id' => $cliente->cli_id, 'orc_vendedor_id' => $vendedor->user_id, 'orc_ativo' => 1, 'orc_criado_em' => now()]);
-
-        $response = $this->withToken($this->token($vendedor))->getJson('/api/fae/v1/indicadores-comerciais');
-
-        $response->assertOk()
-            ->assertJsonPath('total_levantadas', 2)
-            ->assertJsonPath('por_vendedor.0.levantadas', 2);
-    }
 
     public function test_resposta_de_multipla_escolha_volta_como_array_decodificado(): void
     {

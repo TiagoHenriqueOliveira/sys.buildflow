@@ -198,7 +198,6 @@ Route::prefix('fae/v1')->group(function () {
             Route::put('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'update']);
 
             Route::get('/mapa-relacoes',          [FaeCrmController::class, 'mapaRelacoes']);
-            Route::get('/indicadores-comerciais', [FaeCrmController::class, 'indicadores']);
 
             Route::get('/catalogos/vendedores-comerciais', [FaeCatalogoController::class, 'vendedoresComerciais']);
             Route::get('/catalogos/tipos-orcamento',       [FaeCatalogoController::class, 'tiposOrcamento']);
