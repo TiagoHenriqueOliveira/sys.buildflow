@@ -76,6 +76,7 @@ class OrcamentosController extends Controller
     {
         return [
             'vendedores' => $this->vendedoresComerciais(),
+            'usuariosAlerta' => $this->usuariosParaAlerta(),
             'tiposOrcamento' => CrmTipoOrcamento::where('crm_tp_orc_ativo', 1)
                 ->with(['configModelo.perguntas.opcoes'])
                 ->orderBy('crm_tp_orc_nome')
@@ -86,6 +87,20 @@ class OrcamentosController extends Controller
     private function vendedoresComerciais()
     {
         return Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
+            ->where('user_ativo', 1)
+            ->orderBy('user_nome')
+            ->get();
+    }
+
+    /**
+     * Pedido do cliente (2026-09-17): "Alertar usuário" (CRM03) deve listar
+     * Comercial E Vendedor - diferente de "Vendedor responsável"/"Vendedores
+     * Adicionais" (CRM04), que continuam só Comercial (nao foi pedido pra
+     * mudar esses dois).
+     */
+    private function usuariosParaAlerta()
+    {
+        return Usuario::whereIn('user_nivel_acesso', [NivelAcesso::Comercial->value, NivelAcesso::Vendedor->value])
             ->where('user_ativo', 1)
             ->orderBy('user_nome')
             ->get();

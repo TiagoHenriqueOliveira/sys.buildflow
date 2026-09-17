@@ -257,7 +257,7 @@
                                         id="orc_com_alerta_usuario_id"
                                         name="orc_com_alerta_usuario_id"
                                         label="Alertar usuário (opcional)"
-                                        :options="$vendedores->pluck('user_nome', 'user_id')->all()"
+                                        :options="$usuariosAlerta->pluck('user_nome', 'user_id')->all()"
                                         placeholder="Nenhum"
                                     />
                                 </div>

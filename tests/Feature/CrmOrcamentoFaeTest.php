@@ -153,6 +153,32 @@ class CrmOrcamentoFaeTest extends TestCase
         ]);
     }
 
+    /**
+     * Pedido do cliente (2026-09-17): "Alertar usuário" (CRM03) deve listar
+     * tambem quem tem perfil Vendedor (NivelAcesso::Vendedor), nao só
+     * Comercial - "Vendedor responsável"/"Vendedores Adicionais" (CRM04)
+     * continuam só Comercial, não foi pedido pra mudar esses dois.
+     */
+    public function test_tela_de_edicao_lista_vendedor_no_alerta_de_comentario(): void
+    {
+        $comercial = $this->criarVendedor();
+        $vendedorDeCampo = Usuario::factory()->vendedor()->create(['user_nome' => 'Vendedor de Campo']);
+        $tecnico = Usuario::factory()->tecnico()->create(['user_nome' => 'Tecnico Fulano']);
+        $cliente = Cliente::factory()->create();
+        $orcamento = \App\Models\Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $comercial->user_id,
+            'orc_ativo' => 1,
+            'orc_criado_em' => now(),
+        ]);
+
+        $response = $this->actingAs($comercial)->get(route('orcamentos.edit', $orcamento->orc_id));
+
+        $response->assertOk();
+        $response->assertSee('Vendedor de Campo');
+        $response->assertDontSee('Tecnico Fulano');
+    }
+
     public function test_exclui_comentario_do_orcamento(): void
     {
         // Pedido do cliente (2026-09-14): precisa dar pra excluir um
