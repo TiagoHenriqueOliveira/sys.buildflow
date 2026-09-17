@@ -85,6 +85,19 @@ class OrcamentosController extends Controller
             'orc_com_criado_em' => now(),
         ]);
 
+        // Pedido do cliente (2026-09-17) - Sistema de Notificacoes, mesma
+        // regra do storeComentario() web (faltava aqui, endpoint criado
+        // antes do Sistema de Notificacoes existir).
+        if ($alertaUsuarioId = $request->input('orc_com_alerta_usuario_id')) {
+            \App\Models\Notificacao::notificar(
+                (int) $alertaUsuarioId,
+                'comentario_orcamento',
+                'Novo comentário em orçamento',
+                'Novo comentário adicionado no orçamento Nº '.$orcamento->orc_id.'. Incluído por '.Auth::user()->user_nome.'.',
+                route('orcamentos.edit', $orcamento->orc_id)
+            );
+        }
+
         return response()->json(['data' => $this->formatComentario($comentario->load(['autor', 'usuarioAlertado']))], 201);
     }
 
@@ -106,6 +119,9 @@ class OrcamentosController extends Controller
             'nivel' => $o->orc_nivel?->value,
             'nivel_label' => $o->orc_nivel?->label(),
             'prazo_envio' => $o->orc_prazo_envio?->format('Y-m-d'),
+            // Pedido do cliente (2026-09-17) - campo novo, faltava aqui.
+            'resultado' => $o->orc_resultado?->value,
+            'resultado_label' => $o->orc_resultado?->label(),
             'criado_em' => $o->orc_criado_em?->format('d/m/Y H:i'),
         ];
     }

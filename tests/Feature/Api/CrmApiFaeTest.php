@@ -96,6 +96,66 @@ class CrmApiFaeTest extends TestCase
         $this->assertDatabaseMissing('orcamentos_comentarios', ['orc_com_id' => $comentarioId]);
     }
 
+    /**
+     * Pedido do cliente (2026-09-17) - orc_resultado faltava no payload da
+     * API (campo criado depois deste endpoint existir).
+     */
+    public function test_orcamento_retorna_resultado_na_resposta(): void
+    {
+        $vendedor = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+
+        $response = $this->withToken($this->token($vendedor))->postJson('/api/fae/v1/orcamentos', [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_resultado' => \App\Enums\ResultadoOrcamento::Convertido->value,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.resultado', \App\Enums\ResultadoOrcamento::Convertido->value)
+            ->assertJsonPath('data.resultado_label', 'Convertido');
+    }
+
+    /**
+     * Pedido do cliente (2026-09-17) - o alerta de comentario via API nao
+     * disparava notificacao (so o endpoint web fazia isso ate agora).
+     */
+    public function test_comentario_com_alerta_via_api_cria_notificacao(): void
+    {
+        $vendedor = $this->criarComercial();
+        $colega = $this->criarComercial();
+        $cliente = Cliente::factory()->create();
+        $orcamento = Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_ativo' => 1,
+            'orc_criado_em' => now(),
+        ]);
+
+        $this->withToken($this->token($vendedor))->postJson(
+            "/api/fae/v1/orcamentos/{$orcamento->orc_id}/comentarios",
+            ['orc_com_texto' => 'Revisar prazo.', 'orc_com_alerta_usuario_id' => $colega->user_id]
+        )->assertCreated();
+
+        $this->assertDatabaseHas('notificacoes', [
+            'notif_usuario_id' => $colega->user_id,
+            'notif_tipo' => 'comentario_orcamento',
+        ]);
+    }
+
+    public function test_catalogo_segmentos_lista_apenas_ativos(): void
+    {
+        $vendedor = $this->criarComercial();
+        \App\Models\Segmento::create(['seg_descricao' => 'Sucroenergético', 'seg_ativo' => true]);
+        \App\Models\Segmento::create(['seg_descricao' => 'Descontinuado', 'seg_ativo' => false]);
+
+        $response = $this->withToken($this->token($vendedor))->getJson('/api/fae/v1/catalogos/segmentos');
+
+        $response->assertOk();
+        $response->assertJsonFragment(['descricao' => 'Sucroenergético']);
+        $response->assertJsonMissing(['descricao' => 'Descontinuado']);
+    }
+
     public function test_comercial_cria_roteiro_de_viagem_com_clientes(): void
     {
         $vendedor = $this->criarComercial();

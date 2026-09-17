@@ -7,6 +7,7 @@ use App\Enums\NivelAcesso;
 use App\Models\ClassificacaoCliente;
 use App\Models\CrmTipoOrcamento;
 use App\Models\Ocorrencia;
+use App\Models\Segmento;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 
@@ -34,6 +35,24 @@ class CatalogoController extends Controller
             ->map(fn ($c) => [
                 'id'   => $c->cla_cli_id,
                 'nome' => $c->cla_cli_nome,
+            ]);
+
+        return response()->json(['data' => $rows]);
+    }
+
+    /**
+     * NC01 - opcoes para o campo Segmento do cadastro de Cliente (modulo
+     * "Segmentos" em Configuracoes, pedido do cliente 2026-09-17 - nao
+     * existia quando os outros endpoints de Cliente foram criados).
+     */
+    public function segmentos(): JsonResponse
+    {
+        $rows = Segmento::where('seg_ativo', 1)
+            ->orderBy('seg_descricao')
+            ->get()
+            ->map(fn ($s) => [
+                'id' => $s->seg_id,
+                'descricao' => $s->seg_descricao,
             ]);
 
         return response()->json(['data' => $rows]);

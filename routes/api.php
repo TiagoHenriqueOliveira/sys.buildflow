@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Fae\RelatorioFormularioController as FaeRelatorioFo
 use App\Http\Controllers\Api\Fae\OrcamentosController as FaeOrcamentosController;
 use App\Http\Controllers\Api\Fae\RoteirosViagemController as FaeRoteirosViagemController;
 use App\Http\Controllers\Api\Fae\CrmController as FaeCrmController;
+use App\Http\Controllers\Api\Fae\NotificacoesController as FaeNotificacoesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -206,9 +207,17 @@ Route::prefix('fae/v1')->group(function () {
         });
 
         Route::get('/catalogos/classificacoes-cliente', [FaeCatalogoController::class, 'classificacoesCliente']);
+        Route::get('/catalogos/segmentos', [FaeCatalogoController::class, 'segmentos']);
 
         // CatÃ¡logos (somente leitura)
         Route::get('/catalogos/ocorrencias', [FaeCatalogoController::class, 'ocorrencias']);
+
+        // Sistema de Notificacoes (sino do Web) - consulta/marcacao;
+        // push nativa (mesmo com app fechado) fica pra quando o transporte
+        // (FCM) for implementado.
+        Route::get('/notificacoes', [FaeNotificacoesController::class, 'index']);
+        Route::post('/notificacoes/{id}/marcar-lida', [FaeNotificacoesController::class, 'marcarLida']);
+        Route::post('/notificacoes/{id}/marcar-nao-lida', [FaeNotificacoesController::class, 'marcarNaoLida']);
 
         // Atendimentos
         Route::get('/atendimentos',      [FaeAtendimentosController::class, 'index']);
