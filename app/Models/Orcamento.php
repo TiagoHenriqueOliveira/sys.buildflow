@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\NivelOrcamento;
+use App\Enums\ResultadoOrcamento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +21,7 @@ class Orcamento extends Model
         'orc_tipo_orcamento_id',
         'orc_nivel',
         'orc_prazo_envio',
+        'orc_resultado',
         'orc_ativo',
         'orc_criado_em',
     ];
@@ -27,6 +29,7 @@ class Orcamento extends Model
     protected $casts = [
         'orc_nivel' => NivelOrcamento::class,
         'orc_prazo_envio' => 'date:Y-m-d',
+        'orc_resultado' => ResultadoOrcamento::class,
         'orc_ativo' => 'boolean',
         'orc_criado_em' => 'datetime',
     ];

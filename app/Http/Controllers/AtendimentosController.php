@@ -323,4 +323,41 @@ class AtendimentosController extends Controller
             return response()->json(['message' => 'Erro ao carregar equipamentos.'], 500);
         }
     }
+
+    /**
+     * Pedido do cliente (2026-09-17): aba "Relatorios" no cadastro de
+     * Atendimento - lista os relatorios ja preenchidos, com link pra tela
+     * de preenchimento e pro PDF de cada um.
+     */
+    public function getRelatorios(int $id): JsonResponse
+    {
+        $atendimento = $this->atendimentoComPosseGarantida($id);
+
+        $relatorios = $atendimento->relatorios()
+            ->orderByDesc('aten_rel_data')
+            ->get()
+            ->map(function ($relatorio) {
+                // aten_rel_status e' castado como 'integer' puro no model
+                // (nao como enum) - converte aqui na leitura.
+                $status = \App\Enums\AtendimentoRelatorioStatus::from($relatorio->aten_rel_status);
+
+                return [
+                    'id' => $relatorio->aten_rel_id,
+                    'data' => $relatorio->aten_rel_data->format('d/m/Y'),
+                    'status' => $status->label(),
+                    // Tipo de badge do sbadmin (sbadmin-badge-*), nao o
+                    // badgeClass() legado (Bootstrap "badge-*", de outro
+                    // sistema visual - ver packages/sbadmin/.../badge.blade.php).
+                    'status_tipo' => match ($status) {
+                        \App\Enums\AtendimentoRelatorioStatus::Aprovado => 'success',
+                        \App\Enums\AtendimentoRelatorioStatus::Revisar => 'warning',
+                        default => 'info',
+                    },
+                    'url_preenchimento' => route('atendimentos-relatorios.show', $relatorio->aten_rel_id),
+                    'url_pdf' => route('atendimentos-relatorios.pdf', $relatorio->aten_rel_id),
+                ];
+            });
+
+        return response()->json(['relatorios' => $relatorios]);
+    }
 }

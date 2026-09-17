@@ -57,7 +57,7 @@
     </form>
 
     <x-sbadmin::table
-        :headers="['Ações', 'Cliente', 'Vendedor', 'Tipo', 'Nível', 'Prazo de Envio', 'Status']"
+        :headers="['Ações', 'Cliente', 'Vendedor', 'Tipo', 'Nível', 'Prazo de Envio', 'Resultado']"
         :paginator="$orcamentos"
         :count="$orcamentos->count()"
         empty-message="Nenhum orçamento encontrado."
@@ -75,9 +75,13 @@
                 <td>{{ optional($o->orc_nivel)->label() }}</td>
                 <td>{{ optional($o->orc_prazo_envio)->format('d/m/Y') }}</td>
                 <td>
-                    <x-sbadmin::badge :type="$o->orc_ativo ? 'success' : 'error'">
-                        {{ $o->orc_ativo ? 'Ativo' : 'Inativo' }}
-                    </x-sbadmin::badge>
+                    @if($o->orc_resultado)
+                        <x-sbadmin::badge :type="$o->orc_resultado->badgeTipo()">
+                            {{ $o->orc_resultado->label() }}
+                        </x-sbadmin::badge>
+                    @else
+                        <x-sbadmin::badge type="neutral">Em aberto</x-sbadmin::badge>
+                    @endif
                 </td>
             </tr>
         @endforeach

@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * Sessao 06b do cronograma FAE (CRM Comercial) - CRM05/06 (roteiro de
  * viagem: saida e retorno por cliente), CRM07 (mapa de relacoes de
- * clientes) e CRM08 (painel de indicadores comerciais, dados mockados).
+ * clientes) e CRM08 (painel de indicadores comerciais, com dado real de resultado do orcamento a partir de 2026-09-17).
  */
 class CrmRoteiroMapaIndicadoresFaeTest extends TestCase
 {
@@ -197,7 +197,7 @@ class CrmRoteiroMapaIndicadoresFaeTest extends TestCase
         $response->assertDontSee('Cliente Fora Do Filtro');
     }
 
-    public function test_indicadores_comerciais_calcula_totais_e_conversao_mockada_por_vendedor(): void
+    public function test_indicadores_comerciais_calcula_totais_por_vendedor(): void
     {
         $vendedor = $this->criarVendedor();
         $cliente = Cliente::factory()->create();
@@ -215,8 +215,50 @@ class CrmRoteiroMapaIndicadoresFaeTest extends TestCase
         $response->assertViewHas('totalLevantadas', 1);
         $response->assertViewHas('indicadoresPorVendedor', function ($linhas) use ($vendedor) {
             return $linhas->first()['vendedor'] === $vendedor->user_nome
-                && $linhas->first()['levantadas'] === 1;
+                && $linhas->first()['levantadas'] === 1
+                && $linhas->first()['taxaConversao'] === null;
         });
+    }
+
+    /**
+     * Pedido do cliente (2026-09-17): "fechadas"/"taxa de conversão" deixam
+     * de ser mockadas (70% fixo) - vêm do campo orc_resultado de verdade.
+     */
+    public function test_indicadores_comerciais_usa_resultado_real_do_orcamento(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_ativo' => 1,
+            'orc_resultado' => \App\Enums\ResultadoOrcamento::Convertido->value,
+            'orc_criado_em' => now(),
+        ]);
+        Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_ativo' => 1,
+            'orc_resultado' => \App\Enums\ResultadoOrcamento::NaoConvertido->value,
+            'orc_criado_em' => now(),
+        ]);
+        Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_ativo' => 1,
+            'orc_resultado' => \App\Enums\ResultadoOrcamento::Adiado->value,
+            'orc_criado_em' => now(),
+        ]);
+
+        $response = $this->actingAs($vendedor)->get(route('indicadores-comerciais.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('totalLevantadas', 3);
+        $response->assertViewHas('totalFechadas', 1);
+        // Taxa = 1 convertido / (1 convertido + 1 nao convertido) = 50%.
+        // O adiado nao entra no denominador (resultado ainda nao definitivo).
+        $response->assertViewHas('taxaConversaoGeral', 50);
     }
 
     public function test_tecnico_nao_acessa_mapa_nem_indicadores(): void

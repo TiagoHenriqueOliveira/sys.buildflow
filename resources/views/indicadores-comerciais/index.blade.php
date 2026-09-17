@@ -1,5 +1,6 @@
-{{-- CRM08 — painel de indicadores comerciais (dados mockados nesta etapa,
-     ver comentário no IndicadoresComerciaisController). --}}
+{{-- CRM08 — painel de indicadores comerciais. Pedido do cliente (2026-09-17):
+     "fechadas"/"taxa de conversão" deixaram de ser mockadas - vêm do campo
+     orc_resultado do orçamento (ver IndicadoresComerciaisController). --}}
 <x-layout title="Indicadores Comerciais">
     <div class="sbadmin-page-header">
         <h2 class="sbadmin-page-heading">Indicadores Comerciais</h2>
@@ -8,21 +9,21 @@
 
     <div class="sbadmin-alert sbadmin-alert-info mb-3" role="alert">
         <i class="bi bi-info-circle" aria-hidden="true"></i>
-        "Propostas fechadas" e "taxa de conversão" são <strong>mockados</strong> nesta etapa (70% fixo) — o orçamento ainda não tem um status de fechamento real, isso é parte da sessão de Persistência do CRM. "Propostas levantadas" e "clientes visitados" já usam dados reais cadastrados.
+        "Propostas fechadas" e "taxa de conversão" consideram só orçamentos com resultado definido como Convertido ou Não convertido — orçamentos Adiados, marcados como Projeto futuro, ou ainda Em aberto (sem resultado preenchido) não entram nesse cálculo até que o resultado seja definido no cadastro do orçamento.
     </div>
 
     <div class="sbadmin-card mb-3">
         <div class="sbadmin-card-body">
             <form method="GET" class="row g-2 align-items-end">
-                <div class="col-sm-4">
+                <div class="col-sm-3">
                     <label class="sbadmin-form-label" for="f_periodo_inicio">Período — início</label>
                     <input type="date" class="form-control sbadmin-form-control" id="f_periodo_inicio" name="f_periodo_inicio" value="{{ $filtroInicio }}">
                 </div>
-                <div class="col-sm-4">
+                <div class="col-sm-3">
                     <label class="sbadmin-form-label" for="f_periodo_fim">Período — fim</label>
                     <input type="date" class="form-control sbadmin-form-control" id="f_periodo_fim" name="f_periodo_fim" value="{{ $filtroFim }}">
                 </div>
-                <div class="col-sm-4 d-flex gap-2">
+                <div class="col-sm-6 d-flex gap-2">
                     <button type="submit" class="btn btn-info text-white">
                         <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                     </button>
@@ -44,16 +45,16 @@
         <div class="col-sm-6 col-lg-3">
             <div class="sbadmin-card h-100">
                 <div class="sbadmin-card-body">
-                    <p class="text-body-secondary mb-1">Propostas fechadas <span class="badge bg-secondary">mockado</span></p>
-                    <h3 class="mb-0">{{ $totalFechadasMockado }}</h3>
+                    <p class="text-body-secondary mb-1">Propostas fechadas</p>
+                    <h3 class="mb-0">{{ $totalFechadas }}</h3>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
             <div class="sbadmin-card h-100">
                 <div class="sbadmin-card-body">
-                    <p class="text-body-secondary mb-1">Taxa de conversão <span class="badge bg-secondary">mockado</span></p>
-                    <h3 class="mb-0">{{ $taxaConversaoGeralMockada }}%</h3>
+                    <p class="text-body-secondary mb-1">Taxa de conversão</p>
+                    <h3 class="mb-0">{{ $taxaConversaoGeral !== null ? $taxaConversaoGeral.'%' : '—' }}</h3>
                 </div>
             </div>
         </div>
@@ -79,8 +80,8 @@
                             <tr>
                                 <th>Vendedor</th>
                                 <th>Levantadas</th>
-                                <th>Fechadas <span class="badge bg-secondary">mockado</span></th>
-                                <th>Taxa de conversão <span class="badge bg-secondary">mockado</span></th>
+                                <th>Fechadas</th>
+                                <th>Taxa de conversão</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,7 +90,7 @@
                                     <td>{{ $linha['vendedor'] }}</td>
                                     <td>{{ $linha['levantadas'] }}</td>
                                     <td>{{ $linha['fechadas'] }}</td>
-                                    <td>{{ $linha['taxaConversao'] }}%</td>
+                                    <td>{{ $linha['taxaConversao'] !== null ? $linha['taxaConversao'].'%' : '—' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

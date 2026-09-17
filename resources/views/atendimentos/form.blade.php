@@ -75,6 +75,17 @@
                             @click="editando && (tab = 'anexos')"
                         >Anexos</button>
                     </li>
+                    <li class="nav-item text-nowrap">
+                        <button
+                            type="button"
+                            id="tab-relatorios-tab"
+                            data-label="Relatórios"
+                            class="nav-link aten-tab-restrita"
+                            :class="{ active: tab === 'relatorios', disabled: !editando }"
+                            :disabled="!editando"
+                            @click="editando && (tab = 'relatorios')"
+                        >Relatórios</button>
+                    </li>
                 </ul>
 
                 {{-- Formulário envolve Dados + Observações para compartilhar o mesmo submit (igual ao original) --}}
@@ -262,6 +273,23 @@
                     <div id="aten_anexos_lista"></div>
                 </div>
 
+                {{-- Aba Relatórios --}}
+                <div x-show="tab === 'relatorios'" x-cloak>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover" id="table_relatorios_atendimento">
+                            <thead>
+                                <tr>
+                                    <th class="align-middle">Data</th>
+                                    <th class="align-middle">Status</th>
+                                    <th class="text-center align-middle" style="width: 100px;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <p class="text-body-secondary small mb-0" id="relatorios_vazio_msg">Nenhum relatório preenchido para este atendimento ainda.</p>
+                </div>
+
                 {{-- Rodapé único (Salvar + Voltar), sempre visível independente da
                      aba ativa — Equipamentos/Anexos salvam na hora via fetch() e
                      não precisam de um botão Salvar próprio, mas o usuário pediu
@@ -377,6 +405,7 @@
                             carregarObservacoes(response.aten_id);
                             carregarEquipamentos(response.aten_id);
                             carregarAnexosAtendimento(response.aten_id);
+                            carregarRelatorios(response.aten_id);
                         } else {
                             carregarObservacoes(document.getElementById('aten_id').value);
                         }
@@ -406,6 +435,41 @@
                 fetch('{{ url('/atendimentos') }}/' + atenId + '/equipamentos', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then((r) => r.json())
                     .then((response) => renderizarEquipamentos(response.equipamentos, atenId));
+            }
+
+            function carregarRelatorios(atenId) {
+                if (!atenId) return;
+                fetch('{{ url('/atendimentos') }}/' + atenId + '/relatorios', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then((r) => r.json())
+                    .then((response) => renderizarRelatorios(response.relatorios));
+            }
+
+            function renderizarRelatorios(relatorios) {
+                atualizarIconeAba('tab-relatorios-tab', relatorios && relatorios.length > 0);
+                const tbody = document.querySelector('#table_relatorios_atendimento tbody');
+                const vazioMsg = document.getElementById('relatorios_vazio_msg');
+                tbody.innerHTML = '';
+
+                if (!relatorios || !relatorios.length) {
+                    vazioMsg.hidden = false;
+                    return;
+                }
+                vazioMsg.hidden = true;
+
+                relatorios.forEach((relatorio) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="align-middle">${relatorio.data}</td>
+                        <td class="align-middle"><span class="sbadmin-badge sbadmin-badge-${relatorio.status_tipo} sbadmin-badge-pill">${relatorio.status}</span></td>
+                        <td class="text-center align-middle">
+                            <a href="${relatorio.url_preenchimento}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Abrir relatório" title="Abrir relatório">
+                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            </a>
+                            <a href="${relatorio.url_pdf}" class="btn btn-sm sbadmin-table-action-btn" target="_blank" aria-label="Abrir PDF" title="Abrir PDF">
+                                <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                            </a>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
             }
 
             function renderizarEquipamentos(equipamentos, atenId) {
@@ -591,6 +655,7 @@
                     carregarObservacoes(@json($atendimento->aten_id));
                     carregarEquipamentos(@json($atendimento->aten_id));
                     carregarAnexosAtendimento(@json($atendimento->aten_id));
+                    carregarRelatorios(@json($atendimento->aten_id));
                 @endif
             });
         </script>

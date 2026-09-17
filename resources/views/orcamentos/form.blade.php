@@ -131,6 +131,22 @@
                             </div>
                         </div>
 
+                        <div class="row">
+                            <div class="col-sm-6">
+                                {{-- Pedido do cliente (2026-09-17): resultado do
+                                     orçamento, pra alimentar os indicadores
+                                     comerciais (CRM08) com dado real. --}}
+                                <x-sbadmin::form.select
+                                    id="orc_resultado"
+                                    name="orc_resultado"
+                                    label="Resultado"
+                                    :options="collect(App\Enums\ResultadoOrcamento::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all()"
+                                    :value="old('orc_resultado', $orcamento->orc_resultado?->value)"
+                                    placeholder="Em aberto"
+                                />
+                            </div>
+                        </div>
+
                     </div>
                     {{-- ── Perguntas (dinâmicas por tipo, NC02/CRM01) ──────────────── --}}
                     <div x-show="tab === 'perguntas'" x-cloak>

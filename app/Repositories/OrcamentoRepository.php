@@ -65,6 +65,7 @@ class OrcamentoRepository implements CrudRepositoryInterface
             'orc_tipo_orcamento_id' => $data['orc_tipo_orcamento_id'] ?? null,
             'orc_nivel' => $nivel,
             'orc_prazo_envio' => $prazo,
+            'orc_resultado' => $data['orc_resultado'] ?? null,
         ];
     }
 

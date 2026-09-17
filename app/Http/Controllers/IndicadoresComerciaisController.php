@@ -2,55 +2,63 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ResultadoOrcamento;
 use App\Enums\ResultadoVisitaRoteiro;
-use App\Models\Orcamento;
 use App\Models\RoteiroViagemCliente;
-use App\Models\Usuario;
-use App\Enums\NivelAcesso;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class IndicadoresComerciaisController extends Controller
 {
     /**
-     * CRM08 — painel de indicadores comerciais. "Propostas levantadas" e
-     * "clientes visitados" vêm de dados reais (orcamentos/roteiros já
-     * existentes); "propostas fechadas"/"taxa de conversão" são MOCKADOS
-     * nesta etapa porque o orçamento ainda não tem um status de
-     * fechamento (isso é workflow da Etapa 2/Persistência, sessão 07 —
-     * ver docs/cronograma/06-web-crm-telas.md, CRM08).
+     * CRM08 — painel de indicadores comerciais. Pedido do cliente
+     * (2026-09-17): "propostas fechadas"/"taxa de conversão" deixam de ser
+     * mockadas (70% fixo) - passam a vir do campo orc_resultado
+     * (Convertido/Não Convertido/Adiado/Projeto Futuro), preenchido no
+     * cadastro do orçamento. "Fechadas" = Convertido; a taxa de conversão
+     * considera só orçamentos já decididos (Convertido + Não Convertido) -
+     * Adiado/Projeto Futuro/Em aberto ainda não têm resultado definitivo,
+     * não entram no cálculo. Query de agregação em DB::table() direto (não
+     * via o model Orcamento) pra evitar comparar enum castado com inteiro
+     * bruto nas somas condicionais abaixo.
      */
     public function index(Request $request): View
     {
         $inicio = trim((string) $request->get('f_periodo_inicio', ''));
         $fim = trim((string) $request->get('f_periodo_fim', ''));
+        $convertido = ResultadoOrcamento::Convertido->value;
+        $naoConvertido = ResultadoOrcamento::NaoConvertido->value;
 
-        $orcamentosPorVendedor = Orcamento::query()
-            ->selectRaw('orc_vendedor_id, count(*) as total')
+        $porVendedor = DB::table('orcamentos')
+            ->join('usuarios', 'usuarios.user_id', '=', 'orcamentos.orc_vendedor_id')
+            ->selectRaw(
+                'usuarios.user_nome as vendedor,
+                 count(*) as levantadas,
+                 sum(case when orc_resultado = ? then 1 else 0 end) as fechadas,
+                 sum(case when orc_resultado = ? then 1 else 0 end) as nao_convertidas',
+                [$convertido, $naoConvertido]
+            )
             ->when($inicio !== '', fn ($q) => $q->whereDate('orc_criado_em', '>=', $inicio))
             ->when($fim !== '', fn ($q) => $q->whereDate('orc_criado_em', '<=', $fim))
-            ->groupBy('orc_vendedor_id')
-            ->with('vendedor')
+            ->groupBy('usuarios.user_id', 'usuarios.user_nome')
+            ->orderByDesc('levantadas')
             ->get();
 
-        $totalLevantadas = (int) $orcamentosPorVendedor->sum('total');
-
-        // Taxa de conversão mockada (70%) — não há status de fechamento
-        // ainda; ver aviso acima e no cabeçalho da view.
-        $taxaConversaoMockada = 0.70;
-
-        $indicadoresPorVendedor = $orcamentosPorVendedor->map(function ($linha) use ($taxaConversaoMockada) {
-            $fechadas = (int) round($linha->total * $taxaConversaoMockada);
+        $indicadoresPorVendedor = $porVendedor->map(function ($linha) {
+            $decididas = $linha->fechadas + $linha->nao_convertidas;
 
             return [
-                'vendedor' => optional($linha->vendedor)->user_nome ?? 'Sem vendedor',
-                'levantadas' => $linha->total,
-                'fechadas' => $fechadas,
-                'taxaConversao' => $linha->total > 0 ? round(($fechadas / $linha->total) * 100) : 0,
+                'vendedor' => $linha->vendedor,
+                'levantadas' => (int) $linha->levantadas,
+                'fechadas' => (int) $linha->fechadas,
+                'taxaConversao' => $decididas > 0 ? round(($linha->fechadas / $decididas) * 100) : null,
             ];
-        })->sortByDesc('levantadas')->values();
+        });
 
-        $totalFechadasMockado = (int) round($totalLevantadas * $taxaConversaoMockada);
+        $totalLevantadas = (int) $porVendedor->sum('levantadas');
+        $totalFechadas = (int) $porVendedor->sum('fechadas');
+        $totalDecididas = $totalFechadas + (int) $porVendedor->sum('nao_convertidas');
 
         $clientesVisitados = RoteiroViagemCliente::query()
             ->where('crm_rot_cli_resultado', ResultadoVisitaRoteiro::Visitado->value)
@@ -63,8 +71,8 @@ class IndicadoresComerciaisController extends Controller
 
         return view('indicadores-comerciais.index', [
             'totalLevantadas' => $totalLevantadas,
-            'totalFechadasMockado' => $totalFechadasMockado,
-            'taxaConversaoGeralMockada' => $totalLevantadas > 0 ? round(($totalFechadasMockado / $totalLevantadas) * 100) : 0,
+            'totalFechadas' => $totalFechadas,
+            'taxaConversaoGeral' => $totalDecididas > 0 ? round(($totalFechadas / $totalDecididas) * 100) : null,
             'clientesVisitados' => $clientesVisitados,
             'indicadoresPorVendedor' => $indicadoresPorVendedor,
             'filtroInicio' => $inicio,

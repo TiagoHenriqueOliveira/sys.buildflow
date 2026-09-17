@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
     // Atendimentos — leitura disponível para todos os usuários autenticados
     Route::get('/atendimentos', [AtendimentosController::class, 'index'])->name('atendimentos.index');
     Route::get('/atendimentos/{id}/equipamentos', [AtendimentosController::class, 'getEquipamentos'])->name('atendimentos.get-equipamentos');
+    Route::get('/atendimentos/{id}/relatorios', [AtendimentosController::class, 'getRelatorios'])->name('atendimentos.get-relatorios');
 
     // Atendimentos — Observações e Anexos (disponíveis para todos autenticados)
     Route::get('/atendimentos/{id}/observacoes', [AtendimentosController::class, 'getObservacoes'])->name('atendimentos.get-observacoes');

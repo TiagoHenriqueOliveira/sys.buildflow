@@ -83,31 +83,19 @@ class Cliente extends Model
     }
 
     /**
-     * NC01 - historico consolidado (atendimentos + relatorios + orcamentos),
-     * em ordem cronologica decrescente. Sem UNION SQL - poucas linhas por
-     * cliente, 3 queries + merge em colecao resolve sem custo extra.
+     * NC01 - historico consolidado (atendimentos + orcamentos), em ordem
+     * cronologica decrescente. Pedido do cliente (2026-09-17): nao listar
+     * relatorio aqui - a aba "Relatorios" do proprio cadastro de Atendimento
+     * (ver AtendimentosController::getRelatorios()) ja cobre isso.
      */
     public function historico()
     {
-        $itensAtendimento = $this->atendimentos()->with('relatorios')->get()->flatMap(function ($atendimento) {
-            $itens = collect([[
-                'tipo' => 'Atendimento',
-                'data' => $atendimento->aten_dt_inicio,
-                'descricao' => trim('Atendimento aberto '.($atendimento->aten_responsavel ? '- '.$atendimento->aten_responsavel : '')),
-                'link' => route('atendimentos.edit', $atendimento->aten_id),
-            ]]);
-
-            foreach ($atendimento->relatorios as $relatorio) {
-                $itens->push([
-                    'tipo' => 'Relatório',
-                    'data' => $relatorio->aten_rel_data,
-                    'descricao' => 'Relatório de atendimento',
-                    'link' => route('atendimentos-relatorios.show', $relatorio->aten_rel_id),
-                ]);
-            }
-
-            return $itens;
-        });
+        $itensAtendimento = $this->atendimentos->map(fn ($atendimento) => [
+            'tipo' => 'Atendimento',
+            'data' => $atendimento->aten_dt_inicio,
+            'descricao' => trim('Atendimento aberto '.($atendimento->aten_responsavel ? '- '.$atendimento->aten_responsavel : '')),
+            'link' => route('atendimentos.edit', $atendimento->aten_id),
+        ]);
 
         $itensOrcamento = $this->orcamentos->map(fn ($orcamento) => [
             'tipo' => 'Orçamento',

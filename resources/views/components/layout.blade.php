@@ -56,7 +56,9 @@
                 ['label' => 'Classificações de Cliente', 'icon' => 'bi-tag', 'route' => 'classificacoes-cliente.index'],
                 ['label' => 'Ocorrências', 'icon' => 'bi-exclamation-triangle', 'route' => 'ocorrencias.index'],
                 ['label' => 'Usuários', 'icon' => 'bi-people', 'route' => 'usuarios.index'],
-                ['label' => 'Logs de Auditoria', 'icon' => 'bi-clock-history', 'route' => 'logs-auditoria.index'],
+                // Pedido do cliente (2026-09-17): esconder do menu por ora -
+                // vai elaborar uma nova ideia de como monitorar. Rota/tela
+                // continuam existindo, só não aparecem na navegação.
             ],
         ];
     }
