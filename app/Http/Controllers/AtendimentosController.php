@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Http\Requests\AtendimentoEquipamentoRequest;
 use App\Http\Requests\AtendimentoRequest;
 use App\Models\Atendimento;
@@ -21,6 +22,7 @@ use Illuminate\View\View;
 class AtendimentosController extends Controller
 {
     use GarantePosseDeAtendimento;
+    use PersisteFiltros;
 
     public function __construct(
         private AtendimentoRepository $repository,
@@ -66,13 +68,14 @@ class AtendimentosController extends Controller
         // é um intervalo (aten_dt_inicio/aten_dt_fim); "Natureza" é um
         // <select> pelo id (nat_aten_id), os demais texto livre (LIKE) ou o
         // select de Status.
-        $filtroNatureza = $request->get('f_natureza', '');
-        $filtroTecnico = trim((string) $request->get('f_tecnico', ''));
-        $filtroCliente = trim((string) $request->get('f_cliente', ''));
-        $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
-        $filtroPeriodoDe = trim((string) $request->get('f_periodo_de', ''));
-        $filtroPeriodoAte = trim((string) $request->get('f_periodo_ate', ''));
-        $filtroStatus = $request->get('f_status', '');
+        $filtros = $this->filtrosPersistentes('atendimentos', ['f_natureza', 'f_tecnico', 'f_cliente', 'f_nr_proposta', 'f_periodo_de', 'f_periodo_ate', 'f_status']);
+        $filtroNatureza = $filtros['f_natureza'];
+        $filtroTecnico = $filtros['f_tecnico'];
+        $filtroCliente = $filtros['f_cliente'];
+        $filtroNrProposta = $filtros['f_nr_proposta'];
+        $filtroPeriodoDe = $filtros['f_periodo_de'];
+        $filtroPeriodoAte = $filtros['f_periodo_ate'];
+        $filtroStatus = $filtros['f_status'];
 
         $atendimentos = $this->repository->query($filtroUsuarioId)
             ->when($filtroNatureza !== '', fn ($q) => $q->where('atendimentos.aten_natureza_id', (int) $filtroNatureza))
@@ -331,12 +334,12 @@ class AtendimentosController extends Controller
      */
     public function getRelatorios(int $id): JsonResponse
     {
-        $atendimento = $this->atendimentoComPosseGarantida($id);
+        $atendimento = $this->atendimentoComPosseGarantida($id)->load('natureza', 'usuario');
 
         $relatorios = $atendimento->relatorios()
             ->orderByDesc('aten_rel_data')
             ->get()
-            ->map(function ($relatorio) {
+            ->map(function ($relatorio) use ($atendimento) {
                 // aten_rel_status e' castado como 'integer' puro no model
                 // (nao como enum) - converte aqui na leitura.
                 $status = \App\Enums\AtendimentoRelatorioStatus::from($relatorio->aten_rel_status);
@@ -344,6 +347,12 @@ class AtendimentosController extends Controller
                 return [
                     'id' => $relatorio->aten_rel_id,
                     'data' => $relatorio->aten_rel_data->format('d/m/Y'),
+                    // Natureza/Nº Proposta/Técnico são do ATENDIMENTO (o
+                    // mesmo pra todo relatório desta lista) - pedido do
+                    // cliente (2026-09-17) pra exibir junto de cada linha.
+                    'natureza' => optional($atendimento->natureza)->nat_aten_descricao,
+                    'nr_proposta' => $atendimento->aten_nr_proposta,
+                    'tecnico' => optional($atendimento->usuario)->user_nome,
                     'status' => $status->label(),
                     // Tipo de badge do sbadmin (sbadmin-badge-*), nao o
                     // badgeClass() legado (Bootstrap "badge-*", de outro

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\NivelAcesso;
 use App\Http\Requests\RoteiroViagemRequest;
 use App\Models\Cliente;
@@ -14,14 +15,17 @@ use Illuminate\View\View;
 
 class RoteirosViagemController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private RoteiroViagemRepository $repository,
     ) {}
 
     public function index(Request $request): View
     {
-        $filtroVendedor = $request->get('f_vendedor', '');
-        $filtroPeriodo = trim((string) $request->get('f_periodo', ''));
+        $filtros = $this->filtrosPersistentes('roteiros-viagem', ['f_vendedor', 'f_periodo']);
+        $filtroVendedor = $filtros['f_vendedor'];
+        $filtroPeriodo = $filtros['f_periodo'];
 
         $roteiros = RoteiroViagem::query()
             ->with(['vendedor', 'clientes'])

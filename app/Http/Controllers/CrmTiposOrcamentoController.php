@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\SetorModelo;
 use App\Http\Requests\CrmTipoOrcamentoRequest;
 use App\Models\ConfigModelo;
@@ -13,13 +14,16 @@ use Illuminate\View\View;
 
 class CrmTiposOrcamentoController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private CrmTipoOrcamentoRepository $repository,
     ) {}
 
     public function index(Request $request): View
     {
-        $filtroNome = trim((string) $request->get('f_nome', ''));
+        $filtros = $this->filtrosPersistentes('crm-tipos-orcamento', ['f_nome']);
+        $filtroNome = $filtros['f_nome'];
 
         $tipos = CrmTipoOrcamento::query()
             ->with('configModelo')

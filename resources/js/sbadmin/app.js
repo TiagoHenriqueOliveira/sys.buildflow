@@ -58,6 +58,23 @@ export function registerSbAdmin(Alpine) {
                 })
                 .catch(() => {});
         },
+
+        // Pedido do cliente (2026-09-17): alternar lida/nao-lida pelo botao
+        // dedicado do item (nao navega, so muda o estado).
+        alternarLeituraNotificacao(notificacao) {
+            const marcarComoLida = !notificacao.lida;
+            const rota = marcarComoLida ? 'marcar-lida' : 'marcar-nao-lida';
+            const token = document.querySelector('meta[name="csrf-token"]')?.content;
+            fetch(`/notificacoes/${notificacao.id}/${rota}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token },
+            })
+                .then(() => {
+                    notificacao.lida = marcarComoLida;
+                    this.notificacoesNaoLidas = Math.max(0, this.notificacoesNaoLidas + (marcarComoLida ? -1 : 1));
+                })
+                .catch(() => {});
+        },
     }));
 }
 

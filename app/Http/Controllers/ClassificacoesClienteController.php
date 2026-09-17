@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Http\Requests\ClassificacaoClienteRequest;
 use App\Models\ClassificacaoCliente;
 use App\Repositories\ClassificacaoClienteRepository;
@@ -17,13 +18,16 @@ use Illuminate\View\View;
  */
 class ClassificacoesClienteController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private ClassificacaoClienteRepository $repository,
     ) {}
 
     public function index(Request $request): View
     {
-        $filtroNome = trim((string) $request->get('f_nome', ''));
+        $filtros = $this->filtrosPersistentes('classificacoes-cliente', ['f_nome']);
+        $filtroNome = $filtros['f_nome'];
 
         $classificacoes = ClassificacaoCliente::query()
             ->when($filtroNome !== '', fn ($q) => $q->where('cla_cli_nome', 'like', "%{$filtroNome}%"))

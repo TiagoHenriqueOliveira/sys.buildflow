@@ -222,13 +222,30 @@
 
                         <div class="row">
                             <div class="col-sm-4">
-                                <x-sbadmin::form.input
+                                @php
+                                    // Pedido do cliente (2026-09-17): segmento
+                                    // passa a listar as opções cadastradas no
+                                    // módulo Segmentos (Configurações), em vez
+                                    // de texto livre. Se o cliente já tinha um
+                                    // valor que não bate com nenhum segmento
+                                    // ativo (dado legado ou segmento
+                                    // desativado depois), mantém como opção
+                                    // extra — não perder o dado ao reabrir o
+                                    // cadastro sem trocar o campo.
+                                    $segmentoAtual = old('cli_segmento', $cliente->cli_segmento);
+                                    $opcoesSegmento = $segmentos->pluck('seg_descricao', 'seg_descricao');
+                                    if ($segmentoAtual && ! $opcoesSegmento->has($segmentoAtual)) {
+                                        $opcoesSegmento->prepend($segmentoAtual.' (não cadastrado)', $segmentoAtual);
+                                    }
+                                @endphp
+                                <x-sbadmin::form.select
                                     id="cli_segmento"
                                     name="cli_segmento"
                                     label="Segmento"
-                                    :value="old('cli_segmento', $cliente->cli_segmento)"
-                                    maxlength="255"
-                                    placeholder="Ex.: Sucroenergético"
+                                    :options="$opcoesSegmento->all()"
+                                    :value="$segmentoAtual"
+                                    placeholder="Nenhum"
+                                    :help="$segmentos->isEmpty() ? 'Nenhum segmento cadastrado ainda.' : null"
                                 />
                             </div>
                             <div class="col-sm-4">

@@ -16,6 +16,7 @@ use App\Http\Controllers\MapaRelacoesController;
 use App\Http\Controllers\NaturezasAtendimentosController;
 use App\Http\Controllers\NotificacoesController;
 use App\Http\Controllers\ClassificacoesClienteController;
+use App\Http\Controllers\SegmentosController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
 use App\Http\Controllers\RoteirosViagemController;
@@ -76,6 +77,7 @@ Route::middleware('auth')->group(function () {
     // filtrado pelo usuario logado dentro do controller).
     Route::get('/notificacoes', [NotificacoesController::class, 'index'])->name('notificacoes.index');
     Route::post('/notificacoes/{id}/marcar-lida', [NotificacoesController::class, 'marcarLida'])->name('notificacoes.marcar-lida');
+    Route::post('/notificacoes/{id}/marcar-nao-lida', [NotificacoesController::class, 'marcarNaoLida'])->name('notificacoes.marcar-nao-lida');
 
     // Clientes — autocomplete e resumo (leitura disponível para todos os
     // usuários autenticados: usados no formulário de Atendimento por
@@ -188,6 +190,7 @@ Route::middleware('auth')->group(function () {
 
         // NC01 (pendencia #3) — opcoes de classificacao de cliente
         Route::resource('classificacoes-cliente', ClassificacoesClienteController::class)->except(['create', 'edit', 'show', 'destroy']);
+        Route::resource('segmentos', SegmentosController::class)->except(['create', 'edit', 'show', 'destroy']);
 
         // CRM01 — tipos de sistema de orçamento
         Route::resource('crm/tipos-orcamento', CrmTiposOrcamentoController::class)

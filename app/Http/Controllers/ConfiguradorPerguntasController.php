@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\TipoPergunta;
 use App\Http\Requests\ConfiguradorPerguntaRequest;
 use App\Models\ConfigPergunta;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class ConfiguradorPerguntasController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private ConfiguradorPerguntaRepository $repository,
     ) {}
@@ -58,8 +61,9 @@ class ConfiguradorPerguntasController extends Controller
 
     public function index(Request $request): View
     {
-        $filtroTexto = trim((string) $request->get('f_texto', ''));
-        $filtroTipo = $request->get('f_tipo', '');
+        $filtros = $this->filtrosPersistentes('configurador-perguntas', ['f_texto', 'f_tipo']);
+        $filtroTexto = $filtros['f_texto'];
+        $filtroTipo = $filtros['f_tipo'];
 
         $perguntas = ConfigPergunta::query()
             ->with('opcoes')

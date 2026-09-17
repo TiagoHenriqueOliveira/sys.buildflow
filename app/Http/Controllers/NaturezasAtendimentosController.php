@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\SetorModelo;
 use App\Http\Requests\NaturezaAtendimentoRequest;
 use App\Models\ConfigModelo;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class NaturezasAtendimentosController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private NaturezaAtendimentoRepository $repository,
     ) {}
@@ -29,7 +32,8 @@ class NaturezasAtendimentosController extends Controller
      */
     public function index(Request $request): View
     {
-        $filtroDescricao = trim((string) $request->get('f_descricao', ''));
+        $filtros = $this->filtrosPersistentes('naturezas-atendimentos', ['f_descricao']);
+        $filtroDescricao = $filtros['f_descricao'];
 
         $naturezas = NaturezaAtendimento::query()
             ->with('configModelo')

@@ -32,6 +32,7 @@ class NotificacoesController extends Controller
                 'mensagem' => $n->notif_mensagem,
                 'link' => $n->notif_link,
                 'lida' => $n->notif_lida,
+                'criado_em' => $n->notif_criado_em->diffForHumans(),
             ]),
             'nao_lidas' => $naoLidas,
         ]);
@@ -44,5 +45,18 @@ class NotificacoesController extends Controller
             ->update(['notif_lida' => true]);
 
         return response()->json(['message' => 'Notificação marcada como lida.']);
+    }
+
+    /**
+     * Pedido do cliente (2026-09-17): precisa dar pra desmarcar como lida
+     * também (não só marcar), pelo sino do topbar.
+     */
+    public function marcarNaoLida(int $id): JsonResponse
+    {
+        Notificacao::where('notif_id', $id)
+            ->where('notif_usuario_id', Auth::id())
+            ->update(['notif_lida' => false]);
+
+        return response()->json(['message' => 'Notificação marcada como não lida.']);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Http\Requests\OcorrenciaRequest;
 use App\Models\Ocorrencia;
 use App\Repositories\OcorrenciaRepository;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class OcorrenciasController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private OcorrenciaRepository $repository,
     ) {}
@@ -25,7 +28,8 @@ class OcorrenciasController extends Controller
      */
     public function index(Request $request): View
     {
-        $filtroDescricao = trim((string) $request->get('f_descricao', ''));
+        $filtros = $this->filtrosPersistentes('ocorrencias', ['f_descricao']);
+        $filtroDescricao = $filtros['f_descricao'];
 
         $ocorrencias = Ocorrencia::query()
             ->when($filtroDescricao !== '', fn ($query) => $query->where('ocor_descricao', 'like', "%{$filtroDescricao}%"))

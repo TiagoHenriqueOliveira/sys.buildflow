@@ -43,7 +43,7 @@
             'label' => 'Configurações',
             'icon' => 'bi-gear',
             'children' => [
-                ['label' => 'Tipos de Orçamento (CRM)', 'icon' => 'bi-tags', 'route' => 'crm.tipos-orcamento.index'],
+                ['label' => 'Tipos de Orçamento (CRM)', 'icon' => 'bi-receipt', 'route' => 'crm.tipos-orcamento.index'],
                 [
                     'label' => 'Configurador de Relatórios',
                     'icon' => 'bi-sliders',
@@ -52,8 +52,9 @@
                         ['label' => 'Modelos', 'icon' => 'bi-diagram-3', 'route' => 'configurador.modelos.index'],
                     ],
                 ],
-                ['label' => 'Naturezas de Atendimentos', 'icon' => 'bi-tags', 'route' => 'naturezas-dos-atendimentos.index'],
-                ['label' => 'Classificações de Cliente', 'icon' => 'bi-tag', 'route' => 'classificacoes-cliente.index'],
+                ['label' => 'Naturezas de Atendimentos', 'icon' => 'bi-tools', 'route' => 'naturezas-dos-atendimentos.index'],
+                ['label' => 'Classificações de Cliente', 'icon' => 'bi-award', 'route' => 'classificacoes-cliente.index'],
+                ['label' => 'Segmentos', 'icon' => 'bi-pie-chart', 'route' => 'segmentos.index'],
                 ['label' => 'Ocorrências', 'icon' => 'bi-exclamation-triangle', 'route' => 'ocorrencias.index'],
                 ['label' => 'Usuários', 'icon' => 'bi-people', 'route' => 'usuarios.index'],
                 // Pedido do cliente (2026-09-17): esconder do menu por ora -

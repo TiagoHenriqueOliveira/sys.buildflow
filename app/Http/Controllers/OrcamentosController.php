@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\NivelAcesso;
 use App\Http\Requests\OrcamentoComentarioRequest;
 use App\Http\Requests\OrcamentoRequest;
@@ -16,16 +17,19 @@ use Illuminate\View\View;
 
 class OrcamentosController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private OrcamentoRepository $repository,
     ) {}
 
     public function index(Request $request): View
     {
-        $filtroCliente = trim((string) $request->get('f_cliente', ''));
-        $filtroVendedor = $request->get('f_vendedor', '');
-        $filtroTipo = $request->get('f_tipo', '');
-        $filtroNivel = $request->get('f_nivel', '');
+        $filtros = $this->filtrosPersistentes('orcamentos', ['f_cliente', 'f_vendedor', 'f_tipo', 'f_nivel']);
+        $filtroCliente = $filtros['f_cliente'];
+        $filtroVendedor = $filtros['f_vendedor'];
+        $filtroTipo = $filtros['f_tipo'];
+        $filtroNivel = $filtros['f_nivel'];
 
         $orcamentos = Orcamento::query()
             ->with(['cliente', 'vendedor', 'tipoOrcamento'])
@@ -123,13 +127,15 @@ class OrcamentosController extends Controller
 
         // Pedido do cliente (2026-09-16): o alerta de comentario (CRM03) so
         // gravava o destinatario sem nunca notificar de verdade - agora usa
-        // o Sistema de Notificacoes generico (sino do topbar).
+        // o Sistema de Notificacoes generico (sino do topbar). Pedido do
+        // cliente (2026-09-17): texto padrao fixo, mostrando o numero do
+        // orcamento e quem incluiu o comentario.
         if ($alertaUsuarioId = $request->input('orc_com_alerta_usuario_id')) {
             \App\Models\Notificacao::notificar(
                 (int) $alertaUsuarioId,
                 'comentario_orcamento',
                 'Novo comentário em orçamento',
-                Auth::user()->user_nome.' comentou no orçamento de '.$orcamento->cliente->cli_nome,
+                'Novo comentário adicionado no orçamento Nº '.$orcamento->orc_id.'. Incluído por '.Auth::user()->user_nome.'.',
                 route('orcamentos.edit', $orcamento->orc_id)
             );
         }

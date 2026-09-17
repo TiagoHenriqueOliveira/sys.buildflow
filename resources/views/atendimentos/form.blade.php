@@ -279,9 +279,12 @@
                         <table class="table table-sm table-striped table-hover" id="table_relatorios_atendimento">
                             <thead>
                                 <tr>
-                                    <th class="align-middle">Data</th>
-                                    <th class="align-middle">Status</th>
                                     <th class="text-center align-middle" style="width: 100px;">Ações</th>
+                                    <th class="align-middle">Data</th>
+                                    <th class="align-middle">Natureza</th>
+                                    <th class="align-middle">Nº Proposta</th>
+                                    <th class="align-middle">Técnico</th>
+                                    <th class="align-middle">Status</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -458,16 +461,19 @@
 
                 relatorios.forEach((relatorio) => {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td class="align-middle">${relatorio.data}</td>
-                        <td class="align-middle"><span class="sbadmin-badge sbadmin-badge-${relatorio.status_tipo} sbadmin-badge-pill">${relatorio.status}</span></td>
-                        <td class="text-center align-middle">
+                    tr.innerHTML = `<td class="text-center align-middle">
                             <a href="${relatorio.url_preenchimento}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Abrir relatório" title="Abrir relatório">
                                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                             </a>
                             <a href="${relatorio.url_pdf}" class="btn btn-sm sbadmin-table-action-btn" target="_blank" aria-label="Abrir PDF" title="Abrir PDF">
                                 <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
                             </a>
-                        </td>`;
+                        </td>
+                        <td class="align-middle">${relatorio.data}</td>
+                        <td class="align-middle">${relatorio.natureza || '-'}</td>
+                        <td class="align-middle">${relatorio.nr_proposta || '-'}</td>
+                        <td class="align-middle">${relatorio.tecnico || '-'}</td>
+                        <td class="align-middle"><span class="sbadmin-badge sbadmin-badge-${relatorio.status_tipo} sbadmin-badge-pill">${relatorio.status}</span></td>`;
                     tbody.appendChild(tr);
                 });
             }

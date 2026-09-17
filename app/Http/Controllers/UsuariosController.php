@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Usuario;
 use App\Repositories\UsuarioRepository;
@@ -12,6 +13,8 @@ use Illuminate\View\View;
 
 class UsuariosController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private UsuarioRepository $repository,
     ) {}
@@ -32,8 +35,9 @@ class UsuariosController extends Controller
      */
     public function index(Request $request): View
     {
-        $filtroNome = trim((string) $request->get('f_nome', ''));
-        $filtroEmail = trim((string) $request->get('f_email', ''));
+        $filtros = $this->filtrosPersistentes('usuarios', ['f_nome', 'f_email']);
+        $filtroNome = $filtros['f_nome'];
+        $filtroEmail = $filtros['f_email'];
         $loggedUserId = Auth::user()->user_id;
 
         $usuarios = Usuario::query()

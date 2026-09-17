@@ -7,6 +7,7 @@ use App\Enums\AtendimentoRelatorioStatus;
 use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
 use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Services\AuditService;
 use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
 use App\Http\Requests\AtendimentoRelatorioStoreRequest;
@@ -46,6 +47,7 @@ use Illuminate\Support\Facades\DB;
 class AtendimentosRelatoriosController extends Controller
 {
     use GarantePosseDeAtendimento;
+    use PersisteFiltros;
 
     public function __construct(
         private readonly AtendimentoRelatorioRepository $repo,
@@ -86,12 +88,13 @@ class AtendimentosRelatoriosController extends Controller
         // pelo id (aten_natureza_id/aten_usuario_id, ja disponiveis via join
         // em AtendimentoRelatorioRepository::query()), nao mais texto livre;
         // os demais texto livre (LIKE) ou o select de Status.
-        $filtroData = trim((string) $request->get('f_data', ''));
-        $filtroCliente = trim((string) $request->get('f_cliente', ''));
-        $filtroNrProposta = trim((string) $request->get('f_nr_proposta', ''));
-        $filtroNatureza = $request->get('f_natureza', '');
-        $filtroTecnico = $request->get('f_tecnico', '');
-        $filtroStatus = $request->get('f_status', '');
+        $filtros = $this->filtrosPersistentes('atendimentos-relatorios', ['f_data', 'f_cliente', 'f_nr_proposta', 'f_natureza', 'f_tecnico', 'f_status']);
+        $filtroData = $filtros['f_data'];
+        $filtroCliente = $filtros['f_cliente'];
+        $filtroNrProposta = $filtros['f_nr_proposta'];
+        $filtroNatureza = $filtros['f_natureza'];
+        $filtroTecnico = $filtros['f_tecnico'];
+        $filtroStatus = $filtros['f_status'];
 
         $relatorios = $this->repo->query($filters)
             ->when($filtroData !== '', fn ($q) => $q->where('atendimentos_relatorios.aten_rel_data', $filtroData))

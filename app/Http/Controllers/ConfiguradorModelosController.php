@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\SetorModelo;
 use App\Http\Requests\ConfiguradorModeloRequest;
 use App\Models\ConfigModelo;
@@ -12,14 +13,17 @@ use Illuminate\View\View;
 
 class ConfiguradorModelosController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private ConfiguradorModeloRepository $repository,
     ) {}
 
     public function index(Request $request): View
     {
-        $filtroNome = trim((string) $request->get('f_nome', ''));
-        $filtroSetor = $request->get('f_setor', '');
+        $filtros = $this->filtrosPersistentes('configurador-modelos', ['f_nome', 'f_setor']);
+        $filtroNome = $filtros['f_nome'];
+        $filtroSetor = $filtros['f_setor'];
 
         // Pedido do cliente (2026-09-11): banco de perguntas vai crescer pra
         // ~500 - nao carregamos mais a lista inteira aqui, so as perguntas

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\AtendimentoStatus;
 use App\Models\Atendimento;
 use App\Models\NaturezaAtendimento;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class MapaDemandasController extends Controller
 {
+    use PersisteFiltros;
+
     /**
      * BF08 - mapa de demandas por atendimento. Usa a geolocalizacao do
      * CLIENTE (BF01) como posicao do marcador - o atendimento em si nao tem
@@ -24,9 +27,10 @@ class MapaDemandasController extends Controller
      */
     public function index(Request $request): View
     {
-        $filtroStatus = $request->get('f_status', '');
-        $filtroNatureza = $request->get('f_natureza', '');
-        $filtroTecnico = $request->get('f_tecnico', '');
+        $filtros = $this->filtrosPersistentes('mapa-demandas', ['f_status', 'f_natureza', 'f_tecnico']);
+        $filtroStatus = $filtros['f_status'];
+        $filtroNatureza = $filtros['f_natureza'];
+        $filtroTecnico = $filtros['f_tecnico'];
 
         $usuario = $request->user();
         $idVisivel = Atendimento::idVisivelPara($usuario);

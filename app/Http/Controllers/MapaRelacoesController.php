@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\NivelAcesso;
 use App\Models\Cliente;
 use App\Models\ClassificacaoCliente;
@@ -11,12 +12,15 @@ use Illuminate\View\View;
 
 class MapaRelacoesController extends Controller
 {
+    use PersisteFiltros;
+
     public function index(Request $request): View
     {
-        $filtroVendedor = $request->get('f_vendedor', '');
-        $filtroEstado = trim((string) $request->get('f_estado', ''));
-        $filtroSegmento = trim((string) $request->get('f_segmento', ''));
-        $filtroClassificacao = $request->get('f_classificacao', '');
+        $filtros = $this->filtrosPersistentes('mapa-relacoes', ['f_vendedor', 'f_estado', 'f_segmento', 'f_classificacao']);
+        $filtroVendedor = $filtros['f_vendedor'];
+        $filtroEstado = $filtros['f_estado'];
+        $filtroSegmento = $filtros['f_segmento'];
+        $filtroClassificacao = $filtros['f_classificacao'];
 
         $clientes = Cliente::query()
             ->with(['vendedor', 'classificacao'])

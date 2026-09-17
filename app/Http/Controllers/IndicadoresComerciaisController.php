@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Enums\ResultadoOrcamento;
 use App\Enums\ResultadoVisitaRoteiro;
 use App\Models\RoteiroViagemCliente;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class IndicadoresComerciaisController extends Controller
 {
+    use PersisteFiltros;
+
     /**
      * CRM08 — painel de indicadores comerciais. Pedido do cliente
      * (2026-09-17): "propostas fechadas"/"taxa de conversão" deixam de ser
@@ -25,8 +28,9 @@ class IndicadoresComerciaisController extends Controller
      */
     public function index(Request $request): View
     {
-        $inicio = trim((string) $request->get('f_periodo_inicio', ''));
-        $fim = trim((string) $request->get('f_periodo_fim', ''));
+        $filtros = $this->filtrosPersistentes('indicadores-comerciais', ['f_periodo_inicio', 'f_periodo_fim']);
+        $inicio = $filtros['f_periodo_inicio'];
+        $fim = $filtros['f_periodo_fim'];
         $convertido = ResultadoOrcamento::Convertido->value;
         $naoConvertido = ResultadoOrcamento::NaoConvertido->value;
 

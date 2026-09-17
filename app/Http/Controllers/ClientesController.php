@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\NivelAcesso;
+use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Http\Requests\ClienteRequest;
 use App\Models\ClassificacaoCliente;
 use App\Models\Cliente;
@@ -15,6 +16,8 @@ use Illuminate\View\View;
 
 class ClientesController extends Controller
 {
+    use PersisteFiltros;
+
     public function __construct(
         private ClienteRepository $repository,
     ) {}
@@ -39,13 +42,14 @@ class ClientesController extends Controller
         // por coluna exibida em <x-sbadmin::table>, exceto "Ações". Prefixo
         // "f_" no nome do campo evita colisão com outros parâmetros da
         // querystring (page).
-        $filtroNome = trim((string) $request->get('f_nome', ''));
-        $filtroCnpj = trim((string) $request->get('f_cnpj', ''));
-        $filtroCidade = trim((string) $request->get('f_cidade', ''));
-        $filtroUf = trim((string) $request->get('f_uf', ''));
-        $filtroSegmento = trim((string) $request->get('f_segmento', ''));
-        $filtroClassificacao = $request->get('f_classificacao', '');
-        $filtroStatus = $request->get('f_status', '');
+        $filtros = $this->filtrosPersistentes('clientes', ['f_nome', 'f_cnpj', 'f_cidade', 'f_uf', 'f_segmento', 'f_classificacao', 'f_status']);
+        $filtroNome = $filtros['f_nome'];
+        $filtroCnpj = $filtros['f_cnpj'];
+        $filtroCidade = $filtros['f_cidade'];
+        $filtroUf = $filtros['f_uf'];
+        $filtroSegmento = $filtros['f_segmento'];
+        $filtroClassificacao = $filtros['f_classificacao'];
+        $filtroStatus = $filtros['f_status'];
 
         $clientes = Cliente::query()
             ->with('classificacao')
@@ -97,6 +101,7 @@ class ClientesController extends Controller
     {
         return [
             'classificacoes' => ClassificacaoCliente::where('cla_cli_ativo', 1)->orderBy('cla_cli_nome')->get(),
+            'segmentos' => \App\Models\Segmento::where('seg_ativo', 1)->orderBy('seg_descricao')->get(),
             'vendedores' => Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
                 ->where('user_ativo', 1)
                 ->orderBy('user_nome')

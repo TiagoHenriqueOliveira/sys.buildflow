@@ -48,26 +48,42 @@
                 <span class="sbadmin-notif-dot" x-show="notificacoesNaoLidas > 0" x-cloak aria-hidden="true"></span>
             </button>
             <div
-                class="sbadmin-dropdown-menu sbadmin-dropdown-menu-end"
+                class="sbadmin-dropdown-menu sbadmin-dropdown-menu-end sbadmin-dropdown-menu-notif"
                 x-show="open"
                 x-transition
                 x-cloak
                 role="menu"
                 aria-label="Notificacoes"
             >
-                <div class="sbadmin-dropdown-header">Notificações</div>
+                <div class="sbadmin-dropdown-header d-flex justify-content-between align-items-center">
+                    <span>Notificações</span>
+                    <span class="sbadmin-notif-count" x-show="notificacoesNaoLidas > 0" x-text="notificacoesNaoLidas"></span>
+                </div>
                 <div class="sbadmin-dropdown-empty" x-show="!notificacoes.length">Nenhuma notificação por aqui ainda.</div>
                 <template x-for="notif in notificacoes" :key="notif.id">
-                    <a
-                        :href="notif.link || '#'"
-                        class="sbadmin-notif-item"
-                        :class="{ 'sbadmin-notif-item-unread': !notif.lida }"
-                        @click="marcarNotificacaoLida(notif)"
-                        role="menuitem"
-                    >
-                        <span class="sbadmin-notif-item-titulo" x-text="notif.titulo"></span>
-                        <span class="sbadmin-notif-item-mensagem" x-text="notif.mensagem"></span>
-                    </a>
+                    <div class="sbadmin-notif-item" :class="{ 'sbadmin-notif-item-unread': !notif.lida }">
+                        <a
+                            :href="notif.link || '#'"
+                            class="sbadmin-notif-item-link"
+                            @click="marcarNotificacaoLida(notif)"
+                            role="menuitem"
+                        >
+                            <span class="sbadmin-notif-item-indicador" aria-hidden="true"></span>
+                            <span class="sbadmin-notif-item-corpo">
+                                <span class="sbadmin-notif-item-mensagem" x-text="notif.mensagem"></span>
+                                <span class="sbadmin-notif-item-tempo" x-text="notif.criado_em"></span>
+                            </span>
+                        </a>
+                        <button
+                            type="button"
+                            class="sbadmin-notif-item-toggle"
+                            @click.stop.prevent="alternarLeituraNotificacao(notif)"
+                            :aria-label="notif.lida ? 'Marcar como não lida' : 'Marcar como lida'"
+                            :title="notif.lida ? 'Marcar como não lida' : 'Marcar como lida'"
+                        >
+                            <i :class="notif.lida ? 'bi bi-envelope' : 'bi bi-envelope-open-fill'" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </template>
             </div>
         </div>

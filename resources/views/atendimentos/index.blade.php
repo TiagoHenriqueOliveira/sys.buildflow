@@ -86,7 +86,7 @@
                     $status = \App\Enums\AtendimentoStatus::tryFrom($a->aten_status);
                     $atrasado = (int) $a->aten_status !== 3 && $a->aten_dt_fim->lt($hoje);
                 @endphp
-                <tr class="{{ $atrasado ? 'table-danger' : '' }}">
+                <tr>
                     @if(auth()->user()->user_nivel_acesso === 0)
                         <td class="text-center">
                             <a href="{{ route('atendimentos.edit', $a->aten_id) }}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Editar atendimento">
@@ -98,7 +98,10 @@
                     <td>{{ optional($a->usuario)->user_nome }}</td>
                     <td>{{ optional($a->cliente)->cli_nome }}</td>
                     <td>{{ $a->aten_nr_proposta }}</td>
-                    <td>{{ $a->aten_dt_inicio->format('d/m/Y') }} - {{ $a->aten_dt_fim->format('d/m/Y') }}</td>
+                    {{-- Pedido do cliente (2026-09-17): fundo vermelho na linha
+                         inteira ficava ruim no modo escuro - cor vermelha só
+                         no texto da data, não mais no <tr>. --}}
+                    <td class="{{ $atrasado ? 'text-danger fw-semibold' : '' }}">{{ $a->aten_dt_inicio->format('d/m/Y') }} - {{ $a->aten_dt_fim->format('d/m/Y') }}</td>
                     <td>
                         @if($status)
                             <x-sbadmin::badge :type="match($status) {
