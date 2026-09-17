@@ -32,7 +32,9 @@ class NotificacoesController extends Controller
                 'mensagem' => $n->notif_mensagem,
                 'link' => $n->notif_link,
                 'lida' => $n->notif_lida,
-                'criado_em' => $n->notif_criado_em->diffForHumans(),
+                // ->locale() explicito (nao so confiar no Carbon::setLocale
+                // global de app/Helpers/CustomHelpers.php) - evita cair em ingles.
+                'criado_em' => $n->notif_criado_em->locale('pt_BR')->diffForHumans(),
             ]),
             'nao_lidas' => $naoLidas,
         ]);

@@ -332,6 +332,125 @@ body.sbadmin-body {
     text-align: center;
 }
 
+// Pedido do cliente (2026-09-17): redesign do dropdown de notificacoes -
+// layout de cartao com indicador de nao-lida, hora relativa e botao dedicado
+// pra alternar lida/nao-lida sem navegar (o corpo do item continua clicavel
+// pra ir direto no orcamento, marcando como lida no processo).
+.sbadmin-dropdown-menu-notif {
+    width: 360px;
+    max-width: calc(100vw - 2rem);
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.sbadmin-notif-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background-color: $sbadmin-color-secondary;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: $sbadmin-font-weight-semibold;
+}
+
+.sbadmin-notif-item {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--sbadmin-border);
+    transition: background-color 0.15s ease;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background-color: var(--sbadmin-surface-muted); }
+
+    &.sbadmin-notif-item-unread {
+        background-color: rgba($sbadmin-color-secondary, 0.08);
+    }
+}
+
+.sbadmin-notif-item-link {
+    display: flex;
+    align-items: flex-start;
+    gap: $sbadmin-space-3;
+    flex: 1;
+    min-width: 0;
+    padding: $sbadmin-space-3 $sbadmin-space-2 $sbadmin-space-3 $sbadmin-space-4;
+    text-decoration: none;
+    color: var(--sbadmin-text);
+}
+
+.sbadmin-notif-item-indicador {
+    width: 8px;
+    height: 8px;
+    margin-top: 0.4rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: transparent;
+
+    .sbadmin-notif-item-unread & {
+        background-color: $sbadmin-color-secondary;
+    }
+}
+
+.sbadmin-notif-item-corpo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.sbadmin-notif-item-mensagem {
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: var(--sbadmin-text);
+    white-space: normal;
+    word-break: break-word;
+
+    .sbadmin-notif-item-unread & {
+        font-weight: $sbadmin-font-weight-medium;
+    }
+}
+
+.sbadmin-notif-item-tempo {
+    font-size: 0.75rem;
+    color: var(--sbadmin-text-muted);
+}
+
+.sbadmin-notif-item-toggle {
+    flex-shrink: 0;
+    align-self: center;
+    width: 2rem;
+    height: 2rem;
+    margin-right: $sbadmin-space-2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    outline: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--sbadmin-text-muted);
+    font-size: 0.95rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+
+    &:hover {
+        background-color: var(--sbadmin-surface);
+        color: var(--sbadmin-text);
+    }
+
+    &:focus-visible {
+        box-shadow: 0 0 0 2px rgba($sbadmin-color-secondary, 0.4);
+    }
+}
+
 .sbadmin-dropdown-item {
     display: block;
     width: 100%;

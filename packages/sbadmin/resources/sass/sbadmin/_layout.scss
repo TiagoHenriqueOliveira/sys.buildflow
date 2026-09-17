@@ -429,15 +429,25 @@ body.sbadmin-body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    -webkit-appearance: none;
+    appearance: none;
     border: none;
+    outline: none;
     border-radius: 50%;
     background: transparent;
     color: var(--sbadmin-text-muted);
     font-size: 0.95rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
 
     &:hover {
         background-color: var(--sbadmin-surface);
         color: var(--sbadmin-text);
+    }
+
+    &:focus-visible {
+        box-shadow: 0 0 0 2px rgba($sbadmin-color-secondary, 0.4);
     }
 }
 
