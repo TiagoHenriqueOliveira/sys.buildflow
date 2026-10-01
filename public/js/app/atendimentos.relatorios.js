@@ -1076,12 +1076,17 @@ function carregarDescricaoItens(relatorioId) {
     });
 }
 
+// Itens do relatório aberto, como vieram de /descricao-itens — usados pelo
+// "Editar" para preencher o modal.
+let descricaoItensCarregados = [];
+
 function renderDescricaoItens(items, legado) {
     // RF001/RF004: retrocompatibilidade — relatório antigo (texto único) x
     // relatório novo (lista de itens), nunca os dois juntos na tela.
     const temLegado = !!(legado && legado.trim().length);
     $('#descricaoFormNovo').toggle(!temLegado);
     $('#descricaoLegadoBox').toggle(temLegado).text(legado || '');
+    descricaoItensCarregados = temLegado ? [] : (items || []);
     if (temLegado) {
         $('#listaDescricaoItens').empty();
         $('#descricaoItensVazio').hide();
@@ -1108,6 +1113,9 @@ function renderDescricaoItens(items, legado) {
                         '<p class="card-text" style="white-space:pre-wrap;">' + escapeHtml(item.texto) + '</p>' +
                     '</div>' +
                     '<div class="card-footer text-right">' +
+                        '<button type="button" class="btn btn-primary btn-sm btnEditarDescricaoItem mr-1" data-id="' + item.id + '">' +
+                            '<i class="fas fa-edit"></i> Editar' +
+                        '</button>' +
                         '<button type="button" class="btn btn-danger btn-sm btnRemoveDescricaoItem" data-id="' + item.id + '">' +
                             '<i class="fas fa-trash"></i> Excluir' +
                         '</button>' +
@@ -1165,15 +1173,93 @@ function initDescricaoTab() {
     $(document).off('click', '.btnRemoveDescricaoItem').on('click', '.btnRemoveDescricaoItem', function () {
         const rid = getRelatorioIdAtual();
         const itemId = $(this).data('id');
-        $.ajax({
-            url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens/' + itemId,
-            type: 'DELETE',
-            dataType: 'json',
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            success: function (r) { carregarDescricaoItens(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
-            error: function (xhr) { handleAjaxError(xhr); }
+        confirmarAcao('Excluir este item da descrição? A foto dele também será apagada.', function () {
+            $.ajax({
+                url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens/' + itemId,
+                type: 'DELETE',
+                dataType: 'json',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function (r) { carregarDescricaoItens(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
+                error: function (xhr) { handleAjaxError(xhr); }
+            });
         });
     });
+
+    // ── RF013: editar item (texto, incluir/substituir ou remover a foto) ──
+
+    $(document).off('click', '.btnEditarDescricaoItem').on('click', '.btnEditarDescricaoItem', function () {
+        const item = descricaoItensCarregados.find(i => i.id === $(this).data('id'));
+        if (item) abrirModalDescricaoItem(item);
+    });
+
+    // Foto nova e "Remover foto" não vão juntos (o servidor recusa com 422):
+    // escolher um desmarca o outro.
+    $(document).off('change', '#descricao_edit_foto').on('change', '#descricao_edit_foto', function () {
+        if (this.files.length) $('#descricao_edit_remover').prop('checked', false);
+    });
+    $(document).off('change', '#descricao_edit_remover').on('change', '#descricao_edit_remover', function () {
+        if (this.checked) limparFotoEdicaoDescricao();
+    });
+
+    $(document).off('submit', '#form_descricao_item').on('submit', '#form_descricao_item', function (e) {
+        e.preventDefault();
+        const rid = getRelatorioIdAtual();
+        const itemId = $('#modal_descricao_item').data('item-id');
+        const texto = $('#descricao_edit_texto').val().trim();
+        if (!texto) {
+            showNotification('fas fa-exclamation-triangle', 'Descreva o item antes de salvar.', 'warning', 3000);
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('texto', texto);
+        const fotoInput = document.getElementById('descricao_edit_foto');
+        if (fotoInput.files.length) {
+            fd.append('foto', fotoInput.files[0]);
+        } else if ($('#descricao_edit_remover').is(':checked')) {
+            fd.append('remover_foto', '1');
+        }
+
+        const btn = $(this).find("button[type='submit']");
+        btn.prop('disabled', true);
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/descricao-itens/' + itemId,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                $('#modal_descricao_item').modal('hide');
+                carregarDescricaoItens(rid);
+                showNotification('fas fa-check', r.message, 'success', 2000);
+            },
+            error: function (xhr) { btn.prop('disabled', false); handleAjaxError(xhr); }
+        });
+    });
+}
+
+function limparFotoEdicaoDescricao() {
+    const input = document.getElementById('descricao_edit_foto');
+    if (input) input.value = '';
+    $('#descricao_edit_foto').closest('.file-upload-group').find('.file-upload-text').text('Nenhuma foto selecionada');
+}
+
+function abrirModalDescricaoItem(item) {
+    const temFoto = !!item.foto_url;
+    $('#modal_descricao_item').data('item-id', item.id);
+    $('#descricao_edit_texto').val(item.texto || '');
+    $('#descricao_edit_foto_atual').html(temFoto
+        ? '<img src="' + escapeHtml(item.foto_url) + '" class="img-thumbnail" style="max-height:200px;" alt="Foto atual do item">'
+        : '<span class="text-muted">Item sem foto.</span>');
+    $('#descricao_edit_foto_ajuda').text(temFoto
+        ? 'Escolha uma foto para substituir a atual.'
+        : 'Escolha uma foto para incluir no item.');
+    $('#descricao_edit_remover').prop('checked', false);
+    $('#descricao_edit_remover_box').toggle(temFoto);
+    limparFotoEdicaoDescricao();
+    $('#form_descricao_item').find("button[type='submit']").prop('disabled', false);
+    $('#modal_descricao_item').modal({ backdrop: 'static', keyboard: false });
 }
 
 // ─── Confirmação genérica (modal #modal_confirmar_acao) ───────────────────────

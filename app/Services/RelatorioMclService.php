@@ -4,6 +4,9 @@ namespace App\Services;
 
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAssinatura;
+use App\Models\AtendimentoRelatorioDescricaoItem;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -87,5 +90,73 @@ class RelatorioMclService
             $name = "{$safe}_{$counter}.{$ext}";
         }
         return $name;
+    }
+
+    /**
+     * Edita um item da Descrição (texto e foto) — lógica única da API Mcl e
+     * da web. $foto substitui a foto atual; $removerFoto tira a foto sem pôr
+     * outra (os dois juntos são barrados na validação). Todo o sistema trata
+     * o item como tendo no máximo 1 foto, então substituir/remover apaga
+     * todos os registros de foto do item.
+     *
+     * Banco numa transação; os arquivos antigos só saem do disco depois do
+     * commit — se o banco falhar, a foto antiga continua valendo e no lugar.
+     * A foto nova é gravada antes da transação e removida se o banco falhar.
+     */
+    public function atualizarDescricaoItem(
+        AtendimentoRelatorioDescricaoItem $item,
+        string $texto,
+        ?UploadedFile $foto,
+        bool $removerFoto,
+    ): AtendimentoRelatorioDescricaoItem {
+        $novoPath = null;
+        if ($foto) {
+            $dir = "atendimentos_relatorios/{$item->aten_rel_desc_relatorio_id}/descricao";
+            $novoPath = $foto->storeAs($dir, $this->safeFilename($foto->getClientOriginalName(), $dir), 'public');
+            if ($novoPath === false) {
+                throw new \RuntimeException('Falha ao gravar a foto em disco.');
+            }
+        }
+
+        $pathsAntigos = [];
+        try {
+            DB::transaction(function () use ($item, $texto, $novoPath, $removerFoto, &$pathsAntigos) {
+                $item->update(['aten_rel_desc_texto' => $texto]);
+
+                if ($novoPath !== null || $removerFoto) {
+                    $pathsAntigos = $item->fotos()->pluck('aten_rel_desc_foto_path')->all();
+                    $item->fotos()->delete();
+                }
+                if ($novoPath !== null) {
+                    $item->fotos()->create(['aten_rel_desc_foto_path' => $novoPath]);
+                }
+            });
+        } catch (\Throwable $e) {
+            if ($novoPath !== null) {
+                Storage::disk('public')->delete($novoPath);
+            }
+            throw $e;
+        }
+
+        foreach ($pathsAntigos as $path) {
+            Storage::disk('public')->delete($path);
+        }
+
+        return $item->load('fotos');
+    }
+
+    /**
+     * Exclui um item da Descrição e os arquivos das fotos dele. As linhas de
+     * foto saem pela FK (ON DELETE CASCADE); os arquivos, só depois que o
+     * registro sumiu do banco.
+     */
+    public function excluirDescricaoItem(AtendimentoRelatorioDescricaoItem $item): void
+    {
+        $paths = $item->fotos()->pluck('aten_rel_desc_foto_path')->all();
+        $item->delete();
+
+        foreach ($paths as $path) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

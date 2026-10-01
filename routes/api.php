@@ -134,6 +134,7 @@ Route::prefix('mcl/v1')->group(function () {
 
         // Itens de descriÃ§Ã£o (texto + foto opcional) â€” RF001, multipart/form-data
         Route::post('/relatorios/{id}/descricao-itens',              [MclRelatoriosController::class, 'storeDescricaoItem']);
+        Route::post('/relatorios/{id}/descricao-itens/{item_id}',    [MclRelatoriosController::class, 'updateDescricaoItem']);
         Route::delete('/relatorios/{id}/descricao-itens/{item_id}',  [MclRelatoriosController::class, 'destroyDescricaoItem']);
 
         // OcorrÃªncias

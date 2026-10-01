@@ -14,6 +14,7 @@ use App\Http\Requests\Mcl\StorePecaRequest;
 use App\Http\Requests\Mcl\StoreRelatorioRequest;
 use App\Http\Requests\Mcl\StoreServicoRequest;
 use App\Http\Requests\Mcl\UpdateClimaRequest;
+use App\Http\Requests\Mcl\UpdateDescricaoItemRequest;
 use App\Http\Requests\Mcl\UpdateHorariosRequest;
 use App\Http\Requests\Mcl\UpdateInformacoesAdicionaisRequest;
 use App\Http\Requests\Mcl\UpdateStatusRequest;
@@ -557,12 +558,49 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
+        $item = AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
             ->where('aten_rel_desc_relatorio_id', $id)
-            ->firstOrFail()
-            ->delete();
+            ->firstOrFail();
+        $this->media->excluirDescricaoItem($item);
 
         return response()->json(['message' => 'Item removido.']);
+    }
+
+    /**
+     * RF013 — edita um item da Descrição (contrato 3.4).
+     *
+     * POST /api/mcl/v1/relatorios/{id}/descricao-itens/{item_id}
+     * multipart/form-data: texto (obrigatório), foto (substitui a atual),
+     * remover_foto (remove sem substituir). 404 se o item não for do relatório.
+     */
+    public function updateDescricaoItem(UpdateDescricaoItemRequest $request, int $id, int $itemId): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) {
+            return response()->json(['message' => 'Acesso negado.'], 403);
+        }
+
+        $item = AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
+            ->where('aten_rel_desc_relatorio_id', $id)
+            ->firstOrFail();
+
+        $item = $this->media->atualizarDescricaoItem(
+            $item,
+            $request->input('texto'),
+            $request->file('foto'),
+            $request->removerFoto(),
+        );
+        $foto = $item->fotos->first();
+
+        return response()->json([
+            'message' => 'Item atualizado.',
+            'data'    => [
+                'id'        => $item->aten_rel_desc_id,
+                'texto'     => $item->aten_rel_desc_texto,
+                'foto_url'  => $foto ? url('midia/' . $foto->aten_rel_desc_foto_path) : null,
+                'criado_em' => optional($item->aten_rel_desc_criado_em)->format('Y-m-d H:i:s'),
+            ],
+        ]);
     }
 
     /**

@@ -13,6 +13,7 @@ use App\Http\Requests\AtendimentoRelatorioStoreRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
 use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
+use App\Http\Requests\Mcl\UpdateDescricaoItemRequest;
 use App\Http\Requests\Mcl\UpsertDiaRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
@@ -30,6 +31,7 @@ use App\Repositories\AtendimentoRelatorioRepository;
 use App\Services\DataTableService;
 use App\Services\MediaService;
 use App\Services\RelatorioDiasService;
+use App\Services\RelatorioMclService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -46,6 +48,7 @@ class AtendimentosRelatoriosController extends Controller
         private readonly MediaService $media,
         private readonly DataTableService $dataTable,
         private readonly RelatorioDiasService $dias,
+        private readonly RelatorioMclService $mediaMcl,
     ) {}
 
     // Item 2.2: busca o relatório já garantindo que o usuário autenticado
@@ -565,19 +568,52 @@ class AtendimentosRelatoriosController extends Controller
         }
     }
 
+    /**
+     * RF013 — edita texto e foto de um item (mesma lógica e validação da API
+     * do app). 404 se o item não for deste relatório.
+     */
+    public function updateDescricaoItem(UpdateDescricaoItemRequest $request, int $id, int $itemId): \Illuminate\Http\JsonResponse
+    {
+        $this->relatorioComPosseGarantida($id);
+
+        $item = AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
+            ->where('aten_rel_desc_relatorio_id', $id)
+            ->firstOrFail();
+
+        try {
+            $item = $this->mediaMcl->atualizarDescricaoItem(
+                $item,
+                $request->input('texto'),
+                $request->file('foto'),
+                $request->removerFoto(),
+            );
+        } catch (\Throwable $e) {
+            report($e);
+            return response()->json(['message' => 'Erro ao atualizar item.'], 500);
+        }
+        $foto = $item->fotos->first();
+
+        return response()->json([
+            'message' => 'Item atualizado!',
+            'data'    => [
+                'id'       => $item->aten_rel_desc_id,
+                'texto'    => $item->aten_rel_desc_texto,
+                'foto_url' => $foto ? asset('midia/' . $foto->aten_rel_desc_foto_path) : null,
+            ],
+        ]);
+    }
+
     public function destroyDescricaoItem(int $id, int $itemId): \Illuminate\Http\JsonResponse
     {
         $this->relatorioComPosseGarantida($id);
 
         try {
-            $item = AtendimentoRelatorioDescricaoItem::with('fotos')
-                ->where('aten_rel_desc_id', $itemId)
+            $item = AtendimentoRelatorioDescricaoItem::where('aten_rel_desc_id', $itemId)
                 ->where('aten_rel_desc_relatorio_id', $id)
                 ->first();
-            foreach ($item?->fotos ?? [] as $foto) {
-                Storage::disk('public')->delete($foto->aten_rel_desc_foto_path);
+            if ($item) {
+                $this->mediaMcl->excluirDescricaoItem($item);
             }
-            $item?->delete();
             return response()->json(['message' => 'Item removido!']);
         } catch (\Throwable $e) {
             report($e);
