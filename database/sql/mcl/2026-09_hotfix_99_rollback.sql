@@ -1,0 +1,47 @@
+-- =====================================================================
+-- Hotfix MCL Vale (set/2026) — script 99: ROLLBACK (desfaz o 02)
+-- =====================================================================
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- !!  ATENÇÃO: APAGA DEFINITIVAMENTE TODOS OS DIAS JÁ LANÇADOS        !!
+-- !!  (horário de entrada/intervalo/saída e clima por dia) EM TODOS   !!
+-- !!  OS RELATÓRIOS. NÃO TEM COMO RECUPERAR SEM O BACKUP.             !!
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--
+-- Objetivo: remover a tabela atendimentos_relatorios_dias, voltando o
+--   banco ao estado anterior ao hotfix. Nenhuma outra tabela é tocada
+--   (o horário/clima no formato antigo nunca foi alterado pelo hotfix).
+--
+-- Ordem de execução normal: 01 -> 02 -> 03. Este 99 é SÓ para desfazer
+--   e não faz parte da aplicação.
+--
+-- ANTES DE TUDO: faça BACKUP COMPLETO do banco
+--   (phpMyAdmin > selecionar o banco > Exportar > Rápido > SQL) — é a
+--   única forma de recuperar os dias lançados depois.
+--
+-- ANTES DE RODAR: volte o BACKEND para a versão anterior ao hotfix.
+--   O backend novo consulta esta tabela ao abrir qualquer relatório; se
+--   ela sumir com o backend novo no ar, NENHUM relatório abre (nem no
+--   app, nem na web, nem o PDF).
+--
+-- Onde rodar: phpMyAdmin do Plesk, com o banco da MCL selecionado, aba
+--   "SQL".
+--
+-- Idempotente: pode rodar mais de uma vez sem erro.
+-- =====================================================================
+
+-- Antes de rodar o arquivo, rode SOZINHA a consulta abaixo (sem o "--")
+-- para ver quantos dias serão perdidos. Se ela der erro "doesn't exist",
+-- a tabela já não existe e não há nada a desfazer.
+--
+-- SELECT COUNT(*) AS dias_que_serao_apagados FROM atendimentos_relatorios_dias;
+
+DROP TABLE IF EXISTS `atendimentos_relatorios_dias`;
+
+-- ---------------------------------------------------------------------
+-- Registro na tabela `migrations` do Laravel
+-- ---------------------------------------------------------------------
+-- Se o bloco final do 02 foi usado (produção MCL: foi), DESCOMENTE a
+-- linha abaixo para tirar o registro — senão um `php artisan migrate`
+-- futuro acharia que a tabela existe e não a recriaria.
+--
+-- DELETE FROM `migrations` WHERE `migration` = '2026_09_30_120000_create_atendimentos_relatorios_dias_table';
