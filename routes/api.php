@@ -118,6 +118,12 @@ Route::prefix('mcl/v1')->group(function () {
         Route::put('/relatorios/{id}/clima',                   [MclRelatoriosController::class, 'updateClima']);
         Route::put('/relatorios/{id}/status',                  [MclRelatoriosController::class, 'updateStatus']);
 
+        // RF012 — horário e clima por dia ({data} = AAAA-MM-DD)
+        Route::put('/relatorios/{id}/dias/{data}',    [MclRelatoriosController::class, 'upsertDia'])
+            ->where('data', '\d{4}-\d{2}-\d{2}');
+        Route::delete('/relatorios/{id}/dias/{data}', [MclRelatoriosController::class, 'destroyDia'])
+            ->where('data', '\d{4}-\d{2}-\d{2}');
+
         // ServiÃ§os (1:N)
         Route::post('/relatorios/{id}/servicos',             [MclRelatoriosController::class, 'storeServico']);
         Route::delete('/relatorios/{id}/servicos/{serv_id}', [MclRelatoriosController::class, 'destroyServico']);

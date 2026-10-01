@@ -32,24 +32,36 @@ class RelatorioDiasService
         ];
     }
 
+    /** Usa a relação `dias` já carregada (eager load), se houver. */
     public function listar(AtendimentoRelatorio $relatorio): array
     {
-        return $relatorio->dias()->get()
-            ->map(fn (AtendimentoRelatorioDia $dia) => $this->serializar($dia))
-            ->all();
+        $dias = $relatorio->relationLoaded('dias') ? $relatorio->dias : $relatorio->dias()->get();
+
+        return $dias->map(fn (AtendimentoRelatorioDia $dia) => $this->serializar($dia))->values()->all();
     }
 
     /**
      * True somente quando o relatório não tem nenhum dia novo E tem algum
-     * registro no formato antigo (horário ou clima) — contrato 3.1.
+     * registro no formato antigo (horário ou clima) — contrato 3.1. Usa as
+     * relações já carregadas quando houver (show/pdf fazem eager load).
      */
     public function usaHorarioLegado(AtendimentoRelatorio $relatorio): bool
     {
-        if ($relatorio->dias()->exists()) {
+        $temDias = $relatorio->relationLoaded('dias')
+            ? $relatorio->dias->isNotEmpty()
+            : $relatorio->dias()->exists();
+        if ($temDias) {
             return false;
         }
 
-        return $relatorio->horarios()->exists() || $relatorio->climas()->exists();
+        $temHorario = $relatorio->relationLoaded('horarios')
+            ? $relatorio->horarios !== null
+            : $relatorio->horarios()->exists();
+        $temClima = $relatorio->relationLoaded('climas')
+            ? $relatorio->climas->isNotEmpty()
+            : $relatorio->climas()->exists();
+
+        return $temHorario || $temClima;
     }
 
     /**
@@ -61,7 +73,9 @@ class RelatorioDiasService
      */
     public function upsert(AtendimentoRelatorio $relatorio, string $data, array $dados): AtendimentoRelatorioDia
     {
-        if ($this->usaHorarioLegado($relatorio)) {
+        // withoutRelations(): a checagem tem que refletir o banco agora, não
+        // uma relação carregada antes (que poderia estar desatualizada).
+        if ($this->usaHorarioLegado($relatorio->withoutRelations())) {
             throw new RelatorioDiaLegadoException();
         }
 

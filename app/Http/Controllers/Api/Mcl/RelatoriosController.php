@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Mcl;
 use App\Enums\AtendimentoRelatorioStatus;
 use App\Enums\AtendimentoStatus;
 use App\Enums\CondicaoClimatica;
+use App\Exceptions\RelatorioDiaLegadoException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Mcl\StoreAssinaturaRequest;
 use App\Http\Requests\Mcl\StoreDescricaoItemRequest;
@@ -17,6 +18,7 @@ use App\Http\Requests\Mcl\UpdateHorariosRequest;
 use App\Http\Requests\Mcl\UpdateInformacoesAdicionaisRequest;
 use App\Http\Requests\Mcl\UpdateStatusRequest;
 use App\Http\Requests\Mcl\UploadAnexosRequest;
+use App\Http\Requests\Mcl\UpsertDiaRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use App\Models\AtendimentoRelatorioAssinatura;
@@ -29,6 +31,7 @@ use App\Models\AtendimentoRelatorioPeca;
 use App\Models\AtendimentoRelatorioServico;
 use App\Models\AtendimentoRelatorioVideo;
 use App\Models\Ocorrencia;
+use App\Services\RelatorioDiasService;
 use App\Services\RelatorioMclService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +43,7 @@ class RelatoriosController extends Controller
 {
     public function __construct(
         private readonly RelatorioMclService $media,
+        private readonly RelatorioDiasService $dias,
     ) {}
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -176,6 +180,7 @@ class RelatoriosController extends Controller
             'atendimento.anexos',
             'horarios',
             'climas',
+            'dias',
             'servicos',
             'pecas',
             'ocorrencias',
@@ -264,6 +269,11 @@ class RelatoriosController extends Controller
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
             'clima'      => $clima,
+            // RF012 — horário/clima por dia. `horarios`/`clima` acima continuam
+            // exatamente como antes (apps antigos); `horarios_legado` = true
+            // quando o relatório só tem o formato antigo (somente leitura).
+            'dias'            => $this->dias->listar($relatorio),
+            'horarios_legado' => $this->dias->usaHorarioLegado($relatorio),
             'servicos'   => $relatorio->servicos->map(fn($s) => [
                 'id'        => $s->aten_rel_serv_id,
                 'descricao' => $s->aten_rel_serv_descricao,
@@ -369,6 +379,46 @@ class RelatoriosController extends Controller
         }
 
         return response()->json(['message' => 'Clima atualizado.']);
+    }
+
+    /**
+     * RF012 — cria ou atualiza o horário/clima de um dia (upsert pela data).
+     *
+     * PUT /api/mcl/v1/relatorios/{id}/dias/{data}
+     * Body completo: { entrada, inicio_intervalo, fim_intervalo, saida,
+     *                  clima: { manha, tarde, noite } } — null = vazio.
+     * 409 se o relatório estiver no formato antigo (somente leitura).
+     */
+    public function upsertDia(UpsertDiaRequest $request, int $id, string $data): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
+
+        try {
+            $dia = $this->dias->upsert($relatorio, $data, $request->validated());
+        } catch (RelatorioDiaLegadoException $e) {
+            return response()->json(['message' => $e->getMessage()], 409);
+        }
+
+        return response()->json([
+            'data'    => $this->dias->serializar($dia),
+            'message' => 'Dia salvo.',
+        ]);
+    }
+
+    /**
+     * RF012 — remove o dia (idempotente: 200 mesmo se não existir).
+     *
+     * DELETE /api/mcl/v1/relatorios/{id}/dias/{data}
+     */
+    public function destroyDia(Request $request, int $id, string $data): JsonResponse
+    {
+        $relatorio = AtendimentoRelatorio::findOrFail($id);
+        if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
+
+        $this->dias->excluir($relatorio, $data);
+
+        return response()->json(['message' => 'Dia removido.']);
     }
 
     /**
