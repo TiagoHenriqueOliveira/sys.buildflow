@@ -5,21 +5,18 @@ namespace App\Http\Controllers;
 use App\Enums\AssinaturaTipo;
 use App\Enums\AtendimentoRelatorioStatus;
 use App\Enums\AtendimentoStatus;
-use App\Enums\CondicaoClimatica;
+use App\Exceptions\RelatorioDiaLegadoException;
 use App\Http\Controllers\Concerns\GarantePosseDeAtendimento;
 use App\Services\AuditService;
 use App\Http\Requests\AtendimentoRelatorioAssinaturasRequest;
 use App\Http\Requests\AtendimentoRelatorioStoreRequest;
-use App\Http\Requests\AtendimentoRelatorioCondicaoClimaticaRequest;
 use App\Http\Requests\AtendimentoRelatorioDadosRequest;
-use App\Http\Requests\AtendimentoRelatorioHorariosRequest;
 use App\Http\Requests\AtendimentoRelatorioOcorrenciaRequest;
 use App\Http\Requests\AtendimentoRelatorioRequest;
+use App\Http\Requests\Mcl\UpsertDiaRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\AtendimentoRelatorioCondicaoClimatica;
-use App\Models\AtendimentoRelatorioHorario;
 use App\Models\Ocorrencia;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
@@ -32,6 +29,7 @@ use App\Jobs\ProcessarMidiaJob;
 use App\Repositories\AtendimentoRelatorioRepository;
 use App\Services\DataTableService;
 use App\Services\MediaService;
+use App\Services\RelatorioDiasService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -47,6 +45,7 @@ class AtendimentosRelatoriosController extends Controller
         private readonly AtendimentoRelatorioRepository $repo,
         private readonly MediaService $media,
         private readonly DataTableService $dataTable,
+        private readonly RelatorioDiasService $dias,
     ) {}
 
     // Item 2.2: busca o relatório já garantindo que o usuário autenticado
@@ -203,7 +202,6 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento.natureza',
             'atendimento.equipamentos',
             'atendimento.anexos',
-            'horarios',
             'fotos',
             'videos',
             'anexos',
@@ -259,72 +257,6 @@ class AtendimentosRelatoriosController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao atualizar os dados do relatório.',
-            ], 500);
-        }
-    }
-
-    public function updateHorarios(AtendimentoRelatorioHorariosRequest $request, int $id)
-    {
-        $relatorio = $this->relatorioComPosseGarantida($id);
-
-        try {
-            AtendimentoRelatorioHorario::updateOrCreate(
-                ['aten_rel_hora_relatorio_id' => $relatorio->aten_rel_id],
-                [
-                    'aten_rel_hora_entrada'          => $request->aten_rel_hora_entrada,
-                    'aten_rel_hora_inicio_intervalo' => $request->aten_rel_hora_inicio_intervalo,
-                    'aten_rel_hora_fim_intervalo'    => $request->aten_rel_hora_fim_intervalo,
-                    'aten_rel_hora_saida'            => $request->aten_rel_hora_saida,
-                ]
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Horários atualizados com sucesso.',
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar os horários do relatório.',
-            ], 500);
-        }
-    }
-
-    public function updateClima(AtendimentoRelatorioCondicaoClimaticaRequest $request, int $id)
-    {
-        $relatorio = $this->relatorioComPosseGarantida($id);
-
-        try {
-            $periodos = [
-                1 => $request->clima_manha,
-                2 => $request->clima_tarde,
-                3 => $request->clima_noite,
-            ];
-
-            foreach ($periodos as $periodo => $condStr) {
-                AtendimentoRelatorioCondicaoClimatica::updateOrCreate(
-                    [
-                        'aten_rel_clima_relatorio_id' => $relatorio->aten_rel_id,
-                        'aten_rel_clima_periodo'      => $periodo,
-                    ],
-                    [
-                        'aten_rel_clima_condicao' => CondicaoClimatica::fromLabel($condStr)->value,
-                    ]
-                );
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Clima atualizado com sucesso.',
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao atualizar o clima do relatório.',
             ], 500);
         }
     }
@@ -667,32 +599,46 @@ class AtendimentosRelatoriosController extends Controller
         ]);
     }
 
-    public function getHorarios(int $id): \Illuminate\Http\JsonResponse
+    // ─── Horários e clima por dia — RF012 ──────────────────────────────────
+
+    /**
+     * Lista de dias da aba "Horários e Clima". Relatório no formato antigo
+     * (horarios_legado) devolve `legado` (mesmo formato de um dia, com a data
+     * do relatório) para exibição somente leitura, e `data` vazio.
+     */
+    public function getDias(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = $this->relatorioComPosseGarantida($id, ['horarios']);
-        $h = $relatorio->horarios;
+        $relatorio = $this->relatorioComPosseGarantida($id, ['dias', 'horarios', 'climas']);
 
         return response()->json([
-            'entrada'          => $h?->aten_rel_hora_entrada          ? substr($h->aten_rel_hora_entrada, 0, 5)          : '',
-            'inicio_intervalo' => $h?->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '',
-            'fim_intervalo'    => $h?->aten_rel_hora_fim_intervalo    ? substr($h->aten_rel_hora_fim_intervalo, 0, 5)    : '',
-            'saida'            => $h?->aten_rel_hora_saida            ? substr($h->aten_rel_hora_saida, 0, 5)            : '',
+            'data'            => $this->dias->listar($relatorio),
+            'horarios_legado' => $this->dias->usaHorarioLegado($relatorio),
+            'legado'          => $this->dias->serializarLegado($relatorio),
         ]);
     }
 
-    public function getClimaData(int $id): \Illuminate\Http\JsonResponse
+    public function upsertDia(UpsertDiaRequest $request, int $id, string $data): \Illuminate\Http\JsonResponse
     {
-        $relatorio = $this->relatorioComPosseGarantida($id, ['climas']);
+        $relatorio = $this->relatorioComPosseGarantida($id);
 
-        $clima = ['manha' => null, 'tarde' => null, 'noite' => null];
-        foreach ($relatorio->climas as $c) {
-            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
-            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $label;
-            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $label;
-            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $label;
+        try {
+            $dia = $this->dias->upsert($relatorio, $data, $request->validated());
+        } catch (RelatorioDiaLegadoException $e) {
+            return response()->json(['message' => $e->getMessage()], 409);
         }
 
-        return response()->json($clima);
+        return response()->json([
+            'message' => 'Dia salvo!',
+            'data'    => $this->dias->serializar($dia),
+        ]);
+    }
+
+    public function destroyDia(int $id, string $data): \Illuminate\Http\JsonResponse
+    {
+        $relatorio = $this->relatorioComPosseGarantida($id);
+        $this->dias->excluir($relatorio, $data);
+
+        return response()->json(['message' => 'Dia removido!']);
     }
 
     public function getOcorrenciasData(int $id): \Illuminate\Http\JsonResponse

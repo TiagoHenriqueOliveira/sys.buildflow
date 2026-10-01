@@ -32,6 +32,38 @@ class RelatorioDiasService
         ];
     }
 
+    /**
+     * Horário/clima do formato antigo (uma linha só por relatório) no mesmo
+     * formato de serializar(), com a data do próprio relatório — usado para
+     * exibir o legado somente leitura (aba web e PDF). Null se não for legado.
+     */
+    public function serializarLegado(AtendimentoRelatorio $relatorio): ?array
+    {
+        if (! $this->usaHorarioLegado($relatorio)) {
+            return null;
+        }
+
+        $horario = $relatorio->relationLoaded('horarios') ? $relatorio->horarios : $relatorio->horarios()->first();
+        $climas = $relatorio->relationLoaded('climas') ? $relatorio->climas : $relatorio->climas()->get();
+        $climaDoPeriodo = fn (int $periodo) => $this->valorParaClima(
+            $climas->firstWhere('aten_rel_clima_periodo', $periodo)?->aten_rel_clima_condicao
+        );
+
+        return [
+            'id' => null,
+            'data' => $relatorio->aten_rel_data?->format('Y-m-d'),
+            'entrada' => $this->formatarHora($horario?->aten_rel_hora_entrada),
+            'inicio_intervalo' => $this->formatarHora($horario?->aten_rel_hora_inicio_intervalo),
+            'fim_intervalo' => $this->formatarHora($horario?->aten_rel_hora_fim_intervalo),
+            'saida' => $this->formatarHora($horario?->aten_rel_hora_saida),
+            'clima' => [
+                'manha' => $climaDoPeriodo(1),
+                'tarde' => $climaDoPeriodo(2),
+                'noite' => $climaDoPeriodo(3),
+            ],
+        ];
+    }
+
     /** Usa a relação `dias` já carregada (eager load), se houver. */
     public function listar(AtendimentoRelatorio $relatorio): array
     {
@@ -109,9 +141,11 @@ class RelatorioDiasService
         return $hora ? substr($hora, 0, 5) : null;
     }
 
+    // tryFrom (não from): valor fora do enum em dado legado vira null em vez
+    // de lançar exceção e derrubar a tela/o PDF inteiro.
     private function valorParaClima(?int $valor): ?string
     {
-        return $valor === null ? null : CondicaoClimatica::from($valor)->label();
+        return $valor === null ? null : CondicaoClimatica::tryFrom($valor)?->label();
     }
 
     private function climaParaValor(?string $label): ?int

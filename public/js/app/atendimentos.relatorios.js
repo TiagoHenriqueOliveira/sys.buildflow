@@ -13,6 +13,7 @@ $(document).ready(function () {
     initServicosTab();
     initPecasTab();
     initDescricaoTab();
+    initDiasTab();
     initAssinaturasTab();
 
     $("#btnNovoRelatorio").on("click", function () {
@@ -57,8 +58,7 @@ $(document).ready(function () {
 
         switch (target) {
             case 'tab-dados':       carregarDados(rid);               break;
-            case 'tab-horarios':    carregarHorarios(rid);            break;
-            case 'tab-clima':       carregarClima(rid);               break;
+            case 'tab-dias':        carregarDias(rid);                break;
             case 'tab-ocorrencias': carregarOcorrenciasRelatorio(rid); break;
             case 'tab-assinatura':  carregarAssinaturas(rid);         break;
             case 'tab-servicos':    carregarServicos(rid);            break;
@@ -210,14 +210,6 @@ function initAtualizarRelatorio() {
                 form = $('#form_relatorio_dados');
                 break;
 
-            case 'tab-horarios':
-                form = $('#form_relatorio_horarios');
-                break;
-
-            case 'tab-clima':
-                form = $('#form_relatorio_clima');
-                break;
-
             case 'tab-assinatura':
                 form = $('#form_relatorio_assinaturas');
                 break;
@@ -229,6 +221,7 @@ function initAtualizarRelatorio() {
             case 'tab-servicos':
             case 'tab-pecas':
             case 'tab-descricao':
+            case 'tab-dias':
             case 'tab-ocorrencias':
                 showNotification('fas fa-info-circle', 'Use os botões para adicionar e remover itens nesta aba.', 'info', 2500);
                 return;
@@ -652,23 +645,6 @@ function carregarDados(relatorioId) {
         $('#tab-dados .prazo-total').text(d.prazo_total + ' dias');
         $('#tab-dados .prazo-decorrido').text(d.prazo_decorrido + ' dias');
         $('#tab-dados .prazo-vencer').text(d.prazo_vencer + ' dias');
-    });
-}
-
-function carregarHorarios(relatorioId) {
-    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/horarios', function (h) {
-        $('input[name="aten_rel_hora_entrada"]').val(h.entrada);
-        $('input[name="aten_rel_hora_inicio_intervalo"]').val(h.inicio_intervalo);
-        $('input[name="aten_rel_hora_fim_intervalo"]').val(h.fim_intervalo);
-        $('input[name="aten_rel_hora_saida"]').val(h.saida);
-    });
-}
-
-function carregarClima(relatorioId) {
-    $.get(baseURL + '/atendimentos-relatorios/' + relatorioId + '/clima', function (clima) {
-        if (clima?.manha) $(`#manha_${clima.manha}`).prop('checked', true);
-        if (clima?.tarde) $(`#tarde_${clima.tarde}`).prop('checked', true);
-        if (clima?.noite) $(`#noite_${clima.noite}`).prop('checked', true);
     });
 }
 
@@ -1196,6 +1172,204 @@ function initDescricaoTab() {
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function (r) { carregarDescricaoItens(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
             error: function (xhr) { handleAjaxError(xhr); }
+        });
+    });
+}
+
+// ─── Confirmação genérica (modal #modal_confirmar_acao) ───────────────────────
+
+function confirmarAcao(mensagem, aoConfirmar) {
+    $('#modal_confirmar_acao_texto').text(mensagem);
+    $('#btnConfirmarAcao').off('click').on('click', function () {
+        $('#modal_confirmar_acao').modal('hide');
+        aoConfirmar();
+    });
+    $('#modal_confirmar_acao').modal('show');
+}
+
+// ─── Horários e clima por dia — RF012 ─────────────────────────────────────────
+
+const DIAS_SEMANA = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const ROTULOS_CLIMA = { ensolarado: 'Ensolarado', nublado: 'Nublado', chuvoso: 'Chuvoso' };
+
+// Dias do relatório aberto, como vieram de /dias — usados pelo "Editar" e
+// para não deixar incluir de novo uma data que já tem lançamento.
+let diasCarregados = [];
+
+function formatarDataDia(dataIso) {
+    const [ano, mes, dia] = dataIso.split('-');
+    return `${dia}/${mes}/${ano}`;
+}
+
+// "30/09/2026 - quarta-feira - E: 07:42 | I: 12:00 | R: 13:30 | S: 17:30"
+// (formato pedido pelo cliente; "-" para hora não informada). A data é
+// montada em horário local: new Date('2026-09-30') seria meia-noite UTC e,
+// em São Paulo, cairia no dia anterior.
+function formatarLinhaDia(dia) {
+    const [ano, mes, d] = dia.data.split('-').map(Number);
+    const semana = DIAS_SEMANA[new Date(ano, mes - 1, d).getDay()];
+    const hora = v => v || '-';
+    return `${formatarDataDia(dia.data)} - ${semana} - E: ${hora(dia.entrada)} | I: ${hora(dia.inicio_intervalo)} | R: ${hora(dia.fim_intervalo)} | S: ${hora(dia.saida)}`;
+}
+
+function rotuloClima(periodo, valor) {
+    if (!valor) return '-';
+    if (periodo === 'noite' && valor === 'ensolarado') return 'Céu limpo';
+    return ROTULOS_CLIMA[valor] || valor;
+}
+
+function formatarClimaDia(clima) {
+    const c = clima || {};
+    return `Manhã: ${rotuloClima('manha', c.manha)} · Tarde: ${rotuloClima('tarde', c.tarde)} · Noite: ${rotuloClima('noite', c.noite)}`;
+}
+
+function carregarDias(relatorioId) {
+    $.ajax({
+        url: baseURL + '/atendimentos-relatorios/' + relatorioId + '/dias',
+        type: 'GET',
+        dataType: 'json',
+        success: function (r) { renderDias(r); },
+        error: function () { showNotification('fas fa-bug', 'Erro ao carregar horários e clima.', 'danger', 3000); }
+    });
+}
+
+function renderDias(r) {
+    // Formato antigo: mostra o horário/clima antigos só para leitura, sem
+    // "Adicionar dia" (mesmo comportamento do #descricaoLegadoBox).
+    const legado = !!r.horarios_legado;
+    $('#btnAddDia').toggle(!legado);
+    $('#diasLegadoAviso').toggle(legado);
+
+    diasCarregados = legado ? [] : (r.data || []);
+    const exibir = legado ? (r.legado ? [r.legado] : []) : diasCarregados;
+
+    const lista = $('#listaDias').empty();
+    $('#diasVazio').toggle(!exibir.length);
+
+    exibir.forEach(function (dia) {
+        const acoes = legado ? '' :
+            '<div class="text-nowrap ml-3">' +
+                '<button type="button" class="btn btn-primary btn-sm btnEditarDia mr-1" data-data="' + escapeHtml(dia.data) + '">' +
+                    '<i class="fas fa-edit"></i> Editar' +
+                '</button>' +
+                '<button type="button" class="btn btn-danger btn-sm btnExcluirDia" data-data="' + escapeHtml(dia.data) + '">' +
+                    '<i class="fas fa-trash"></i> Excluir' +
+                '</button>' +
+            '</div>';
+
+        lista.append(
+            '<li class="list-group-item d-flex justify-content-between align-items-center">' +
+                '<div>' +
+                    '<div class="font-weight-bold">' + escapeHtml(formatarLinhaDia(dia)) + '</div>' +
+                    '<div class="text-muted small">' + escapeHtml(formatarClimaDia(dia.clima)) + '</div>' +
+                '</div>' +
+                acoes +
+            '</li>'
+        );
+    });
+}
+
+function abrirModalDia(dia) {
+    const editando = !!dia;
+    const form = $('#form_dia');
+    form[0].reset();
+
+    $('#modal_dia').data('modo', editando ? 'editar' : 'novo');
+    $('#modal_dia_label').text(editando ? 'Editar dia' : 'Adicionar dia');
+    $('#dia_data').val(editando ? dia.data : $('#dia_data').attr('max')).prop('readonly', editando);
+    $('#dia_data_ajuda').toggle(editando);
+
+    $('#dia_entrada').val(dia?.entrada || '');
+    $('#dia_inicio_intervalo').val(dia?.inicio_intervalo || '');
+    $('#dia_fim_intervalo').val(dia?.fim_intervalo || '');
+    $('#dia_saida').val(dia?.saida || '');
+
+    ['manha', 'tarde', 'noite'].forEach(function (periodo) {
+        const valor = dia?.clima?.[periodo] || 'nao';
+        $('#dia_clima_' + periodo + '_' + valor).prop('checked', true);
+    });
+
+    form.find("button[type='submit']").prop('disabled', false);
+    $('#modal_dia').modal({ backdrop: 'static', keyboard: false });
+}
+
+// Corpo completo exigido pelo endpoint (contrato 3.2): campo vazio vai null.
+function lerFormDia() {
+    const valor = seletor => $(seletor).val() || null;
+    const clima = periodo => $('input[name="dia_clima_' + periodo + '"]:checked').val() || null;
+    return {
+        entrada: valor('#dia_entrada'),
+        inicio_intervalo: valor('#dia_inicio_intervalo'),
+        fim_intervalo: valor('#dia_fim_intervalo'),
+        saida: valor('#dia_saida'),
+        clima: { manha: clima('manha'), tarde: clima('tarde'), noite: clima('noite') },
+    };
+}
+
+function initDiasTab() {
+    $(document).off('click', '#btnAddDia').on('click', '#btnAddDia', function () {
+        if (!getRelatorioIdAtual()) {
+            showNotification('fas fa-exclamation-triangle', 'Salve o relatório antes de lançar horários.', 'warning', 3500);
+            return;
+        }
+        abrirModalDia(null);
+    });
+
+    $(document).off('click', '.btnEditarDia').on('click', '.btnEditarDia', function () {
+        const dia = diasCarregados.find(d => d.data === $(this).data('data'));
+        if (dia) abrirModalDia(dia);
+    });
+
+    $(document).off('submit', '#form_dia').on('submit', '#form_dia', function (e) {
+        e.preventDefault();
+        const rid = getRelatorioIdAtual();
+        const data = $('#dia_data').val();
+        if (!rid || !data) return;
+
+        if ($('#modal_dia').data('modo') === 'novo' && diasCarregados.some(d => d.data === data)) {
+            showNotification('fas fa-exclamation-triangle', 'Já existe lançamento para ' + formatarDataDia(data) + ' — use Editar.', 'warning', 3500);
+            return;
+        }
+
+        const btn = $(this).find("button[type='submit']");
+        btn.prop('disabled', true);
+        $.ajax({
+            url: baseURL + '/atendimentos-relatorios/' + rid + '/dias/' + data,
+            type: 'POST',
+            data: JSON.stringify(lerFormDia()),
+            contentType: 'application/json',
+            dataType: 'json',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function (r) {
+                $('#modal_dia').modal('hide');
+                carregarDias(rid);
+                showNotification('fas fa-check', r.message, 'success', 2000);
+            },
+            error: function (xhr) {
+                btn.prop('disabled', false);
+                if (xhr.status === 409) {
+                    $('#modal_dia').modal('hide');
+                    carregarDias(rid);
+                    showNotification('fas fa-exclamation-triangle', xhr.responseJSON?.message || 'Relatório somente leitura.', 'warning', 4000);
+                    return;
+                }
+                handleAjaxError(xhr);
+            }
+        });
+    });
+
+    $(document).off('click', '.btnExcluirDia').on('click', '.btnExcluirDia', function () {
+        const rid = getRelatorioIdAtual();
+        const data = $(this).data('data');
+        confirmarAcao('Excluir o lançamento de ' + formatarDataDia(data) + '?', function () {
+            $.ajax({
+                url: baseURL + '/atendimentos-relatorios/' + rid + '/dias/' + data,
+                type: 'DELETE',
+                dataType: 'json',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function (r) { carregarDias(rid); showNotification('fas fa-check', r.message, 'success', 2000); },
+                error: function (xhr) { handleAjaxError(xhr); }
+            });
         });
     });
 }

@@ -90,14 +90,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/atendimentos-relatorios/autocomplete', [AtendimentosRelatoriosController::class, 'autoComplete'])->name('atendimentos_relatorios.autocomplete');
     Route::resource('atendimentos-relatorios', AtendimentosRelatoriosController::class)->except(['create', 'edit', 'destroy']);
     Route::get('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'getDados'])->name('atendimentos-relatorios.get-dados');
-    Route::get('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'getHorarios'])->name('atendimentos-relatorios.get-horarios');
-    Route::get('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'getClimaData'])->name('atendimentos-relatorios.get-clima');
     Route::get('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'getOcorrenciasData'])->name('atendimentos-relatorios.get-ocorrencias');
     Route::get('/atendimentos-relatorios/{id}/assinaturas', [AtendimentosRelatoriosController::class, 'getAssinaturasData'])->name('atendimentos-relatorios.get-assinaturas');
     // Rota do PDF movida para fora deste grupo — ver auth:web,sanctum acima (RF005).
     Route::post('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'updateDados'])->name('atendimentos-relatorios.update-dados');
-    Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->name('atendimentos-relatorios.update-horarios');
-    Route::post('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'updateClima'])->name('atendimentos-relatorios.update-clima');
+    // RF012 — horário e clima por dia ({data} = AAAA-MM-DD)
+    Route::get('/atendimentos-relatorios/{id}/dias', [AtendimentosRelatoriosController::class, 'getDias'])->name('atendimentos-relatorios.get-dias');
+    Route::post('/atendimentos-relatorios/{id}/dias/{data}', [AtendimentosRelatoriosController::class, 'upsertDia'])->where('data', '\d{4}-\d{2}-\d{2}')->name('atendimentos-relatorios.upsert-dia');
+    Route::delete('/atendimentos-relatorios/{id}/dias/{data}', [AtendimentosRelatoriosController::class, 'destroyDia'])->where('data', '\d{4}-\d{2}-\d{2}')->name('atendimentos-relatorios.destroy-dia');
     Route::post('/atendimentos-relatorios/{id}/assinaturas', [AtendimentosRelatoriosController::class, 'updateAssinaturas'])->name('atendimentos-relatorios.update-assinaturas');
     Route::post('/atendimentos-relatorios/{id}/texto/{campo}', [AtendimentosRelatoriosController::class, 'updateTexto'])->name('atendimentos-relatorios.update-texto');
     Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->name('atendimentos-relatorios.store-ocorrencia');

@@ -7,12 +7,10 @@ use Illuminate\Validation\Validator;
 
 /**
  * Regras de ordem entre os horários de um dia (entrada <= início do
- * intervalo <= fim do intervalo <= saída, e entrada <= saída), compartilhada
- * entre AtendimentoRelatorioHorariosRequest (legado, um registro por
- * relatório) e App\Http\Requests\Mcl\UpsertDiaRequest (RF012, um registro
- * por dia). Só compara pares onde os dois valores estão presentes —
- * preenchimento parcial é permitido no formato novo (o legado já exige
- * entrada/saída via regra `required` própria).
+ * intervalo <= fim do intervalo <= saída, e entrada <= saída), usada por
+ * App\Http\Requests\Mcl\UpsertDiaRequest (RF012 — API do app e aba web).
+ * Só compara pares onde os dois valores estão presentes — preenchimento
+ * parcial é permitido.
  *
  * Os callbacks `after` do Validator rodam mesmo quando as regras já
  * falharam: valor fora de "H:i" é ignorado aqui (a regra date_format já

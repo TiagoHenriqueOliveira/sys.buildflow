@@ -43,14 +43,18 @@ class AtendimentoRelatorioIdorTest extends TestCase
         $tecnicoB = Usuario::factory()->tecnico()->create();
         $relatorio = $this->criarRelatorioDoTecnico($tecnicoA);
 
+        // RF012: na web o horário passou a ser lançado por dia.
         $this->actingAs($tecnicoB)
-            ->postJson(route('atendimentos-relatorios.update-horarios', $relatorio->aten_rel_id), [
-                'aten_rel_hora_entrada'          => '08:00',
-                'aten_rel_hora_inicio_intervalo' => '12:00',
-                'aten_rel_hora_fim_intervalo'    => '13:00',
-                'aten_rel_hora_saida'            => '18:00',
+            ->postJson(route('atendimentos-relatorios.upsert-dia', [$relatorio->aten_rel_id, now()->format('Y-m-d')]), [
+                'entrada'          => '08:00',
+                'inicio_intervalo' => '12:00',
+                'fim_intervalo'    => '13:00',
+                'saida'            => '18:00',
+                'clima'            => ['manha' => null, 'tarde' => null, 'noite' => null],
             ])
             ->assertForbidden();
+
+        $this->assertSame(0, $relatorio->dias()->count());
     }
 
     public function test_tecnico_nao_remove_servico_de_relatorio_de_outro_tecnico(): void
