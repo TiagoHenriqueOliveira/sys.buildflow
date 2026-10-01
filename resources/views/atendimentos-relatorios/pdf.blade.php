@@ -481,22 +481,9 @@
 </div>
 @endif
 
-{{-- OBSERVAÇÕES TÉCNICAS E DE MANUTENÇÃO (fora do escopo original — ajuste
-     pontual pedido à parte). Campos do atendimento, só aparecem com
-     conteúdo, posicionados antes de Entrega Técnica. --}}
-@if($relatorio->atendimento->aten_obs_tecnica)
-<div class="section">
-    <div class="section-title">{{ $secNum() }}. Observações Técnicas</div>
-    <div class="text-block">{{ $relatorio->atendimento->aten_obs_tecnica }}</div>
-</div>
-@endif
-
-@if($relatorio->atendimento->aten_obs_manutencao)
-<div class="section">
-    <div class="section-title">{{ $secNum() }}. Observações de Manutenção</div>
-    <div class="text-block">{{ $relatorio->atendimento->aten_obs_manutencao }}</div>
-</div>
-@endif
+{{-- aten_obs_tecnica e aten_obs_manutencao são internas (só o técnico vê,
+     no app) e não saem neste PDF, que vai para o cliente — só a observação
+     do cliente (seção "Observações" acima). --}}
 
 {{-- ENTREGA TÉCNICA (condicional) --}}
 @if($relatorio->atendimento->aten_entrega_tecnica)
