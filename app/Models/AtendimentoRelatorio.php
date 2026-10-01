@@ -71,6 +71,18 @@ class AtendimentoRelatorio extends Model
         );
     }
 
+    // RF012 — horario/clima por dia (substitui horarios()/climas() acima
+    // para relatorios novos; os dois antigos continuam existindo só para o
+    // modo legado, ver RelatorioDiasService::usaHorarioLegado()).
+    public function dias()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioDia::class,
+            'aten_rel_dia_relatorio_id',
+            'aten_rel_id'
+        )->orderBy('aten_rel_dia_data');
+    }
+
     public function fotos()
     {
         return $this->hasMany(

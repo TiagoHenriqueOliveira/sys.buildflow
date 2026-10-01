@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidaOrdemHorarios;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
-use Carbon\Carbon;
 
 class AtendimentoRelatorioHorariosRequest extends FormRequest
 {
+    use ValidaOrdemHorarios;
+
     public function authorize(): bool
     {
         return true;
@@ -38,51 +40,17 @@ class AtendimentoRelatorioHorariosRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
-
-            $entrada = $this->input('aten_rel_hora_entrada');
-            $saida   = $this->input('aten_rel_hora_saida');
-            $iniInt  = $this->input('aten_rel_hora_inicio_intervalo');
-            $fimInt  = $this->input('aten_rel_hora_fim_intervalo');
-
-            if ($iniInt && !$fimInt) {
-                $validator->errors()->add('aten_rel_hora_fim_intervalo', 'Informe o fim do intervalo.');
-                return;
-            }
-
-            if ($fimInt && !$iniInt) {
-                $validator->errors()->add('aten_rel_hora_inicio_intervalo', 'Informe o início do intervalo.');
-                return;
-            }
-
-            if ($entrada && $saida) {
-                $tEntrada = Carbon::createFromFormat('H:i', $entrada);
-                $tSaida   = Carbon::createFromFormat('H:i', $saida);
-
-                if ($tEntrada->gt($tSaida)) {
-                    $validator->errors()->add('aten_rel_hora_saida', 'A saída deve ser maior ou igual à entrada.');
-                    return;
-                }
-
-                if ($iniInt && $fimInt) {
-                    $tIniInt = Carbon::createFromFormat('H:i', $iniInt);
-                    $tFimInt = Carbon::createFromFormat('H:i', $fimInt);
-
-                    if ($tIniInt->gt($tFimInt)) {
-                        $validator->errors()->add('aten_rel_hora_fim_intervalo', 'O fim do intervalo deve ser maior ou igual ao início.');
-                        return;
-                    }
-
-                    if ($tIniInt->lt($tEntrada)) {
-                        $validator->errors()->add('aten_rel_hora_inicio_intervalo', 'O início do intervalo não pode ser antes da entrada.');
-                        return;
-                    }
-
-                    if ($tFimInt->gt($tSaida)) {
-                        $validator->errors()->add('aten_rel_hora_fim_intervalo', 'O fim do intervalo não pode ser após a saída.');
-                        return;
-                    }
-                }
-            }
+            $this->validarOrdemHorarios(
+                $validator,
+                $this->input('aten_rel_hora_entrada'),
+                $this->input('aten_rel_hora_inicio_intervalo'),
+                $this->input('aten_rel_hora_fim_intervalo'),
+                $this->input('aten_rel_hora_saida'),
+                'aten_rel_hora_entrada',
+                'aten_rel_hora_inicio_intervalo',
+                'aten_rel_hora_fim_intervalo',
+                'aten_rel_hora_saida',
+            );
         });
     }
 
