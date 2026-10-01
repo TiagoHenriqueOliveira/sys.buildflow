@@ -154,8 +154,20 @@
     $logoBase64  = base64_encode(file_get_contents(public_path('img/mcl_logo.png')));
     $marcaBase64 = base64_encode(file_get_contents(public_path('img/mcl_marca.jpg')));
 
-    $climaOrg = $relatorio->climas->keyBy('aten_rel_clima_periodo');
-    $condMap  = [1 => 'Ensolarado', 2 => 'Nublado', 3 => 'Chuvoso'];
+    // RF012 — linhas da seção "Horários e Clima": um dia por linha; relatório
+    // no formato antigo vira uma linha só, com a data do próprio relatório.
+    $diasService = app(\App\Services\RelatorioDiasService::class);
+    $diasPdf = $diasService->listar($relatorio);
+    if (! $diasPdf && ($diaLegado = $diasService->serializarLegado($relatorio))) {
+        $diasPdf = [$diaLegado];
+    }
+    // Clima só em texto (o dompdf não renderiza emoji). "Ensolarado" à noite
+    // sai "Céu limpo", mesmo rótulo usado na tela.
+    $rotuloClima = fn (string $periodo, ?string $valor) => match (true) {
+        $valor === null                                 => '-',
+        $periodo === 'noite' && $valor === 'ensolarado' => 'Céu limpo',
+        default                                         => ucfirst($valor),
+    };
 
     $assResp = $relatorio->assinaturas->first(fn($a) => $a->aten_rel_ass_tipo->value === 'responsavel');
     $assCli  = $relatorio->assinaturas->first(fn($a) => $a->aten_rel_ass_tipo->value === 'cliente');
@@ -328,18 +340,39 @@
 </div>
 @endif
 
-{{-- 4. HORÁRIO — só aparece se houver registro de horário. --}}
-@php $h = $relatorio->horarios; @endphp
-@if($h)
+{{-- 4. HORÁRIOS E CLIMA — RF012: uma linha por dia (ver $diasPdf no topo);
+     some se não houver nenhum dia nem dado no formato antigo. Tabela
+     data-table convencional, mesmas colunas em todas as linhas e sem
+     colspan: com colspan diferente entre linhas o dompdf recalcula as
+     larguras de forma imprevisível. --}}
+@if($diasPdf)
 <div class="section">
-    <div class="section-title">{{ $secNum() }}. Horário</div>
-    <table class="field-grid field-grid-auto">
-        <tr>
-            <td class="field-value"><span class="field-label-inline-right">Entrada:</span>{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Início Intervalo:</span>{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Fim Intervalo:</span>{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Saída:</span>{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
-        </tr>
+    <div class="section-title">{{ $secNum() }}. Horários e Clima</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Entrada</th>
+                <th>Início int.</th>
+                <th>Fim int.</th>
+                <th>Saída</th>
+                <th>Clima</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($diasPdf as $dia)
+            @php $dataDia = $dia['data'] ? \Carbon\Carbon::parse($dia['data']) : null; @endphp
+            <tr>
+                {{-- nowrap: sem ele o dompdf quebra no hífen de "segunda-feira" --}}
+                <td style="white-space:nowrap;">{{ $dataDia ? $dataDia->format('d/m/Y') . ' - ' . $dataDia->locale('pt_BR')->isoFormat('dddd') : '-' }}</td>
+                <td style="white-space:nowrap;">{{ $dia['entrada'] ?? '-' }}</td>
+                <td style="white-space:nowrap;">{{ $dia['inicio_intervalo'] ?? '-' }}</td>
+                <td style="white-space:nowrap;">{{ $dia['fim_intervalo'] ?? '-' }}</td>
+                <td style="white-space:nowrap;">{{ $dia['saida'] ?? '-' }}</td>
+                <td>Manhã: {{ $rotuloClima('manha', $dia['clima']['manha']) }} · Tarde: {{ $rotuloClima('tarde', $dia['clima']['tarde']) }} · Noite: {{ $rotuloClima('noite', $dia['clima']['noite']) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
     </table>
 </div>
 @endif

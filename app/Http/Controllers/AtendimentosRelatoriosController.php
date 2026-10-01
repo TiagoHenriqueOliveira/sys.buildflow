@@ -679,6 +679,7 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento.equipamentos',
             'horarios',
             'climas',
+            'dias',
             'ocorrencias',
             'servicos',
             'pecas',
