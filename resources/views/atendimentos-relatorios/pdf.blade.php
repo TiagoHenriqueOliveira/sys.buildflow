@@ -355,8 +355,9 @@
             <tr>
                 <th>Data</th>
                 <th>Entrada</th>
-                <th>Início int.</th>
-                <th>Fim int.</th>
+                {{-- nowrap: alarga a coluna para o título caber numa linha só --}}
+                <th style="white-space:nowrap;">Início int.</th>
+                <th style="white-space:nowrap;">Fim int.</th>
                 <th>Saída</th>
                 <th>Clima</th>
             </tr>
