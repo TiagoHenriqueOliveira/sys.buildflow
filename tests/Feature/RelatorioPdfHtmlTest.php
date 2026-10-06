@@ -84,8 +84,8 @@ class RelatorioPdfHtmlTest extends TestCase
 
         $this->assertStringContainsString('Horários e Clima', $html);
         $this->assertSame(2, substr_count($html, 'Manhã: '));
-        $this->assertStringContainsString('28/09/2026 - segunda-feira', $html);
-        $this->assertStringContainsString('29/09/2026 - terça-feira', $html);
+        $this->assertStringContainsString('Segunda feira, 28/09/2026', $html);
+        $this->assertStringContainsString('Terça feira, 29/09/2026', $html);
         $this->assertLessThan(strpos($html, '29/09/2026'), strpos($html, '28/09/2026'));
         $this->assertStringContainsString('Manhã: Ensolarado · Tarde: - · Noite: Céu limpo', $html);
         $this->assertStringContainsString('Manhã: - · Tarde: Chuvoso · Noite: -', $html);
@@ -112,7 +112,7 @@ class RelatorioPdfHtmlTest extends TestCase
 
         $this->assertStringContainsString('Horários e Clima', $html);
         $this->assertSame(1, substr_count($html, 'Manhã: '));
-        $this->assertStringContainsString('15/09/2026 - terça-feira', $html);
+        $this->assertStringContainsString('Terça feira, 15/09/2026', $html);
         $this->assertStringContainsString('Manhã: - · Tarde: Nublado · Noite: -', $html);
     }
 

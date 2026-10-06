@@ -104,7 +104,9 @@
         /* TABELAS */
         .data-table { width: 100%; border-collapse: collapse; font-size: 20px; }
         .data-table thead tr { background-color: #eef2f8; }
-        .data-table th { padding: 4px 8px; text-align: left; font-weight: bold; color: #00552a; border: 1px solid #cdd6e8; font-size: 20px; text-transform: uppercase; }
+        /* cabeçalho das colunas no mesmo tamanho do título da seção (.section-title),
+           mas sem caixa alta: o texto sai como escrito no <th> ("Data", "Início int.") */
+        .data-table th { padding: 4px 8px; text-align: left; font-weight: bold; color: #00552a; border: 1px solid #cdd6e8; font-size: 18px; }
         .data-table td { padding: 4px 8px; border: 1px solid #e0e0e0; vertical-align: top; }
         .data-table tbody tr:nth-child(even) { background-color: #f8f9fb; }
 
@@ -363,8 +365,9 @@
             @foreach($diasPdf as $dia)
             @php $dataDia = $dia['data'] ? \Carbon\Carbon::parse($dia['data']) : null; @endphp
             <tr>
-                {{-- nowrap: sem ele o dompdf quebra no hífen de "segunda-feira" --}}
-                <td style="white-space:nowrap;">{{ $dataDia ? $dataDia->format('d/m/Y') . ' - ' . $dataDia->locale('pt_BR')->isoFormat('dddd') : '-' }}</td>
+                {{-- "Sexta feira, 25/09/2026" (formato pedido pelo usuário, sem hífen);
+                     nowrap mantém dia da semana e data na mesma linha --}}
+                <td style="white-space:nowrap;">{{ $dataDia ? \Illuminate\Support\Str::ucfirst(str_replace('-', ' ', $dataDia->locale('pt_BR')->isoFormat('dddd'))) . ', ' . $dataDia->format('d/m/Y') : '-' }}</td>
                 <td style="white-space:nowrap;">{{ $dia['entrada'] ?? '-' }}</td>
                 <td style="white-space:nowrap;">{{ $dia['inicio_intervalo'] ?? '-' }}</td>
                 <td style="white-space:nowrap;">{{ $dia['fim_intervalo'] ?? '-' }}</td>
