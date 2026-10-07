@@ -25,7 +25,7 @@
                             placeholder="Digite para buscar..."
                             autocomplete="off">
                         <small class="text-muted">
-                            Busque pelo nome do cliente ou descrição da obra.
+                            Busque pelo nome do cliente.
                         </small>
                     </div>
 

@@ -17,6 +17,9 @@ function configDataTableTiposAtendimentos() {
 
     tableEl.DataTable({
         ajax: { url: url, type: "GET", dataSrc: "data" },
+        serverSide: true,
+        processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "tp_aten_descricao" },

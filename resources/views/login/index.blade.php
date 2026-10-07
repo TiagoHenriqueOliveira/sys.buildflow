@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         <title>Login | Sys.Buildflow</title>
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32x32.png') }}">
 
         <!-- Bootstrap CSS -->
         <link href="{{ asset('css/bootstrap/bootstrap.css') }}" rel="stylesheet">

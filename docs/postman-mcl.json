@@ -1,0 +1,420 @@
+{
+  "info": {
+    "name": "MCL Vale — API v1",
+    "description": "API de relatórios de atendimento técnico — MCL Vale\n\nBase URL: {{base_url}}/api/mcl/v1\n\nConfigure as variáveis de ambiente:\n- base_url: URL do servidor (ex: https://seudominio.com)\n- token: Bearer token retornado pelo /login",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" },
+    { "key": "token",    "value": "",                 "type": "string" },
+    { "key": "aten_id",  "value": "1",                "type": "string" },
+    { "key": "rel_id",   "value": "1",                "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('Token salvo:', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"tecnico@exemplo.com\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/login", "host": ["{{base_url}}"], "path": ["api","mcl","v1","login"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/logout", "host": ["{{base_url}}"], "path": ["api","mcl","v1","logout"] }
+          }
+        },
+        {
+          "name": "Me (dados do usuário)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/me", "host": ["{{base_url}}"], "path": ["api","mcl","v1","me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catálogos",
+      "item": [
+        {
+          "name": "Listar Ocorrências",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/catalogos/ocorrencias", "host": ["{{base_url}}"], "path": ["api","mcl","v1","catalogos","ocorrencias"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Atendimentos",
+      "item": [
+        {
+          "name": "Listar Atendimentos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/mcl/v1/atendimentos",
+              "host": ["{{base_url}}"],
+              "path": ["api","mcl","v1","atendimentos"],
+              "query": [
+                { "key": "status", "value": "", "disabled": true, "description": "0|1|2|3" },
+                { "key": "search", "value": "", "disabled": true, "description": "Nome do cliente" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalhe do Atendimento",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/atendimentos/{{aten_id}}", "host": ["{{base_url}}"], "path": ["api","mcl","v1","atendimentos","{{aten_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Relatórios",
+      "item": [
+        {
+          "name": "Listar Relatórios do Atendimento",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/atendimentos/{{aten_id}}/relatorios", "host": ["{{base_url}}"], "path": ["api","mcl","v1","atendimentos","{{aten_id}}","relatorios"] }
+          }
+        },
+        {
+          "name": "Criar Relatório",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('rel_id', json.data.id);",
+                  "  console.log('rel_id salvo:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aten_rel_data\": \"2024-06-10\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/atendimentos/{{aten_id}}/relatorios", "host": ["{{base_url}}"], "path": ["api","mcl","v1","atendimentos","{{aten_id}}","relatorios"] }
+          }
+        },
+        {
+          "name": "Detalhe do Relatório",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}"] }
+          }
+        },
+        {
+          "name": "Atualizar Descrição",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descricao\": \"Manutenção realizada nos rolamentos e correia dentada.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/descricao", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","descricao"] }
+          }
+        },
+        {
+          "name": "Atualizar Informações Adicionais",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"informacoes_adicionais\": \"Próxima revisão em 6 meses.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/informacoes-adicionais", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","informacoes-adicionais"] }
+          }
+        },
+        {
+          "name": "Atualizar Horários",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entrada\": \"08:00\",\n  \"inicio_intervalo\": \"12:00\",\n  \"fim_intervalo\": \"13:00\",\n  \"saida\": \"17:30\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/horarios", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","horarios"] }
+          }
+        },
+        {
+          "name": "Atualizar Clima",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"manha\": \"ensolarado\",\n  \"tarde\": \"nublado\",\n  \"noite\": \"chuvoso\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/clima", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","clima"] }
+          }
+        },
+        {
+          "name": "Alterar Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "description": "0 = Preenchendo | 1 = Aguardando revisão | 2 = Aprovado"
+                }
+              }
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/status", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Serviços",
+      "item": [
+        {
+          "name": "Adicionar Serviço",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descricao\": \"Troca de correia dentada\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/servicos", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","servicos"] }
+          }
+        },
+        {
+          "name": "Remover Serviço",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/servicos/1", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","servicos","1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Peças",
+      "item": [
+        {
+          "name": "Adicionar Peça",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"descricao\": \"Rolamento 6205 2RS\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/pecas", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","pecas"] }
+          }
+        },
+        {
+          "name": "Remover Peça",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/pecas/1", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","pecas","1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ocorrências",
+      "item": [
+        {
+          "name": "Adicionar Ocorrência",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ocorrencia_id\": 3,\n  \"observacao\": \"Durou aproximadamente 2 horas\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/ocorrencias", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","ocorrencias"] }
+          }
+        },
+        {
+          "name": "Remover Ocorrência",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/ocorrencias/3", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","ocorrencias","3"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assinaturas",
+      "item": [
+        {
+          "name": "Salvar Assinaturas (Base64)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tecnico\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...\",\n  \"cliente\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/assinaturas", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","assinaturas"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Anexos",
+      "item": [
+        {
+          "name": "Listar Anexos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos"] }
+          }
+        },
+        {
+          "name": "Upload de Fotos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fotos[]",    "type": "file", "src": [],   "description": "jpg, jpeg, png, webp — máx 10 MB" },
+                { "key": "legendas[]", "type": "text", "value": "Motor dianteiro", "description": "Legenda da foto[0]" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos"] }
+          }
+        },
+        {
+          "name": "Upload de Vídeos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "videos[]", "type": "file", "src": [], "description": "mp4, mov, avi, mkv, webm — máx 200 MB" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos"] }
+          }
+        },
+        {
+          "name": "Upload de Arquivos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "arquivos[]", "type": "file", "src": [], "description": "pdf, doc, docx, xls, xlsx, txt, csv — máx 20 MB" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos"] }
+          }
+        },
+        {
+          "name": "Remover Foto",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos/foto/1", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos","foto","1"] }
+          }
+        },
+        {
+          "name": "Remover Vídeo",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos/video/1", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos","video","1"] }
+          }
+        },
+        {
+          "name": "Remover Arquivo",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/api/mcl/v1/relatorios/{{rel_id}}/anexos/arquivo/1", "host": ["{{base_url}}"], "path": ["api","mcl","v1","relatorios","{{rel_id}}","anexos","arquivo","1"] }
+          }
+        }
+      ]
+    }
+  ]
+}

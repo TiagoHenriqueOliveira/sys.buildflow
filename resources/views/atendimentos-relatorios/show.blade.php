@@ -8,31 +8,27 @@
         </div>
 
         <div class="card-body ui-front">
-            {{-- ABAS --}}
             <ul class="nav nav-tabs mb-3" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link active" data-toggle="tab" href="#tab-dados">Dados</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-horarios">Horário</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-dias">Horários e Clima</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-clima">Clima</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-descricao">Descrição</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-mao-obra">Mão de Obra</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-servicos">Serviços Prestados</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-ferramentas">Ferramentas</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-atividades">Atividades</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-pecas">Peças Substituídas</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-ocorrencias">Ocorrências</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab" href="#tab-comentarios">Comentários</a>
+                    <a class="nav-link" data-toggle="tab" href="#tab-info-adicionais">Observações Gerais</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" data-toggle="tab" href="#tab-anexos">Anexos</a>
@@ -44,13 +40,12 @@
 
             <div class="tab-content p-2">
                 @include('atendimentos-relatorios.tabs.dados')
-                @include('atendimentos-relatorios.tabs.horarios')
-                @include('atendimentos-relatorios.tabs.clima')
-                @include('atendimentos-relatorios.tabs.mao-obra')
-                @include('atendimentos-relatorios.tabs.ferramentas')
-                @include('atendimentos-relatorios.tabs.atividades')
+                @include('atendimentos-relatorios.tabs.dias')
+                @include('atendimentos-relatorios.tabs.descricao')
+                @include('atendimentos-relatorios.tabs.servicos-prestados')
+                @include('atendimentos-relatorios.tabs.pecas-substituidas')
                 @include('atendimentos-relatorios.tabs.ocorrencias')
-                @include('atendimentos-relatorios.tabs.comentarios')
+                @include('atendimentos-relatorios.tabs.informacoes-adicionais')
                 @include('atendimentos-relatorios.tabs.anexos')
                 @include('atendimentos-relatorios.tabs.assinaturas')
             </div>
@@ -61,7 +56,9 @@
         <x-page-footer :showSave="true" saveText="Atualizar" :relatorioId="$atendimentoRelatorio->aten_rel_id" :backRoute="route('atendimentos-relatorios.index')" />
     </div>
 
+    @include('atendimentos-relatorios.modal-confirmar')
+
     @push('scripts')
-    <script src="{{ asset('js/app/atendimentos.relatorios.js') }}"></script>
+    <script src="{{ asset('js/app/atendimentos.relatorios.js') }}?v={{ filemtime(public_path('js/app/atendimentos.relatorios.js')) }}"></script>
     @endpush
 </x-layout>

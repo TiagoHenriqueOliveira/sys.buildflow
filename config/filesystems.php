@@ -38,8 +38,17 @@ return [
 
         'public' => [
             'driver' => 'local',
+            // FORA de public/ propositalmente. Um Require-all-denied num
+            // .htaccess aninhado dentro de public/ é aplicado pelo Apache ao
+            // arquivo real (log: "AH01630: client denied by server
+            // configuration") ANTES da regra de rewrite da pasta pai
+            // conseguir mandar a requisição pro Laravel — não tem como
+            // contornar isso só com .htaccess. Ficando fora de public/, o
+            // Apache nunca resolve essas requisições para um arquivo real
+            // (a regra genérica de rewrite já existente cuida disso), então
+            // a única forma de acessar é via rota autenticada (StorageController).
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL').'/midia',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -69,8 +78,9 @@ return [
     |
     */
 
-    'links' => [
-        public_path('storage') => storage_path('app/public'),
-    ],
+    // Sem link simbólico: o disco 'public' grava fora de public/ (ver acima)
+    // e é servido só pela rota GET /midia/{path} (StorageController), que
+    // exige autenticação — não há nada para o `storage:link` linkar.
+    'links' => [],
 
 ];

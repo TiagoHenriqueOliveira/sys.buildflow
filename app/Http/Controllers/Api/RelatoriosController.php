@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\AtendimentoRelatorioStatus;
+use App\Enums\CondicaoClimatica;
 use App\Http\Controllers\Controller;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
@@ -12,56 +14,40 @@ use App\Models\AtendimentoRelatorioHorario;
 use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
-use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\Equipamento;
 use App\Models\Ocorrencia;
 use App\Models\Ocupacao;
 use App\Repositories\AtendimentoRelatorioRepository;
+use App\Services\RelatorioMclService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class RelatoriosController extends Controller
 {
     public function __construct(
-        private readonly AtendimentoRelatorioRepository $repo
+        private readonly AtendimentoRelatorioRepository $repo,
+        private readonly RelatorioMclService $assinaturaService,
     ) {}
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /**
-     * Verifica se o técnico autenticado tem acesso ao relatório.
-     * Admin (nivel_acesso != 1) acessa qualquer um.
+     * Verifica se o usuário autenticado tem acesso ao relatório, delegando a
+     * regra de posse (admin vê tudo, técnico só o seu) para
+     * App\Policies\AtendimentoPolicy — antes esta checagem estava duplicada
+     * aqui e em Api\Mcl\RelatoriosController, cada uma com sua própria cópia
+     * da comparação.
      */
     private function checkAcesso(Request $request, AtendimentoRelatorio $relatorio): bool
     {
-        $usuario = $request->user();
-        if ($usuario->user_nivel_acesso !== 1) {
-            return true;
+        if (! $relatorio->atendimento) {
+            return $request->user()->user_nivel_acesso === 0;
         }
-        return $relatorio->atendimento?->aten_usuario_id === $usuario->user_id;
-    }
-
-    private function condLabel(int $cond): string
-    {
-        return match ($cond) {
-            1 => 'ensolarado',
-            2 => 'nublado',
-            3 => 'chuvoso',
-            default => 'desconhecido',
-        };
-    }
-
-    private function condValue(string $cond): int
-    {
-        return match ($cond) {
-            'ensolarado' => 1,
-            'nublado'    => 2,
-            'chuvoso'    => 3,
-            default      => 1,
-        };
+        return $request->user()->can('acessar', $relatorio->atendimento);
     }
 
     private function formatRelatorio(AtendimentoRelatorio $r): array
@@ -70,16 +56,9 @@ class RelatoriosController extends Controller
             'id'             => $r->aten_rel_id,
             'data'           => $r->aten_rel_data?->format('Y-m-d'),
             'status'         => $r->aten_rel_status,
-            'status_label'   => match ($r->aten_rel_status) {
-                0 => 'Preenchendo',
-                1 => 'Revisar',
-                2 => 'Aprovado',
-                default => '-',
-            },
+            'status_label'   => AtendimentoRelatorioStatus::tryFrom($r->aten_rel_status)?->label() ?? '-',
             'atendimento_id' => $r->aten_rel_atendimento_id,
-            'obra'           => $r->atendimento?->aten_descricao,
             'natureza'       => $r->atendimento?->natureza?->nat_aten_descricao,
-            'setor'          => $r->atendimento?->natureza?->tipoAtendimento?->tp_aten_descricao,
             'cliente'        => $r->atendimento?->cliente?->cli_nome,
         ];
     }
@@ -97,8 +76,8 @@ class RelatoriosController extends Controller
     public function index(Request $request): JsonResponse
     {
         $usuario = $request->user();
-        $filters = $usuario->user_nivel_acesso === 1
-            ? ['usuario_id' => $usuario->user_id]
+        $filters = ($id = Atendimento::idVisivelPara($usuario)) !== null
+            ? ['usuario_id' => $id]
             : [];
 
         if ($request->filled('atendimento_id')) {
@@ -133,7 +112,7 @@ class RelatoriosController extends Controller
             ->firstOrFail();
 
         // Técnico só cria relatório nos próprios atendimentos
-        if ($usuario->user_nivel_acesso === 1 && $atendimento->aten_usuario_id !== $usuario->user_id) {
+        if (! $usuario->can('acessar', $atendimento)) {
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
@@ -165,7 +144,7 @@ class RelatoriosController extends Controller
     {
         $relatorio = AtendimentoRelatorio::with([
             'atendimento.cliente',
-            'atendimento.natureza.tipoAtendimento',
+            'atendimento.natureza',
             'horarios',
             'climas',
             'ocupacoes.tipoOcupacao',
@@ -187,20 +166,21 @@ class RelatoriosController extends Controller
         $prazoTotal     = $inicio->diffInDays($fim);
         $prazoDecorrido = min($inicio->diffInDays($base), $prazoTotal);
 
-        $condReverse = [1 => 'ensolarado', 2 => 'nublado', 3 => 'chuvoso'];
+
         $clima = ['manha' => null, 'tarde' => null, 'noite' => null];
         foreach ($relatorio->climas as $c) {
-            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
-            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $condReverse[$c->aten_rel_clima_condicao] ?? null;
+            $label = CondicaoClimatica::tryFrom($c->aten_rel_clima_condicao)?->label();
+            if ($c->aten_rel_clima_periodo === 1) $clima['manha'] = $label;
+            if ($c->aten_rel_clima_periodo === 2) $clima['tarde'] = $label;
+            if ($c->aten_rel_clima_periodo === 3) $clima['noite'] = $label;
         }
 
         $assinaturas = [
             'responsavel' => optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
+                ? asset('midia/' . optional($relatorio->assinaturaResponsavel())->aten_rel_ass_path)
                 : null,
             'cliente' => optional($relatorio->assinaturaCliente())->aten_rel_ass_path
-                ? asset('storage/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
+                ? asset('midia/' . optional($relatorio->assinaturaCliente())->aten_rel_ass_path)
                 : null,
         ];
 
@@ -218,14 +198,12 @@ class RelatoriosController extends Controller
 
                 'atendimento' => [
                     'id'          => $relatorio->atendimento->aten_id,
-                    'descricao'   => $relatorio->atendimento->aten_descricao,
                     'responsavel' => $relatorio->atendimento->aten_responsavel,
                     'endereco'    => $relatorio->atendimento->aten_endereco,
                     'dt_inicio'   => $relatorio->atendimento->aten_dt_inicio?->format('Y-m-d'),
                     'dt_fim'      => $relatorio->atendimento->aten_dt_fim?->format('Y-m-d'),
                     'cliente'     => $relatorio->atendimento->cliente?->cli_nome,
                     'natureza'    => $relatorio->atendimento->natureza?->nat_aten_descricao,
-                    'setor'       => $relatorio->atendimento->natureza?->tipoAtendimento?->tp_aten_descricao,
                 ],
 
                 'horarios' => [
@@ -328,7 +306,7 @@ class RelatoriosController extends Controller
             if ($condStr !== null) {
                 AtendimentoRelatorioCondicaoClimatica::updateOrCreate(
                     ['aten_rel_clima_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_clima_periodo' => $periodo],
-                    ['aten_rel_clima_condicao' => $this->condValue($condStr)]
+                    ['aten_rel_clima_condicao' => CondicaoClimatica::fromLabel($condStr)->value]
                 );
             }
         }
@@ -451,11 +429,20 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $row = AtendimentoRelatorioAtividade::create([
-            'aten_rel_ativ_relatorio_id' => $id,
-            'aten_rel_ativ_descricao'    => $request->descricao,
-            'aten_rel_ativ_status'       => $request->status,
-        ]);
+        // Endpoint legado: a tabela atendimentos_relatorios_atividades não
+        // aparece no schema versionado atual (database/schema/mysql-schema.sql)
+        // — pendente confirmar em produção se ela ainda existe (SHOW TABLES).
+        // Até lá, uma falha aqui vira 501 em vez de um 500 de SQL cru.
+        try {
+            $row = AtendimentoRelatorioAtividade::create([
+                'aten_rel_ativ_relatorio_id' => $id,
+                'aten_rel_ativ_descricao'    => $request->descricao,
+                'aten_rel_ativ_status'       => $request->status,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json([
             'message' => 'Atividade adicionada!',
@@ -481,11 +468,16 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-            ->where('aten_rel_ativ_relatorio_id', $id)
-            ->firstOrFail();
+        try {
+            $row = AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
+                ->where('aten_rel_ativ_relatorio_id', $id)
+                ->firstOrFail();
 
-        $row->update(['aten_rel_ativ_descricao' => $request->descricao, 'aten_rel_ativ_status' => $request->status]);
+            $row->update(['aten_rel_ativ_descricao' => $request->descricao, 'aten_rel_ativ_status' => $request->status]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json([
             'message' => 'Atividade atualizada!',
@@ -505,10 +497,15 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
-            ->where('aten_rel_ativ_relatorio_id', $id)
-            ->firstOrFail()
-            ->delete();
+        try {
+            AtendimentoRelatorioAtividade::where('aten_rel_ativ_id', $ativId)
+                ->where('aten_rel_ativ_relatorio_id', $id)
+                ->firstOrFail()
+                ->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json(['message' => 'Atividade removida!']);
     }
@@ -528,10 +525,15 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $row = AtendimentoRelatorioComentario::create([
-            'aten_rel_com_relatorio_id' => $id,
-            'aten_rel_com_descricao'    => $request->descricao,
-        ]);
+        try {
+            $row = AtendimentoRelatorioComentario::create([
+                'aten_rel_com_relatorio_id' => $id,
+                'aten_rel_com_descricao'    => $request->descricao,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json([
             'message' => 'Comentário adicionado!',
@@ -551,10 +553,15 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        AtendimentoRelatorioComentario::where('aten_rel_com_id', $comId)
-            ->where('aten_rel_com_relatorio_id', $id)
-            ->firstOrFail()
-            ->delete();
+        try {
+            AtendimentoRelatorioComentario::where('aten_rel_com_id', $comId)
+                ->where('aten_rel_com_relatorio_id', $id)
+                ->firstOrFail()
+                ->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            report($e);
+            return response()->json(['message' => 'Funcionalidade indisponível.'], 501);
+        }
 
         return response()->json(['message' => 'Comentário removido!']);
     }
@@ -624,9 +631,13 @@ class RelatoriosController extends Controller
     public function updateAssinaturas(Request $request, int $id): JsonResponse
     {
         $request->validate([
-            'status'                 => 'required|integer|in:0,1,2',
-            'assinatura_responsavel' => 'nullable|string',
-            'assinatura_cliente'     => 'nullable|string',
+            'status'                      => 'required|integer|in:0,1,2',
+            'assinatura_responsavel'      => 'nullable|string',
+            'assinatura_responsavel_nome' => 'nullable|string|max:100',
+            'assinatura_responsavel_cpf'  => 'nullable|string|max:14',
+            'assinatura_cliente'          => 'nullable|string',
+            'assinatura_cliente_nome'     => 'nullable|string|max:100',
+            'assinatura_cliente_cpf'      => 'nullable|string|max:14',
         ]);
 
         $relatorio = AtendimentoRelatorio::findOrFail($id);
@@ -637,10 +648,22 @@ class RelatoriosController extends Controller
         $relatorio->update(['aten_rel_status' => $request->status]);
         $urls = [];
 
+        // Item 2.6 do plano de correções: antes reimplementava a mesma
+        // lógica de salvar assinatura (imagem + registro) com uma variação
+        // própria que nem gravava nome/CPF de quem assinou — unificado com
+        // App\Services\RelatorioMclService::saveSignature(), a mesma usada
+        // pela API Mcl (decisão do usuário: a API legada passa a gravar
+        // nome/CPF também).
         foreach (['responsavel', 'cliente'] as $tipo) {
             $campo = "assinatura_{$tipo}";
             if ($request->filled($campo)) {
-                $urls[$tipo] = $this->saveSignature($relatorio, $request->input($campo), $tipo);
+                $urls[$tipo] = $this->assinaturaService->saveSignature(
+                    $relatorio,
+                    $request->input($campo),
+                    $tipo,
+                    $request->input("{$campo}_nome"),
+                    $request->input("{$campo}_cpf"),
+                );
             }
         }
 
@@ -661,17 +684,17 @@ class RelatoriosController extends Controller
 
         $fotos = $relatorio->fotos->map(fn($f) => [
             'id'  => $f->aten_rel_foto_id,
-            'url' => url('storage/' . $f->aten_rel_foto_path),
+            'url' => url('midia/' . $f->aten_rel_foto_path),
         ]);
 
         $videos = $relatorio->videos->map(fn($v) => [
             'id'  => $v->aten_rel_vid_id,
-            'url' => url('storage/' . $v->aten_rel_vid_path),
+            'url' => url('midia/' . $v->aten_rel_vid_path),
         ]);
 
         $arquivos = $relatorio->anexos->map(fn($a) => [
             'id'  => $a->aten_rel_anexo_id,
-            'url' => url('storage/' . $a->aten_rel_anexo_path),
+            'url' => url('midia/' . $a->aten_rel_anexo_path),
         ]);
 
         return response()->json(['data' => compact('fotos', 'videos', 'arquivos')]);
@@ -702,15 +725,19 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
-        $saved = ['fotos' => [], 'videos' => [], 'arquivos' => []];
+        $saved = ['fotos' => [], 'videos' => [], 'arquivos' => [], 'erros' => []];
 
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $file) {
                 if (! $file->isValid()) continue;
                 $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 $path     = $file->storeAs("atendimentos_relatorios/{$id}/fotos", $safeName, 'public');
+                if ($path === false) {
+                    $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                    continue;
+                }
                 $foto     = AtendimentoRelatorioFoto::create(['aten_rel_foto_relatorio_id' => $id, 'aten_rel_foto_path' => $path]);
-                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('storage/' . $path)];
+                $saved['fotos'][] = ['id' => $foto->aten_rel_foto_id, 'url' => url('midia/' . $path)];
             }
         }
 
@@ -719,8 +746,12 @@ class RelatoriosController extends Controller
                 if (! $file->isValid()) continue;
                 $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 $path     = $file->storeAs("atendimentos_relatorios/{$id}/videos", $safeName, 'public');
+                if ($path === false) {
+                    $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                    continue;
+                }
                 $video    = AtendimentoRelatorioVideo::create(['aten_rel_vid_relatorio_id' => $id, 'aten_rel_vid_path' => $path]);
-                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('storage/' . $path)];
+                $saved['videos'][] = ['id' => $video->aten_rel_vid_id, 'url' => url('midia/' . $path)];
             }
         }
 
@@ -729,8 +760,12 @@ class RelatoriosController extends Controller
                 if (! $file->isValid()) continue;
                 $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
                 $path     = $file->storeAs("atendimentos_relatorios/{$id}/arquivos", $safeName, 'public');
+                if ($path === false) {
+                    $saved['erros'][] = "Falha ao gravar em disco: {$file->getClientOriginalName()}";
+                    continue;
+                }
                 $anexo    = AtendimentoRelatorioAnexo::create(['aten_rel_anexo_relatorio_id' => $id, 'aten_rel_anexo_path' => $path]);
-                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('storage/' . $path)];
+                $saved['arquivos'][] = ['id' => $anexo->aten_rel_anexo_id, 'url' => url('midia/' . $path)];
             }
         }
 
@@ -750,58 +785,33 @@ class RelatoriosController extends Controller
             return response()->json(['message' => 'Acesso negado.'], 403);
         }
 
+        // Apaga o arquivo físico ANTES do registro — mesmo padrão já usado em
+        // AtendimentosRelatoriosController::destroyAnexo (painel web). Sem
+        // isto, o registro sumia do banco mas o arquivo ficava órfão pra
+        // sempre em storage/app/public.
         switch ($tipo) {
             case 'foto':
-                AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)->where('aten_rel_foto_relatorio_id', $id)->firstOrFail()->delete();
+                $item = AtendimentoRelatorioFoto::where('aten_rel_foto_id', $itemId)->where('aten_rel_foto_relatorio_id', $id)->firstOrFail();
+                $path = $item->aten_rel_foto_path;
                 break;
             case 'video':
-                AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)->where('aten_rel_vid_relatorio_id', $id)->firstOrFail()->delete();
+                $item = AtendimentoRelatorioVideo::where('aten_rel_vid_id', $itemId)->where('aten_rel_vid_relatorio_id', $id)->firstOrFail();
+                $path = $item->aten_rel_vid_path;
                 break;
             case 'arquivo':
-                AtendimentoRelatorioAnexo::where('aten_rel_anexo_id', $itemId)->where('aten_rel_anexo_relatorio_id', $id)->firstOrFail()->delete();
+                $item = AtendimentoRelatorioAnexo::where('aten_rel_anexo_id', $itemId)->where('aten_rel_anexo_relatorio_id', $id)->firstOrFail();
+                $path = $item->aten_rel_anexo_path;
                 break;
             default:
                 return response()->json(['message' => 'Tipo inválido. Use: foto, video ou arquivo.'], 422);
         }
 
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+        $item->delete();
+
         return response()->json(['message' => 'Anexo removido!']);
     }
 
-    // ─── Signature helper ────────────────────────────────────────────────────
-
-    private function saveSignature(AtendimentoRelatorio $relatorio, string $base64, string $tipo): string
-    {
-        if (! preg_match('#^data:image\/(png|jpeg|jpg);base64,(.*)$#', $base64, $m)) {
-            throw new \RuntimeException('Formato de assinatura inválido.');
-        }
-
-        $data  = base64_decode($m[2]);
-        $path  = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir   = dirname(storage_path('app/public/' . $path));
-
-        if (! is_dir($dir)) mkdir($dir, 0755, true);
-
-        $image = @imagecreatefromstring($data);
-        if ($image === false) throw new \RuntimeException('Imagem inválida.');
-
-        $bg    = imagecreatetruecolor(imagesx($image), imagesy($image));
-        $white = imagecolorallocate($bg, 255, 255, 255);
-        imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
-        imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        imagepng($bg, storage_path('app/public/' . $path));
-        imagedestroy($image);
-        imagedestroy($bg);
-
-        $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
-            ->where('aten_rel_ass_path', 'like', "%/{$tipo}.%")
-            ->first();
-
-        if ($existing) {
-            $existing->update(['aten_rel_ass_path' => $path]);
-        } else {
-            AtendimentoRelatorioAssinatura::create(['aten_rel_ass_relatorio_id' => $relatorio->aten_rel_id, 'aten_rel_ass_path' => $path]);
-        }
-
-        return asset('storage/' . $path);
-    }
 }

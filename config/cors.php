@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    // Sem frontend separado consumindo esta API pelo navegador (confirmado
+    // com o usuário) — só o próprio painel Blade (mesma origem, nem precisa
+    // de CORS) e o app Flutter (Bearer token, não passa pelo navegador).
+    // Lista vazia nega qualquer chamada cross-origin via navegador.
+    'allowed_origins' => [],
 
     'allowed_origins_patterns' => [],
 

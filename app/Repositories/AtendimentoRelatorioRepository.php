@@ -4,30 +4,46 @@ namespace App\Repositories;
 
 use App\Models\AtendimentoRelatorio;
 use App\Repositories\Contracts\CrudRepositoryInterface;
+use Illuminate\Database\Eloquent\Builder;
 
 class AtendimentoRelatorioRepository implements CrudRepositoryInterface
 {
-    public function all(array $filters = [])
+    /**
+     * Retorna um Builder configurado para uso pelo DataTableService.
+     */
+    public function query(array $filters = []): Builder
     {
         $q = AtendimentoRelatorio::query()
             ->select('atendimentos_relatorios.*')
             ->with([
                 'atendimento.cliente',
-                'atendimento.natureza.tipoAtendimento',
+                'atendimento.natureza',
+                'atendimento.usuario',
             ])
-            ->orderBy('aten_rel_data', 'desc')
-            ->orderBy('aten_rel_id', 'desc');
+            ->join('atendimentos',          'atendimentos.aten_id',             '=', 'atendimentos_relatorios.aten_rel_atendimento_id')
+            ->join('clientes',              'clientes.cli_id',                  '=', 'atendimentos.aten_cliente_id')
+            ->join('naturezas_atendimentos','naturezas_atendimentos.nat_aten_id','=', 'atendimentos.aten_natureza_id')
+            ->join('usuarios',              'usuarios.user_id',                 '=', 'atendimentos.aten_usuario_id')
+            ->orderByDesc('atendimentos_relatorios.aten_rel_data')
+            ->orderByDesc('atendimentos_relatorios.aten_rel_id');
 
         if (!empty($filters['aten_rel_atendimento_id'])) {
-            $q->where('aten_rel_atendimento_id', $filters['aten_rel_atendimento_id']);
+            $q->where('atendimentos_relatorios.aten_rel_atendimento_id', $filters['aten_rel_atendimento_id']);
         }
 
         if (!empty($filters['usuario_id'])) {
-            $q->join('atendimentos', 'atendimentos.aten_id', '=', 'atendimentos_relatorios.aten_rel_atendimento_id')
-              ->where('atendimentos.aten_usuario_id', $filters['usuario_id']);
+            $q->where('atendimentos.aten_usuario_id', $filters['usuario_id']);
         }
 
-        return $q->get();
+        return $q;
+    }
+
+    public function all(array $filters = []): \Illuminate\Support\Collection
+    {
+        return $this->query($filters)
+            ->orderBy('aten_rel_data', 'desc')
+            ->orderBy('aten_rel_id', 'desc')
+            ->get();
     }
 
     public function create(array $data)

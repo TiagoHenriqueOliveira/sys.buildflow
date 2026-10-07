@@ -21,9 +21,10 @@
                         <tr>
                             <th>Ações</th>
                             <th>Data</th>
-                            <th>Obra</th>
+                            <th>Cliente</th>
+                            <th>Nº Proposta</th>
                             <th>Natureza</th>
-                            <th>Setor</th>
+                            <th>Técnico</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -36,6 +37,6 @@
     @include('atendimentos-relatorios.modal')
 
     @push('scripts')
-    <script src="{{ asset('js/app/atendimentos.relatorios.js') }}"></script>
+    <script src="{{ asset('js/app/atendimentos.relatorios.js') }}?v={{ filemtime(public_path('js/app/atendimentos.relatorios.js')) }}"></script>
     @endpush
 </x-layout>

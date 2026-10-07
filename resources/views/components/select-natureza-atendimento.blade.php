@@ -14,7 +14,6 @@
 
             @foreach($naturezas as $n)
             <option value="{{ $n->nat_aten_id }}"
-                data-tp-aten-id="{{ $n->nat_aten_tp_atendimento_id }}"
                 {{ (string)$selected === (string)$n->nat_aten_id ? 'selected' : '' }}>
                 {{ $n->nat_aten_descricao }}
             </option>

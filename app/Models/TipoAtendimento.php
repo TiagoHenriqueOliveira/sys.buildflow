@@ -22,8 +22,4 @@ class TipoAtendimento extends Model
         'tp_aten_ativo' => 'boolean',
     ];
 
-    public function naturezasAtendimentos()
-    {
-        return $this->hasMany(NaturezaAtendimento::class, 'nat_aten_tp_atendimento_id', 'tp_aten_id');
-    }
 }

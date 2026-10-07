@@ -11,17 +11,6 @@ $(document).ready(function () {
             mod_rel_tp_data: "0",
             mod_rel_ativo: 1,
             mod_rel_entrega_tecnica: 0,
-            mod_rel_anexo: 0,
-            mod_rel_atividade: 0,
-            mod_rel_comentario: 0,
-            mod_rel_cond_clima: 0,
-            mod_rel_controle_material: 0,
-            mod_rel_equipamento: 0,
-            mod_rel_foto: 0,
-            mod_rel_horarios: 0,
-            mod_rel_ocorrencia: 0,
-            mod_rel_ocupacao: 0,
-            mod_rel_video: 0
         });
     });
 });
@@ -37,6 +26,9 @@ function configDataTableModelosRelatorios() {
             type: "GET",
             dataSrc: "data"
         },
+        serverSide: true,
+        processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "mod_rel_descricao" },
@@ -68,17 +60,6 @@ $(document).on("click", ".btn-modal-modelo-relatorio", function () {
         mod_rel_tp_data: $(this).data("tp-data"),
         mod_rel_ativo: $(this).data("ativo"),
         mod_rel_entrega_tecnica: $(this).data("entrega-tecnica"),
-        mod_rel_anexo: $(this).data("anexo"),
-        mod_rel_atividade: $(this).data("atividade"),
-        mod_rel_comentario: $(this).data("comentario"),
-        mod_rel_cond_clima: $(this).data("cond-clima"),
-        mod_rel_controle_material: $(this).data("controle-material"),
-        mod_rel_equipamento: $(this).data("equipamento"),
-        mod_rel_foto: $(this).data("foto"),
-        mod_rel_horarios: $(this).data("horarios"),
-        mod_rel_ocorrencia: $(this).data("ocorrencia"),
-        mod_rel_ocupacao: $(this).data("ocupacao"),
-        mod_rel_video: $(this).data("video")
     });
 });
 
@@ -124,19 +105,6 @@ function abrirModalModeloRelatorio(data) {
     const entrega = (data.mod_rel_entrega_tecnica === 1 || data.mod_rel_entrega_tecnica === true || data.mod_rel_entrega_tecnica === "1");
     $("#mod_rel_entrega_tecnica").prop("checked", entrega);
     atualizarEntregaTecnicaBadge(entrega);
-
-    // checkboxes itens
-    setCheckbox("mod_rel_anexo", data.mod_rel_anexo);
-    setCheckbox("mod_rel_atividade", data.mod_rel_atividade);
-    setCheckbox("mod_rel_comentario", data.mod_rel_comentario);
-    setCheckbox("mod_rel_cond_clima", data.mod_rel_cond_clima);
-    setCheckbox("mod_rel_controle_material", data.mod_rel_controle_material);
-    setCheckbox("mod_rel_equipamento", data.mod_rel_equipamento);
-    setCheckbox("mod_rel_foto", data.mod_rel_foto);
-    setCheckbox("mod_rel_horarios", data.mod_rel_horarios);
-    setCheckbox("mod_rel_ocorrencia", data.mod_rel_ocorrencia);
-    setCheckbox("mod_rel_ocupacao", data.mod_rel_ocupacao);
-    setCheckbox("mod_rel_video", data.mod_rel_video);
 
     // ativo
     const ativo = (data.mod_rel_ativo === 1 || data.mod_rel_ativo === true || data.mod_rel_ativo === "1");
@@ -196,27 +164,8 @@ function initSubmitModeloRelatorio() {
         const tpData = $("input[name='mod_rel_tp_data']:checked").val();
         formData.push({ name: "mod_rel_tp_data", value: tpData });
 
-        formData.push({
-            name: "mod_rel_entrega_tecnica",
-            value: $("#mod_rel_entrega_tecnica").is(":checked") ? 1 : 0
-        });
-
-        // checkboxes itens
-        const checkboxIds = [
-            "mod_rel_anexo",
-            "mod_rel_atividade",
-            "mod_rel_comentario",
-            "mod_rel_cond_clima",
-            "mod_rel_controle_material",
-            "mod_rel_equipamento",
-            "mod_rel_foto",
-            "mod_rel_horarios",
-            "mod_rel_ocorrencia",
-            "mod_rel_ocupacao",
-            "mod_rel_video"
-        ];
-
-        checkboxIds.forEach(function (id) {
+        const switchIds = ["mod_rel_entrega_tecnica"];
+        switchIds.forEach(function (id) {
             formData.push({ name: id, value: $("#" + id).is(":checked") ? 1 : 0 });
         });
 

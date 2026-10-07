@@ -6,7 +6,6 @@ $(document).ready(function () {
         abrirModalNaturezaAtendimento({
             nat_aten_id: "",
             nat_aten_descricao: "",
-            nat_aten_tp_atendimento_id: "",
             nat_aten_mod_relatorio_id: "",
             nat_aten_ativo: 1
         });
@@ -19,19 +18,20 @@ function configDataTableNaturezasAtendimentos() {
 
     tableEl.DataTable({
         ajax: { url: url, type: "GET", dataSrc: "data" },
+        serverSide: true,
+        processing: true,
+        stateSave: true,
         columns: [
             { data: "acoes" },
             { data: "nat_aten_descricao" },
-            { data: "tp_aten_descricao" },
             { data: "mod_rel_descricao" },
             { data: "status" }
         ],
         columnDefs: [
             { width: "10%", targets: 0 },
-            { width: "30%", targets: 1 },
-            { width: "25%", targets: 2 },
-            { width: "20%", targets: 3 },
-            { width: "15%", targets: 4 }
+            { width: "45%", targets: 1 },
+            { width: "30%", targets: 2 },
+            { width: "15%", targets: 3 }
         ],
         createdRow: function (row) {
             $("td", row).eq(0).addClass("text-center");
@@ -48,7 +48,6 @@ $(document).on("click", ".btn-modal-natureza-atendimento", function () {
     abrirModalNaturezaAtendimento({
         nat_aten_id: $(this).data("id"),
         nat_aten_descricao: $(this).data("descricao"),
-        nat_aten_tp_atendimento_id: $(this).data("tp-aten"),
         nat_aten_mod_relatorio_id: $(this).data("mod-rel"),
         nat_aten_ativo: $(this).data("ativo")
     });
@@ -65,7 +64,6 @@ function abrirModalNaturezaAtendimento(data) {
 
     $("#nat_aten_id").val(data.nat_aten_id || "");
     $("#nat_aten_descricao").val(data.nat_aten_descricao || "");
-    $("#nat_aten_tp_atendimento_id").val(data.nat_aten_tp_atendimento_id || "");
     $("#nat_aten_mod_relatorio_id").val(data.nat_aten_mod_relatorio_id || "");
 
     const ativo = (data.nat_aten_ativo === 1 || data.nat_aten_ativo === true || data.nat_aten_ativo === "1");
@@ -85,7 +83,6 @@ function abrirModalNaturezaAtendimento(data) {
             $("#nat_aten_ativo").prop("checked", true);
             $("#nat_aten_ativo_label").text("Ativo");
 
-            $("#nat_aten_tp_atendimento_id").val("");
             $("#nat_aten_mod_relatorio_id").val("");
         } else {
             $("#modal_natureza_atendimento_label").text("Naturezas de Atendimento | Editar");
@@ -133,7 +130,6 @@ function initSubmitNaturezaAtendimento() {
                 form[0].reset();
                 $("#nat_aten_id").val("");
                 $("#nat_aten_method").val("POST");
-                $("#nat_aten_tp_atendimento_id").val("");
                 $("#nat_aten_mod_relatorio_id").val("");
 
                 $("#nat_aten_ativo").prop("checked", true);
