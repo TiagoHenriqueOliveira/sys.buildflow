@@ -31,5 +31,33 @@ export function sidebarState() {
                 }
             });
         },
+
+        // Posicao do flyout (submenu com a sidebar recolhida) limitada a
+        // janela visivel. Antes o painel abria sempre alinhado ao topo do
+        // botao clicado - para o ultimo item do rail ("Configuracoes"), com a
+        // escala do Windows em 125%+ (menos altura util em pixels CSS), metade
+        // do painel ficava abaixo da borda da janela, inalcancavel (e
+        // position: fixed, rolar a pagina nao traz de volta). Chamado depois do
+        // painel renderizar, pra medir o tamanho real. A margem de 16px casa
+        // com o max-height: calc(100vh - 2rem) de .sbadmin-submenu--flyout -
+        // painel maior que a janela fica em top: 16px e rola por dentro.
+        posicionarFlyout(botao, painel) {
+            const margem = 16;
+            const r = botao.getBoundingClientRect();
+            let top = r.top;
+            let left = r.right + 8;
+
+            const limiteInferior = window.innerHeight - margem;
+            if (top + painel.offsetHeight > limiteInferior) {
+                top = Math.max(margem, limiteInferior - painel.offsetHeight);
+            }
+
+            const limiteDireito = window.innerWidth - margem;
+            if (left + painel.offsetWidth > limiteDireito) {
+                left = Math.max(margem, limiteDireito - painel.offsetWidth);
+            }
+
+            return { top: top + 'px', left: left + 'px' };
+        },
     };
 }

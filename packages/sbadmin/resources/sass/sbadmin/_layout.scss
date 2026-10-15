@@ -555,6 +555,12 @@ body.sbadmin-body {
             visibility: visible;
             transition-delay: 80ms;
         }
+
+        // Com o flyout do proprio item aberto, o tooltip cobria o primeiro
+        // item do painel (o mouse continua sobre o icone depois do clique).
+        &[aria-expanded="true"]::after {
+            display: none;
+        }
     }
 }
 

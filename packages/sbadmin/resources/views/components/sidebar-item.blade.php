@@ -66,6 +66,7 @@
             x-data="{ open: (collapsed && isDesktop) ? false : {{ $hasActiveDescendant ? 'true' : 'false' }}, flyoutTop: '0px', flyoutLeft: '0px' }"
             class="sbadmin-nav-group"
             @click.outside="open = false"
+            @resize.window="open = false"
         >
             <button
                 type="button"
@@ -73,11 +74,19 @@
                 style="padding-left: {{ $paddingLeft }}rem"
                 @if($depth === 0) data-tooltip="{{ $item['label'] }}" @endif
                 @click="
-                    open = !open;
-                    if (collapsed && isDesktop && open) {
-                        const r = $el.getBoundingClientRect();
+                    const botao = $el;
+                    if (collapsed && isDesktop && !open) {
+                        const r = botao.getBoundingClientRect();
                         flyoutTop = r.top + 'px';
                         flyoutLeft = (r.right + 8) + 'px';
+                    }
+                    open = !open;
+                    if (collapsed && isDesktop && open) {
+                        $nextTick(() => {
+                            const posicao = posicionarFlyout(botao, $refs.painel);
+                            flyoutTop = posicao.top;
+                            flyoutLeft = posicao.left;
+                        });
                     }
                 "
                 :aria-expanded="open.toString()"
@@ -109,6 +118,7 @@
             <ul
                 class="sbadmin-submenu"
                 id="{{ $uid }}"
+                x-ref="painel"
                 x-show="open"
                 x-cloak
                 :class="{ 'sbadmin-submenu--flyout': collapsed && isDesktop }"
