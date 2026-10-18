@@ -99,7 +99,7 @@ SELECT
         IN ('utf8_unicode_ci', 'utf8mb3_unicode_ci')
         AS collation_ok;
 
--- 5) Registro na tabela `migrations` (só se o bloco final do 02 foi usado)
+-- 5) Registro na tabela `migrations` (gravado pelo INSERT do final do 02)
 --    Esperado: 1 linha. Fica por último de propósito: se a tabela
 --    `migrations` não existir, esta consulta dá erro, mas o resumo acima
 --    já foi mostrado.

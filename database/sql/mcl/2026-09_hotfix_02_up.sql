@@ -21,6 +21,7 @@
 --
 -- Idempotente: pode rodar mais de uma vez sem erro e sem duplicar nada
 --   (CREATE TABLE IF NOT EXISTS; o INSERT do final só insere se faltar).
+--   Não precisa descomentar nada: cole o arquivo inteiro e execute.
 --
 -- Equivalente à migration Laravel
 --   database/migrations/2026_09_30_120000_create_atendimentos_relatorios_dias_table.php
@@ -56,18 +57,17 @@ CREATE TABLE IF NOT EXISTS `atendimentos_relatorios_dias` (
 -- ---------------------------------------------------------------------
 -- Registro na tabela `migrations` do Laravel
 -- ---------------------------------------------------------------------
--- Use SOMENTE se a tabela `migrations` existir (o script 01, item 4,
--- mostra isso). Na produção MCL ela EXISTE (confirmado no dump de
--- 03/09/2026 e pelo `php artisan migrate` rodado naquela data), então:
--- DESCOMENTE e rode as linhas abaixo.
+-- A produção MCL TEM a tabela `migrations` (confirmado na cópia do banco
+-- de produção de 30/09/2026, com as migrations até 2026_09_01 aplicadas),
+-- então o INSERT abaixo já vem ativo. Se o script 01 (item 4) mostrar
+-- tabela_migrations_existe = 0, apague o INSERT antes de rodar.
 --
 -- Por quê: sem este registro, um `php artisan migrate` futuro tentaria
 -- criar a tabela de novo e falharia ("table already exists").
 -- Só insere se ainda não houver o registro (pode rodar mais de uma vez):
 -- o HAVING descarta a linha quando o registro já existe.
---
--- INSERT INTO `migrations` (`migration`, `batch`)
--- SELECT '2026_09_30_120000_create_atendimentos_relatorios_dias_table',
---        COALESCE(MAX(`batch`), 0) + 1
--- FROM `migrations`
--- HAVING COALESCE(SUM(`migration` = '2026_09_30_120000_create_atendimentos_relatorios_dias_table'), 0) = 0;
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_09_30_120000_create_atendimentos_relatorios_dias_table',
+       COALESCE(MAX(`batch`), 0) + 1
+FROM `migrations`
+HAVING COALESCE(SUM(`migration` = '2026_09_30_120000_create_atendimentos_relatorios_dias_table'), 0) = 0;

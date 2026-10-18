@@ -40,8 +40,7 @@ DROP TABLE IF EXISTS `atendimentos_relatorios_dias`;
 -- ---------------------------------------------------------------------
 -- Registro na tabela `migrations` do Laravel
 -- ---------------------------------------------------------------------
--- Se o bloco final do 02 foi usado (produção MCL: foi), DESCOMENTE a
--- linha abaixo para tirar o registro — senão um `php artisan migrate`
--- futuro acharia que a tabela existe e não a recriaria.
---
--- DELETE FROM `migrations` WHERE `migration` = '2026_09_30_120000_create_atendimentos_relatorios_dias_table';
+-- Tira o registro gravado pelo INSERT do final do 02 — senão um
+-- `php artisan migrate` futuro acharia que a tabela existe e não a
+-- recriaria. Se a tabela `migrations` não existir, apague esta linha.
+DELETE FROM `migrations` WHERE `migration` = '2026_09_30_120000_create_atendimentos_relatorios_dias_table';

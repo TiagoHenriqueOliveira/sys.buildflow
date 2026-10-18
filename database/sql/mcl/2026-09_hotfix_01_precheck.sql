@@ -48,8 +48,8 @@ FROM information_schema.TABLES
 WHERE TABLE_SCHEMA = DATABASE()
   AND TABLE_NAME = 'atendimentos_relatorios_dias';
 
--- 4) A tabela `migrations` do Laravel existe? (decide se o bloco final do
---    02 deve ser usado)
+-- 4) A tabela `migrations` do Laravel existe? Esperado na MCL: 1.
+--    Se vier 0, apague o INSERT do final do 02 (e o DELETE do 99).
 SELECT COUNT(*) AS tabela_migrations_existe
 FROM information_schema.TABLES
 WHERE TABLE_SCHEMA = DATABASE()
