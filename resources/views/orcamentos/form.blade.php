@@ -117,6 +117,7 @@
                                     :options="collect(App\Enums\NivelOrcamento::cases())->mapWithKeys(fn ($n) => [$n->value => $n->label()])->all()"
                                     :value="old('orc_nivel', $orcamento->orc_nivel?->value)"
                                     placeholder="Não classificado"
+                                    onchange="window.recalcularPrazoOrcamento()"
                                 />
                             </div>
                             <div class="col-sm-6">
@@ -125,8 +126,9 @@
                                     type="date"
                                     name="orc_prazo_envio"
                                     label="Prazo de envio"
-                                    :value="old('orc_prazo_envio', optional($orcamento->orc_prazo_envio)->format('Y-m-d'))"
-                                    help="Deixe em branco para usar a sugestão automática a partir do nível."
+                                    :value="optional($orcamento->orc_prazo_envio)->format('Y-m-d')"
+                                    help="Calculado pelo nível a partir da data de inclusão: 1 dia útil (Simples), 5 (Médio) ou 10 (Complexo), de segunda a sexta."
+                                    readonly
                                 />
                             </div>
                         </div>
@@ -324,9 +326,40 @@
                 Alpine.$data(root).tipoOrcamentoId = valor ? parseInt(valor, 10) : null;
             };
 
+            // CRM02 - mesma regra de NivelOrcamento::calcularPrazo() (manter
+            // as duas iguais; o servidor recalcula ao salvar e e quem vale):
+            // dias uteis de segunda a sexta, sem descontar feriados, a partir
+            // da data de inclusao - num cadastro novo, a data de hoje.
+            const DIAS_UTEIS_POR_NIVEL = @json(collect(App\Enums\NivelOrcamento::cases())->mapWithKeys(fn ($n) => [$n->value => $n->diasUteisPrazo()]));
+            const DATA_INCLUSAO_ORCAMENTO = @json(($orcamento->orc_criado_em ?? now())->format('Y-m-d'));
+
+            window.recalcularPrazoOrcamento = function () {
+                const nivel = document.getElementById('orc_nivel').value;
+                const campo = document.getElementById('orc_prazo_envio');
+                const diasUteis = DIAS_UTEIS_POR_NIVEL[nivel];
+
+                if (nivel === '' || diasUteis === undefined) {
+                    campo.value = '';
+                    return;
+                }
+
+                const [ano, mes, dia] = DATA_INCLUSAO_ORCAMENTO.split('-').map(Number);
+                const data = new Date(ano, mes - 1, dia);
+                let restantes = diasUteis;
+                while (restantes > 0) {
+                    data.setDate(data.getDate() + 1);
+                    if (data.getDay() !== 0 && data.getDay() !== 6) restantes--;
+                }
+
+                campo.value = data.getFullYear() + '-'
+                    + String(data.getMonth() + 1).padStart(2, '0') + '-'
+                    + String(data.getDate()).padStart(2, '0');
+            };
+
             document.addEventListener('DOMContentLoaded', function () {
                 window.setupAutocomplete('#orc_cliente_nome', '#orc_cliente_id', '{{ route('clientes.autocomplete') }}');
                 window.atualizarTipoOrcamentoSelecionado(document.getElementById('orc_tipo_orcamento_id').value);
+                window.recalcularPrazoOrcamento();
             });
         </script>
     @endpush

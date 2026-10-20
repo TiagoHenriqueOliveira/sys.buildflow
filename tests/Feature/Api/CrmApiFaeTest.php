@@ -213,26 +213,32 @@ class CrmApiFaeTest extends TestCase
      */
     public function test_prazo_envio_volta_so_com_data_e_atualizar_sem_mudar_nao_quebra(): void
     {
+        // CRM02 (2026-10-20): o prazo passou a ser calculado pelo nivel a
+        // partir da inclusao (qua 14/10 + 5 dias uteis = qua 21/10) e o
+        // valor reenviado pelo app e ignorado - o teste continua garantindo
+        // que esse reenvio nao quebra o UPDATE e que a data volta sem hora.
         $vendedor = $this->criarComercial();
         $cliente = Cliente::factory()->create();
         $orcamento = Orcamento::create([
             'orc_cliente_id' => $cliente->cli_id,
             'orc_vendedor_id' => $vendedor->user_id,
-            'orc_prazo_envio' => '2026-09-17',
+            'orc_nivel' => NivelOrcamento::Medio->value,
+            'orc_prazo_envio' => '2026-10-21',
             'orc_ativo' => 1,
-            'orc_criado_em' => now(),
+            'orc_criado_em' => '2026-10-14 09:00:00',
         ]);
 
         $mostrar = $this->withToken($this->token($vendedor))->getJson("/api/fae/v1/orcamentos/{$orcamento->orc_id}");
-        $mostrar->assertOk()->assertJsonPath('data.prazo_envio', '2026-09-17');
+        $mostrar->assertOk()->assertJsonPath('data.prazo_envio', '2026-10-21');
 
         $atualizar = $this->withToken($this->token($vendedor))->putJson("/api/fae/v1/orcamentos/{$orcamento->orc_id}", [
             'orc_cliente_id' => $cliente->cli_id,
             'orc_vendedor_id' => $vendedor->user_id,
+            'orc_nivel' => NivelOrcamento::Medio->value,
             'orc_prazo_envio' => $mostrar->json('data.prazo_envio'),
         ]);
 
-        $atualizar->assertOk()->assertJsonPath('data.prazo_envio', '2026-09-17');
+        $atualizar->assertOk()->assertJsonPath('data.prazo_envio', '2026-10-21');
     }
 
     /**

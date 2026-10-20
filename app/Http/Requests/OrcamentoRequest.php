@@ -17,7 +17,6 @@ class OrcamentoRequest extends FormRequest
             'orc_vendedor_id' => ['required', 'integer', Rule::exists('usuarios', 'user_id')],
             'orc_tipo_orcamento_id' => ['nullable', 'integer', Rule::exists('crm_tipos_orcamento', 'crm_tp_orc_id')],
             'orc_nivel' => ['nullable', Rule::in(array_column(NivelOrcamento::cases(), 'value'))],
-            'orc_prazo_envio' => ['nullable', 'date'],
             // Pedido do cliente (2026-09-17): resultado do orcamento
             // (Convertido/Nao Convertido/Adiado/Projeto Futuro) - alimenta
             // os indicadores comerciais (CRM08) de verdade.

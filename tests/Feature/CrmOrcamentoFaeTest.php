@@ -74,8 +74,14 @@ class CrmOrcamentoFaeTest extends TestCase
         ]);
     }
 
-    public function test_prazo_de_envio_e_calculado_automaticamente_quando_nao_informado(): void
+    /**
+     * CRM02 (pedido do cliente, 2026-10-20): prazo = dias uteis pelo nivel
+     * (1/5/10), contados de segunda a sexta a partir da data de inclusao,
+     * sempre calculado - um prazo enviado no formulario e ignorado.
+     */
+    public function test_prazo_de_envio_e_calculado_em_dias_uteis_a_partir_da_inclusao(): void
     {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-16 10:00')); // sexta-feira
         $vendedor = $this->criarVendedor();
         $cliente = Cliente::factory()->create();
 
@@ -83,12 +89,55 @@ class CrmOrcamentoFaeTest extends TestCase
             'orc_cliente_id' => $cliente->cli_id,
             'orc_vendedor_id' => $vendedor->user_id,
             'orc_nivel' => NivelOrcamento::Complexo->value,
+            'orc_prazo_envio' => '2030-01-01',
         ]);
 
         $response->assertRedirect();
+        // 10 dias uteis a partir de sex 16/10 = sex 30/10.
         $this->assertDatabaseHas('orcamentos', [
             'orc_cliente_id' => $cliente->cli_id,
-            'orc_prazo_envio' => now()->addDays(NivelOrcamento::Complexo->prazoEmDiasMockado())->toDateString(),
+            'orc_prazo_envio' => '2026-10-30',
+        ]);
+    }
+
+    public function test_edicao_recalcula_prazo_a_partir_da_data_de_inclusao_original(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+        $orcamento = \App\Models\Orcamento::create([
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_nivel' => NivelOrcamento::Simples->value,
+            'orc_ativo' => 1,
+            'orc_criado_em' => '2026-10-14 09:00:00', // quarta-feira
+        ]);
+
+        // Editado dias depois: a base continua sendo a inclusao, nao hoje.
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-20 15:00'));
+        $this->actingAs($vendedor)->put(route('orcamentos.update', $orcamento->orc_id), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_nivel' => NivelOrcamento::Medio->value,
+        ])->assertRedirect();
+
+        // 5 dias uteis a partir de qua 14/10 = qua 21/10.
+        $this->assertSame('2026-10-21', $orcamento->fresh()->orc_prazo_envio->format('Y-m-d'));
+    }
+
+    public function test_orcamento_sem_nivel_fica_sem_prazo(): void
+    {
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        $this->actingAs($vendedor)->post(route('orcamentos.store'), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_prazo_envio' => '2030-01-01',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('orcamentos', [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_prazo_envio' => null,
         ]);
     }
 

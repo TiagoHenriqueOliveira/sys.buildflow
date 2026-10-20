@@ -4,6 +4,12 @@ Ver [00-indice.md](00-indice.md). Pré-requisito: [05-web-configurador-persisten
 
 **Reescrito em 16/09/2026** com base em auditoria direta do código atual (`BF_v1.8.5`). Não confiar em versão anterior deste documento — CRM03/04/05/06/07 já estavam completos e corretos há várias sessões, e a versão antiga (09/09) descrevia tabelas que nunca existiram (`comentarios` polimórfica, `roteiro_viagem_saida/retorno` separadas, `equipamentos_vendidos`/`casos_sucesso` — o schema real já resolveu tudo isso de outra forma, mais simples).
 
+> **✅ SESSÃO CONCLUÍDA FORA DE ORDEM (out/2026) — não reexecutar.** Os dois itens foram resolvidos direto a partir de pedidos do cliente, com regras diferentes das propostas abaixo:
+> - **CRM08** (`BF_v1.10.0`): campo `orc_resultado` (enum `ResultadoOrcamento`: Convertido/Não convertido/Adiado/Projeto futuro) em vez de "Ganho/Perdido"; indicadores calculam conversão real = Convertido ÷ (Convertido + Não convertido).
+> - **CRM02** (`BF_v1.12.0`): prazo = **1/5/10 dias úteis** (Simples/Médio/Complexo), segunda a sexta, feriados não descontados, contados a partir da **data de inclusão** do orçamento (`NivelOrcamento::calcularPrazo()`). **Regra fixa, não configurável** e o campo deixou de ser editável — o servidor sempre recalcula e ignora `orc_prazo_envio` enviado; a tela replica a regra em JS para mostrar o prazo antes de salvar.
+>
+> O restante deste arquivo é o plano original (16/09/2026), mantido só como histórico.
+
 ## Escopo: CRM02 (prazo configurável) + CRM08 (status de fechamento do orçamento)
 
 **CRM01, CRM03, CRM04, CRM05, CRM06, CRM07 já estão completos** — vínculo modelo↔tipo de orçamento, comentários com alerta e exclusão, vendedores adicionais sem comissão, roteiro de viagem saída/retorno, mapa de relações (equipamento vendido/caso de sucesso já são colunas de `clientes`). Não fazem parte desta sessão.

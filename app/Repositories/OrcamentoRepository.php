@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Enums\NivelOrcamento;
 use App\Models\Orcamento;
 use App\Repositories\Contracts\CrudRepositoryInterface;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -18,10 +19,11 @@ class OrcamentoRepository implements CrudRepositoryInterface
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
+            $agora = now();
             $orcamento = Orcamento::create([
-                ...$this->camposPrincipais($data),
+                ...$this->camposPrincipais($data, $agora),
                 'orc_ativo' => 1,
-                'orc_criado_em' => now(),
+                'orc_criado_em' => $agora,
             ]);
 
             $this->sincronizarRespostas($orcamento, $data['respostas'] ?? []);
@@ -37,7 +39,7 @@ class OrcamentoRepository implements CrudRepositoryInterface
             $orcamento = Orcamento::findOrFail($id);
 
             $orcamento->update([
-                ...$this->camposPrincipais($data),
+                ...$this->camposPrincipais($data, $orcamento->orc_criado_em ?? now()),
                 'orc_ativo' => $data['orc_ativo'] ?? $orcamento->orc_ativo,
             ]);
 
@@ -48,16 +50,15 @@ class OrcamentoRepository implements CrudRepositoryInterface
         });
     }
 
-    private function camposPrincipais(array $data): array
+    private function camposPrincipais(array $data, CarbonInterface $dataInclusao): array
     {
         $nivel = $data['orc_nivel'] ?? null;
-        $prazo = $data['orc_prazo_envio'] ?? null;
 
-        // CRM02 — se um nível foi escolhido e nenhum prazo foi digitado à
-        // mão, sugere um prazo mockado (fórmula real fica pra Etapa 2).
-        if ($nivel !== null && $prazo === null) {
-            $prazo = now()->addDays(NivelOrcamento::from((int) $nivel)->prazoEmDiasMockado())->toDateString();
-        }
+        // CRM02 - prazo sempre derivado do nivel + data de inclusao do
+        // orcamento (nao e mais digitavel - pedido do cliente, 2026-10-20).
+        $prazo = $nivel !== null
+            ? NivelOrcamento::from((int) $nivel)->calcularPrazo($dataInclusao)->toDateString()
+            : null;
 
         return [
             'orc_cliente_id' => $data['orc_cliente_id'],
