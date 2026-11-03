@@ -24,7 +24,7 @@
             <div class="btn-group d-flex flex-wrap" role="group">
                 @foreach($opcoesStatus as $opcao)
                     <input type="radio" class="btn-check" name="aten_rel_status" id="aten_rel_status_{{ $opcao->value }}" value="{{ $opcao->value }}" autocomplete="off" @checked($statusAtual === $opcao)>
-                    <label class="btn btn-outline-{{ $opcao->corBotao() }}" for="aten_rel_status_{{ $opcao->value }}">{{ $opcao->label() }}</label>
+                    <label class="btn btn-status-{{ $opcao->corBotao() }}" for="aten_rel_status_{{ $opcao->value }}">{{ $opcao->label() }}</label>
                 @endforeach
             </div>
             @unless($podeAprovarRelatorio)

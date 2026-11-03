@@ -47,7 +47,7 @@ enum AtendimentoRelatorioStatus: int
         };
     }
 
-    /** Classe de cor do botão de status (btn-outline-*). */
+    /** Sufixo da classe do botão de status (.btn-status-*, ver _components.scss). */
     public function corBotao(): string
     {
         return match ($this) {

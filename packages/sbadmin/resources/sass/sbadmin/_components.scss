@@ -170,27 +170,34 @@
     }
 }
 
-// Botao do status "Preenchendo" (aba Assinatura do relatorio). Pedido do
-// cliente (2026-11-03): letra branca tanto selecionado quanto em repouso -
-// o outline padrao do Bootstrap pinta o texto com a propria cor, que no
-// tema escuro ficava apagada. Em repouso: contorno + fundo violeta leve;
-// selecionado (.btn-check:checked, que usa as vars --bs-btn-active-*) e
-// hover: violeta solido.
-.btn-outline-purple {
+// Botoes de status do relatorio (aba Assinatura). Pedido do cliente
+// (2026-11-03): padrao unico pra todos os status - letra branca sempre;
+// em repouso, contorno + fundo leve da cor do status; selecionado
+// (.btn-check:checked, que usa as vars --bs-btn-active-*) e hover, a cor
+// solida. O outline padrao do Bootstrap pinta o texto com a propria cor,
+// que no tema escuro ficava apagada (comecou pelo "Preenchendo"). Classe
+// propria em vez de mexer nos btn-outline-* globais, usados no resto do
+// sistema. Cores: AtendimentoRelatorioStatus::corBotao().
+@mixin sbadmin-btn-status($cor) {
     --bs-btn-color: #fff;
-    --bs-btn-bg: #{rgba($sbadmin-color-purple, 0.28)};
-    --bs-btn-border-color: #{$sbadmin-color-purple};
+    --bs-btn-bg: #{rgba($cor, 0.28)};
+    --bs-btn-border-color: #{$cor};
     --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #{$sbadmin-color-purple};
-    --bs-btn-hover-border-color: #{$sbadmin-color-purple};
-    --bs-btn-focus-shadow-rgb: #{red($sbadmin-color-purple)}, #{green($sbadmin-color-purple)}, #{blue($sbadmin-color-purple)};
+    --bs-btn-hover-bg: #{$cor};
+    --bs-btn-hover-border-color: #{$cor};
+    --bs-btn-focus-shadow-rgb: #{red($cor)}, #{green($cor)}, #{blue($cor)};
     --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #{$sbadmin-color-purple};
-    --bs-btn-active-border-color: #{$sbadmin-color-purple};
+    --bs-btn-active-bg: #{$cor};
+    --bs-btn-active-border-color: #{$cor};
     --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: #{rgba($sbadmin-color-purple, 0.28)};
-    --bs-btn-disabled-border-color: #{$sbadmin-color-purple};
+    --bs-btn-disabled-bg: #{rgba($cor, 0.28)};
+    --bs-btn-disabled-border-color: #{$cor};
 }
+
+.btn-status-purple { @include sbadmin-btn-status($sbadmin-color-purple); }
+.btn-status-warning { @include sbadmin-btn-status($sbadmin-color-warning); }
+.btn-status-info { @include sbadmin-btn-status($sbadmin-color-info); }
+.btn-status-success { @include sbadmin-btn-status($sbadmin-color-success); }
 
 // Botao de acao de linha "desenhado" — usado no lugar do simples
 // `.btn-outline-secondary` acima quando se quer um botao de acao mais
