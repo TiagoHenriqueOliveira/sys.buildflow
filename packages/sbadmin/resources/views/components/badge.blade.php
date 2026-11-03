@@ -8,6 +8,7 @@
         'error' => 'sbadmin-badge-error',
         'warning' => 'sbadmin-badge-warning',
         'info' => 'sbadmin-badge-info',
+        'primary' => 'sbadmin-badge-primary',
         'neutral' => 'sbadmin-badge-neutral',
     ];
     $class = $map[$type] ?? $map['neutral'];

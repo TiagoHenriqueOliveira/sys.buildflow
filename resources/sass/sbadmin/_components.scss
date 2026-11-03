@@ -397,6 +397,10 @@
 .sbadmin-badge-error { background-color: rgba($sbadmin-color-error, 0.14); color: $sbadmin-color-error; }
 .sbadmin-badge-warning { background-color: rgba($sbadmin-color-warning, 0.16); color: darken($sbadmin-color-warning, 8%); }
 .sbadmin-badge-info { background-color: rgba($sbadmin-color-info, 0.14); color: darken($sbadmin-color-info, 5%); }
+// Azul de acento do sistema - usado pelo status "Preenchendo" do relatorio
+// (2026-11-03), que era cinza neutro e parecia "sem cor" ao lado do
+// ciano (info) do novo "Liberado para aprovacao".
+.sbadmin-badge-primary { background-color: rgba($sbadmin-color-secondary, 0.14); color: darken($sbadmin-color-secondary, 5%); }
 .sbadmin-badge-neutral { background-color: var(--sbadmin-surface-muted); color: var(--sbadmin-text-muted); }
 
 // Fundos mais opacos e texto mais claro no dark mode: os tons "darken()" do
@@ -406,6 +410,7 @@
     .sbadmin-badge-error { background-color: rgba($sbadmin-color-error, 0.22); color: lighten($sbadmin-color-error, 18%); }
     .sbadmin-badge-warning { background-color: rgba($sbadmin-color-warning, 0.22); color: lighten($sbadmin-color-warning, 22%); }
     .sbadmin-badge-info { background-color: rgba($sbadmin-color-info, 0.22); color: lighten($sbadmin-color-info, 28%); }
+    .sbadmin-badge-primary { background-color: rgba($sbadmin-color-secondary, 0.22); color: lighten($sbadmin-color-secondary, 25%); }
     .sbadmin-badge-neutral { color: var(--sbadmin-text); }
 }
 

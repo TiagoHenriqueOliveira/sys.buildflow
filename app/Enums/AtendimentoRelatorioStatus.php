@@ -38,7 +38,8 @@ enum AtendimentoRelatorioStatus: int
     public function badgeTipo(): string
     {
         return match ($this) {
-            self::Preenchendo => 'neutral',
+            // Azul, não cinza: neutral parecia "sem cor" (pedido 2026-11-03).
+            self::Preenchendo => 'primary',
             self::Revisar     => 'warning',
             self::Aprovado    => 'success',
             self::Liberado    => 'info',
@@ -49,7 +50,7 @@ enum AtendimentoRelatorioStatus: int
     public function corBotao(): string
     {
         return match ($this) {
-            self::Preenchendo => 'secondary',
+            self::Preenchendo => 'primary',
             self::Revisar     => 'warning',
             self::Aprovado    => 'success',
             self::Liberado    => 'info',
