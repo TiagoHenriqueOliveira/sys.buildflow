@@ -22,7 +22,6 @@ use App\Models\NaturezaAtendimento;
 use App\Models\Usuario;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
-use App\Models\AtendimentoRelatorioHorario;
 use App\Models\Ocorrencia;
 use App\Models\AtendimentoRelatorioFoto;
 use App\Models\AtendimentoRelatorioVideo;
@@ -229,7 +228,7 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento.natureza',
             'atendimento.equipamentos',
             'atendimento.anexos',
-            'horarios',
+            'horariosDias',
             'climas',
             'servicos',
             'pecas',
@@ -302,15 +301,7 @@ class AtendimentosRelatoriosController extends Controller
         $relatorio = $this->relatorioComPosseGarantida($id);
 
         try {
-            AtendimentoRelatorioHorario::updateOrCreate(
-                ['aten_rel_hora_relatorio_id' => $relatorio->aten_rel_id],
-                [
-                    'aten_rel_hora_entrada'          => $request->aten_rel_hora_entrada,
-                    'aten_rel_hora_inicio_intervalo' => $request->aten_rel_hora_inicio_intervalo,
-                    'aten_rel_hora_fim_intervalo'    => $request->aten_rel_hora_fim_intervalo,
-                    'aten_rel_hora_saida'            => $request->aten_rel_hora_saida,
-                ]
-            );
+            $relatorio->sincronizarHorarios($request->validated('dias'));
 
             return response()->json([
                 'success' => true,
@@ -369,24 +360,25 @@ class AtendimentosRelatoriosController extends Controller
 
         try {
             $novoStatus = (int) $request->aten_rel_status;
+            $usuario = auth()->user();
 
-            // REL-05: Técnicos precisam de assinaturas para aprovar; administradores podem dispensar
-            if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value && auth()->user()->user_nivel_acesso !== 0) {
-                $temResponsavel = $relatorio->assinaturaResponsavel() || $request->filled('assinatura_responsavel');
-                $temCliente     = $relatorio->assinaturaCliente()     || $request->filled('assinatura_cliente');
-
-                if (!$temResponsavel || !$temCliente) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Assinaturas do técnico e do cliente são obrigatórias para concluir o relatório.',
-                    ], 422);
-                }
+            // Pedido do cliente (2026-11-03) — substitui a REL-05 antiga (duas
+            // assinaturas pra aprovar, admin dispensava): técnico libera para
+            // aprovação (exige a assinatura dele) e só Assistência/Admin aprova.
+            // Regras em AtendimentoRelatorio::erroMudancaStatus (mesmas da API).
+            $erro = $relatorio->erroMudancaStatus($novoStatus, $usuario, $request->filled('assinatura_responsavel'));
+            if ($erro !== null) {
+                return response()->json(['success' => false, 'message' => $erro], 422);
             }
 
             $statusAnterior = $relatorio->aten_rel_status;
             $relatorio->update([
                 'aten_rel_status' => $novoStatus,
-                'aten_rel_observacao_supervisor' => $request->input('observacao_supervisor', $relatorio->aten_rel_observacao_supervisor),
+                // Observação do supervisor (BF10) é de quem aprova/devolve —
+                // técnico não altera, mesmo se o campo vier no corpo.
+                'aten_rel_observacao_supervisor' => AtendimentoRelatorioStatus::usuarioPodeAprovar($usuario)
+                    ? $request->input('observacao_supervisor', $relatorio->aten_rel_observacao_supervisor)
+                    : $relatorio->aten_rel_observacao_supervisor,
             ]);
 
             if (
@@ -422,6 +414,15 @@ class AtendimentosRelatoriosController extends Controller
                     $request->input('assinatura_cliente_nome'),
                     $request->input('assinatura_cliente_cpf'),
                 );
+            }
+
+            // Depois de gravar as assinaturas: quem recebe o aviso já
+            // encontra o relatório completo ao abrir o link.
+            if (
+                $novoStatus === AtendimentoRelatorioStatus::Liberado->value &&
+                $statusAnterior !== AtendimentoRelatorioStatus::Liberado->value
+            ) {
+                $relatorio->notificarLiberacaoParaAprovacao($usuario);
             }
 
             return response()->json([
@@ -936,14 +937,10 @@ class AtendimentosRelatoriosController extends Controller
 
     public function getHorarios(int $id): \Illuminate\Http\JsonResponse
     {
-        $relatorio = $this->relatorioComPosseGarantida($id, ['horarios']);
-        $h = $relatorio->horarios;
+        $relatorio = $this->relatorioComPosseGarantida($id, ['horariosDias']);
 
         return response()->json([
-            'entrada'          => $h?->aten_rel_hora_entrada          ? substr($h->aten_rel_hora_entrada, 0, 5)          : '',
-            'inicio_intervalo' => $h?->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '',
-            'fim_intervalo'    => $h?->aten_rel_hora_fim_intervalo    ? substr($h->aten_rel_hora_fim_intervalo, 0, 5)    : '',
-            'saida'            => $h?->aten_rel_hora_saida            ? substr($h->aten_rel_hora_saida, 0, 5)            : '',
+            'dias' => $relatorio->horariosDias->map->paraJson()->values(),
         ]);
     }
 
@@ -1000,7 +997,7 @@ class AtendimentosRelatoriosController extends Controller
             'atendimento.natureza',
             'atendimento.usuario',
             'atendimento.equipamentos',
-            'horarios',
+            'horariosDias',
             'climas',
             'ocorrencias',
             'servicos',

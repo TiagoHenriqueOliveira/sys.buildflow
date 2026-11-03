@@ -63,7 +63,7 @@
                         <label for="f_status" class="sbadmin-form-label">Status</label>
                         <select id="f_status" name="f_status" class="form-select sbadmin-form-control">
                             <option value="">Todos</option>
-                            @foreach(\App\Enums\AtendimentoRelatorioStatus::cases() as $statusOpcao)
+                            @foreach(\App\Enums\AtendimentoRelatorioStatus::emOrdemDoFluxo() as $statusOpcao)
                                 <option value="{{ $statusOpcao->value }}" @selected($filtroStatus === (string) $statusOpcao->value)>{{ $statusOpcao->label() }}</option>
                             @endforeach
                         </select>
@@ -103,11 +103,7 @@
                     <td>{{ $r->atendimento?->usuario?->user_nome ?? '-' }}</td>
                     <td>
                         @if($status)
-                            <x-sbadmin::badge :type="match($status) {
-                                \App\Enums\AtendimentoRelatorioStatus::Aprovado => 'success',
-                                \App\Enums\AtendimentoRelatorioStatus::Revisar => 'warning',
-                                default => 'info',
-                            }">
+                            <x-sbadmin::badge :type="$status->badgeTipo()">
                                 {{ $status->label() }}
                             </x-sbadmin::badge>
                         @endif

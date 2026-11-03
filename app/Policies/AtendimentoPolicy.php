@@ -13,10 +13,13 @@ class AtendimentoPolicy
      * 4 formas diferentes entre os controllers de API (legado e Mcl), uma
      * delas invertida (`=== 1` em vez de `!== 0`), inofensiva hoje só porque
      * os únicos níveis existentes são 0 e 1.
+     *
+     * 2026-11-03: Assistência também acessa todos — é quem aprova os
+     * relatórios de todos os técnicos (ver Atendimento::veTodos()).
      */
     public function acessar(Usuario $usuario, Atendimento $atendimento): bool
     {
-        return $usuario->user_nivel_acesso === 0
+        return Atendimento::veTodos($usuario)
             || $atendimento->aten_usuario_id === $usuario->user_id;
     }
 }

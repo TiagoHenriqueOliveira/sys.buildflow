@@ -298,6 +298,15 @@
     &.is-invalid { border-color: $sbadmin-color-error; }
 }
 
+// Pedido do cliente (2026-11-03): todo campo somente leitura ganha uma borda
+// lateral esquerda na cor info (a mesma do `.text-info`), pra diferenciar de
+// relance o que e editavel do que so exibe dado vindo de outro cadastro.
+// Global de proposito - vale pra qualquer tela, sem classe extra por campo.
+.form-control[readonly],
+.form-select[readonly] {
+    border-left: 4px solid $sbadmin-color-info;
+}
+
 .sbadmin-form-help {
     margin-top: $sbadmin-space-1;
     font-size: 0.8rem;

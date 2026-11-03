@@ -160,17 +160,33 @@
                             </div>
                         </div>
 
-                        {{-- BF03 — dados do cliente vinculado, sem navegação adicional. --}}
-                        <div id="cliente-resumo-box" class="sbadmin-card mb-3" hidden>
-                            <div class="sbadmin-card-body py-2 small">
-                                <div><strong>Segmento:</strong> <span id="cliente-resumo-segmento">—</span></div>
-                                <div><strong>Classificação:</strong> <span id="cliente-resumo-classificacao">—</span></div>
-                                <div><strong>Contato principal:</strong> <span id="cliente-resumo-contato">—</span></div>
-                                <div><strong>Cidade/UF:</strong> <span id="cliente-resumo-cidade">—</span></div>
+                        {{-- BF03 — dados do cliente vinculado, sem navegação adicional.
+                             Pedido do cliente (2026-11-03): cada dado num campo próprio
+                             (somente leitura, com a borda info global de [readonly]) em vez
+                             do card com os quatro agrupados em texto corrido. Sem "name"
+                             de atendimento — vêm do cadastro do cliente e não são gravados
+                             aqui. --}}
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3">
+                                <x-sbadmin::form.input id="cliente_resumo_segmento" name="cliente_resumo_segmento" label="Segmento" readonly tabindex="-1" />
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <x-sbadmin::form.input id="cliente_resumo_classificacao" name="cliente_resumo_classificacao" label="Classificação" readonly tabindex="-1" />
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <x-sbadmin::form.input id="cliente_resumo_contato" name="cliente_resumo_contato" label="Contato principal" readonly tabindex="-1" />
+                            </div>
+                            <div class="col-8 col-md-2">
+                                <x-sbadmin::form.input id="cliente_resumo_cidade" name="cliente_resumo_cidade" label="Cidade" readonly tabindex="-1" />
+                            </div>
+                            <div class="col-4 col-md-1">
+                                <x-sbadmin::form.input id="cliente_resumo_uf" name="cliente_resumo_uf" label="UF" readonly tabindex="-1" />
                             </div>
                         </div>
 
-                        <x-sbadmin::form.input id="aten_endereco" name="aten_endereco" label="Endereço" :value="old('aten_endereco', $atendimento->aten_endereco)" maxlength="100" placeholder="Ex.: Rua das Flores, 123 - Centro" />
+                        {{-- Pedido do cliente (2026-11-03): endereço por extenso, não link do
+                             Google Maps — validado no backend por App\Rules\EnderecoSemLink. --}}
+                        <x-sbadmin::form.input id="aten_endereco" name="aten_endereco" label="Endereço" :value="old('aten_endereco', $atendimento->aten_endereco)" maxlength="100" placeholder="Ex.: Rua das Flores, 123 - Centro" help="Digite o endereço por extenso (links do Google Maps não são aceitos)." />
 
                         <div class="row">
                             <div class="col-md-4">
@@ -204,12 +220,14 @@
                                     </div>
                                 </div>
                             </div>
+                            {{-- Pedido do cliente (2026-11-03): Status alinhado à direita
+                                 (a partir de md; no celular empilha normal à esquerda). --}}
                             <div class="col-md-6">
-                                <div class="sbadmin-form-group">
+                                <div class="sbadmin-form-group text-md-end">
                                     <label class="sbadmin-form-label">Status</label>
-                                    <div class="pt-1">
+                                    <div class="pt-1 d-flex flex-wrap gap-3 justify-content-md-end">
                                         @foreach([0 => 'Não iniciada', 1 => 'Paralisada', 2 => 'Em andamento', 3 => 'Concluída'] as $val => $label)
-                                            <div class="form-check form-check-inline">
+                                            <div class="form-check mb-0">
                                                 <input class="form-check-input" type="radio" id="aten_status_{{ $val }}" name="aten_status" value="{{ $val }}" @checked((int) old('aten_status', $atendimento->aten_status ?? 0) === $val)>
                                                 <label class="form-check-label" for="aten_status_{{ $val }}">{{ $label }}</label>
                                             </div>
@@ -230,15 +248,18 @@
 
                 {{-- Aba Equipamentos --}}
                 <div x-show="tab === 'equipamentos'" x-cloak>
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-6">
+                    {{-- Pedido do cliente (2026-11-03): botão com a mesma altura do
+                         campo — input-group do Bootstrap garante isso em qualquer
+                         escala/fonte, em vez de casar tamanhos btn-sm x input à mão. --}}
+                    <div class="row g-2">
+                        <div class="col-md-8 col-lg-6">
                             <label for="aten_equip_descricao" class="sbadmin-form-label">Descrição</label>
-                            <input type="text" class="form-control sbadmin-form-control" id="aten_equip_descricao" maxlength="255" placeholder="Ex.: Ar condicionado">
-                        </div>
-                        <div class="col-auto">
-                            <button type="button" id="btnAdicionarEquipamento" class="btn btn-success btn-sm">
-                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar
-                            </button>
+                            <div class="input-group">
+                                <input type="text" class="form-control sbadmin-form-control" id="aten_equip_descricao" maxlength="255" placeholder="Ex.: Ar condicionado">
+                                <button type="button" id="btnAdicionarEquipamento" class="btn btn-success">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -631,23 +652,23 @@
 
             {{-- BF03 — resumo do cliente vinculado, sem navegação extra. --}}
             function carregarResumoCliente(clienteId) {
-                const box = document.getElementById('cliente-resumo-box');
+                const preencher = (d = {}) => {
+                    document.getElementById('cliente_resumo_segmento').value = d.cli_segmento || '';
+                    document.getElementById('cliente_resumo_classificacao').value = d.classificacao || '';
+                    document.getElementById('cliente_resumo_contato').value = d.cli_contato_principal || '';
+                    document.getElementById('cliente_resumo_cidade').value = d.cli_cidade || '';
+                    document.getElementById('cliente_resumo_uf').value = d.cli_uf || '';
+                };
                 if (!clienteId) {
-                    box.hidden = true;
+                    preencher();
                     return;
                 }
                 fetch('{{ url('/clientes') }}/' + clienteId + '/resumo', {
                     headers: { 'Accept': 'application/json' },
                 })
                     .then((r) => r.ok ? r.json() : Promise.reject())
-                    .then((d) => {
-                        document.getElementById('cliente-resumo-segmento').textContent = d.cli_segmento || '—';
-                        document.getElementById('cliente-resumo-classificacao').textContent = d.classificacao || '—';
-                        document.getElementById('cliente-resumo-contato').textContent = d.cli_contato_principal || '—';
-                        document.getElementById('cliente-resumo-cidade').textContent = [d.cli_cidade, d.cli_uf].filter(Boolean).join('/') || '—';
-                        box.hidden = false;
-                    })
-                    .catch(() => { box.hidden = true; });
+                    .then((d) => preencher(d))
+                    .catch(() => preencher());
             }
 
             document.addEventListener('DOMContentLoaded', function () {

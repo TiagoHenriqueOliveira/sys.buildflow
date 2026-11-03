@@ -190,7 +190,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"entrada\": \"08:00\",\n  \"inicio_intervalo\": \"12:00\",\n  \"fim_intervalo\": \"13:00\",\n  \"saida\": \"17:30\"\n}"
+              "raw": "{\n  \"dias\": [\n    { \"data\": \"2026-11-02\", \"entrada\": \"08:00\", \"inicio_intervalo\": \"12:00\", \"fim_intervalo\": \"13:00\", \"saida\": \"17:30\" },\n    { \"data\": \"2026-11-03\", \"entrada\": \"07:30\", \"saida\": \"16:00\" }\n  ]\n}"
             },
             "url": { "raw": "{{base_url}}/api/fae/v1/relatorios/{{rel_id}}/horarios", "host": ["{{base_url}}"], "path": ["api","fae","v1","relatorios","{{rel_id}}","horarios"] }
           }
@@ -223,7 +223,7 @@
               "raw": "{\n  \"status\": 1\n}",
               "options": {
                 "raw": {
-                  "description": "0 = Preenchendo | 1 = Aguardando revisão | 2 = Aprovado"
+                  "description": "0 = Preenchendo | 1 = Revisar | 2 = Aprovado (só Assistência/Admin, a partir de 3) | 3 = Liberado para aprovação (exige assinatura do técnico)"
                 }
               }
             },

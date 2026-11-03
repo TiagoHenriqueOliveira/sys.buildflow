@@ -274,11 +274,10 @@
 
             // ─── Horários ───────────────────────────────────────────────────────
             function carregarHorariosRelatorio() {
+                // Lista de dias é um componente Alpine (tabs/horarios.blade.php);
+                // repassa a resposta por evento em vez de mexer nos inputs.
                 fetchJson(`${RELATORIOS_BASE_URL}/${RELATORIO_ID}/horarios`).then((h) => {
-                    document.querySelector('input[name="aten_rel_hora_entrada"]').value = h.entrada;
-                    document.querySelector('input[name="aten_rel_hora_inicio_intervalo"]').value = h.inicio_intervalo;
-                    document.querySelector('input[name="aten_rel_hora_fim_intervalo"]').value = h.fim_intervalo;
-                    document.querySelector('input[name="aten_rel_hora_saida"]').value = h.saida;
+                    window.dispatchEvent(new CustomEvent('horarios-carregados', { detail: h.dias || [] }));
                 });
             }
 
@@ -1029,7 +1028,9 @@
                     })
                         .then((r) => {
                             mostrarFeedbackRelatorio('success', r.message || 'Status atualizado.');
-                            if (String(status) === '2') { window.location.reload(); }
+                            // Aprovado trava a tela; Liberado muda o que
+                            // aparece pro técnico — recarrega nos dois.
+                            if (['2', '3'].includes(String(status))) { window.location.reload(); }
                         })
                         .catch((err) => mostrarErroAjax({ status: err.status }, err.payload));
                     return;

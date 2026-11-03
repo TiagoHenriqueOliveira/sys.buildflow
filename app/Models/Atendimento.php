@@ -84,7 +84,21 @@ class Atendimento extends Model
      */
     public static function idVisivelPara(Usuario $usuario): ?int
     {
-        return $usuario->user_nivel_acesso === 0 ? null : $usuario->user_id;
+        return static::veTodos($usuario) ? null : $usuario->user_id;
+    }
+
+    /**
+     * Quem enxerga os atendimentos/relatórios de todos os técnicos:
+     * Administrador e, desde 2026-11-03, Assistência — o perfil que aprova
+     * os relatórios (pedido do cliente), e que portanto precisa abrir os de
+     * qualquer técnico.
+     */
+    public static function veTodos(Usuario $usuario): bool
+    {
+        return in_array((int) $usuario->user_nivel_acesso, [
+            \App\Enums\NivelAcesso::Administrador->value,
+            \App\Enums\NivelAcesso::Assistencia->value,
+        ], true);
     }
 
     public function scopeVisivelPara(Builder $query, Usuario $usuario): Builder

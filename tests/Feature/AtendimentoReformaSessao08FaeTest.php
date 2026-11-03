@@ -271,6 +271,9 @@ class AtendimentoReformaSessao08FaeTest extends TestCase
         $tecnico = Usuario::factory()->tecnico()->create();
         $natureza = $this->criarNaturezaComModelo();
         $relatorio = $this->criarAtendimentoComRelatorio($natureza, $tecnico);
+        // Desde 2026-11-03 só aprova a partir de "Liberado para aprovação"
+        // (ver AtendimentoRelatorioAprovacaoFaeTest).
+        $relatorio->update(['aten_rel_status' => AtendimentoRelatorioStatus::Liberado->value]);
 
         $response = $this->actingAs($admin)->postJson(
             route('atendimentos-relatorios.update-assinaturas', $relatorio->aten_rel_id),

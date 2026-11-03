@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Enums\AssinaturaTipo;
+use App\Enums\AtendimentoRelatorioStatus;
+use App\Enums\NivelAcesso;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorioAssinatura;
 use App\Models\AtendimentoRelatorioServico;
@@ -94,13 +97,60 @@ class AtendimentoRelatorio extends Model
         )->orderByDesc('aten_rel_comp_criado_em');
     }
 
+    /**
+     * Primeiro dia de horário do relatório. Mantido (em vez de trocado por
+     * horariosDias) porque os controllers legados Api\RelatoriosController e
+     * Api\Mcl\* ainda tratam o horário como registro único.
+     */
     public function horarios()
     {
         return $this->hasOne(
             AtendimentoRelatorioHorario::class,
             'aten_rel_hora_relatorio_id',
             'aten_rel_id'
-        );
+        )->orderBy('aten_rel_hora_data')->orderBy('aten_rel_hora_id');
+    }
+
+    /**
+     * Pedido do cliente (2026-11-03): horários por dia — um relatório pode
+     * cobrir o período todo do atendimento, com um registro por data.
+     */
+    public function horariosDias()
+    {
+        return $this->hasMany(
+            AtendimentoRelatorioHorario::class,
+            'aten_rel_hora_relatorio_id',
+            'aten_rel_id'
+        )->orderBy('aten_rel_hora_data')->orderBy('aten_rel_hora_id');
+    }
+
+    /**
+     * Substitui todos os dias de horário pelos informados (lista já
+     * validada por ValidaHorariosPorDia). Dia sem entrada ou saída é
+     * ignorado — as colunas são NOT NULL e a API aceita envio parcial.
+     */
+    public function sincronizarHorarios(array $dias): void
+    {
+        DB::transaction(function () use ($dias) {
+            $this->horariosDias()->delete();
+
+            foreach ($dias as $dia) {
+                if (empty($dia['entrada']) || empty($dia['saida'])) {
+                    continue;
+                }
+
+                $this->horariosDias()->create([
+                    'aten_rel_hora_data'             => $dia['data'],
+                    'aten_rel_hora_entrada'          => $dia['entrada'],
+                    'aten_rel_hora_inicio_intervalo' => $dia['inicio_intervalo'] ?? null,
+                    'aten_rel_hora_fim_intervalo'    => $dia['fim_intervalo'] ?? null,
+                    'aten_rel_hora_saida'            => $dia['saida'],
+                ]);
+            }
+        });
+
+        $this->unsetRelation('horariosDias');
+        $this->unsetRelation('horarios');
     }
 
     public function climas()
@@ -156,6 +206,80 @@ class AtendimentoRelatorio extends Model
     public function assinaturaCliente(): ?AtendimentoRelatorioAssinatura
     {
         return $this->assinaturas()->where('aten_rel_ass_tipo', AssinaturaTipo::Cliente)->first();
+    }
+
+    /**
+     * Regras de mudança de status (pedido do cliente 2026-11-03), usadas
+     * pela web e pela api/fae/v1. Devolve a mensagem de erro, ou null se a
+     * mudança é permitida. Só valida quando o status muda de fato — salvar
+     * uma assinatura reenvia o status atual e não deve ser barrado.
+     *
+     * - Aprovar: só Assistência/Administrador, e só a partir de "Liberado
+     *   para aprovação" (que por sua vez já exigiu a assinatura do técnico).
+     * - Liberar para aprovação: exige a assinatura do técnico — já gravada
+     *   ou enviada na mesma requisição ($assinaturaTecnicoNaRequisicao).
+     * - Relatório aprovado só volta a outro status pela Assistência/Admin.
+     */
+    public function erroMudancaStatus(int $novoStatus, ?Usuario $usuario, bool $assinaturaTecnicoNaRequisicao = false): ?string
+    {
+        $atual = AtendimentoRelatorioStatus::tryFrom((int) $this->aten_rel_status);
+        $novo  = AtendimentoRelatorioStatus::tryFrom($novoStatus);
+
+        if ($novo === null) {
+            return 'Status inválido.';
+        }
+
+        if ($novo === $atual) {
+            return null;
+        }
+
+        $podeAprovar = AtendimentoRelatorioStatus::usuarioPodeAprovar($usuario);
+
+        if ($atual === AtendimentoRelatorioStatus::Aprovado && ! $podeAprovar) {
+            return 'Relatório aprovado só pode ser alterado por um usuário de perfil Assistência.';
+        }
+
+        if ($novo === AtendimentoRelatorioStatus::Aprovado) {
+            if (! $podeAprovar) {
+                return 'Somente usuários de perfil Assistência podem aprovar relatórios.';
+            }
+
+            if ($atual !== AtendimentoRelatorioStatus::Liberado) {
+                return 'O relatório precisa estar "Liberado para aprovação" antes de ser aprovado.';
+            }
+        }
+
+        if ($novo === AtendimentoRelatorioStatus::Liberado
+            && ! $assinaturaTecnicoNaRequisicao
+            && ! $this->assinaturaResponsavel()) {
+            return 'Para liberar para aprovação, registre antes a assinatura do técnico.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Avisa todos os usuários ativos de perfil Assistência que o relatório
+     * foi liberado para aprovação (sino da web; o app lê a mesma lista via
+     * api/fae/v1/notificacoes). Não notifica quem liberou.
+     */
+    public function notificarLiberacaoParaAprovacao(Usuario $quemLiberou): void
+    {
+        $this->loadMissing('atendimento.cliente');
+        $cliente = $this->atendimento?->cliente?->cli_nome;
+
+        Usuario::where('user_nivel_acesso', NivelAcesso::Assistencia->value)
+            ->where('user_ativo', true)
+            ->where('user_id', '!=', $quemLiberou->user_id)
+            ->pluck('user_id')
+            ->each(fn ($usuarioId) => Notificacao::notificar(
+                (int) $usuarioId,
+                'relatorio_liberado',
+                'Relatório liberado para aprovação',
+                'Relatório Nº ' . $this->aten_rel_id . ($cliente ? ' (' . $cliente . ')' : '')
+                    . ' liberado para aprovação por ' . $quemLiberou->user_nome . '.',
+                route('atendimentos-relatorios.show', $this->aten_rel_id)
+            ));
     }
 
     /**

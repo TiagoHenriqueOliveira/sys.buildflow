@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\EnderecoSemLink;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AtendimentoRequest extends FormRequest
@@ -18,7 +19,7 @@ class AtendimentoRequest extends FormRequest
             'aten_responsavel'     => ['nullable', 'string', 'max:50'],
             'aten_telefone'        => ['nullable', 'string', 'max:20'],
             'aten_entrega_tecnica' => ['nullable', 'boolean'],
-            'aten_endereco'        => ['nullable', 'string', 'max:100'],
+            'aten_endereco'        => ['nullable', 'string', 'max:100', new EnderecoSemLink()],
             'aten_dt_inicio'       => ['required', 'date'],
             'aten_dt_fim'          => ['required', 'date', 'after_or_equal:aten_dt_inicio'],
             'aten_obs_tecnica'     => ['nullable', 'string'],

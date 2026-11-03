@@ -243,6 +243,16 @@ Retorna todos os dados de um relatório.
       "fim_intervalo": "13:00",
       "saida": "17:00"
     },
+    "horarios_dias": [
+      { "data": "2024-06-03", "dia_semana": "Segunda-feira", "entrada": "08:00", "inicio_intervalo": "12:00", "fim_intervalo": "13:00", "saida": "17:00" },
+      { "data": "2024-06-04", "dia_semana": "Terça-feira", "entrada": "07:30", "inicio_intervalo": "", "fim_intervalo": "", "saida": "16:00" }
+    ],
+    "pode_aprovar": false,
+    "status_permitidos": [
+      { "value": 0, "label": "Preenchendo" },
+      { "value": 1, "label": "Revisar" },
+      { "value": 3, "label": "Liberado para aprovação" }
+    ],
     "clima": {
       "manha": "Ensolarado",
       "tarde": "Nublado",
@@ -305,24 +315,33 @@ Atualiza as informações adicionais.
 
 ### PUT /relatorios/{id}/horarios
 
-Atualiza os horários do dia de trabalho.
+Grava os horários **por dia** do relatório (desde 03/11/2026 um relatório pode cobrir o período todo do atendimento). A lista enviada **substitui** todos os dias já gravados.
 
 **Body:**
 ```json
 {
-  "entrada": "08:00",
-  "inicio_intervalo": "12:00",
-  "fim_intervalo": "13:00",
-  "saida": "17:30"
+  "dias": [
+    { "data": "2024-06-03", "entrada": "08:00", "inicio_intervalo": "12:00", "fim_intervalo": "13:00", "saida": "17:30" },
+    { "data": "2024-06-04", "entrada": "07:30", "saida": "16:00" }
+  ]
 }
 ```
 
-> Todos os campos são opcionais. Formato: `HH:MM`.
+> `data` obrigatória (`YYYY-MM-DD`, não futura, sem repetir). Horas em `HH:MM`, todas opcionais na API — dia sem entrada ou saída é ignorado. Saída ≥ entrada e intervalo dentro do expediente.
+>
+> **Compatibilidade:** o formato antigo (objeto único `{ entrada, inicio_intervalo, fim_intervalo, saida }`, sem `dias`) continua aceito e vira um dia na data do relatório. No `GET /relatorios/{id}`, `horarios` (objeto único = 1º dia) continua vindo; o formato novo é `horarios_dias`.
 
 **Resposta 200:**
 ```json
-{ "message": "Horários atualizados." }
+{
+  "message": "Horários atualizados.",
+  "horarios_dias": [
+    { "data": "2024-06-03", "dia_semana": "Segunda-feira", "entrada": "08:00", "inicio_intervalo": "12:00", "fim_intervalo": "13:00", "saida": "17:30" }
+  ]
+}
 ```
+
+**Resposta 422:** erro por dia, ex. `errors["dias.1.saida"]`.
 
 ---
 
@@ -362,12 +381,25 @@ Altera o status do relatório.
 | Valor | Significado  |
 |-------|--------------|
 | `0`   | Preenchendo  |
-| `1`   | Aguardando revisão |
+| `1`   | Revisar      |
 | `2`   | Aprovado     |
+| `3`   | Liberado para aprovação |
+
+**Regras (desde 03/11/2026):**
+- Técnico pode escolher Preenchendo, Revisar ou **Liberado para aprovação**. Liberar exige a assinatura do técnico já gravada (`POST /relatorios/{id}/assinaturas` antes).
+- **Aprovado** só por usuário de perfil Assistência ou Administrador, e só a partir de Liberado. O `GET /relatorios/{id}` informa `pode_aprovar` e `status_permitidos` para o app montar os botões.
+- Relatório aprovado só volta a outro status pela Assistência/Administrador.
+- Ao liberar, os usuários de perfil Assistência recebem notificação (`GET /notificacoes`).
+- Mudança não permitida devolve **422** com a mensagem — não existe mais o rebaixamento silencioso de Aprovado → Revisar (`rebaixado` vem sempre `false`, mantido só por compatibilidade).
 
 **Resposta 200:**
 ```json
-{ "message": "Status alterado para: Aguardando revisão." }
+{ "message": "Status alterado para: Liberado para aprovação.", "status": 3, "rebaixado": false }
+```
+
+**Resposta 422:**
+```json
+{ "message": "Para liberar para aprovação, registre antes a assinatura do técnico.", "status": 0 }
 ```
 
 ---

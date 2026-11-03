@@ -2,22 +2,30 @@
 
 namespace App\Http\Requests\Fae;
 
+use App\Http\Requests\Concerns\ValidaHorariosPorDia;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateHorariosRequest extends FormRequest
 {
+    use ValidaHorariosPorDia;
+
     public function authorize(): bool
     {
         return true;
     }
 
-    public function rules(): array
+    protected function horariosObrigatorios(): bool
+    {
+        return false;
+    }
+
+    protected function camposLegados(): array
     {
         return [
-            'entrada'          => ['nullable', 'date_format:H:i'],
-            'inicio_intervalo' => ['nullable', 'date_format:H:i'],
-            'fim_intervalo'    => ['nullable', 'date_format:H:i'],
-            'saida'            => ['nullable', 'date_format:H:i'],
+            'entrada'          => 'entrada',
+            'inicio_intervalo' => 'inicio_intervalo',
+            'fim_intervalo'    => 'fim_intervalo',
+            'saida'            => 'saida',
         ];
     }
 }

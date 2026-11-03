@@ -357,11 +357,7 @@ class AtendimentosController extends Controller
                     // Tipo de badge do sbadmin (sbadmin-badge-*), nao o
                     // badgeClass() legado (Bootstrap "badge-*", de outro
                     // sistema visual - ver packages/sbadmin/.../badge.blade.php).
-                    'status_tipo' => match ($status) {
-                        \App\Enums\AtendimentoRelatorioStatus::Aprovado => 'success',
-                        \App\Enums\AtendimentoRelatorioStatus::Revisar => 'warning',
-                        default => 'info',
-                    },
+                    'status_tipo' => $status->badgeTipo(),
                     'url_preenchimento' => route('atendimentos-relatorios.show', $relatorio->aten_rel_id),
                     'url_pdf' => route('atendimentos-relatorios.pdf', $relatorio->aten_rel_id),
                 ];

@@ -9,7 +9,7 @@ class AtendimentoRelatorioAssinaturasRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'aten_rel_status'         => ['required', 'integer', 'in:0,1,2'],
+            'aten_rel_status'         => ['required', 'integer', 'in:0,1,2,3'],
             'assinatura_responsavel'  => ['nullable', 'string'],
             'assinatura_cliente'      => ['nullable', 'string'],
             // 'nullable' é necessário além de 'required_with': sem ele, quando

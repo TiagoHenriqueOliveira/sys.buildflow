@@ -14,7 +14,8 @@ class UpdateStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'integer', 'in:0,1,2'],
+            // 3 = Liberado para aprovação (2026-11-03)
+            'status' => ['required', 'integer', 'in:0,1,2,3'],
         ];
     }
 }

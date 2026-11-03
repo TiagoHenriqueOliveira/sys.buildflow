@@ -25,7 +25,6 @@ use App\Models\AtendimentoRelatorioAnexo;
 use App\Models\AtendimentoRelatorioCondicaoClimatica;
 use App\Models\AtendimentoRelatorioDescricaoItem;
 use App\Models\AtendimentoRelatorioFoto;
-use App\Models\AtendimentoRelatorioHorario;
 use App\Models\AtendimentoRelatorioPeca;
 use App\Models\AtendimentoRelatorioServico;
 use App\Models\AtendimentoRelatorioVideo;
@@ -183,6 +182,7 @@ class RelatoriosController extends Controller
             'atendimento.equipamentos',
             'atendimento.anexos',
             'horarios',
+            'horariosDias',
             'climas',
             'servicos',
             'pecas',
@@ -219,6 +219,11 @@ class RelatoriosController extends Controller
             'data'                     => $relatorio->aten_rel_data?->format('Y-m-d'),
             'status'                   => $relatorio->aten_rel_status,
             'status_label'             => AtendimentoRelatorioStatus::tryFrom($relatorio->aten_rel_status)?->label() ?? '-',
+            // 2026-11-03: o app mostra o botão "Aprovar" só quando true
+            // (Assistência/Admin); "status_permitidos" = opções que o
+            // usuário logado pode escolher.
+            'pode_aprovar'             => AtendimentoRelatorioStatus::usuarioPodeAprovar($request->user()),
+            'status_permitidos'        => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], AtendimentoRelatorioStatus::permitidosPara($request->user())),
             // RF001/RF004: exatamente um dos dois é populado — ver
             // $usaDescricaoNova acima. O app decide qual seção renderizar
             // conforme qual dos dois vem preenchido.
@@ -266,12 +271,15 @@ class RelatoriosController extends Controller
                     'url'  => url('midia/' . $a->aten_anexo_path),
                 ])->values(),
             ],
+            // "horarios" (objeto único = 1º dia) mantido pro app já publicado;
+            // "horarios_dias" é o formato novo, um item por data (2026-11-03).
             'horarios' => [
                 'entrada'          => optional($relatorio->horarios)->aten_rel_hora_entrada,
                 'inicio_intervalo' => optional($relatorio->horarios)->aten_rel_hora_inicio_intervalo,
                 'fim_intervalo'    => optional($relatorio->horarios)->aten_rel_hora_fim_intervalo,
                 'saida'            => optional($relatorio->horarios)->aten_rel_hora_saida,
             ],
+            'horarios_dias' => $relatorio->horariosDias->map->paraJson()->values(),
             'clima'      => $clima,
             'servicos'   => $relatorio->servicos->map(fn($s) => [
                 'id'        => $s->aten_rel_serv_id,
@@ -414,24 +422,22 @@ class RelatoriosController extends Controller
      * Atualiza horários.
      *
      * PUT /api/fae/v1/relatorios/{id}/horarios
-     * Body: { entrada, inicio_intervalo, fim_intervalo, saida } — "HH:MM"
+     * Body (novo): { dias: [{ data: "Y-m-d", entrada, inicio_intervalo, fim_intervalo, saida }] }
+     * Body (antigo, ainda aceito): { entrada, inicio_intervalo, fim_intervalo, saida }
+     *   — vira um dia na data do relatório. Horas em "HH:MM".
+     * A lista enviada SUBSTITUI todos os dias gravados.
      */
     public function updateHorarios(UpdateHorariosRequest $request, int $id): JsonResponse
     {
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
-        AtendimentoRelatorioHorario::updateOrCreate(
-            ['aten_rel_hora_relatorio_id' => $id],
-            [
-                'aten_rel_hora_entrada'          => $request->entrada,
-                'aten_rel_hora_inicio_intervalo' => $request->inicio_intervalo,
-                'aten_rel_hora_fim_intervalo'    => $request->fim_intervalo,
-                'aten_rel_hora_saida'            => $request->saida,
-            ]
-        );
+        $relatorio->sincronizarHorarios($request->validated('dias'));
 
-        return response()->json(['message' => 'Horários atualizados.']);
+        return response()->json([
+            'message'       => 'Horários atualizados.',
+            'horarios_dias' => $relatorio->horariosDias()->get()->map->paraJson()->values(),
+        ]);
     }
 
     /**
@@ -652,7 +658,15 @@ class RelatoriosController extends Controller
      * Altera o status do relatório.
      *
      * PUT /api/fae/v1/relatorios/{id}/status
-     * Body: { status: 0|1|2 }
+     * Body: { status: 0|1|2|3 } — 0 Preenchendo, 1 Revisar, 2 Aprovado,
+     * 3 Liberado para aprovação.
+     *
+     * Pedido do cliente (2026-11-03) — mesmas regras da web
+     * (AtendimentoRelatorio::erroMudancaStatus): técnico libera (exige a
+     * assinatura do técnico já gravada — o app grava antes via
+     * POST /assinaturas) e só Assistência/Admin aprova, a partir de
+     * Liberado. Mudança proibida devolve 422 com a mensagem; antes a REL-05
+     * rebaixava Aprovado → Revisar em silêncio.
      */
     public function updateStatus(UpdateStatusRequest $request, int $id): JsonResponse
     {
@@ -660,33 +674,37 @@ class RelatoriosController extends Controller
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
 
         $novoStatus = (int) $request->status;
+        $usuario = $request->user();
 
-        // REL-05: técnico precisa das duas assinaturas para aprovar; admin pode
-        // dispensar. Diferente da web (que rejeita com 422), aqui rebaixa
-        // silenciosamente para Revisar em vez de aprovar sem assinatura — o app
-        // não tem como pedir a assinatura na hora do jeito que a web pede.
-        if (
-            $novoStatus === AtendimentoRelatorioStatus::Aprovado->value
-            && $request->user()->user_nivel_acesso !== 0
-            && (! $relatorio->assinaturaResponsavel() || ! $relatorio->assinaturaCliente())
-        ) {
-            $novoStatus = AtendimentoRelatorioStatus::Revisar->value;
+        $erro = $relatorio->erroMudancaStatus($novoStatus, $usuario);
+        if ($erro !== null) {
+            return response()->json(['message' => $erro, 'status' => $relatorio->aten_rel_status], 422);
         }
 
+        $statusAnterior = $relatorio->aten_rel_status;
         $relatorio->update(['aten_rel_status' => $novoStatus]);
+
+        if ($novoStatus === AtendimentoRelatorioStatus::Aprovado->value && $statusAnterior !== $novoStatus) {
+            $relatorio->update([
+                'aten_rel_dt_fim'       => now()->toDateString(),
+                'aten_rel_aprovado_por' => $usuario->user_id,
+                'aten_rel_aprovado_em'  => now(),
+            ]);
+        }
+
+        if ($novoStatus === AtendimentoRelatorioStatus::Liberado->value && $statusAnterior !== $novoStatus) {
+            $relatorio->notificarLiberacaoParaAprovacao($usuario);
+        }
 
         $label = AtendimentoRelatorioStatus::tryFrom($novoStatus)?->label() ?? '-';
 
-        // O app confiava cegamente no status que ELE ENVIOU para atualizar a
-        // tela/cache local — quando a REL-05 rebaixava Aprovado → Revisar
-        // aqui em cima, o técnico via "aprovado" no aparelho (e o PDF sendo
-        // compartilhado como aprovado) enquanto o servidor continuava com
-        // "Revisar". Devolve o status REAL aplicado para o app nunca mais
-        // divergir do banco.
+        // "status" = status REAL gravado (o app usa pra atualizar a tela).
+        // "rebaixado" mantido sempre false por compatibilidade com o app
+        // publicado — não existe mais rebaixamento silencioso.
         return response()->json([
             'message'    => "Status alterado para: {$label}.",
             'status'     => $novoStatus,
-            'rebaixado'  => $novoStatus !== (int) $request->status,
+            'rebaixado'  => false,
         ]);
     }
 

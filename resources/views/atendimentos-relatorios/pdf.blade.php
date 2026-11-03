@@ -340,18 +340,37 @@
 </div>
 @endif
 
-{{-- 4. HORÁRIO — só aparece se houver registro de horário. --}}
-@php $h = $relatorio->horarios; @endphp
-@if($h)
+{{-- 4. HORÁRIO — só aparece se houver registro de horário. Uma linha por
+     dia (pedido do cliente 2026-11-03: relatório pode cobrir o período todo
+     do atendimento). Registro legado sem data usa a data do relatório. --}}
+@php $diasHorario = $relatorio->horariosDias; @endphp
+@if($diasHorario->isNotEmpty())
 <div class="section">
     <div class="section-title">{{ $secNum() }}. Horário</div>
-    <table class="field-grid field-grid-auto">
-        <tr>
-            <td class="field-value"><span class="field-label-inline-right">Entrada:</span>{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Início Intervalo:</span>{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Fim Intervalo:</span>{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
-            <td class="field-value"><span class="field-label-inline-right">Saída:</span>{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
-        </tr>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Dia da Semana</th>
+                <th>Entrada</th>
+                <th>Início Intervalo</th>
+                <th>Fim Intervalo</th>
+                <th>Saída</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($diasHorario as $h)
+            @php $dataDia = $h->aten_rel_hora_data ?? $relatorio->aten_rel_data; @endphp
+            <tr>
+                <td style="text-align:center;">{{ $dataDia->format('d/m/Y') }}</td>
+                <td>{{ getFormatDiaSemana($dataDia) }}</td>
+                <td style="text-align:center;">{{ $h->aten_rel_hora_entrada ? substr($h->aten_rel_hora_entrada, 0, 5) : '-' }}</td>
+                <td style="text-align:center;">{{ $h->aten_rel_hora_inicio_intervalo ? substr($h->aten_rel_hora_inicio_intervalo, 0, 5) : '-' }}</td>
+                <td style="text-align:center;">{{ $h->aten_rel_hora_fim_intervalo ? substr($h->aten_rel_hora_fim_intervalo, 0, 5) : '-' }}</td>
+                <td style="text-align:center;">{{ $h->aten_rel_hora_saida ? substr($h->aten_rel_hora_saida, 0, 5) : '-' }}</td>
+            </tr>
+            @endforeach
+        </tbody>
     </table>
 </div>
 @endif

@@ -3,19 +3,33 @@
     <form id="form_relatorio_assinaturas" data-action="{{ route('atendimentos-relatorios.update-assinaturas', $atendimentoRelatorio->aten_rel_id) }}">
         @csrf
 
+        {{-- Pedido do cliente (2026-11-03): técnico escolhe Preenchendo, Revisar
+             ou Liberado para aprovação (exige a assinatura do técnico); o botão
+             "Aprovado" só aparece para Assistência/Administrador, e só aprova a
+             partir de Liberado — regras validadas no backend
+             (AtendimentoRelatorio::erroMudancaStatus). O status atual sempre
+             aparece, mesmo que o usuário não possa escolhê-lo. --}}
+        @php
+            $statusAtual = \App\Enums\AtendimentoRelatorioStatus::tryFrom((int) $atendimentoRelatorio->aten_rel_status);
+            $podeAprovarRelatorio = \App\Enums\AtendimentoRelatorioStatus::usuarioPodeAprovar(auth()->user());
+            $opcoesStatus = collect(\App\Enums\AtendimentoRelatorioStatus::emOrdemDoFluxo())
+                ->filter(fn ($s) => in_array($s, \App\Enums\AtendimentoRelatorioStatus::permitidosPara(auth()->user()), true) || $s === $statusAtual);
+        @endphp
         <div class="form-group">
             <label class="fw-bold">Status do Relatório</label>
-            @php $statusClasses = [0 => 'info', 1 => 'warning', 2 => 'success']; @endphp
             {{-- Grupo de radios "toggle" — btn-group-toggle/data-toggle="buttons" era
                  API JS do Bootstrap4; convertido pro padrão .btn-check do Bootstrap5
                  (puramente CSS via :checked + label, sem depender de nenhum JS do
                  Bootstrap, que este stack não carrega — só Alpine). --}}
-            <div class="btn-group d-flex" role="group">
-                @foreach([0 => 'Preenchendo', 1 => 'Revisar', 2 => 'Aprovado'] as $value => $label)
-                    <input type="radio" class="btn-check" name="aten_rel_status" id="aten_rel_status_{{ $value }}" value="{{ $value }}" autocomplete="off" {{ $atendimentoRelatorio->aten_rel_status === $value ? 'checked' : '' }}>
-                    <label class="btn btn-outline-{{ $statusClasses[$value] }}" for="aten_rel_status_{{ $value }}">{{ $label }}</label>
+            <div class="btn-group d-flex flex-wrap" role="group">
+                @foreach($opcoesStatus as $opcao)
+                    <input type="radio" class="btn-check" name="aten_rel_status" id="aten_rel_status_{{ $opcao->value }}" value="{{ $opcao->value }}" autocomplete="off" @checked($statusAtual === $opcao)>
+                    <label class="btn btn-outline-{{ $opcao->corBotao() }}" for="aten_rel_status_{{ $opcao->value }}">{{ $opcao->label() }}</label>
                 @endforeach
             </div>
+            @unless($podeAprovarRelatorio)
+                <div class="sbadmin-form-help">Para liberar para aprovação é preciso ter a assinatura do técnico. A aprovação é feita pela Assistência.</div>
+            @endunless
         </div>
 
         <div class="row mt-4">
@@ -85,7 +99,7 @@
         <div class="form-group mt-2">
             <label class="fw-bold" for="aten_rel_observacao_supervisor">Observação do Supervisor</label>
             <textarea class="form-control" id="aten_rel_observacao_supervisor" rows="3"
-                placeholder="Observações sobre a aprovação/revisão deste relatório...">{{ $atendimentoRelatorio->aten_rel_observacao_supervisor }}</textarea>
+                placeholder="Observações sobre a aprovação/revisão deste relatório..." @unless($podeAprovarRelatorio) readonly @endunless>{{ $atendimentoRelatorio->aten_rel_observacao_supervisor }}</textarea>
         </div>
     </form>
 </div>
