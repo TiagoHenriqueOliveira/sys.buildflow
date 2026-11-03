@@ -194,6 +194,28 @@
     }
 }
 
+// Botao do status "Preenchendo" (aba Assinatura do relatorio). Pedido do
+// cliente (2026-11-03): letra branca tanto selecionado quanto em repouso -
+// o outline padrao do Bootstrap pinta o texto com a propria cor, que no
+// tema escuro ficava apagada. Em repouso: contorno + fundo violeta leve;
+// selecionado (.btn-check:checked, que usa as vars --bs-btn-active-*) e
+// hover: violeta solido.
+.btn-outline-purple {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #{rgba($sbadmin-color-purple, 0.28)};
+    --bs-btn-border-color: #{$sbadmin-color-purple};
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #{$sbadmin-color-purple};
+    --bs-btn-hover-border-color: #{$sbadmin-color-purple};
+    --bs-btn-focus-shadow-rgb: #{red($sbadmin-color-purple)}, #{green($sbadmin-color-purple)}, #{blue($sbadmin-color-purple)};
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #{$sbadmin-color-purple};
+    --bs-btn-active-border-color: #{$sbadmin-color-purple};
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #{rgba($sbadmin-color-purple, 0.28)};
+    --bs-btn-disabled-border-color: #{$sbadmin-color-purple};
+}
+
 // Botao de acao de linha "desenhado" — usado no lugar do simples
 // `.btn-outline-secondary` acima quando se quer um botao de acao mais
 // prominente (ex.: editar em todas as telas de listagem). Quadrado
@@ -397,10 +419,9 @@
 .sbadmin-badge-error { background-color: rgba($sbadmin-color-error, 0.14); color: $sbadmin-color-error; }
 .sbadmin-badge-warning { background-color: rgba($sbadmin-color-warning, 0.16); color: darken($sbadmin-color-warning, 8%); }
 .sbadmin-badge-info { background-color: rgba($sbadmin-color-info, 0.14); color: darken($sbadmin-color-info, 5%); }
-// Azul de acento do sistema - usado pelo status "Preenchendo" do relatorio
-// (2026-11-03), que era cinza neutro e parecia "sem cor" ao lado do
-// ciano (info) do novo "Liberado para aprovacao".
-.sbadmin-badge-primary { background-color: rgba($sbadmin-color-secondary, 0.14); color: darken($sbadmin-color-secondary, 5%); }
+// Violeta - status "Preenchendo" do relatorio (2026-11-03). Era cinza
+// neutro (parecia "sem cor") e depois azul, proximo demais do layout.
+.sbadmin-badge-purple { background-color: rgba($sbadmin-color-purple, 0.14); color: darken($sbadmin-color-purple, 5%); }
 .sbadmin-badge-neutral { background-color: var(--sbadmin-surface-muted); color: var(--sbadmin-text-muted); }
 
 // Fundos mais opacos e texto mais claro no dark mode: os tons "darken()" do
@@ -410,7 +431,7 @@
     .sbadmin-badge-error { background-color: rgba($sbadmin-color-error, 0.22); color: lighten($sbadmin-color-error, 18%); }
     .sbadmin-badge-warning { background-color: rgba($sbadmin-color-warning, 0.22); color: lighten($sbadmin-color-warning, 22%); }
     .sbadmin-badge-info { background-color: rgba($sbadmin-color-info, 0.22); color: lighten($sbadmin-color-info, 28%); }
-    .sbadmin-badge-primary { background-color: rgba($sbadmin-color-secondary, 0.22); color: lighten($sbadmin-color-secondary, 25%); }
+    .sbadmin-badge-purple { background-color: rgba($sbadmin-color-purple, 0.28); color: #fff; }
     .sbadmin-badge-neutral { color: var(--sbadmin-text); }
 }
 
