@@ -21,10 +21,14 @@
                  API JS do Bootstrap4; convertido pro padrão .btn-check do Bootstrap5
                  (puramente CSS via :checked + label, sem depender de nenhum JS do
                  Bootstrap, que este stack não carrega — só Alpine). --}}
-            <div class="btn-group d-flex flex-wrap" role="group">
+            {{-- Pedido do cliente (2026-11-03): botões do mesmo tamanho — w-100 em
+                 cada um dentro do flex divide a linha em partes iguais (sem
+                 flex-wrap, senão cada um iria pra uma linha); texto centralizado
+                 também na vertical quando um rótulo quebra em telas estreitas. --}}
+            <div class="btn-group d-flex" role="group">
                 @foreach($opcoesStatus as $opcao)
                     <input type="radio" class="btn-check" name="aten_rel_status" id="aten_rel_status_{{ $opcao->value }}" value="{{ $opcao->value }}" autocomplete="off" @checked($statusAtual === $opcao)>
-                    <label class="btn btn-status-{{ $opcao->corBotao() }}" for="aten_rel_status_{{ $opcao->value }}">{{ $opcao->label() }}</label>
+                    <label class="btn btn-status-{{ $opcao->corBotao() }} w-100 d-flex align-items-center justify-content-center" for="aten_rel_status_{{ $opcao->value }}">{{ $opcao->label() }}</label>
                 @endforeach
             </div>
             @unless($podeAprovarRelatorio)
