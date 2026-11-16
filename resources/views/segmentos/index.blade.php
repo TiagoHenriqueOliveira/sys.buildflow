@@ -10,6 +10,7 @@
                 <h2 class="sbadmin-page-heading">Segmentos</h2>
                 <p class="sbadmin-page-subheading">Opções de segmento exibidas no cadastro de cliente (aba Dados Gerais).</p>
             </div>
+            @can('segmentos.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -17,6 +18,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -48,6 +50,7 @@
             @foreach($segmentos as $s)
                 <tr>
                     <td class="text-center">
+                        @can('segmentos.editar')
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -59,6 +62,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endcan
                     </td>
                     <td>{{ $s->seg_descricao }}</td>
                     <td>

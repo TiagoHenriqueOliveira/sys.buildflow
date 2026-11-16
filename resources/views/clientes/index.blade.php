@@ -24,9 +24,11 @@
             <h2 class="sbadmin-page-heading">Clientes</h2>
             <p class="sbadmin-page-subheading">Gerencie os clientes cadastrados no sistema.</p>
         </div>
+        @can('clientes.editar')
         <a href="{{ route('clientes.create') }}" class="btn btn-primary sbadmin-btn-primary">
             <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
         </a>
+        @endcan
     </div>
 
     @if(session('success'))
@@ -93,9 +95,11 @@
         @foreach($clientes as $c)
             <tr class="{{ $c->cli_ativo ? '' : 'table-danger' }}">
                 <td class="text-center">
+                    @can('clientes.editar')
                     <a href="{{ route('clientes.edit', $c->cli_id) }}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Editar {{ e($c->cli_nome) }}">
                         <i class="bi bi-pencil" aria-hidden="true"></i>
                     </a>
+                    @endcan
                 </td>
                 <td>{{ $c->cli_nome }}</td>
                 <td>{{ $formatarCnpjExibicao($c->cli_cnpj) }}</td>

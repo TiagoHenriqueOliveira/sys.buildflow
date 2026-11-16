@@ -11,7 +11,10 @@ class SomenteAdministrador
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::user()->user_nivel_acesso !== 0) {
+        // Perfil Administrador ou usuário protegido. Usado só no que não é
+        // configurável em "Perfis de Acesso" (a própria tela de perfis,
+        // logs e manutenção) — o resto usa `can:<tela>.<acao>`.
+        if (! Auth::user()->temAcessoTotal()) {
             abort(403);
         }
 

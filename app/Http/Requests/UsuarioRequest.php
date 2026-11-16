@@ -14,7 +14,10 @@ class UsuarioRequest extends FormRequest
         $id = $this->route('usuario') ?? $this->route('usuarios') ?? null;
 
         return [
-            'user_nivel_acesso' => ['required', 'integer', Rule::in(array_column(NivelAcesso::cases(), 'value'))],
+            // Só quem tem acesso total (Administrador/usuário protegido)
+            // concede o perfil Administrador — quem só tem "usuarios.editar"
+            // não pode promover ninguém (nem a si mesmo) a acesso total.
+            'user_nivel_acesso' => ['required', 'integer', Rule::in(self::niveisPermitidos())],
             'user_nome' => ['required', 'string', 'max:50'],
             'user_email' => [
                 'required',
@@ -39,6 +42,18 @@ class UsuarioRequest extends FormRequest
 
             'user_ativo' => ['nullable', 'boolean'],
         ];
+    }
+
+    /** Níveis que o usuário logado pode atribuir. */
+    public static function niveisPermitidos(): array
+    {
+        $niveis = array_column(NivelAcesso::cases(), 'value');
+
+        if (auth()->user()?->temAcessoTotal()) {
+            return $niveis;
+        }
+
+        return array_values(array_diff($niveis, [NivelAcesso::Administrador->value]));
     }
 
     public function messages()

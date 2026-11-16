@@ -10,6 +10,7 @@
                 <h2 class="sbadmin-page-heading">Usuários</h2>
                 <p class="sbadmin-page-subheading">Gerencie os usuários com acesso ao sistema.</p>
             </div>
+            @can('usuarios.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -17,6 +18,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -56,6 +58,8 @@
             @foreach($usuarios as $u)
                 <tr class="{{ $u->user_ativo ? '' : 'table-danger' }}">
                     <td class="text-center">
+                        {{-- Administrador só é editável por quem tem acesso total. --}}
+                        @if(auth()->user()->temPermissao('usuarios.editar') && ((int) $u->user_nivel_acesso !== \App\Enums\NivelAcesso::Administrador->value || auth()->user()->temAcessoTotal()))
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -69,6 +73,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endif
                     </td>
                     <td>{{ $u->user_nome }}</td>
                     <td>{{ $u->user_email }}</td>

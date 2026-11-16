@@ -41,23 +41,11 @@
             'link_mapa' => $l->cli_loc_link_mapa,
         ])->values()->all()
         : []);
-    // Geolocalizacao: Administrador, Comercial e Assistencia podem capturar
-    // localizacao; Tecnico nao (pedido do cliente, 2026-09-11). A rota de
-    // Clientes em si continua restrita a Administrador/Comercial (ver
-    // routes/web.php, middleware "comercial") ate a definicao futura das
-    // regras de acesso de Assistencia/Vendedor — este flag so controla o
-    // que aparece DENTRO da aba, ficando pronto pra quando isso mudar.
-    $nivelAtual = auth()->user()->user_nivel_acesso;
-    // Pedido do cliente (2026-09-16): cadastro de Cliente aberto a todos os
-    // perfis exceto Tecnico - Vendedor incluido aqui tambem (e quem mais
-    // provavelmente vai estar em campo, visitando cliente, precisando
-    // capturar localizacao).
-    $podeGeolocalizar = in_array($nivelAtual, [
-        \App\Enums\NivelAcesso::Administrador->value,
-        \App\Enums\NivelAcesso::Comercial->value,
-        \App\Enums\NivelAcesso::Assistencia->value,
-        \App\Enums\NivelAcesso::Vendedor->value,
-    ], true);
+    // Geolocalizacao (BF01): quem pode cadastrar/editar clientes pode
+    // capturar a localizacao. Desde 2026-11-16 segue a permissao
+    // "clientes.editar" do cadastro "Perfis de Acesso" (antes: todos os
+    // perfis exceto Tecnico, fixo).
+    $podeGeolocalizar = auth()->user()->temPermissao('clientes.editar');
 @endphp
 <x-layout :title="$editando ? 'Clientes | Editar' : 'Clientes | Novo'">
     <div

@@ -4,9 +4,11 @@
             <h2 class="sbadmin-page-heading">Orçamentos</h2>
             <p class="sbadmin-page-subheading">Gerencie os orçamentos comerciais cadastrados no sistema.</p>
         </div>
+        @can('orcamentos.editar')
         <a href="{{ route('orcamentos.create') }}" class="btn btn-primary sbadmin-btn-primary">
             <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
         </a>
+        @endcan
     </div>
 
     @if(session('success'))
@@ -65,9 +67,11 @@
         @foreach($orcamentos as $o)
             <tr class="{{ $o->orc_ativo ? '' : 'table-danger' }}">
                 <td class="text-center">
+                    @can('orcamentos.editar')
                     <a href="{{ route('orcamentos.edit', $o->orc_id) }}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Editar orçamento">
                         <i class="bi bi-pencil" aria-hidden="true"></i>
                     </a>
+                    @endcan
                 </td>
                 <td>{{ optional($o->cliente)->cli_nome }}</td>
                 <td>{{ optional($o->vendedor)->user_nome }}</td>

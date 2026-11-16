@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Fae;
 
 use App\Http\Controllers\Controller;
-use App\Enums\NivelAcesso;
 use App\Models\ClassificacaoCliente;
 use App\Models\CrmTipoOrcamento;
 use App\Models\Ocorrencia;
@@ -65,8 +64,8 @@ class CatalogoController extends Controller
      */
     public function vendedoresComerciais(): JsonResponse
     {
-        $rows = Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
-            ->where('user_ativo', 1)
+        // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16).
+        $rows = Usuario::vendedores()
             ->orderBy('user_nome')
             ->get()
             ->map(fn ($u) => ['id' => $u->user_id, 'nome' => $u->user_nome]);

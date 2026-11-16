@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate;
 use App\Models\Atendimento;
+use App\Models\Usuario;
 use App\Policies\AtendimentoPolicy;
+use App\Support\Permissoes;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -25,6 +27,12 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        //
+        // Permissões por tela do cadastro "Perfis de Acesso" (2026-11-16):
+        // habilita `can:orcamentos.ver` nas rotas e @can no Blade. Só
+        // responde pelas chaves do catálogo — qualquer outra ability (ex.:
+        // a policy 'acessar' de Atendimento) segue o fluxo normal (null).
+        Gate::before(function (Usuario $usuario, string $ability) {
+            return Permissoes::existe($ability) ? $usuario->temPermissao($ability) : null;
+        });
     }
 }

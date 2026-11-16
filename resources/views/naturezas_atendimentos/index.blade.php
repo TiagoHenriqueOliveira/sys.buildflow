@@ -10,6 +10,7 @@
                 <h2 class="sbadmin-page-heading">Naturezas de Atendimento</h2>
                 <p class="sbadmin-page-subheading">Gerencie as naturezas de atendimento cadastradas no sistema.</p>
             </div>
+            @can('naturezas.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -17,6 +18,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -50,6 +52,7 @@
             @foreach($naturezas as $n)
                 <tr>
                     <td class="text-center">
+                        @can('naturezas.editar')
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -62,6 +65,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endcan
                     </td>
                     <td>{{ $n->nat_aten_descricao }}</td>
                     <td>{{ optional($n->configModelo)->cfg_mod_nome }}</td>

@@ -3,65 +3,55 @@
 ])
 @php
     // Menu da sidebar montado aqui (em vez de ficar 100% estático em
-    // config/sbadmin.php) porque dois itens — "Clientes" e todo o submenu
-    // "Configurações" — só aparecem para administradores
-    // (Auth::user()->user_nivel_acesso === 0), igual ao @if condicional que
-    // existia no template legado. O componente <x-sbadmin::sidebar> não tem
-    // nenhum hook de visibilidade/permissão por item (ver
-    // packages/sbadmin/resources/views/components/sidebar-item.blade.php);
-    // o próprio README do pacote documenta a alternativa suportada — passar
-    // um menu diferente por página via prop `:menu` em <x-sbadmin::layout>
-    // — que é exatamente o que fazemos aqui, computando o array condicional
-    // em PHP puro antes de renderizar o layout do pacote. Isso evita
-    // qualquer lógica condicional dentro do config/sbadmin.php (que é um
-    // array estático) ou dentro dos componentes do pacote (que devem
-    // continuar genéricos/reutilizáveis por outros projetos).
+    // config/sbadmin.php) porque cada item depende das permissões do
+    // usuário. O componente <x-sbadmin::sidebar> não tem hook de
+    // visibilidade por item; o README do pacote documenta a alternativa
+    // suportada — passar o menu via prop `:menu` em <x-sbadmin::layout> —,
+    // então o array é computado aqui em PHP e o pacote continua genérico.
+    //
+    // Pedido do cliente (2026-11-16): cada item aparece conforme a permissão
+    // "<tela>.ver" do cadastro "Perfis de Acesso" (App\Support\Permissoes);
+    // Administrador e o usuário protegido veem tudo. Um item sem permissão
+    // some; "Configurações" some inteiro se nenhum filho sobrar.
     $usuario = Auth::user();
-    $isAdmin = $usuario && (int) $usuario->user_nivel_acesso === \App\Enums\NivelAcesso::Administrador->value;
-    $isComercial = $usuario && (int) $usuario->user_nivel_acesso === \App\Enums\NivelAcesso::Comercial->value;
+    $pode = fn (string $chave) => $usuario && $usuario->temPermissao($chave);
+    $item = fn (string $chave, array $dados) => $pode($chave) ? [$dados] : [];
 
     $menu = [
         ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'route' => 'dashboard'],
-        ['label' => 'Atendimentos', 'icon' => 'bi-headset', 'route' => 'atendimentos.index'],
+        ...$item('atendimentos.ver', ['label' => 'Atendimentos', 'icon' => 'bi-headset', 'route' => 'atendimentos.index']),
+        ...$item('clientes.ver', ['label' => 'Clientes', 'icon' => 'bi-person-vcard', 'route' => 'clientes.index']),
+        ...$item('orcamentos.ver', ['label' => 'Orçamentos', 'icon' => 'bi-cash-coin', 'route' => 'orcamentos.index']),
+        ...$item('roteiros.ver', ['label' => 'Roteiro de Viagem', 'icon' => 'bi-signpost-2', 'route' => 'roteiros-viagem.index']),
+        ...$item('mapa_relacoes.ver', ['label' => 'Mapa de Relações', 'icon' => 'bi-geo-alt', 'route' => 'mapa-relacoes.index']),
+        ...$item('indicadores.ver', ['label' => 'Indicadores Comerciais', 'icon' => 'bi-graph-up', 'route' => 'indicadores-comerciais.index']),
+        ...$item('relatorios.ver', ['label' => 'Relatórios', 'icon' => 'bi-bar-chart-line', 'route' => 'atendimentos-relatorios.index']),
+        ...$item('mapa_demandas.ver', ['label' => 'Mapa de Demandas', 'icon' => 'bi-geo', 'route' => 'mapa-demandas.index']),
     ];
 
-    // Clientes/Orçamentos: Administrador (gestão completa) e Comercial
-    // (BF02/CRM — dono do relacionamento comercial) têm acesso; Técnico não.
-    if ($isAdmin || $isComercial) {
-        $menu[] = ['label' => 'Clientes', 'icon' => 'bi-person-vcard', 'route' => 'clientes.index'];
-        $menu[] = ['label' => 'Orçamentos', 'icon' => 'bi-cash-coin', 'route' => 'orcamentos.index'];
-        $menu[] = ['label' => 'Roteiro de Viagem', 'icon' => 'bi-signpost-2', 'route' => 'roteiros-viagem.index'];
-        $menu[] = ['label' => 'Mapa de Relações', 'icon' => 'bi-geo-alt', 'route' => 'mapa-relacoes.index'];
-        $menu[] = ['label' => 'Indicadores Comerciais', 'icon' => 'bi-graph-up', 'route' => 'indicadores-comerciais.index'];
-    }
+    $configurador = [
+        ...$item('configurador.ver', ['label' => 'Perguntas', 'icon' => 'bi-question-circle', 'route' => 'configurador.perguntas.index']),
+        ...$item('configurador.ver', ['label' => 'Modelos', 'icon' => 'bi-diagram-3', 'route' => 'configurador.modelos.index']),
+    ];
 
-    $menu[] = ['label' => 'Relatórios', 'icon' => 'bi-bar-chart-line', 'route' => 'atendimentos-relatorios.index'];
-    $menu[] = ['label' => 'Mapa de Demandas', 'icon' => 'bi-geo', 'route' => 'mapa-demandas.index'];
+    $configuracoes = [
+        ...$item('tipos_orcamento.ver', ['label' => 'Tipos de Orçamento (CRM)', 'icon' => 'bi-receipt', 'route' => 'crm.tipos-orcamento.index']),
+        ...($configurador ? [['label' => 'Configurador de Relatórios', 'icon' => 'bi-sliders', 'children' => $configurador]] : []),
+        ...$item('naturezas.ver', ['label' => 'Naturezas de Atendimentos', 'icon' => 'bi-tools', 'route' => 'naturezas-dos-atendimentos.index']),
+        ...$item('classificacoes.ver', ['label' => 'Classificações de Cliente', 'icon' => 'bi-award', 'route' => 'classificacoes-cliente.index']),
+        ...$item('segmentos.ver', ['label' => 'Segmentos', 'icon' => 'bi-pie-chart', 'route' => 'segmentos.index']),
+        ...$item('ocorrencias.ver', ['label' => 'Ocorrências', 'icon' => 'bi-exclamation-triangle', 'route' => 'ocorrencias.index']),
+        ...$item('usuarios.ver', ['label' => 'Usuários', 'icon' => 'bi-people', 'route' => 'usuarios.index']),
+        // Fixo (não configurável): só Administrador / usuário protegido.
+        ...($usuario && $usuario->temAcessoTotal()
+            ? [['label' => 'Perfis de Acesso', 'icon' => 'bi-shield-lock', 'route' => 'perfis-acesso.index']]
+            : []),
+        // Logs de auditoria: escondido do menu por ora (pedido do cliente
+        // 2026-09-17) - rota/tela continuam existindo.
+    ];
 
-    if ($isAdmin) {
-        $menu[] = [
-            'label' => 'Configurações',
-            'icon' => 'bi-gear',
-            'children' => [
-                ['label' => 'Tipos de Orçamento (CRM)', 'icon' => 'bi-receipt', 'route' => 'crm.tipos-orcamento.index'],
-                [
-                    'label' => 'Configurador de Relatórios',
-                    'icon' => 'bi-sliders',
-                    'children' => [
-                        ['label' => 'Perguntas', 'icon' => 'bi-question-circle', 'route' => 'configurador.perguntas.index'],
-                        ['label' => 'Modelos', 'icon' => 'bi-diagram-3', 'route' => 'configurador.modelos.index'],
-                    ],
-                ],
-                ['label' => 'Naturezas de Atendimentos', 'icon' => 'bi-tools', 'route' => 'naturezas-dos-atendimentos.index'],
-                ['label' => 'Classificações de Cliente', 'icon' => 'bi-award', 'route' => 'classificacoes-cliente.index'],
-                ['label' => 'Segmentos', 'icon' => 'bi-pie-chart', 'route' => 'segmentos.index'],
-                ['label' => 'Ocorrências', 'icon' => 'bi-exclamation-triangle', 'route' => 'ocorrencias.index'],
-                ['label' => 'Usuários', 'icon' => 'bi-people', 'route' => 'usuarios.index'],
-                // Pedido do cliente (2026-09-17): esconder do menu por ora -
-                // vai elaborar uma nova ideia de como monitorar. Rota/tela
-                // continuam existindo, só não aparecem na navegação.
-            ],
-        ];
+    if ($configuracoes) {
+        $menu[] = ['label' => 'Configurações', 'icon' => 'bi-gear', 'children' => $configuracoes];
     }
 @endphp
 <x-sbadmin::layout
@@ -77,6 +67,9 @@
          pacote, disparado pelo helper window.confirmar() registrado em
          resources/js/confirm-modal.js (ver Alpine.store('confirmacao')). --}}
     <x-slot:userMenu>
+        <a href="{{ route('minha-conta.edit') }}" class="sbadmin-dropdown-item">
+            <i class="bi bi-person-gear me-2" aria-hidden="true"></i>Minha conta
+        </a>
         <a
             href="#"
             class="sbadmin-dropdown-item"

@@ -44,6 +44,13 @@ class UsuarioRepository implements CrudRepositoryInterface
             $payload['user_senha'] = Hash::make($data['user_senha']);
         }
 
+        // Usuário protegido continua sempre Administrador e ativo — nem ele
+        // mesmo consegue se trancar pra fora (pedido 2026-11-16).
+        if ($user->isProtegido()) {
+            $payload['user_nivel_acesso'] = \App\Enums\NivelAcesso::Administrador->value;
+            $payload['user_ativo'] = 1;
+        }
+
         $user->update($payload);
 
         // Desativar o usuário precisa também invalidar sessões já abertas

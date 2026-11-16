@@ -77,7 +77,8 @@ class CrmOrcamentoFaeTest extends TestCase
     /**
      * CRM02 (pedido do cliente, 2026-10-20): prazo = dias uteis pelo nivel
      * (1/5/10), contados de segunda a sexta a partir da data de inclusao,
-     * sempre calculado - um prazo enviado no formulario e ignorado.
+     * quando o prazo vem vazio. Desde 2026-11-16 o prazo informado no
+     * formulario e mantido (ver test_prazo_informado_manualmente_e_mantido).
      */
     public function test_prazo_de_envio_e_calculado_em_dias_uteis_a_partir_da_inclusao(): void
     {
@@ -89,7 +90,7 @@ class CrmOrcamentoFaeTest extends TestCase
             'orc_cliente_id' => $cliente->cli_id,
             'orc_vendedor_id' => $vendedor->user_id,
             'orc_nivel' => NivelOrcamento::Complexo->value,
-            'orc_prazo_envio' => '2030-01-01',
+            'orc_prazo_envio' => '',
         ]);
 
         $response->assertRedirect();
@@ -124,6 +125,33 @@ class CrmOrcamentoFaeTest extends TestCase
         $this->assertSame('2026-10-21', $orcamento->fresh()->orc_prazo_envio->format('Y-m-d'));
     }
 
+    public function test_prazo_informado_manualmente_e_mantido(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-16 10:00'));
+        $vendedor = $this->criarVendedor();
+        $cliente = Cliente::factory()->create();
+
+        $this->actingAs($vendedor)->post(route('orcamentos.store'), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_nivel' => NivelOrcamento::Complexo->value,
+            'orc_prazo_envio' => '2026-11-20',
+        ])->assertRedirect();
+
+        $orcamento = \App\Models\Orcamento::where('orc_cliente_id', $cliente->cli_id)->firstOrFail();
+        $this->assertSame('2026-11-20', $orcamento->orc_prazo_envio->format('Y-m-d'));
+
+        // Editar mantém o prazo manual que vier no formulário.
+        $this->actingAs($vendedor)->put(route('orcamentos.update', $orcamento->orc_id), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $vendedor->user_id,
+            'orc_nivel' => NivelOrcamento::Simples->value,
+            'orc_prazo_envio' => '2026-12-04',
+        ])->assertRedirect();
+
+        $this->assertSame('2026-12-04', $orcamento->fresh()->orc_prazo_envio->format('Y-m-d'));
+    }
+
     public function test_orcamento_sem_nivel_fica_sem_prazo(): void
     {
         $vendedor = $this->criarVendedor();
@@ -132,7 +160,6 @@ class CrmOrcamentoFaeTest extends TestCase
         $this->actingAs($vendedor)->post(route('orcamentos.store'), [
             'orc_cliente_id' => $cliente->cli_id,
             'orc_vendedor_id' => $vendedor->user_id,
-            'orc_prazo_envio' => '2030-01-01',
         ])->assertRedirect();
 
         $this->assertDatabaseHas('orcamentos', [
@@ -210,6 +237,10 @@ class CrmOrcamentoFaeTest extends TestCase
      */
     public function test_tela_de_edicao_lista_vendedor_no_alerta_de_comentario(): void
     {
+        // Desde 2026-11-16 o alerta lista quem consegue abrir o orçamento
+        // (permissão orcamentos.ver) — antes o perfil Vendedor entrava fixo
+        // mesmo sem acesso à tela.
+        \App\Models\PerfilPermissao::sincronizar(\App\Enums\NivelAcesso::Vendedor->value, ['orcamentos.ver']);
         $comercial = $this->criarVendedor();
         $vendedorDeCampo = Usuario::factory()->vendedor()->create(['user_nome' => 'Vendedor de Campo']);
         $tecnico = Usuario::factory()->tecnico()->create(['user_nome' => 'Tecnico Fulano']);

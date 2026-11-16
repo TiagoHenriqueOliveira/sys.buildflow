@@ -10,6 +10,7 @@
                 <h2 class="sbadmin-page-heading">Ocorrências</h2>
                 <p class="sbadmin-page-subheading">Gerencie as ocorrências cadastradas no sistema.</p>
             </div>
+            @can('ocorrencias.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -17,6 +18,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -50,6 +52,7 @@
             @foreach($ocorrencias as $o)
                 <tr>
                     <td class="text-center">
+                        @can('ocorrencias.editar')
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -61,6 +64,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endcan
                     </td>
                     <td>{{ $o->ocor_descricao }}</td>
                     <td>

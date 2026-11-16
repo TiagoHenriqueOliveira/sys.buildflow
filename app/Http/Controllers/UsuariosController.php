@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersisteFiltros;
+use App\Enums\NivelAcesso;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Usuario;
 use App\Repositories\UsuarioRepository;
@@ -38,13 +39,11 @@ class UsuariosController extends Controller
         $filtros = $this->filtrosPersistentes('usuarios', ['f_nome', 'f_email']);
         $filtroNome = $filtros['f_nome'];
         $filtroEmail = $filtros['f_email'];
-        $loggedUserId = Auth::user()->user_id;
-
+        // Pedido do cliente (2026-11-16): o usuário protegido
+        // (3iodigital26@gmail.com) não aparece na listagem para ninguém,
+        // nem para ele mesmo — ele se edita por "Minha conta".
         $usuarios = Usuario::query()
-            ->where(function ($query) use ($loggedUserId) {
-                $query->where('user_protegido', 0)
-                    ->orWhere('user_id', $loggedUserId);
-            })
+            ->where('user_protegido', 0)
             ->when($filtroNome !== '', fn ($q) => $q->where('user_nome', 'like', "%{$filtroNome}%"))
             ->when($filtroEmail !== '', fn ($q) => $q->where('user_email', 'like', "%{$filtroEmail}%"))
             ->orderBy('user_nome')
@@ -75,6 +74,13 @@ class UsuariosController extends Controller
         // Somente o próprio usuário protegido pode editar a si mesmo
         if ($target->isProtegido() && Auth::user()->user_id !== $target->user_id) {
             abort(403, 'Não é permitido alterar o usuário administrador master.');
+        }
+
+        // Quem tem "usuarios.editar" sem ser Administrador não altera um
+        // Administrador (senão bastaria trocar a senha dele pra ganhar
+        // acesso total).
+        if ((int) $target->user_nivel_acesso === NivelAcesso::Administrador->value && ! Auth::user()->temAcessoTotal()) {
+            abort(403, 'Somente administradores podem alterar um usuário Administrador.');
         }
 
         $usuario = $this->repository->update($id, $request->validated());

@@ -67,10 +67,10 @@ enum AtendimentoRelatorioStatus: int
     /** Só Assistência e Administrador aprovam relatório (pedido 2026-11-03). */
     public static function usuarioPodeAprovar(?Usuario $usuario): bool
     {
-        return $usuario !== null && in_array((int) $usuario->user_nivel_acesso, [
+        return $usuario !== null && ($usuario->temAcessoTotal() || in_array((int) $usuario->user_nivel_acesso, [
             NivelAcesso::Administrador->value,
             NivelAcesso::Assistencia->value,
-        ], true);
+        ], true));
     }
 
     /** Status que o usuário pode escolher na tela. */

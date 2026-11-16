@@ -16,6 +16,7 @@
                 <h2 class="sbadmin-page-heading">Configurador | Perguntas</h2>
                 <p class="sbadmin-page-subheading">Banco de perguntas reutilizável entre modelos de orçamento e de relatório.</p>
             </div>
+            @can('configurador.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -23,6 +24,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -63,6 +65,7 @@
             @foreach($perguntas as $p)
                 <tr class="{{ $p->cfg_perg_ativo ? '' : 'table-danger' }}">
                     <td class="text-center">
+                        @can('configurador.editar')
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -80,6 +83,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endcan
                     </td>
                     <td>{{ \Illuminate\Support\Str::limit($p->cfg_perg_e_sessao ? $p->cfg_perg_sessao_nome : $p->cfg_perg_texto, 80) }}</td>
                     <td>

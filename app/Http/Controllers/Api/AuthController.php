@@ -43,13 +43,29 @@ class AuthController extends Controller
         return response()->json([
             'token'      => $token,
             'token_type' => 'Bearer',
-            'usuario'    => [
-                'id'           => $usuario->user_id,
-                'nome'         => $usuario->user_nome,
-                'email'        => $usuario->user_email,
-                'nivel_acesso' => $usuario->user_nivel_acesso,
-            ],
+            'usuario'    => self::dadosUsuario($usuario),
         ]);
+    }
+
+    /**
+     * Dados do usuário para o app. Desde 2026-11-16 inclui as permissões
+     * por tela do cadastro "Perfis de Acesso" ("permissoes", ex.:
+     * ["orcamentos.ver", ...]) para o app esconder o que o usuário não
+     * acessa — a API também bloqueia (403). "acesso_total" = Administrador
+     * ou usuário protegido (recebe todas as chaves).
+     */
+    private static function dadosUsuario(\App\Models\Usuario $usuario): array
+    {
+        return [
+            'id'                 => $usuario->user_id,
+            'nome'               => $usuario->user_nome,
+            'email'              => $usuario->user_email,
+            'nivel_acesso'       => $usuario->user_nivel_acesso,
+            'nivel_acesso_label' => \App\Enums\NivelAcesso::tryFrom((int) $usuario->user_nivel_acesso)?->label(),
+            'acesso_total'       => $usuario->temAcessoTotal(),
+            'vendedor'           => in_array((int) $usuario->user_nivel_acesso, \App\Models\PerfilPermissao::niveisCom(\App\Support\Permissoes::VENDEDOR), true),
+            'permissoes'         => $usuario->permissoes(),
+        ];
     }
 
     /**
@@ -73,13 +89,6 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        $u = $request->user();
-
-        return response()->json([
-            'id'           => $u->user_id,
-            'nome'         => $u->user_nome,
-            'email'        => $u->user_email,
-            'nivel_acesso' => $u->user_nivel_acesso,
-        ]);
+        return response()->json(self::dadosUsuario($request->user()));
     }
 }

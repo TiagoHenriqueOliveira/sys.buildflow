@@ -174,37 +174,40 @@ Route::prefix('fae/v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me',      [AuthController::class, 'me']);
 
-        // Clientes (NC01) - CRUD consumido pelo app. Pedido do cliente
-        // (2026-09-16): create/update aberto a todos os perfis exceto Tecnico
-        // (middleware `nao-tecnico`) - era `comercial`/Administrador+Comercial
-        // antes dessa mudanca, mesma regra aplicada no Web em routes/web.php.
-        Route::get('/clientes',              [FaeClientesController::class, 'index']);
-        Route::get('/clientes/autocomplete', [FaeClientesController::class, 'autocomplete']);
-        Route::get('/clientes/{cliente}',    [FaeClientesController::class, 'show']);
-        Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('nao-tecnico');
-        Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('nao-tecnico');
+        // Pedido do cliente (2026-11-16): mesmas permissões por tela do Web
+        // (cadastro "Perfis de Acesso") — "<tela>.ver" na leitura,
+        // "<tela>.editar" na gravação. O /me devolve a lista ("permissoes")
+        // pro app esconder o que o usuário não acessa.
 
-        // CRM09 - Orcamento/Roteiro de Viagem/Mapa de Relacoes/Indicadores,
-        // perfil Comercial (ou Administrador) em todo o bloco - nenhum uso
-        // por tecnico, ao contrario de Clientes acima.
-        Route::middleware('comercial')->group(function () {
-            Route::get('/orcamentos',                          [FaeOrcamentosController::class, 'index']);
+        // Clientes (NC01). Autocomplete sem permissão de tela: usado em
+        // outros fluxos (atendimento/orçamento), como no Web.
+        Route::get('/clientes/autocomplete', [FaeClientesController::class, 'autocomplete']);
+        Route::get('/clientes',              [FaeClientesController::class, 'index'])->middleware('can:clientes.ver');
+        Route::get('/clientes/{cliente}',    [FaeClientesController::class, 'show'])->middleware('can:clientes.ver');
+        Route::post('/clientes',             [FaeClientesController::class, 'store'])->middleware('can:clientes.editar');
+        Route::put('/clientes/{cliente}',    [FaeClientesController::class, 'update'])->middleware('can:clientes.editar');
+
+        // CRM09 - Orcamento/Roteiro de Viagem/Mapa de Relacoes.
+        Route::get('/orcamentos',                          [FaeOrcamentosController::class, 'index'])->middleware('can:orcamentos.ver');
+        Route::get('/orcamentos/{orcamento}',               [FaeOrcamentosController::class, 'show'])->middleware('can:orcamentos.ver');
+        Route::middleware('can:orcamentos.editar')->group(function () {
             Route::post('/orcamentos',                         [FaeOrcamentosController::class, 'store']);
-            Route::get('/orcamentos/{orcamento}',               [FaeOrcamentosController::class, 'show']);
             Route::put('/orcamentos/{orcamento}',               [FaeOrcamentosController::class, 'update']);
             Route::post('/orcamentos/{id}/comentarios',         [FaeOrcamentosController::class, 'storeComentario']);
             Route::delete('/orcamentos/{id}/comentarios/{comentarioId}', [FaeOrcamentosController::class, 'destroyComentario']);
-
-            Route::get('/roteiros-viagem',              [FaeRoteirosViagemController::class, 'index']);
-            Route::post('/roteiros-viagem',              [FaeRoteirosViagemController::class, 'store']);
-            Route::get('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'show']);
-            Route::put('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'update']);
-
-            Route::get('/mapa-relacoes',          [FaeCrmController::class, 'mapaRelacoes']);
-
-            Route::get('/catalogos/vendedores-comerciais', [FaeCatalogoController::class, 'vendedoresComerciais']);
-            Route::get('/catalogos/tipos-orcamento',       [FaeCatalogoController::class, 'tiposOrcamento']);
         });
+
+        Route::get('/roteiros-viagem',              [FaeRoteirosViagemController::class, 'index'])->middleware('can:roteiros.ver');
+        Route::get('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'show'])->middleware('can:roteiros.ver');
+        Route::post('/roteiros-viagem',              [FaeRoteirosViagemController::class, 'store'])->middleware('can:roteiros.editar');
+        Route::put('/roteiros-viagem/{roteiro}',     [FaeRoteirosViagemController::class, 'update'])->middleware('can:roteiros.editar');
+
+        Route::get('/mapa-relacoes',          [FaeCrmController::class, 'mapaRelacoes'])->middleware('can:mapa_relacoes.ver');
+
+        // Catálogos usados nos formulários do CRM (vendedores = perfis com
+        // "Atua como vendedor"; ver Usuario::scopeVendedores).
+        Route::get('/catalogos/vendedores-comerciais', [FaeCatalogoController::class, 'vendedoresComerciais'])->middleware('can:orcamentos.ver');
+        Route::get('/catalogos/tipos-orcamento',       [FaeCatalogoController::class, 'tiposOrcamento'])->middleware('can:orcamentos.ver');
 
         Route::get('/catalogos/classificacoes-cliente', [FaeCatalogoController::class, 'classificacoesCliente']);
         Route::get('/catalogos/segmentos', [FaeCatalogoController::class, 'segmentos']);
@@ -220,61 +223,61 @@ Route::prefix('fae/v1')->group(function () {
         Route::post('/notificacoes/{id}/marcar-nao-lida', [FaeNotificacoesController::class, 'marcarNaoLida']);
 
         // Atendimentos
-        Route::get('/atendimentos',      [FaeAtendimentosController::class, 'index']);
-        Route::get('/atendimentos/{id}', [FaeAtendimentosController::class, 'show']);
-        Route::put('/atendimentos/{id}/status', [FaeAtendimentosController::class, 'updateStatus']);
-        Route::get('/mapa-demandas', [FaeAtendimentosController::class, 'mapaDemandas']);
+        Route::get('/atendimentos',      [FaeAtendimentosController::class, 'index'])->middleware('can:atendimentos.ver');
+        Route::get('/atendimentos/{id}', [FaeAtendimentosController::class, 'show'])->middleware('can:atendimentos.ver');
+        Route::put('/atendimentos/{id}/status', [FaeAtendimentosController::class, 'updateStatus'])->middleware('can:atendimentos.editar');
+        Route::get('/mapa-demandas', [FaeAtendimentosController::class, 'mapaDemandas'])->middleware('can:mapa_demandas.ver');
 
         // RelatÃ³rios de um atendimento
-        Route::get('/atendimentos/{aten_id}/relatorios',  [FaeRelatoriosController::class, 'index']);
-        Route::post('/atendimentos/{aten_id}/relatorios', [FaeRelatoriosController::class, 'store']);
+        Route::get('/atendimentos/{aten_id}/relatorios',  [FaeRelatoriosController::class, 'index'])->middleware('can:relatorios.ver');
+        Route::post('/atendimentos/{aten_id}/relatorios', [FaeRelatoriosController::class, 'store'])->middleware('can:relatorios.editar');
 
         // RelatÃ³rio â€” leitura
-        Route::get('/relatorios/{id}', [FaeRelatoriosController::class, 'show']);
+        Route::get('/relatorios/{id}', [FaeRelatoriosController::class, 'show'])->middleware('can:relatorios.ver');
 
         // Formulario dinamico (BF05/NC03) - motor novo, consome o mesmo
         // modelo/respostas do Configurador; os endpoints fixos abaixo
         // (horarios/clima/servicos/pecas/ocorrencias) ficam so pra
         // relatorios com dado legado (decisao da sessao 13).
-        Route::get('/relatorios/{id}/formulario', [FaeRelatorioFormularioController::class, 'formulario']);
-        Route::post('/relatorios/{id}/respostas', [FaeRelatorioFormularioController::class, 'storeResposta']);
-        Route::delete('/relatorios/{id}/respostas/{respostaId}', [FaeRelatorioFormularioController::class, 'destroyResposta']);
-        Route::delete('/relatorios/{id}/respostas-fotos/{fotoId}', [FaeRelatorioFormularioController::class, 'destroyRespostaFoto']);
+        Route::get('/relatorios/{id}/formulario', [FaeRelatorioFormularioController::class, 'formulario'])->middleware('can:relatorios.ver');
+        Route::post('/relatorios/{id}/respostas', [FaeRelatorioFormularioController::class, 'storeResposta'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/respostas/{respostaId}', [FaeRelatorioFormularioController::class, 'destroyResposta'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/respostas-fotos/{fotoId}', [FaeRelatorioFormularioController::class, 'destroyRespostaFoto'])->middleware('can:relatorios.editar');
 
         // RelatÃ³rio â€” seÃ§Ãµes de escrita
-        Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais']);
-        Route::put('/relatorios/{id}/observacao-interna',      [FaeRelatoriosController::class, 'updateObservacaoInterna']);
-        Route::put('/relatorios/{id}/horarios',                [FaeRelatoriosController::class, 'updateHorarios']);
-        Route::put('/relatorios/{id}/clima',                   [FaeRelatoriosController::class, 'updateClima']);
-        Route::put('/relatorios/{id}/status',                  [FaeRelatoriosController::class, 'updateStatus']);
+        Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais'])->middleware('can:relatorios.editar');
+        Route::put('/relatorios/{id}/observacao-interna',      [FaeRelatoriosController::class, 'updateObservacaoInterna'])->middleware('can:relatorios.editar');
+        Route::put('/relatorios/{id}/horarios',                [FaeRelatoriosController::class, 'updateHorarios'])->middleware('can:relatorios.editar');
+        Route::put('/relatorios/{id}/clima',                   [FaeRelatoriosController::class, 'updateClima'])->middleware('can:relatorios.editar');
+        Route::put('/relatorios/{id}/status',                  [FaeRelatoriosController::class, 'updateStatus'])->middleware('can:relatorios.editar');
 
         // ServiÃ§os (1:N)
-        Route::post('/relatorios/{id}/servicos',             [FaeRelatoriosController::class, 'storeServico']);
-        Route::delete('/relatorios/{id}/servicos/{serv_id}', [FaeRelatoriosController::class, 'destroyServico']);
+        Route::post('/relatorios/{id}/servicos',             [FaeRelatoriosController::class, 'storeServico'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/servicos/{serv_id}', [FaeRelatoriosController::class, 'destroyServico'])->middleware('can:relatorios.editar');
 
         // PeÃ§as (1:N)
-        Route::post('/relatorios/{id}/pecas',             [FaeRelatoriosController::class, 'storePeca']);
-        Route::delete('/relatorios/{id}/pecas/{peca_id}', [FaeRelatoriosController::class, 'destroyPeca']);
+        Route::post('/relatorios/{id}/pecas',             [FaeRelatoriosController::class, 'storePeca'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/pecas/{peca_id}', [FaeRelatoriosController::class, 'destroyPeca'])->middleware('can:relatorios.editar');
 
         // Itens de descriÃ§Ã£o (texto + foto opcional) â€” RF001, multipart/form-data
-        Route::post('/relatorios/{id}/descricao-itens',              [FaeRelatoriosController::class, 'storeDescricaoItem']);
-        Route::delete('/relatorios/{id}/descricao-itens/{item_id}',  [FaeRelatoriosController::class, 'destroyDescricaoItem']);
+        Route::post('/relatorios/{id}/descricao-itens',              [FaeRelatoriosController::class, 'storeDescricaoItem'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/descricao-itens/{item_id}',  [FaeRelatoriosController::class, 'destroyDescricaoItem'])->middleware('can:relatorios.editar');
 
         // OcorrÃªncias
-        Route::post('/relatorios/{id}/ocorrencias',                    [FaeRelatoriosController::class, 'storeOcorrencia']);
-        Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}',  [FaeRelatoriosController::class, 'destroyOcorrencia']);
+        Route::post('/relatorios/{id}/ocorrencias',                    [FaeRelatoriosController::class, 'storeOcorrencia'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}',  [FaeRelatoriosController::class, 'destroyOcorrencia'])->middleware('can:relatorios.editar');
 
         // Comprovante de compartilhamento (BF07)
-        Route::get('/relatorios/{id}/compartilhamentos',  [FaeRelatoriosController::class, 'getCompartilhamentos']);
-        Route::post('/relatorios/{id}/compartilhamentos', [FaeRelatoriosController::class, 'storeCompartilhamento']);
+        Route::get('/relatorios/{id}/compartilhamentos',  [FaeRelatoriosController::class, 'getCompartilhamentos'])->middleware('can:relatorios.ver');
+        Route::post('/relatorios/{id}/compartilhamentos', [FaeRelatoriosController::class, 'storeCompartilhamento'])->middleware('can:relatorios.editar');
 
         // Assinaturas (base64)
-        Route::post('/relatorios/{id}/assinaturas', [FaeRelatoriosController::class, 'storeAssinaturas']);
+        Route::post('/relatorios/{id}/assinaturas', [FaeRelatoriosController::class, 'storeAssinaturas'])->middleware('can:relatorios.editar');
 
         // Fotos / vÃ­deos / arquivos (multipart/form-data)
-        Route::get('/relatorios/{id}/anexos',                    [FaeRelatoriosController::class, 'getAnexos']);
-        Route::post('/relatorios/{id}/anexos',                   [FaeRelatoriosController::class, 'uploadAnexos']);
-        Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [FaeRelatoriosController::class, 'destroyAnexo']);
+        Route::get('/relatorios/{id}/anexos',                    [FaeRelatoriosController::class, 'getAnexos'])->middleware('can:relatorios.ver');
+        Route::post('/relatorios/{id}/anexos',                   [FaeRelatoriosController::class, 'uploadAnexos'])->middleware('can:relatorios.editar');
+        Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [FaeRelatoriosController::class, 'destroyAnexo'])->middleware('can:relatorios.editar');
     });
 });
 

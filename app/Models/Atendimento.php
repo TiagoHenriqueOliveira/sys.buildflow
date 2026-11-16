@@ -95,7 +95,7 @@ class Atendimento extends Model
      */
     public static function veTodos(Usuario $usuario): bool
     {
-        return in_array((int) $usuario->user_nivel_acesso, [
+        return $usuario->temAcessoTotal() || in_array((int) $usuario->user_nivel_acesso, [
             \App\Enums\NivelAcesso::Administrador->value,
             \App\Enums\NivelAcesso::Assistencia->value,
         ], true);

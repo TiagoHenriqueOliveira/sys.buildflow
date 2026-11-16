@@ -53,7 +53,7 @@ class RelatoriosController extends Controller
     private function checkAcesso(Request $request, AtendimentoRelatorio $relatorio): bool
     {
         if (! $relatorio->atendimento) {
-            return $request->user()->user_nivel_acesso === 0;
+            return Atendimento::veTodos($request->user());
         }
         return $request->user()->can('acessar', $relatorio->atendimento);
     }

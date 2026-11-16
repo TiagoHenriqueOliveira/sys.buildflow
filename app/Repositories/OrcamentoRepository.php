@@ -54,11 +54,14 @@ class OrcamentoRepository implements CrudRepositoryInterface
     {
         $nivel = $data['orc_nivel'] ?? null;
 
-        // CRM02 - prazo sempre derivado do nivel + data de inclusao do
-        // orcamento (nao e mais digitavel - pedido do cliente, 2026-10-20).
-        $prazo = $nivel !== null
-            ? NivelOrcamento::from((int) $nivel)->calcularPrazo($dataInclusao)->toDateString()
-            : null;
+        // CRM02 - o prazo informado vale (alteracao livre, pedido do
+        // cliente 2026-11-16); vazio, e calculado pelo nivel a partir da data
+        // de inclusao (1/5/10 dias uteis - pedido de 2026-10-20).
+        $prazo = ! empty($data['orc_prazo_envio'])
+            ? $data['orc_prazo_envio']
+            : ($nivel !== null
+                ? NivelOrcamento::from((int) $nivel)->calcularPrazo($dataInclusao)->toDateString()
+                : null);
 
         return [
             'orc_cliente_id' => $data['orc_cliente_id'],

@@ -10,6 +10,7 @@
                 <h2 class="sbadmin-page-heading">CRM | Tipos de Orçamento</h2>
                 <p class="sbadmin-page-subheading">Vincule cada tipo de sistema de orçamento a um modelo do Configurador (setor Comercial).</p>
             </div>
+            @can('tipos_orcamento.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -17,6 +18,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -48,6 +50,7 @@
             @foreach($tipos as $t)
                 <tr class="{{ $t->crm_tp_orc_ativo ? '' : 'table-danger' }}">
                     <td class="text-center">
+                        @can('tipos_orcamento.editar')
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -60,6 +63,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endcan
                     </td>
                     <td>{{ $t->crm_tp_orc_nome }}</td>
                     <td>{{ optional($t->configModelo)->cfg_mod_nome }}</td>

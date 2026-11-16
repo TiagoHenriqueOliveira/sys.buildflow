@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\NivelAcesso;
 use App\Http\Controllers\Concerns\PersisteFiltros;
 use App\Http\Requests\ClienteRequest;
 use App\Models\ClassificacaoCliente;
@@ -102,8 +101,8 @@ class ClientesController extends Controller
         return [
             'classificacoes' => ClassificacaoCliente::where('cla_cli_ativo', 1)->orderBy('cla_cli_nome')->get(),
             'segmentos' => \App\Models\Segmento::where('seg_ativo', 1)->orderBy('seg_descricao')->get(),
-            'vendedores' => Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
-                ->where('user_ativo', 1)
+            // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16).
+            'vendedores' => Usuario::vendedores()
                 ->orderBy('user_nome')
                 ->get(),
         ];

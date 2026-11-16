@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersisteFiltros;
-use App\Enums\NivelAcesso;
 use App\Http\Requests\RoteiroViagemRequest;
 use App\Models\Cliente;
 use App\Models\RoteiroViagem;
@@ -72,8 +71,8 @@ class RoteirosViagemController extends Controller
 
     private function vendedoresComerciais()
     {
-        return Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
-            ->where('user_ativo', 1)
+        // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16).
+        return Usuario::vendedores()
             ->orderBy('user_nome')
             ->get();
     }

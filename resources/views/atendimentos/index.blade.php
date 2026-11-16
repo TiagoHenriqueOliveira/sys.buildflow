@@ -5,11 +5,11 @@
                 <h2 class="sbadmin-page-heading">Atendimentos</h2>
                 <p class="sbadmin-page-subheading">Gerencie os atendimentos técnicos cadastrados no sistema.</p>
             </div>
-            @if(auth()->user()->user_nivel_acesso === 0)
+            @can('atendimentos.editar')
                 <a href="{{ route('atendimentos.create') }}" class="btn btn-primary sbadmin-btn-primary">
                     <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
                 </a>
-            @endif
+            @endcan
         </div>
 
         @if(session('success'))
@@ -71,7 +71,7 @@
         </form>
 
         <x-sbadmin::table
-            :headers="auth()->user()->user_nivel_acesso === 0
+            :headers="auth()->user()->temPermissao('atendimentos.editar')
                 ? ['Ações', 'Natureza', 'Técnico', 'Cliente', 'Nº Proposta', 'Período', 'Status']
                 : ['Natureza', 'Técnico', 'Cliente', 'Nº Proposta', 'Período', 'Status']"
             :paginator="$atendimentos"
@@ -87,13 +87,13 @@
                     $atrasado = (int) $a->aten_status !== 3 && $a->aten_dt_fim->lt($hoje);
                 @endphp
                 <tr>
-                    @if(auth()->user()->user_nivel_acesso === 0)
+                    @can('atendimentos.editar')
                         <td class="text-center">
                             <a href="{{ route('atendimentos.edit', $a->aten_id) }}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Editar atendimento">
                                 <i class="bi bi-pencil" aria-hidden="true"></i>
                             </a>
                         </td>
-                    @endif
+                    @endcan
                     <td>{{ optional($a->natureza)->nat_aten_descricao }}</td>
                     <td>{{ optional($a->usuario)->user_nome }}</td>
                     <td>{{ optional($a->cliente)->cli_nome }}</td>

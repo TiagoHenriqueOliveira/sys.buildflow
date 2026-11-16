@@ -4,9 +4,11 @@
             <h2 class="sbadmin-page-heading">Roteiros de Viagem</h2>
             <p class="sbadmin-page-subheading">Cadastre saídas de vendedores e registre o retorno de cada visita.</p>
         </div>
+        @can('roteiros.editar')
         <a href="{{ route('roteiros-viagem.create') }}" class="btn btn-primary sbadmin-btn-primary">
             <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
         </a>
+        @endcan
     </div>
 
     @if(session('success'))
@@ -51,9 +53,11 @@
             @endphp
             <tr class="{{ $r->crm_rot_status === \App\Enums\StatusRoteiroViagem::Cancelada ? 'table-danger' : '' }}">
                 <td class="text-center">
+                    @can('roteiros.editar')
                     <a href="{{ route('roteiros-viagem.edit', $r->crm_rot_id) }}" class="btn btn-sm sbadmin-table-action-btn" aria-label="Editar roteiro">
                         <i class="bi bi-pencil" aria-hidden="true"></i>
                     </a>
+                    @endcan
                 </td>
                 <td>{{ optional($r->vendedor)->user_nome }}</td>
                 <td>{{ $r->crm_rot_periodo_inicio->format('d/m/Y') }} - {{ $r->crm_rot_periodo_fim->format('d/m/Y') }}</td>

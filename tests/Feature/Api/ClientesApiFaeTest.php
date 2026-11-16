@@ -25,6 +25,9 @@ class ClientesApiFaeTest extends TestCase
 
     public function test_lista_clientes_autenticado_retorna_paginado(): void
     {
+        // Desde 2026-11-16 a API exige "clientes.ver" (Perfis de Acesso);
+        // antes a leitura de clientes pela API era aberta a qualquer perfil.
+        \App\Models\PerfilPermissao::sincronizar(\App\Enums\NivelAcesso::Tecnico->value, ['clientes.ver']);
         $tecnico = Usuario::factory()->tecnico()->create();
         Cliente::factory()->count(3)->create();
 
@@ -37,6 +40,9 @@ class ClientesApiFaeTest extends TestCase
 
     public function test_mostra_detalhe_cliente_com_contatos_equipamentos_localizacoes(): void
     {
+        // Desde 2026-11-16 a API exige "clientes.ver" (Perfis de Acesso);
+        // antes a leitura de clientes pela API era aberta a qualquer perfil.
+        \App\Models\PerfilPermissao::sincronizar(\App\Enums\NivelAcesso::Tecnico->value, ['clientes.ver']);
         $tecnico = Usuario::factory()->tecnico()->create();
         $cliente = Cliente::factory()->create();
         $cliente->contatos()->create([

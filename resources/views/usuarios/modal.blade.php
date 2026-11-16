@@ -43,7 +43,7 @@
                                 id="user_nivel_acesso"
                                 name="user_nivel_acesso"
                                 label="Nível"
-                                :options="collect(App\Enums\NivelAcesso::cases())->mapWithKeys(fn ($n) => [$n->value => $n->label()])->all()"
+                                :options="collect(App\Enums\NivelAcesso::cases())->filter(fn ($n) => in_array($n->value, \App\Http\Requests\UsuarioRequest::niveisPermitidos(), true))->mapWithKeys(fn ($n) => [$n->value => $n->label()])->all()"
                                 :value="old('user_nivel_acesso')"
                                 placeholder="Selecione..."
                                 required

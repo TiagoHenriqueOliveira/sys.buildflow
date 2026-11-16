@@ -19,7 +19,7 @@ trait GarantePosseDeAtendimento
 
         $temAcesso = $atendimento
             ? $usuario->can('acessar', $atendimento)
-            : (int) $usuario->user_nivel_acesso === 0;
+            : Atendimento::veTodos($usuario);
 
         abort_unless($temAcesso, 403, 'Você não tem acesso a este atendimento.');
     }

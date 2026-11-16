@@ -1015,7 +1015,7 @@ class AtendimentosRelatoriosController extends Controller
         $usuario = $request->user();
         $temAcesso = $relatorio->atendimento
             ? $usuario->can('acessar', $relatorio->atendimento)
-            : (int) $usuario->user_nivel_acesso === 0;
+            : \App\Models\Atendimento::veTodos($usuario);
         if (! $temAcesso) {
             abort(403, 'Você não tem acesso a este relatório.');
         }

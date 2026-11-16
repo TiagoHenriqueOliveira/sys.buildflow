@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersisteFiltros;
-use App\Enums\NivelAcesso;
 use App\Models\Cliente;
 use App\Models\ClassificacaoCliente;
 use App\Models\Usuario;
@@ -35,7 +34,7 @@ class MapaRelacoesController extends Controller
 
         return view('mapa-relacoes.index', [
             'clientes' => $clientes,
-            'vendedores' => Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)->where('user_ativo', 1)->orderBy('user_nome')->get(),
+            'vendedores' => Usuario::vendedores()->orderBy('user_nome')->get(),
             'estados' => Cliente::query()->whereNotNull('cli_uf')->distinct()->orderBy('cli_uf')->pluck('cli_uf'),
             'segmentos' => Cliente::query()->whereNotNull('cli_segmento')->where('cli_segmento', '!=', '')->distinct()->orderBy('cli_segmento')->pluck('cli_segmento'),
             'classificacoes' => ClassificacaoCliente::orderBy('cla_cli_nome')->get(),

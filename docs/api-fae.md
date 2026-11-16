@@ -24,16 +24,41 @@ Realiza login e retorna o token de acesso.
 ```json
 {
   "token": "1|abc123...",
-  "user": {
-    "id": 5,
-    "nome": "João Silva",
-    "email": "tecnico@exemplo.com",
-    "nivel_acesso": 1
+  "token_type": "Bearer",
+  "usuario": {
+      "id": 5,
+      "nome": "João Silva",
+      "email": "tecnico@exemplo.com",
+      "nivel_acesso": 1,
+      "nivel_acesso_label": "Técnico",
+      "acesso_total": false,
+      "vendedor": false,
+      "permissoes": ["atendimentos.ver", "relatorios.ver", "relatorios.editar", "mapa_demandas.ver"]
   }
 }
 ```
 
 > Use o `token` no header `Authorization: Bearer {token}` em todas as rotas protegidas.
+
+#### Permissões por tela (desde 16/11/2026)
+
+Os acessos de cada perfil (Técnico, Comercial, Assistência, Vendedor) são definidos no cadastro web **Configurações › Perfis de Acesso**. `permissoes` lista as chaves concedidas ao usuário, no formato `<tela>.<ação>`:
+
+| Tela | Chaves |
+|------|--------|
+| Atendimentos | `atendimentos.ver`, `atendimentos.editar` |
+| Relatórios | `relatorios.ver`, `relatorios.editar` |
+| Mapa de demandas | `mapa_demandas.ver` |
+| Clientes | `clientes.ver`, `clientes.editar` |
+| Orçamentos | `orcamentos.ver`, `orcamentos.editar` |
+| Roteiro de viagem | `roteiros.ver`, `roteiros.editar` |
+| Mapa de relações | `mapa_relacoes.ver` |
+| Indicadores | `indicadores.ver` |
+| Configurações | `tipos_orcamento`, `configurador`, `naturezas`, `classificacoes`, `segmentos`, `ocorrencias`, `usuarios` (`.ver`/`.editar`) |
+
+- `acesso_total: true` (Administrador ou usuário master) → recebe todas as chaves, inclusive de telas futuras.
+- `vendedor: true` → o perfil do usuário "Atua como vendedor" (aparece nos combos de vendedor).
+- A API **também** bloqueia: endpoint sem a permissão devolve **403** `{ "message": "This action is unauthorized." }`. Leitura (GET) exige `<tela>.ver`; gravação (POST/PUT/DELETE) exige `<tela>.editar`. O app deve usar `permissoes` para esconder o que o usuário não acessa.
 
 ---
 
@@ -57,12 +82,18 @@ Retorna os dados do usuário autenticado.
 **Resposta 200:**
 ```json
 {
-  "id": 5,
-  "nome": "João Silva",
-  "email": "tecnico@exemplo.com",
-  "nivel_acesso": 1
+    "id": 5,
+    "nome": "João Silva",
+    "email": "tecnico@exemplo.com",
+    "nivel_acesso": 1,
+    "nivel_acesso_label": "Técnico",
+    "acesso_total": false,
+    "vendedor": false,
+    "permissoes": ["atendimentos.ver", "relatorios.ver", "relatorios.editar", "mapa_demandas.ver"]
 }
 ```
+
+> Mesmos campos de `usuario` no login, incluindo `permissoes`.
 
 ---
 
@@ -622,7 +653,7 @@ Remove um anexo específico.
 | HTTP | Situação                                      |
 |------|-----------------------------------------------|
 | 401  | Token ausente ou inválido                     |
-| 403  | Técnico tentando acessar dado de outro técnico |
+| 403  | Perfil sem a permissão da tela (ver "Permissões por tela") ou técnico tentando acessar dado de outro técnico |
 | 404  | Recurso não encontrado                        |
 | 422  | Dados inválidos (ver campo `errors`)          |
 | 500  | Erro interno do servidor                      |

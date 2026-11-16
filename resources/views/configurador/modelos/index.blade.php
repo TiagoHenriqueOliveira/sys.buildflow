@@ -11,6 +11,7 @@
                 <h2 class="sbadmin-page-heading">Configurador | Modelos</h2>
                 <p class="sbadmin-page-subheading">Agrupe perguntas em modelos reutilizáveis por setor (Comercial ou Assistência).</p>
             </div>
+            @can('configurador.editar')
             <button
                 type="button"
                 class="btn btn-primary sbadmin-btn-primary"
@@ -18,6 +19,7 @@
             >
                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar
             </button>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -64,6 +66,7 @@
             @foreach($modelos as $m)
                 <tr class="{{ $m->cfg_mod_ativo ? '' : 'table-danger' }}">
                     <td class="text-center">
+                        @can('configurador.editar')
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -77,6 +80,7 @@
                         >
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
+                        @endcan
                     </td>
                     <td>{{ $m->cfg_mod_nome }}</td>
                     <td>{{ $m->cfg_mod_setor->label() }}</td>

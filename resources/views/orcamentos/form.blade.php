@@ -127,8 +127,7 @@
                                     name="orc_prazo_envio"
                                     label="Prazo de envio"
                                     :value="optional($orcamento->orc_prazo_envio)->format('Y-m-d')"
-                                    help="Calculado pelo nível a partir da data de inclusão: 1 dia útil (Simples), 5 (Médio) ou 10 (Complexo), de segunda a sexta."
-                                    readonly
+                                    help="Sugerido pelo nível a partir da data de inclusão: 1 dia útil (Simples), 5 (Médio) ou 10 (Complexo), de segunda a sexta. Pode ser alterado."
                                 />
                             </div>
                         </div>
@@ -327,9 +326,11 @@
             };
 
             // CRM02 - mesma regra de NivelOrcamento::calcularPrazo() (manter
-            // as duas iguais; o servidor recalcula ao salvar e e quem vale):
-            // dias uteis de segunda a sexta, sem descontar feriados, a partir
-            // da data de inclusao - num cadastro novo, a data de hoje.
+            // as duas iguais): dias uteis de segunda a sexta, sem descontar
+            // feriados, a partir da data de inclusao - num cadastro novo, a
+            // data de hoje. Desde 2026-11-16 o prazo e editavel: a sugestao
+            // so e aplicada ao trocar o nivel (ou ao abrir com o campo vazio),
+            // nunca por cima de um prazo ja informado ao abrir a tela.
             const DIAS_UTEIS_POR_NIVEL = @json(collect(App\Enums\NivelOrcamento::cases())->mapWithKeys(fn ($n) => [$n->value => $n->diasUteisPrazo()]));
             const DATA_INCLUSAO_ORCAMENTO = @json(($orcamento->orc_criado_em ?? now())->format('Y-m-d'));
 
@@ -339,7 +340,6 @@
                 const diasUteis = DIAS_UTEIS_POR_NIVEL[nivel];
 
                 if (nivel === '' || diasUteis === undefined) {
-                    campo.value = '';
                     return;
                 }
 
@@ -359,7 +359,9 @@
             document.addEventListener('DOMContentLoaded', function () {
                 window.setupAutocomplete('#orc_cliente_nome', '#orc_cliente_id', '{{ route('clientes.autocomplete') }}');
                 window.atualizarTipoOrcamentoSelecionado(document.getElementById('orc_tipo_orcamento_id').value);
-                window.recalcularPrazoOrcamento();
+                if (!document.getElementById('orc_prazo_envio').value) {
+                    window.recalcularPrazoOrcamento();
+                }
             });
         </script>
     @endpush

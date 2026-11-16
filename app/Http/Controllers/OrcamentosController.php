@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\PersisteFiltros;
-use App\Enums\NivelAcesso;
 use App\Http\Requests\OrcamentoComentarioRequest;
 use App\Http\Requests\OrcamentoRequest;
 use App\Models\CrmTipoOrcamento;
@@ -86,8 +85,8 @@ class OrcamentosController extends Controller
 
     private function vendedoresComerciais()
     {
-        return Usuario::where('user_nivel_acesso', NivelAcesso::Comercial->value)
-            ->where('user_ativo', 1)
+        // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16).
+        return Usuario::vendedores()
             ->orderBy('user_nome')
             ->get();
     }
@@ -100,8 +99,10 @@ class OrcamentosController extends Controller
      */
     private function usuariosParaAlerta()
     {
-        return Usuario::whereIn('user_nivel_acesso', [NivelAcesso::Comercial->value, NivelAcesso::Vendedor->value])
-            ->where('user_ativo', 1)
+        // 2026-11-16: quem consegue abrir o orçamento do link da
+        // notificação (permissão orcamentos.ver) — antes Comercial+Vendedor
+        // fixo, e o Vendedor recebia um aviso que dava 403 ao abrir.
+        return Usuario::comPermissao('orcamentos.ver')
             ->orderBy('user_nome')
             ->get();
     }
