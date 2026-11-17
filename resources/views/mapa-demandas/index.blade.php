@@ -62,7 +62,7 @@
 
     <div class="sbadmin-card">
         <div class="sbadmin-card-body">
-            @if($atendimentos->isEmpty())
+            @if($pontos === [])
                 <p class="text-body-secondary mb-0">Nenhum atendimento com cliente geolocalizado para os filtros selecionados.</p>
             @else
                 <div id="mapaDemandas" style="height: 600px;"></div>
@@ -70,21 +70,30 @@
         </div>
     </div>
 
-    @if($atendimentos->isNotEmpty())
+    {{-- Pedido do cliente (2026-11-17): um marcador por LOCAL, não por
+         atendimento — atendimentos do mesmo cliente caíam na mesma
+         coordenada e a bolinha de cima escondia a de baixo. O número dentro
+         do marcador indica quantos atendimentos há ali; a cor é a do mais
+         pendente; o popup lista todos (ver App\Support\PontosMapaDemandas). --}}
+    <style>
+        .mapa-ponto {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 2px solid #fff; box-shadow: 0 0 3px rgba(0, 0, 0, .5);
+            color: #fff; font-size: 12px; font-weight: 700; line-height: 1;
+        }
+        .mapa-ponto-popup { max-height: 280px; overflow-y: auto; min-width: 220px; }
+        .mapa-ponto-popup .item + .item { border-top: 1px solid #dee2e6; margin-top: 6px; padding-top: 6px; }
+        .mapa-ponto-popup .bolinha { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+    </style>
+
+    @if($pontos !== [])
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 var cores = ['#6c757d', '#ffc107', '#0d6efd', '#198754'];
-                var atendimentos = {!! $atendimentos->map(fn ($a) => [
-                    'cliente' => optional($a->cliente)->cli_nome,
-                    'lat' => optional($a->cliente)->cli_latitude,
-                    'lng' => optional($a->cliente)->cli_longitude,
-                    'natureza' => optional($a->natureza)->nat_aten_descricao,
-                    'tecnico' => optional($a->usuario)->user_nome,
-                    'proposta' => $a->aten_nr_proposta,
-                    'status' => $a->aten_status,
-                    'statusLabel' => \App\Enums\AtendimentoStatus::from($a->aten_status)->label(),
-                ])->values()->toJson() !!};
+                var pontos = {{ \Illuminate\Support\Js::from($pontos) }};
+                var urlAtendimento = @json($podeAbrirAtendimento ? route('atendimentos.edit', ['id' => '__ID__']) : null);
 
                 function escapeHtml(valor) {
                     return String(valor)
@@ -102,22 +111,42 @@
                 }).addTo(mapa);
 
                 var bounds = [];
-                atendimentos.forEach(function (a) {
-                    var popup = '<strong>' + escapeHtml(a.cliente || 'Sem cliente') + '</strong>';
-                    if (a.proposta) { popup += '<br>Proposta/OSV: ' + escapeHtml(a.proposta); }
-                    if (a.natureza) { popup += '<br>Natureza: ' + escapeHtml(a.natureza); }
-                    if (a.tecnico) { popup += '<br>Técnico: ' + escapeHtml(a.tecnico); }
-                    popup += '<br>Status: ' + escapeHtml(a.statusLabel);
+                pontos.forEach(function (p) {
+                    var popup = '<div class="mapa-ponto-popup">'
+                        + '<strong>' + escapeHtml(p.clientes.join(' / ') || 'Sem cliente') + '</strong>';
+                    if (p.total > 1) { popup += '<br><small>' + p.total + ' atendimentos neste local</small>'; }
 
-                    var marker = L.circleMarker([a.lat, a.lng], {
-                        radius: 9,
-                        color: '#fff',
-                        weight: 2,
-                        fillColor: cores[a.status] || '#6c757d',
-                        fillOpacity: 0.9,
+                    p.atendimentos.forEach(function (a) {
+                        popup += '<div class="item">'
+                            + '<span class="bolinha" style="background:' + (cores[a.status] || '#6c757d') + '"></span>'
+                            + '<strong>' + escapeHtml(a.status_label) + '</strong>';
+                        if (p.clientes.length > 1) { popup += '<br>Cliente: ' + escapeHtml(a.cliente); }
+                        if (a.tecnico) { popup += '<br>Técnico: ' + escapeHtml(a.tecnico); }
+                        if (a.natureza) { popup += '<br>Natureza: ' + escapeHtml(a.natureza); }
+                        if (a.proposta) { popup += '<br>Proposta/OSV: ' + escapeHtml(a.proposta); }
+                        if (urlAtendimento) {
+                            popup += '<br><a href="' + urlAtendimento.replace('__ID__', encodeURIComponent(a.id)) + '">Abrir atendimento</a>';
+                        }
+                        popup += '</div>';
+                    });
+                    popup += '</div>';
+
+                    var tamanho = p.total > 1 ? 26 : 18;
+                    var icone = L.divIcon({
+                        className: '',
+                        html: '<span class="mapa-ponto" style="background:' + (cores[p.status] || '#6c757d') + '">'
+                            + (p.total > 1 ? p.total : '') + '</span>',
+                        iconSize: [tamanho, tamanho],
+                        iconAnchor: [tamanho / 2, tamanho / 2],
+                        popupAnchor: [0, -tamanho / 2],
+                    });
+
+                    L.marker([p.latitude, p.longitude], {
+                        icon: icone,
+                        title: p.clientes.join(' / ') + (p.total > 1 ? ' (' + p.total + ' atendimentos)' : ''),
                     }).addTo(mapa).bindPopup(popup);
 
-                    bounds.push([a.lat, a.lng]);
+                    bounds.push([p.latitude, p.longitude]);
                 });
 
                 if (bounds.length === 1) {

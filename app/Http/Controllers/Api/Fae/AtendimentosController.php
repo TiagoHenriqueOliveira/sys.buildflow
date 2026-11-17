@@ -107,6 +107,11 @@ class AtendimentosController extends Controller
      * exclusivo de Comercial/Administrador no web, entao tambem nao aqui).
      *
      * GET /api/fae/v1/mapa-demandas
+     *
+     * `data`: um item por atendimento (formato original, mantido para o
+     * app atual). `pontos` (2026-11-17): os mesmos atendimentos agrupados
+     * por local — atendimentos do mesmo cliente caem na mesma coordenada e
+     * se sobrepõem no mapa; o app deve desenhar um marcador por ponto.
      */
     public function mapaDemandas(Request $request): JsonResponse
     {
@@ -137,6 +142,7 @@ class AtendimentosController extends Controller
                     'link_mapa' => optional($a->cliente)->cli_link_mapa,
                 ],
             ])->values(),
+            'pontos' => \App\Support\PontosMapaDemandas::agrupar($atendimentos),
         ]);
     }
 

@@ -7,6 +7,7 @@ use App\Enums\AtendimentoStatus;
 use App\Models\Atendimento;
 use App\Models\NaturezaAtendimento;
 use App\Models\Usuario;
+use App\Support\PontosMapaDemandas;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -46,7 +47,8 @@ class MapaDemandasController extends Controller
             ->get();
 
         return view('mapa-demandas.index', [
-            'atendimentos' => $atendimentos,
+            'pontos' => PontosMapaDemandas::agrupar($atendimentos),
+            'podeAbrirAtendimento' => $usuario->temPermissao('atendimentos.editar'),
             'statusList' => AtendimentoStatus::cases(),
             'naturezas' => NaturezaAtendimento::where('nat_aten_ativo', 1)->orderBy('nat_aten_descricao')->get(),
             'tecnicos' => Usuario::where('user_ativo', 1)->orderBy('user_nome')->get(),

@@ -187,6 +187,35 @@ Detalhe completo de um atendimento, incluindo equipamentos e observações.
 
 ---
 
+### GET /mapa-demandas
+
+BF08 — atendimentos cujo cliente tem localização (derivada do link do Google Maps do cadastro). Exige `mapa_demandas.ver`; técnico/comercial recebem só os próprios atendimentos.
+
+- `data` — um item por atendimento (formato original, mantido por compatibilidade).
+- `pontos` (desde 17/11/2026) — os mesmos atendimentos **agrupados por local**. Atendimentos do mesmo cliente têm a mesma coordenada e se sobrepõem no mapa: desenhe **um marcador por ponto**, mostrando `total` quando maior que 1, com a cor de `status` (o atendimento mais pendente do ponto: Paralisada › Não iniciada › Em andamento › Concluída) e listando `atendimentos` ao tocar.
+
+**Resposta 200 (trecho de `pontos`):**
+```json
+{
+  "pontos": [
+    {
+      "latitude": -27.6383921,
+      "longitude": -48.7651385,
+      "clientes": ["Frigorífico Broering"],
+      "total": 2,
+      "status": 0,
+      "status_label": "Não iniciada",
+      "atendimentos": [
+        { "id": 12, "cliente": "Frigorífico Broering", "status": 0, "status_label": "Não iniciada", "natureza": "Start-up", "tecnico": "João Silva", "proposta": "2026/045" },
+        { "id": 9, "cliente": "Frigorífico Broering", "status": 3, "status_label": "Concluída", "natureza": "Manutenção", "tecnico": "Pedro Lima", "proposta": "2026/031" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
 ## Relatórios
 
 ### GET /atendimentos/{aten_id}/relatorios
