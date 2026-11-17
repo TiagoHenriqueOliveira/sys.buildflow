@@ -55,8 +55,6 @@
             contatos: {{ \Illuminate\Support\Js::from($contatosIniciais) }},
             equipamentos: {{ \Illuminate\Support\Js::from($equipamentosIniciais) }},
             localizacoes: {{ \Illuminate\Support\Js::from($localizacoesIniciais) }},
-            lat: {{ \Illuminate\Support\Js::from(old('cli_latitude', $cliente->cli_latitude)) }},
-            lng: {{ \Illuminate\Support\Js::from(old('cli_longitude', $cliente->cli_longitude)) }},
             linkMapa: {{ \Illuminate\Support\Js::from(old('cli_link_mapa', $cliente->cli_link_mapa)) }},
             addContato() { this.contatos.push({ nome: '', cargo: '', telefone: '', email: '', tipo: 0 }); },
             removerContato(i) { this.contatos.splice(i, 1); },
@@ -335,11 +333,13 @@
                          (grava lat/lng nos bastidores, ainda usados pelo mapa de
                          relações — CRM07), ou (b) colar o link de um lugar já
                          pesquisado no Google Maps de verdade — mesmo padrão do
-                         Roteiro de Viagem. --}}
+                         Roteiro de Viagem.
+                         Desde 2026-11-17 o link é a única fonte: as coordenadas
+                         usadas pelos mapas (Demandas/Relações) são extraídas dele
+                         ao salvar (App\Support\CoordenadasMapa), e o "Usar minha
+                         localização" preenche o próprio link. --}}
                     <div x-show="tab === 'geo'" x-cloak>
                         <h6 class="fw-bold">Localização principal</h6>
-                        <input type="hidden" id="cli_latitude" name="cli_latitude" x-model.number="lat">
-                        <input type="hidden" id="cli_longitude" name="cli_longitude" x-model.number="lng">
 
                         <div class="row">
                             <div class="col-md-11">
@@ -367,6 +367,14 @@
                                 </a>
                             </div>
                         </div>
+
+                        @if($editando && filled($cliente->cli_link_mapa) && ! $cliente->temGeolocalizacao())
+                            <p class="small text-warning mb-2">
+                                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                Não foi possível identificar a posição neste link, então o cliente não aparece nos mapas.
+                                Abra o lugar no Google Maps e copie o endereço completo da barra do navegador, ou use "Usar minha localização".
+                            </p>
+                        @endif
 
                         @if($podeGeolocalizar)
                             <div class="d-flex gap-2 flex-wrap">
@@ -527,9 +535,10 @@
                     navigator.geolocation.getCurrentPosition(
                         function (pos) {
                             const root = document.getElementById('cliente-form-root');
-                            Alpine.$data(root).lat = Number(pos.coords.latitude.toFixed(7));
-                            Alpine.$data(root).lng = Number(pos.coords.longitude.toFixed(7));
-                            feedback.textContent = 'Localização atribuída com sucesso.';
+                            const lat = Number(pos.coords.latitude.toFixed(7));
+                            const lng = Number(pos.coords.longitude.toFixed(7));
+                            Alpine.$data(root).linkMapa = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                            feedback.textContent = 'Localização atribuída ao link do Google Maps. Salve o cliente para gravar.';
                         },
                         function (erro) {
                             // Mensagens especificas por codigo (PERMISSION_DENIED=1,

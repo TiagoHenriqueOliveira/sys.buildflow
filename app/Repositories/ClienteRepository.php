@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Cliente;
 use App\Repositories\Contracts\CrudRepositoryInterface;
+use App\Support\CoordenadasMapa;
 use Illuminate\Support\Facades\DB;
 
 class ClienteRepository implements CrudRepositoryInterface
@@ -69,10 +70,41 @@ class ClienteRepository implements CrudRepositoryInterface
             'cli_dias_alerta_recontato' => $data['cli_dias_alerta_recontato'] ?? null,
             'cli_telefone' => $data['cli_telefone'] ?? null,
             'cli_email' => $data['cli_email'] ?? null,
-            'cli_latitude' => $data['cli_latitude'] ?? null,
-            'cli_longitude' => $data['cli_longitude'] ?? null,
-            'cli_link_mapa' => $data['cli_link_mapa'] ?? null,
+            ...array_combine(
+                ['cli_link_mapa', 'cli_latitude', 'cli_longitude'],
+                $this->localizacao($data['cli_link_mapa'] ?? null, $data['cli_latitude'] ?? null, $data['cli_longitude'] ?? null),
+            ),
         ];
+    }
+
+    /**
+     * Desde 2026-11-17 o link do Google Maps é a fonte da localização (a tela
+     * não tem campo de latitude/longitude desde 2026-09-14): as coordenadas
+     * que os mapas usam são derivadas do link a cada save — antes ficavam
+     * vazias para quem só colava o link, e o cliente sumia do Mapa de
+     * Demandas/Relações. Sem link mas com coordenadas (ex.: "usar minha
+     * localização" no app), gera o link a partir delas. Link sem coordenadas
+     * reconhecíveis mantém as coordenadas enviadas, se houver.
+     *
+     * @return array{0: ?string, 1: ?float, 2: ?float} [link, lat, lng]
+     */
+    private function localizacao(?string $link, mixed $lat, mixed $lng): array
+    {
+        $link = filled($link) ? trim($link) : null;
+        $lat = is_numeric($lat) ? round((float) $lat, 7) : null;
+        $lng = is_numeric($lng) ? round((float) $lng, 7) : null;
+
+        if ($link !== null) {
+            $c = CoordenadasMapa::doLink($link);
+
+            return $c !== null ? [$link, $c['lat'], $c['lng']] : [$link, $lat, $lng];
+        }
+
+        if ($lat !== null && $lng !== null) {
+            return [CoordenadasMapa::linkDasCoordenadas($lat, $lng), $lat, $lng];
+        }
+
+        return [null, null, null];
     }
 
     /**
@@ -134,13 +166,17 @@ class ClienteRepository implements CrudRepositoryInterface
 
         $linhas = collect($localizacoes)
             ->filter(fn ($l) => filled($l['descricao'] ?? null))
-            ->map(fn ($l) => [
-                'cli_loc_cliente_id' => $cliente->cli_id,
-                'cli_loc_descricao' => $l['descricao'],
-                'cli_loc_latitude' => $l['latitude'] ?? null,
-                'cli_loc_longitude' => $l['longitude'] ?? null,
-                'cli_loc_link_mapa' => $l['link_mapa'] ?? null,
-            ])
+            ->map(function ($l) use ($cliente) {
+                [$link, $lat, $lng] = $this->localizacao($l['link_mapa'] ?? null, $l['latitude'] ?? null, $l['longitude'] ?? null);
+
+                return [
+                    'cli_loc_cliente_id' => $cliente->cli_id,
+                    'cli_loc_descricao' => $l['descricao'],
+                    'cli_loc_latitude' => $lat,
+                    'cli_loc_longitude' => $lng,
+                    'cli_loc_link_mapa' => $link,
+                ];
+            })
             ->all();
 
         if ($linhas !== []) {
