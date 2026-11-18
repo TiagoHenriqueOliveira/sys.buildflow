@@ -2,6 +2,55 @@
 
 // Estilos customizados do projeto FAÉ Bioenergia abaixo.
 
+// Tela de login (2026-11-18, pedido do cliente): mesmo padrão da tela de
+// login do promaq-sys — fundo em degradê do azul-escuro do tema para o azul
+// de ação, card centralizado com sombra — e a logo da FAÉ com texto branco
+// (img/logo-fae-branca.png) direto no card.
+.fae-auth-body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, $sbadmin-bg-dark, $sbadmin-color-secondary);
+}
+
+.fae-auth-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--sbadmin-surface);
+    border: 1px solid var(--sbadmin-border);
+    border-radius: $sbadmin-radius-lg;
+    padding: $sbadmin-space-6 $sbadmin-space-5;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+}
+
+.fae-auth-header {
+    text-align: center;
+    margin-bottom: $sbadmin-space-5;
+}
+
+.fae-auth-logo {
+    display: block;
+    width: 170px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto $sbadmin-space-3;
+}
+
+.fae-auth-title {
+    font-size: 1.15rem;
+    font-weight: $sbadmin-font-weight-semibold;
+    margin: 0;
+    color: var(--sbadmin-text);
+}
+
+.fae-auth-subtitle {
+    font-size: 0.85rem;
+    margin: $sbadmin-space-1 0 0;
+    color: var(--sbadmin-text-muted);
+}
+
 // Lista de sugestões do autocomplete vanilla (ver resources/js/autocomplete.js)
 // — substitui o dropdown que o plugin jquery-ui autocomplete desenhava
 // sozinho. Reaproveita os tokens de tema do pacote sbadmin (funciona nos

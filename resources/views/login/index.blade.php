@@ -17,66 +17,18 @@
 
         @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
-        <style>
-            body.sbadmin-login-body {
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                background-color: var(--sbadmin-bg);
-            }
-
-            .sbadmin-login-card {
-                max-width: 400px;
-                margin: 0 auto;
-                padding: 2rem;
-                border-radius: var(--sbadmin-radius-lg, 0.75rem);
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-                background: var(--sbadmin-surface);
-                border: 1px solid var(--sbadmin-border);
-            }
-
-            .sbadmin-login-logo {
-                text-align: center;
-                margin-bottom: 2rem;
-            }
-
-            .sbadmin-login-brand-h1 {
-                font-size: 1.75rem;
-                line-height: 1.2;
-                margin: 0 0 0.25rem;
-                font-weight: 700;
-                letter-spacing: 0.04em;
-                color: var(--sbadmin-text);
-                text-align: center;
-            }
-
-            .sbadmin-login-brand-h2 {
-                font-size: 1.15rem;
-                line-height: 1.25;
-                margin: 0 0 0.5rem;
-                font-weight: 600;
-                color: var(--sbadmin-text);
-                text-align: center;
-            }
-
-            .sbadmin-login-brand-h3 {
-                font-size: 0.9rem;
-                line-height: 1.35;
-                margin: 0 0 1rem;
-                font-weight: 400;
-                color: var(--sbadmin-text-muted);
-                text-align: center;
-            }
-        </style>
     </head>
 
-    <body class="sbadmin-login-body">
-        <div class="container">
-            <div class="sbadmin-login-card">
-                <div class="sbadmin-login-logo">
-                    <h1 class="sbadmin-login-brand-h1">BUILDFLOW</h1>
-                    <h2 class="sbadmin-login-brand-h2">FAÉ Bioenergia</h2>
-                    <h3 class="sbadmin-login-brand-h3">Gestão Comercial, Start-up e Assistência Técnica</h3>
+    {{-- Visual aprovado pelo cliente em 2026-11-18 (opção B): padrão da tela
+         de login do promaq-sys + logo da FAÉ com texto branco. Estilos em
+         resources/sass/app.scss (.fae-auth-*). O nome "FAÉ Bioenergia" saiu
+         do texto porque já está na logo. --}}
+    <body class="fae-auth-body">
+            <main class="fae-auth-card">
+                <div class="fae-auth-header">
+                    <img src="{{ asset('img/logo-fae-branca.png') }}" alt="FAÉ Bioenergia" class="fae-auth-logo" width="170" height="204">
+                    <h1 class="fae-auth-title">Buildflow</h1>
+                    <p class="fae-auth-subtitle">Gestão Comercial, Start-up e Assistência Técnica</p>
                 </div>
 
                 @if($errors->any())
@@ -121,8 +73,7 @@
                             aria-hidden="true"></span>
                     </button>
                 </form>
-            </div>
-        </div>
+            </main>
 
         <script>
             document.getElementById('loginForm').addEventListener('submit', function () {

@@ -13,7 +13,10 @@ return [
         // packages/sbadmin/resources/views/components/sidebar.blade.php,
         // que já tinha o branch @if(config('sbadmin.brand.logo')) pronto
         // pra isso, só faltava o arquivo.
-        'logo' => '/img/logo-fae.png',
+        // 2026-11-18: versão de texto branco (escolha do cliente), legível
+        // no fundo escuro da sidebar. A logo-fae.png (texto azul) continua
+        // sendo a do PDF do relatório, que tem fundo branco.
+        'logo' => '/img/logo-fae-branca-sm.png',
     ],
 
     /*
