@@ -1,5 +1,7 @@
 {{-- Perfis de Acesso (2026-11-16). Matriz tela x perfil com "Ver" e
-     "Editar". Marcar Editar marca Ver; desmarcar Ver desmarca Editar (o
+     "Incluir/Editar" (rótulo trocado de "Editar" em 2026-11-18, pedido do
+     cliente — a permissão .editar sempre cobriu incluir, alterar e
+     excluir). Marcar Editar marca Ver; desmarcar Ver desmarca Editar (o
      backend repete a regra em Permissoes::normalizar). Checkboxes nativos
      com name="permissoes[<nivel>][]" — o Alpine só sincroniza o par. --}}
 @php
@@ -8,7 +10,7 @@
 <x-layout title="Perfis de Acesso">
     <div class="sbadmin-page-header">
         <h2 class="sbadmin-page-heading">Perfis de Acesso</h2>
-        <p class="sbadmin-page-subheading">Defina o que cada perfil pode visualizar e cadastrar/editar no sistema (web e app).</p>
+        <p class="sbadmin-page-subheading">Defina o que cada perfil pode visualizar e incluir/editar no sistema (web e app).</p>
     </div>
 
     @if(session('success'))
@@ -17,7 +19,7 @@
 
     <x-sbadmin::alert type="info">
         O perfil <strong>Administrador</strong> tem acesso total automático, inclusive a funções novas — não precisa ser configurado.
-        "Editar" inclui "Visualizar". Telas não marcadas somem do menu do perfil.
+        "Incluir/Editar" libera incluir, alterar e excluir registros da tela, e já inclui "Visualizar". Telas não marcadas somem do menu do perfil.
     </x-sbadmin::alert>
 
     <form
@@ -49,7 +51,7 @@
                         <tr>
                             @foreach($perfis as $perfil)
                                 <th class="text-center small fw-normal border-start">Visualizar</th>
-                                <th class="text-center small fw-normal">Editar</th>
+                                <th class="text-center small fw-normal">Incluir/Editar</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -89,7 +91,7 @@
                                                     value="{{ $tela }}.editar"
                                                     data-acao="editar"
                                                     data-par="{{ $idVer }}"
-                                                    aria-label="{{ $perfil->label() }}: cadastrar/editar {{ $rotulo }}"
+                                                    aria-label="{{ $perfil->label() }}: incluir/editar {{ $rotulo }}"
                                                     @checked($marcado($perfil->value, "{$tela}.editar"))
                                                 >
                                             @else
