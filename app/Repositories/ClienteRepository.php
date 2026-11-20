@@ -16,6 +16,7 @@ class ClienteRepository implements CrudRepositoryInterface
     {
         return Cliente::create([
             'cli_nome' => $data['cli_nome'],
+            'cli_unidade' => $data['cli_unidade'] ?? '',
             'cli_cnpj' => $data['cli_cnpj'],
             'cli_cidade' => $data['cli_cidade'],
             'cli_uf' => strtoupper($data['cli_uf']),
@@ -31,6 +32,7 @@ class ClienteRepository implements CrudRepositoryInterface
 
         $cliente->update([
             'cli_nome' => $data['cli_nome'],
+            'cli_unidade' => $data['cli_unidade'] ?? '',
             'cli_cnpj' => $data['cli_cnpj'],
             'cli_cidade' => $data['cli_cidade'],
             'cli_uf' => strtoupper($data['cli_uf']),

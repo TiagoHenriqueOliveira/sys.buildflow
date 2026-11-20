@@ -288,7 +288,9 @@
             <td class="field-value field-value-right" style="width: 38%;"><span class="field-label-inline-right">Período:</span>{{ $relatorio->atendimento->aten_dt_inicio?->format('d/m/Y') ?? '-' }}&nbsp;–&nbsp;{{ $relatorio->atendimento->aten_dt_fim?->format('d/m/Y') ?? '-' }}</td>
         </tr>
         <tr>
-            <td class="field-value" style="width: 62%;"><span class="field-label-inline">Cliente:</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}</td>
+            {{-- Unidade ao lado do nome, com o rótulo no mesmo estilo dos demais
+                 (sem a largura fixa do rótulo da coluna) — só quando preenchida. --}}
+            <td class="field-value" style="width: 62%;"><span class="field-label-inline">Cliente:</span>{{ $relatorio->atendimento->cliente->cli_nome ?? '-' }}@if(filled($relatorio->atendimento->cliente?->cli_unidade)) - <span class="field-label-inline-right">Unidade:</span>{{ $relatorio->atendimento->cliente->cli_unidade }}@endif</td>
             <td class="field-value field-value-right" style="width: 38%;"><span class="field-label-inline-right">Nº Proposta:</span>{{ $relatorio->atendimento->aten_nr_proposta ?? '-' }}</td>
         </tr>
         <tr>
@@ -555,7 +557,7 @@
                 {{-- Nome do cliente cadastrado (sempre) → nome e CPF de quem
                      efetivamente assinou (só depois de assinado) → data/hora
                      por último, abaixo do CPF. --}}
-                <div class="assinatura-nome">{{ optional($relatorio->atendimento->cliente)->cli_nome }}</div>
+                <div class="assinatura-nome">{{ optional($relatorio->atendimento->cliente)->nome_exibicao }}</div>
                 @if($assCli && $assCli->aten_rel_ass_nome)
                     <div class="assinatura-assinante">{{ $assCli->aten_rel_ass_nome }}</div>
                 @endif

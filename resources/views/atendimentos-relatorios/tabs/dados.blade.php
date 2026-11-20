@@ -44,7 +44,7 @@
             <div class="col-md-4">
                 <label class="font-weight-bold">Cliente</label>
                 <span class="readonly-field form-control-plaintext">
-                    {{ $atendimentoRelatorio->atendimento->cliente->cli_nome }}
+                    {{ $atendimentoRelatorio->atendimento->cliente->nome_exibicao }}
                 </span>
             </div>
 

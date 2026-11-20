@@ -23,10 +23,11 @@ class ClientesController extends Controller
                 $this->dataTable->process(
                     $request,
                     Cliente::query(),
-                    searchable: ['cli_nome', 'cli_cnpj', 'cli_cidade', 'cli_email'],
+                    searchable: ['cli_nome', 'cli_unidade', 'cli_cnpj', 'cli_cidade', 'cli_email'],
                     orderable:  [
                         'acoes'       => null,
                         'cli_nome'    => 'cli_nome',
+                        'cli_unidade' => 'cli_unidade',
                         'cli_cnpj'    => 'cli_cnpj',
                         'cli_cidade'  => 'cli_cidade',
                         'cli_uf'      => 'cli_uf',
@@ -37,6 +38,7 @@ class ClientesController extends Controller
                     mapper: fn($c) => [
                         'acoes'       => view('clientes.partials.acoes', compact('c'))->render(),
                         'cli_nome'    => e($c->cli_nome),
+                        'cli_unidade' => e($c->cli_unidade),
                         'cli_cnpj'   => e($c->cli_cnpj),
                         'cli_cidade'  => e($c->cli_cidade),
                         'cli_uf'      => e($c->cli_uf),
@@ -78,17 +80,22 @@ class ClientesController extends Controller
     {
         $term = $request->get('term', '');
 
+        // A unidade entra na busca e no rótulo: unidades da mesma empresa têm
+        // o mesmo nome, e sem ela não dá para saber qual escolher.
         $clientes = Cliente::where('cli_ativo', 1)
-            ->where('cli_nome', 'like', '%' . $term . '%')
+            ->where(fn ($q) => $q
+                ->where('cli_nome', 'like', '%' . $term . '%')
+                ->orWhere('cli_unidade', 'like', '%' . $term . '%'))
             ->orderBy('cli_nome')
+            ->orderBy('cli_unidade')
             ->limit(20)
             ->get();
 
         $result = $clientes->map(function ($c) {
             return [
                 'id'    => $c->cli_id,
-                'label' => $c->cli_nome,
-                'value' => $c->cli_nome,
+                'label' => $c->nome_exibicao,
+                'value' => $c->nome_exibicao,
             ];
         })->values()->all();
 

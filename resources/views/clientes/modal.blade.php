@@ -32,6 +32,23 @@
 
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label font-weight-bold">
+                            Unidade:
+                        </label>
+                        <div class="col-sm-10">
+                            <input type="text"
+                                class="form-control"
+                                id="cli_unidade"
+                                name="cli_unidade"
+                                maxlength="100"
+                                placeholder="Opcional — ex.: Itaquiraí">
+                            <small class="form-text text-muted">
+                                Preencha quando a mesma empresa (mesmo CNPJ) tiver mais de uma unidade cadastrada.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label font-weight-bold">
                             CNPJ:
                         </label>
                         <div class="col-sm-4">

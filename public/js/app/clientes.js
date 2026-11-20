@@ -8,6 +8,7 @@ $(document).ready(function () {
         abrirModalCliente({
             cli_id: "",
             cli_nome: "",
+            cli_unidade: "",
             cli_cnpj: "",
             cli_cidade: "",
             cli_uf: "",
@@ -57,6 +58,7 @@ function configDataTableClientes() {
         columns: [
             { data: "acoes" },
             { data: "cli_nome" },
+            { data: "cli_unidade" },
             {
                 data: "cli_cnpj",
                 render: function (data) { return formatCnpj(data); }
@@ -72,13 +74,14 @@ function configDataTableClientes() {
         ],
         columnDefs: [
             { width: "4%", targets: 0 },
-            { width: "30%", targets: 1 },
+            { width: "24%", targets: 1 },
             { width: "12%", targets: 2 },
-            { width: "15%", targets: 3 },
-            { width: "5%", targets: 4 },
-            { width: "10%", targets: 5 },
-            { width: "18%", targets: 6 },
-            { width: "6%", targets: 7 }
+            { width: "12%", targets: 3 },
+            { width: "12%", targets: 4 },
+            { width: "4%", targets: 5 },
+            { width: "10%", targets: 6 },
+            { width: "16%", targets: 7 },
+            { width: "6%", targets: 8 }
         ],
         createdRow: function (row) {
             $("td", row).eq(0).addClass("text-center");
@@ -96,6 +99,7 @@ $(document).on("click", ".btn-modal-cliente", function () {
     abrirModalCliente({
         cli_id: $(this).data("id"),
         cli_nome: $(this).data("nome"),
+        cli_unidade: $(this).data("unidade"),
         cli_cnpj: $(this).data("cnpj"),
         cli_cidade: $(this).data("cidade"),
         cli_uf: $(this).data("uf"),
@@ -121,6 +125,7 @@ function abrirModalCliente(data) {
 
     $("#cli_id").val(data.cli_id || "");
     $("#cli_nome").val(data.cli_nome || "");
+    $("#cli_unidade").val(data.cli_unidade || "");
 
     $("#cli_cnpj").val(formatCnpj(data.cli_cnpj || ""));
     $("#cli_cidade").val(data.cli_cidade || "");

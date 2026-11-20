@@ -17,6 +17,7 @@ use App\Http\Requests\Mcl\UpdateDescricaoItemRequest;
 use App\Http\Requests\Mcl\UpsertDiaRequest;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
+use App\Models\Cliente;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Ocorrencia;
 use App\Models\AtendimentoRelatorioFoto;
@@ -76,6 +77,7 @@ class AtendimentosRelatoriosController extends Controller
                     $this->repo->query($filters),
                     searchable: [
                         'clientes.cli_nome',
+                        'clientes.cli_unidade',
                         'naturezas_atendimentos.nat_aten_descricao',
                         'usuarios.user_nome',
                         'atendimentos.aten_nr_proposta',
@@ -96,7 +98,7 @@ class AtendimentosRelatoriosController extends Controller
                     mapper: fn($r) => [
                         'acoes'       => view('atendimentos-relatorios.partials.acoes', ['relatorio' => $r])->render(),
                         'data'        => optional($r->aten_rel_data)->format('d/m/Y'),
-                        'cliente'     => e($r->atendimento?->cliente?->cli_nome ?? '-'),
+                        'cliente'     => e($r->atendimento?->cliente?->nome_exibicao ?? '-'),
                         'nr_proposta' => e($r->atendimento?->aten_nr_proposta ?? ''),
                         'natureza'    => $r->atendimento?->natureza?->nat_aten_descricao ?? '-',
                         'tecnico'     => e($r->atendimento?->usuario?->user_nome ?? '-'),
@@ -1007,9 +1009,12 @@ class AtendimentosRelatoriosController extends Controller
                 'atendimentos.aten_id',
                 'atendimentos.aten_nr_proposta',
                 'clientes.cli_nome',
+                'clientes.cli_unidade',
             ])
             ->leftJoin('clientes', 'clientes.cli_id', '=', 'atendimentos.aten_cliente_id')
-            ->where('clientes.cli_nome', 'like', "%{$term}%")
+            ->where(fn ($q) => $q
+                ->where('clientes.cli_nome', 'like', "%{$term}%")
+                ->orWhere('clientes.cli_unidade', 'like', "%{$term}%"))
             ->whereNotIn('atendimentos.aten_status', [
                 \App\Enums\AtendimentoStatus::Concluida->value,
                 \App\Enums\AtendimentoStatus::Paralisada->value,
@@ -1020,7 +1025,7 @@ class AtendimentosRelatoriosController extends Controller
             ->get();
 
         $payload = $rows->map(function ($r) {
-            $nome  = $r->cli_nome ?: 'Sem cliente';
+            $nome  = $r->cli_nome ? Cliente::formatarNome($r->cli_nome, $r->cli_unidade) : 'Sem cliente';
             $prop  = $r->aten_nr_proposta ? " - {$r->aten_nr_proposta}" : '';
             $text  = $nome . $prop;
 

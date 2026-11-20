@@ -35,7 +35,9 @@ class AtendimentosController extends Controller
 
         if ($request->filled('search')) {
             $term = $request->search;
-            $query->whereHas('cliente', fn($c) => $c->where('cli_nome', 'like', "%{$term}%"));
+            $query->whereHas('cliente', fn($c) => $c->where(fn($q) => $q
+                ->where('cli_nome', 'like', "%{$term}%")
+                ->orWhere('cli_unidade', 'like', "%{$term}%")));
         }
 
         return response()->json(['data' => $query->get()->map(fn($a) => $this->format($a))]);
@@ -102,7 +104,9 @@ class AtendimentosController extends Controller
     private function format(Atendimento $a, bool $detalhes = false): array
     {
         $naturezaDesc = optional($a->natureza)->nat_aten_descricao ?? '';
-        $clienteNome  = optional($a->cliente)->cli_nome ?? '';
+        // Nome já com "- Unidade: X": o app exibe este texto pronto (na
+        // descrição e no card), então a unidade aparece lá sem APK novo.
+        $clienteNome  = optional($a->cliente)->nome_exibicao ?? '';
         $descricao    = implode(' – ', array_filter([$naturezaDesc, $clienteNome]));
 
         $data = [
@@ -124,9 +128,10 @@ class AtendimentosController extends Controller
                 'relatorio_unico' => (int) (optional($a->natureza?->modeloRelatorio)->mod_rel_tp_data ?? 0) === 1,
             ],
             'cliente' => [
-                'id'     => optional($a->cliente)->cli_id,
-                'nome'   => optional($a->cliente)->cli_nome,
-                'cidade' => optional($a->cliente)->cli_cidade,
+                'id'      => optional($a->cliente)->cli_id,
+                'nome'    => $a->cliente ? $clienteNome : null,
+                'unidade' => optional($a->cliente)->cli_unidade ?: null,
+                'cidade'  => optional($a->cliente)->cli_cidade,
                 'uf'     => optional($a->cliente)->cli_uf,
             ],
             'tecnico' => [

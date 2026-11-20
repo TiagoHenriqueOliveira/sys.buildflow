@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\AtendimentoStatus;
 use App\Models\Atendimento;
 use App\Models\AtendimentoRelatorio;
+use App\Models\Cliente;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -107,9 +108,13 @@ class DashboardController extends Controller
         $limite = (int) $request->get('limite', 10);
         $limite = max(5, min(20, $limite));
 
-        // Excluir Concluída; contar atendimentos por cliente + status
+        // Excluir Concluída; contar atendimentos por cliente + status.
+        // Agrupa por cli_id (não pelo nome): unidades da mesma empresa têm o
+        // mesmo nome e se misturariam numa barra só.
         $rows = Atendimento::select(
-                'clientes.cli_nome as cliente',
+                'clientes.cli_id as cliente',
+                'clientes.cli_nome',
+                'clientes.cli_unidade',
                 'atendimentos.aten_status',
                 DB::raw('COUNT(*) as total')
             )
@@ -120,7 +125,7 @@ class DashboardController extends Controller
                 AtendimentoStatus::Paralisada->value,
                 AtendimentoStatus::EmAndamento->value,
             ])
-            ->groupBy('clientes.cli_nome', 'atendimentos.aten_status')
+            ->groupBy('clientes.cli_id', 'clientes.cli_nome', 'clientes.cli_unidade', 'atendimentos.aten_status')
             ->get();
 
         // Top N clientes por total de atendimentos em aberto
@@ -132,7 +137,11 @@ class DashboardController extends Controller
             ->take($limite);
 
         $clienteNames = $clienteTotals->keys()->toArray();
-        $labels       = array_map(fn($n) => mb_strimwidth($n, 0, 40, '…'), $clienteNames);
+        // Corta só o nome, para a unidade continuar visível no rótulo.
+        $labels       = array_map(function ($id) use ($byCliente) {
+            $c = $byCliente->get($id)->first();
+            return Cliente::formatarNome(mb_strimwidth($c->cli_nome, 0, 40, '…'), $c->cli_unidade);
+        }, $clienteNames);
 
         $statusConfigs = [
             AtendimentoStatus::NaoIniciada->value => ['label' => 'Não iniciada', 'color' => '#858796'],

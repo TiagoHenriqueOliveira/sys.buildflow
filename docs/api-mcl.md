@@ -114,12 +114,15 @@ Administradores veem todos os atendimentos.
       "dt_inicio": "2024-06-01",
       "dt_fim": "2024-06-30",
       "natureza": { "id": 2, "descricao": "Manutenção Preventiva" },
-      "cliente": { "id": 3, "nome": "Empresa ABC" },
+      "cliente": { "id": 3, "nome": "Empresa ABC - Unidade: Itaquiraí", "unidade": "Itaquiraí", "cidade": "Itaquiraí", "uf": "MS" },
       "tecnico": { "id": 5, "nome": "João Silva" }
     }
   ]
 }
 ```
+
+> `cliente.nome` já vem pronto para exibir: com unidade, sai `"<nome> - Unidade: <unidade>"`
+> (o mesmo texto entra em `descricao`). `cliente.unidade` é `null` quando não há unidade.
 
 ---
 
@@ -145,7 +148,7 @@ Detalhe completo de um atendimento, incluindo equipamentos e observações.
     "obs_tecnica": "Verificar rolamentos",
     "obs_manutencao": "Lubrificação mensal",
     "natureza": { "id": 2, "descricao": "Manutenção Preventiva" },
-    "cliente": { "id": 3, "nome": "Empresa ABC" },
+    "cliente": { "id": 3, "nome": "Empresa ABC - Unidade: Itaquiraí", "unidade": "Itaquiraí", "cidade": "Itaquiraí", "uf": "MS" },
     "tecnico": { "id": 5, "nome": "João Silva" },
     "equipamentos": [
       { "id": 1, "descricao": "Compressor 10HP", "observacoes": "Unidade 1" }
@@ -231,7 +234,8 @@ Retorna todos os dados de um relatório.
       "obs_manutencao": "Lubrificação mensal",
       "dt_inicio": "2024-06-01",
       "dt_fim": "2024-06-30",
-      "cliente": "Empresa ABC",
+      "cliente": "Empresa ABC - Unidade: Itaquiraí",
+      "unidade": "Itaquiraí",
       "natureza": "Manutenção Preventiva",
       "equipamentos": [
         { "id": 1, "descricao": "Compressor 10HP" }

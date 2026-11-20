@@ -235,7 +235,7 @@ class RelatoriosController extends Controller
                 'id'              => $relatorio->atendimento->aten_id,
                 'descricao'       => implode(' – ', array_filter([
                     optional($relatorio->atendimento->natureza)->nat_aten_descricao ?? '',
-                    optional($relatorio->atendimento->cliente)->cli_nome ?? '',
+                    optional($relatorio->atendimento->cliente)->nome_exibicao ?? '',
                 ])),
                 'contato'         => $relatorio->atendimento->aten_contato,
                 'responsavel'     => $relatorio->atendimento->aten_responsavel,
@@ -248,7 +248,9 @@ class RelatoriosController extends Controller
                 'obs_manutencao'  => $relatorio->atendimento->aten_obs_manutencao,
                 'dt_inicio'       => $relatorio->atendimento->aten_dt_inicio?->format('Y-m-d'),
                 'dt_fim'          => $relatorio->atendimento->aten_dt_fim?->format('Y-m-d'),
-                'cliente'         => optional($relatorio->atendimento->cliente)->cli_nome,
+                // Nome já com "- Unidade: X" (o app exibe o texto pronto).
+                'cliente'         => optional($relatorio->atendimento->cliente)->nome_exibicao,
+                'unidade'         => optional($relatorio->atendimento->cliente)->cli_unidade ?: null,
                 'cidade'          => optional($relatorio->atendimento->cliente)->cli_cidade,
                 'uf'              => optional($relatorio->atendimento->cliente)->cli_uf,
                 'natureza'        => optional($relatorio->atendimento->natureza)->nat_aten_descricao,

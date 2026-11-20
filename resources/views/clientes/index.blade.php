@@ -19,6 +19,7 @@
                         <tr>
                             <th>Ações</th>
                             <th>Nome</th>
+                            <th>Unidade</th>
                             <th>CNPJ</th>
                             <th>Cidade</th>
                             <th>UF</th>

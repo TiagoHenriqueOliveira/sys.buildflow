@@ -4,7 +4,7 @@
     data-id="{{ $a->aten_id }}"
     data-natureza-id="{{ $a->aten_natureza_id }}"
     data-cliente-id="{{ $a->aten_cliente_id }}"
-    data-cliente="{{ e(optional($a->cliente)->cli_nome) }}"
+    data-cliente="{{ e(optional($a->cliente)->nome_exibicao) }}"
     data-usuario-id="{{ $a->aten_usuario_id }}"
     data-status="{{ (int)$a->aten_status }}"
     data-nr-proposta="{{ e($a->aten_nr_proposta) }}"

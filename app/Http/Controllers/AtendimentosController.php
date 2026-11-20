@@ -52,6 +52,7 @@ class AtendimentosController extends Controller
                     $this->repository->query($filtroUsuarioId),
                     searchable: [
                         'clientes.cli_nome',
+                        'clientes.cli_unidade',
                         'usuarios.user_nome',
                         'atendimentos.aten_nr_proposta',
                         'naturezas_atendimentos.nat_aten_descricao',
@@ -72,7 +73,7 @@ class AtendimentosController extends Controller
                         'acoes'        => view('atendimentos.partials.acoes', compact('a'))->render(),
                         'natureza'     => e(optional($a->natureza)->nat_aten_descricao),
                         'usuario'      => e(optional($a->usuario)->user_nome),
-                        'cliente'      => e(optional($a->cliente)->cli_nome),
+                        'cliente'      => e(optional($a->cliente)->nome_exibicao),
                         'nr_proposta'  => e($a->aten_nr_proposta ?? ''),
                         'periodo'      => $a->aten_dt_inicio->format('d/m/Y') . ' - ' . $a->aten_dt_fim->format('d/m/Y'),
                         'status'       => ($s = AtendimentoStatus::tryFrom($a->aten_status))
@@ -113,7 +114,7 @@ class AtendimentosController extends Controller
                     'aten_id'          => $atendimento->aten_id,
                     'aten_natureza_id' => $atendimento->aten_natureza_id,
                     'aten_cliente_id'  => $atendimento->aten_cliente_id,
-                    'aten_cliente_nome'=> optional($atendimento->cliente)->cli_nome ?? '',
+                    'aten_cliente_nome'=> optional($atendimento->cliente)->nome_exibicao ?? '',
                     'aten_usuario_id'  => $atendimento->aten_usuario_id,
                     'aten_status'      => $atendimento->aten_status,
                     'aten_nr_proposta'     => $atendimento->aten_nr_proposta ?? '',
