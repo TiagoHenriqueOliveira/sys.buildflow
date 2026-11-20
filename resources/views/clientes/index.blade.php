@@ -37,6 +37,6 @@
     @include('clientes.modal')
 
     @push('scripts')
-    <script src="{{ asset('js/app/clientes.js') }}"></script>
+    <script src="{{ asset('js/app/clientes.js') }}?v={{ filemtime(public_path('js/app/clientes.js')) }}"></script>
     @endpush
 </x-layout>
