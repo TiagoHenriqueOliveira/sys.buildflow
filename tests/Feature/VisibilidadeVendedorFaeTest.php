@@ -116,6 +116,16 @@ class VisibilidadeVendedorFaeTest extends TestCase
         $this->assertSame($this->ana->user_id, Cliente::where('cli_cnpj', '11222333000225')->value('cli_vendedor_id'));
     }
 
+    public function test_telas_em_portugues_sem_traducao_automatica(): void
+    {
+        // Com lang="en" o tradutor do Chrome trocava "Classificação" por outra frase.
+        $this->actingAs($this->ana)->get(route('clientes.index'))
+            ->assertOk()
+            ->assertSee('<html lang="pt-BR" translate="no"', false)
+            ->assertSee('<meta name="google" content="notranslate">', false)
+            ->assertSee('Classificação');
+    }
+
     public function test_cliente_novo_do_vendedor_vem_com_ele_e_o_campo_travado(): void
     {
         $resposta = $this->actingAs($this->ana)->get(route('clientes.create'))->assertOk();

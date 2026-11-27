@@ -84,7 +84,11 @@ return [
     |
     */
 
-    'locale' => 'en',
+    // pt_BR (27/11/2026): com 'en' fixo as páginas saíam com <html lang="en"> e
+    // o Chrome "traduzia" o sistema (ex.: "Classificação" virou outra frase
+    // na tela de Clientes). O fallback continua 'en' porque só existem as
+    // traduções padrão do framework.
+    'locale' => env('APP_LOCALE', 'pt_BR'),
 
     /*
     |--------------------------------------------------------------------------

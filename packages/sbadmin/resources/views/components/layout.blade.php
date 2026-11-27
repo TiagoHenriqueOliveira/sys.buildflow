@@ -4,11 +4,13 @@
     'user' => null,
 ])
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="sbAdmin()" x-init="init()">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" translate="no" x-data="sbAdmin()" x-init="init()">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Sistema todo em português: não oferecer/aplicar tradução automática. --}}
+    <meta name="google" content="notranslate">
     <title>{{ $title ? $title.' - ' : '' }}{{ config('sbadmin.brand.name') }}</title>
     {{-- Ícone da aba: logo da FAÉ sem a palavra "Bioenergia" (27/11/2026). --}}
     <link rel="icon" href="{{ asset('favicon.ico') }}?v=2" sizes="any">

@@ -4,7 +4,7 @@
      logo da FAÉ com texto branco). Estilos .fae-auth-* em
      resources/sass/app.scss. Tema sempre escuro, como o resto do sistema. --}}
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark" data-bs-theme="dark">
+<html lang="pt-BR" translate="no" data-theme="dark" data-bs-theme="dark">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
