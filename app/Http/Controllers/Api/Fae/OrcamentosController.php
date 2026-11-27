@@ -165,6 +165,9 @@ class OrcamentosController extends Controller
             'id' => $c->orc_com_id,
             'texto' => $c->orc_com_texto,
             'autor' => optional($c->autor)->user_nome,
+            // O app so mostra "excluir" pra quem incluiu o comentario (a API
+            // recusa os demais com 403 desde BF_v1.14.7).
+            'autor_id' => $c->orc_com_autor_id,
             'alerta_usuario' => optional($c->usuarioAlertado)->user_nome,
             'criado_em' => $c->orc_com_criado_em?->format('d/m/Y H:i'),
         ];

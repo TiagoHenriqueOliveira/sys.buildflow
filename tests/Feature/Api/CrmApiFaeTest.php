@@ -85,7 +85,7 @@ class CrmApiFaeTest extends TestCase
             "/api/fae/v1/orcamentos/{$orcamento->orc_id}/comentarios",
             ['orc_com_texto' => 'Cliente pediu revisão de prazo.']
         );
-        $comentar->assertCreated();
+        $comentar->assertCreated()->assertJsonPath('data.autor_id', $vendedor->user_id);
         $comentarioId = $comentar->json('data.id');
         $this->assertDatabaseHas('orcamentos_comentarios', ['orc_com_id' => $comentarioId]);
 
