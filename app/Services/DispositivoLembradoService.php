@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DispositivoLembrado;
 use App\Models\Usuario;
+use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
@@ -15,7 +16,9 @@ use Illuminate\Support\Str;
  *
  * A senha NUNCA é guardada: o cookie leva só "<id do usuário>|<token
  * aleatório>" (criptografado pelo EncryptCookies e HttpOnly); o banco guarda
- * o SHA-256 do token. O token é trocado a cada uso e expira em 30 dias. Trocar
+ * o SHA-256 do token. O token é trocado a cada uso e expira junto com a
+ * sessão: 6h contadas do login completo (pedido do cliente, 27/11/2026) —
+ * trocar o token não estende o prazo (ver SessaoComPrazo). Trocar
  * a senha, redefinir o MFA ou desativar o usuário revoga todos os aparelhos
  * dele; "Não é você?" no login esquece só o aparelho atual.
  */
@@ -23,10 +26,12 @@ class DispositivoLembradoService
 {
     public const COOKIE = 'bf_lembrar';
 
-    public const DIAS = 30;
+    /** Prazo do login completo: sessão web e navegador lembrado vencem juntos. */
+    public const HORAS = 6;
 
-    public function emitir(Usuario $usuario, Request $request): void
+    public function emitir(Usuario $usuario, Request $request, ?CarbonInterface $expiraEm = null): void
     {
+        $expiraEm ??= now()->addHours(self::HORAS);
         $token = Str::random(64);
 
         DispositivoLembrado::create([
@@ -36,13 +41,13 @@ class DispositivoLembradoService
             'disp_ip' => $request->ip(),
             'disp_criado_em' => now(),
             'disp_ultimo_uso_em' => now(),
-            'disp_expira_em' => now()->addDays(self::DIAS),
+            'disp_expira_em' => $expiraEm,
         ]);
 
         Cookie::queue(Cookie::make(
             self::COOKIE,
             $usuario->user_id . '|' . $token,
-            self::DIAS * 24 * 60,
+            max(1, (int) ceil(now()->diffInSeconds($expiraEm, false) / 60)),
             '/',
             null,
             config('session.secure'),
@@ -71,12 +76,16 @@ class DispositivoLembradoService
         return $dispositivo && $dispositivo->usuario?->user_ativo ? $dispositivo : null;
     }
 
-    /** Depois do código certo vindo de um aparelho lembrado: troca o token (uso único). */
+    /**
+     * Depois do código certo vindo de um aparelho lembrado: troca o token (uso
+     * único), mantendo a validade original — o prazo conta do login completo.
+     */
     public function renovar(DispositivoLembrado $dispositivo, Request $request): void
     {
         $usuario = $dispositivo->usuario;
+        $expiraEm = $dispositivo->disp_expira_em;
         $dispositivo->delete();
-        $this->emitir($usuario, $request);
+        $this->emitir($usuario, $request, $expiraEm);
     }
 
     /** "Não é você?" — esquece só este navegador. */

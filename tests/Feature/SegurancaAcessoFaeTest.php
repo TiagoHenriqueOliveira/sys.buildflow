@@ -157,6 +157,68 @@ class SegurancaAcessoFaeTest extends TestCase
         $this->get(route('login.mfa'))->assertSee('Não é você?');
     }
 
+    public function test_sessao_cai_com_6h_do_login_completo(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        $this->usuario();
+        $this->senha();
+        $this->post(route('login.mfa.store'), ['codigo' => $this->codigoAtual()]);
+
+        $this->travel(5 * 60 + 59)->minutes();
+        $this->get(route('dashboard'))->assertOk();
+
+        $this->travel(2)->minutes();
+        $this->get(route('dashboard'))
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors(['email' => 'Sua sessão expirou (limite de 6 horas). Entre novamente.']);
+        $this->assertGuest();
+    }
+
+    public function test_lembrar_dados_vale_ate_6h_do_login_completo_sem_estender_o_prazo(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        $usuario = $this->usuario();
+
+        $this->senha(['lembrar' => '1']);
+        $cookie = $this->post(route('login.mfa.store'), ['codigo' => $this->codigoAtual()])
+            ->getCookie(DispositivoLembradoService::COOKIE)->getValue();
+        $this->post('/logout');
+        $this->flushSession();
+        Cache::forget("mfa.ultimo_passo.{$usuario->user_id}");
+
+        // 5ª hora: volta só pelo código.
+        $this->travel(5)->hours();
+        $this->withCookie(DispositivoLembradoService::COOKIE, $cookie)
+            ->get(route('login'))
+            ->assertRedirect(route('login.mfa'));
+        $resposta = $this->post(route('login.mfa.store'), ['codigo' => $this->codigoAtual()]);
+        $resposta->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($usuario);
+        $novoCookie = $resposta->getCookie(DispositivoLembradoService::COOKIE)->getValue();
+
+        // Entrar pelo código não estendeu: 6h01 do login completo, a sessão cai...
+        $this->travel(61)->minutes();
+        $this->get(route('dashboard'))->assertRedirect(route('login'));
+        $this->assertGuest();
+
+        // ...e o próximo acesso é o login completo, com a caixa desmarcada.
+        $this->flushSession();
+        $this->withCookie(DispositivoLembradoService::COOKIE, $novoCookie)
+            ->get(route('login'))
+            ->assertOk()
+            ->assertSee('name="senha"', false)
+            ->assertDontSee('checked', false);
+    }
+
+    public function test_tela_de_login_sem_a_frase_do_lembrar_dados(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Lembrar dados')
+            ->assertDontSee('Não marque em computador compartilhado')
+            ->assertDontSee('checked', false);
+    }
+
     public function test_sem_lembrar_dados_nao_guarda_o_navegador(): void
     {
         $this->usuario();

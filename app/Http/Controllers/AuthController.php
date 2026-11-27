@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\SessaoComPrazo;
 use App\Models\DispositivoLembrado;
 use App\Models\Usuario;
 use App\Services\AuditService;
@@ -26,9 +27,11 @@ use Illuminate\View\View;
  *    do limite por IP do throttle:login).
  * 2. Código do app autenticador (MFA obrigatório para todos). Quem ainda
  *    não cadastrou entra só para cadastrar (middleware ExigirMfa).
- * 3. "Lembrar dados": o navegador fica lembrado por 30 dias e o próximo
- *    acesso vai direto ao passo 2 (a senha nunca é guardada — ver
- *    DispositivoLembradoService).
+ * 3. "Lembrar dados": o navegador fica lembrado até completar 6h do login
+ *    completo e, nesse prazo, a volta vai direto ao passo 2 (a senha nunca é
+ *    guardada — ver DispositivoLembradoService).
+ * 4. Prazo da sessão (27/11/2026): 6h do login completo, mesmo entrando de
+ *    novo só pelo código; vencido, login completo (SessaoComPrazo).
  */
 class AuthController extends Controller
 {
@@ -103,6 +106,7 @@ class AuthController extends Controller
         // Ainda sem autenticador: entra só para cadastrá-lo (ExigirMfa).
         $request->session()->forget(self::PENDENTE);
         Auth::login($usuario);
+        $request->session()->put(SessaoComPrazo::CHAVE, now()->addHours(DispositivoLembradoService::HORAS)->getTimestamp());
         AuditService::log('autenticacao', 'login', $usuario->user_id, [], ['mfa' => false, 'ip' => $request->ip()]);
 
         return redirect()->route('mfa.cadastro');
@@ -158,10 +162,17 @@ class AuthController extends Controller
 
         $dispositivo = $dispositivoId ? DispositivoLembrado::find($dispositivoId) : null;
         if ($dispositivo && (int) $dispositivo->disp_usuario_id === (int) $usuario->user_id) {
+            // Só pelo código: a sessão vence junto com o login completo de origem.
+            $expiraEm = $dispositivo->disp_expira_em;
             $dispositivos->renovar($dispositivo, $request);
-        } elseif ($lembrar) {
-            $dispositivos->emitir($usuario, $request);
+        } else {
+            $dispositivo = null;
+            $expiraEm = now()->addHours(DispositivoLembradoService::HORAS);
+            if ($lembrar) {
+                $dispositivos->emitir($usuario, $request, $expiraEm);
+            }
         }
+        $request->session()->put(SessaoComPrazo::CHAVE, $expiraEm->getTimestamp());
 
         AuditService::log('autenticacao', 'login', $usuario->user_id, [], ['mfa' => true, 'lembrado' => (bool) $dispositivo, 'ip' => $request->ip()]);
 

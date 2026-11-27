@@ -55,7 +55,7 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
 // 2026-11-27 (revisão de segurança do BF_v1.15.0): usuario.ativo + mfa
 // também aqui — pela sessão web, quem ainda não cadastrou o autenticador
 // não abre arquivos; pelo token do app (Sanctum) o comportamento não muda.
-Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'mfa'])->get('/midia/{path}', [StorageController::class, 'show'])
+Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'sessao.prazo', 'mfa'])->get('/midia/{path}', [StorageController::class, 'show'])
     ->where('path', '.*')
     ->name('midia.show');
 
@@ -73,7 +73,7 @@ Route::get('/apk/{arquivo}', [AppUpdateController::class, 'baixar'])
 // painel. Fica fora do grupo `auth` geral (só sessão web) por isso. A
 // checagem de que o relatório pertence ao usuário fica dentro do próprio
 // AtendimentosRelatoriosController::pdf() (RNF004).
-Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'mfa'])
+Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'sessao.prazo', 'mfa'])
     ->get('/atendimentos-relatorios/{id}/pdf', [AtendimentosRelatoriosController::class, 'pdf'])
     ->middleware('can:relatorios.ver')
     ->name('atendimentos-relatorios.pdf');
@@ -88,8 +88,9 @@ Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'mfa'])
 // Sem permissão: página personalizada resources/views/errors/403.blade.php.
 // 2026-11-27: usuário desativado perde a sessão na hora (usuario.ativo) e
 // MFA obrigatório — sem o app autenticador cadastrado, só o cadastro dele e
-// o "Sair" (mfa).
-Route::middleware(['auth', 'usuario.ativo', 'mfa'])->group(function () {
+// o "Sair" (mfa). Sessão web com prazo máximo de 6h do login completo
+// (sessao.prazo), além do limite de inatividade.
+Route::middleware(['auth', 'usuario.ativo', 'sessao.prazo', 'mfa'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

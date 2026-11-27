@@ -1,7 +1,9 @@
 {{-- Login — passo 1 (e-mail e senha). Depois vem o código do app
      autenticador (login/mfa.blade.php), obrigatório para todos desde
-     2026-11-27. "Lembrar dados" deixa este navegador lembrado por 30 dias:
-     o próximo acesso vai direto ao código (a senha nunca é guardada). --}}
+     2026-11-27. "Lembrar dados" deixa este navegador lembrado até completar
+     6h do login completo: nesse prazo, a volta vai direto ao código (a senha
+     nunca é guardada). Com 6h a sessão cai (SessaoComPrazo) e o próximo
+     acesso é este formulário de novo, com a caixa desmarcada. --}}
 <x-auth-card>
     <form method="POST" action="{{ route('login.post') }}" id="loginForm">
         @csrf
@@ -32,7 +34,6 @@
         <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" value="1" id="lembrar" name="lembrar" @checked(old('lembrar'))>
             <label class="form-check-label" for="lembrar">Lembrar dados</label>
-            <div class="form-text">Neste navegador, os próximos acessos pedem só o código do aplicativo autenticador. Não marque em computador compartilhado.</div>
         </div>
 
         <button type="submit" class="btn btn-primary w-100 py-2" id="loginButton">

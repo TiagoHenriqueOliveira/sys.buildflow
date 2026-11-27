@@ -60,6 +60,7 @@ class Kernel extends HttpKernel
         'admin' => \App\Http\Middleware\SomenteAdministrador::class,
         'mfa' => \App\Http\Middleware\ExigirMfa::class,
         'usuario.ativo' => \App\Http\Middleware\UsuarioAtivo::class,
+        'sessao.prazo' => \App\Http\Middleware\SessaoComPrazo::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'auth.session' => \Illuminate\Session\Middleware\AuthenticateSession::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
