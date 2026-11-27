@@ -51,7 +51,13 @@ class RoteirosViagemController extends Controller
 
     public function update(RoteiroViagemRequest $request, int $roteiro): JsonResponse
     {
-        abort_unless(RoteiroViagem::findOrFail($roteiro)->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
+        $atual = RoteiroViagem::findOrFail($roteiro);
+        abort_unless($atual->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
+        // 2026-11-27: roteiro concluído não aceita edição (reabrir é pelo web,
+        // só Administrador/Comercial).
+        if ($atual->estaConcluido()) {
+            return response()->json(['message' => 'Roteiro concluído não pode ser editado.'], 422);
+        }
         $registro = $this->repository->update($roteiro, $request->validated());
         $registro->load(['vendedor', 'clientes.cliente']);
 

@@ -6,6 +6,9 @@
      cada linha (não pela posição), pra bater com o Repository. --}}
 @php
     $editando = $roteiro->exists;
+    // 2026-11-27: roteiro concluído fica somente leitura (inclusive a
+    // situação); Administrador/Comercial reabrem pelo bloco abaixo.
+    $concluido = $editando && $roteiro->estaConcluido();
 
     $linhasIniciais = old('linhas', $editando
         ? $roteiro->clientes->map(fn ($rc) => [
@@ -36,10 +39,47 @@
             <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
         @endif
 
+        @error('roteiro')
+            <x-sbadmin::alert type="error">{{ $message }}</x-sbadmin::alert>
+        @enderror
+
+        @if($concluido)
+            <x-sbadmin::alert type="warning">
+                Roteiro <strong>concluído</strong>: somente leitura. Para voltar a editar, um usuário com perfil Administrador ou Comercial precisa reabrir o roteiro.
+            </x-sbadmin::alert>
+
+            @if(auth()->user()->podeReabrirRoteiro())
+                <form method="POST" action="{{ route('roteiros-viagem.reabrir', $roteiro->crm_rot_id) }}" class="sbadmin-card mb-3">
+                    @csrf
+                    @method('PATCH')
+                    <div class="sbadmin-card-body">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-sm-6 col-md-4">
+                                <x-sbadmin::form.select
+                                    id="reabrir_status"
+                                    name="crm_rot_status"
+                                    label="Reabrir roteiro com a situação"
+                                    :options="collect(App\Enums\StatusRoteiroViagem::cases())->reject(fn ($s) => $s === App\Enums\StatusRoteiroViagem::Concluida)->mapWithKeys(fn ($s) => [$s->value => $s->label()])->all()"
+                                    placeholder="Selecione..."
+                                    required
+                                />
+                            </div>
+                            <div class="col-sm-6 col-md-3 mb-3">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-unlock" aria-hidden="true"></i> Reabrir roteiro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            @endif
+        @endif
+
         <form
             method="POST"
             action="{{ $editando ? route('roteiros-viagem.update', $roteiro->crm_rot_id) : route('roteiros-viagem.store') }}"
         >
+            <fieldset @disabled($concluido)>
             @csrf
             @if($editando)
                 @method('PUT')
@@ -171,14 +211,17 @@
                 </div>
 
                 <div class="sbadmin-card-body d-flex justify-content-end gap-2 border-top">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
-                    </button>
+                    @unless($concluido)
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar
+                        </button>
+                    @endunless
                     <a href="{{ route('roteiros-viagem.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-x-lg" aria-hidden="true"></i> Voltar
                     </a>
                 </div>
             </div>
+            </fieldset>
         </form>
     </div>
 </x-layout>

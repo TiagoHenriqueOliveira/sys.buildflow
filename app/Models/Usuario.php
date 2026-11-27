@@ -62,6 +62,17 @@ class Usuario extends Authenticatable
      * perfis (inclusive Comercial) continuam vendo tudo. Ver os escopos
      * visivelPara() de Cliente, Orcamento e RoteiroViagem.
      */
+    /**
+     * Roteiro de viagem concluído (2026-11-27): só os perfis Administrador e
+     * Comercial (e o usuário master) podem voltar a situação para reabrir a
+     * edição.
+     */
+    public function podeReabrirRoteiro(): bool
+    {
+        return $this->temAcessoTotal()
+            || (int) $this->user_nivel_acesso === NivelAcesso::Comercial->value;
+    }
+
     public function veSoOsProprios(): bool
     {
         return ! $this->temAcessoTotal()

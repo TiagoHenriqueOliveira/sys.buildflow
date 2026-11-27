@@ -42,6 +42,16 @@ class RoteiroViagem extends Model
             ->orderBy('crm_rot_cli_ordem');
     }
 
+    /**
+     * Pedido do cliente (2026-11-27): roteiro concluído não aceita mais
+     * edição (nem da situação) — só Administrador/Comercial reabrem
+     * (Usuario::podeReabrirRoteiro, rota roteiros-viagem.reabrir).
+     */
+    public function estaConcluido(): bool
+    {
+        return $this->crm_rot_status === StatusRoteiroViagem::Concluida;
+    }
+
     /** Perfil Vendedor (2026-11-27): só os próprios roteiros. */
     public function scopeVisivelPara(Builder $query, Usuario $usuario): Builder
     {

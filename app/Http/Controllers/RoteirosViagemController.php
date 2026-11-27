@@ -80,6 +80,33 @@ class RoteirosViagemController extends Controller
             ->get();
     }
 
+    /**
+     * Reabre um roteiro concluído (2026-11-27): só Administrador/Comercial,
+     * e só para uma situação diferente de "Concluída" — depois disso a
+     * edição volta a ser liberada.
+     */
+    public function reabrir(Request $request, int $id): RedirectResponse
+    {
+        $roteiro = RoteiroViagem::findOrFail($id);
+        abort_unless($roteiro->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
+        abort_unless($request->user()->podeReabrirRoteiro(), 403, 'Só os perfis Administrador e Comercial podem reabrir um roteiro concluído.');
+        abort_unless($roteiro->estaConcluido(), 403, 'O roteiro não está concluído.');
+
+        $dados = $request->validate([
+            'crm_rot_status' => ['required', \Illuminate\Validation\Rule::in(
+                collect(\App\Enums\StatusRoteiroViagem::cases())
+                    ->reject(fn ($s) => $s === \App\Enums\StatusRoteiroViagem::Concluida)
+                    ->map->value->all()
+            )],
+        ], ['crm_rot_status.*' => 'Escolha a nova situação do roteiro.']);
+
+        $roteiro->update(['crm_rot_status' => (int) $dados['crm_rot_status']]);
+
+        return redirect()
+            ->route('roteiros-viagem.edit', $id)
+            ->with('success', 'Roteiro reaberto para edição.');
+    }
+
     public function store(RoteiroViagemRequest $request): RedirectResponse
     {
         $roteiro = $this->repository->create($request->validated());
@@ -91,7 +118,14 @@ class RoteirosViagemController extends Controller
 
     public function update(RoteiroViagemRequest $request, int $id): RedirectResponse
     {
-        abort_unless(RoteiroViagem::findOrFail($id)->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
+        $roteiro = RoteiroViagem::findOrFail($id);
+        abort_unless($roteiro->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
+
+        if ($roteiro->estaConcluido()) {
+            return redirect()
+                ->route('roteiros-viagem.edit', $id)
+                ->withErrors(['roteiro' => 'Roteiro concluído não pode ser editado.']);
+        }
         $this->repository->update($id, $request->validated());
 
         return redirect()

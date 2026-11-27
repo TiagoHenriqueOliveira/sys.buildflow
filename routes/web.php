@@ -135,6 +135,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/roteiros-viagem', [RoteirosViagemController::class, 'store'])->name('roteiros-viagem.store');
         Route::get('/roteiros-viagem/{roteiros_viagem}/edit', [RoteirosViagemController::class, 'edit'])->name('roteiros-viagem.edit');
         Route::match(['put', 'patch'], '/roteiros-viagem/{roteiros_viagem}', [RoteirosViagemController::class, 'update'])->name('roteiros-viagem.update');
+        Route::patch('/roteiros-viagem/{roteiros_viagem}/reabrir', [RoteirosViagemController::class, 'reabrir'])->name('roteiros-viagem.reabrir');
     });
 
     // Mapa de relações (CRM07) e Indicadores comerciais (CRM08) — leitura.
