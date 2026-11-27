@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Fae;
 use App\Http\Controllers\Controller;
 use App\Models\Cliente;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * CRM07 (mapa de relacoes, so-leitura).
@@ -19,9 +20,11 @@ use Illuminate\Http\JsonResponse;
  */
 class CrmController extends Controller
 {
-    public function mapaRelacoes(): JsonResponse
+    public function mapaRelacoes(Request $request): JsonResponse
     {
+        // Perfil Vendedor (27/11/2026): só os próprios clientes e os sem vendedor.
         $clientes = Cliente::query()
+            ->visivelPara($request->user())
             ->with('classificacao')
             ->whereNotNull('cli_latitude')
             ->whereNotNull('cli_longitude')

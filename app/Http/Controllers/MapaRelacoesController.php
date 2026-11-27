@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\ClassificacaoCliente;
 use App\Models\Usuario;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class MapaRelacoesController extends Controller
@@ -23,7 +24,10 @@ class MapaRelacoesController extends Controller
         $filtroSegmento = $filtros['f_segmento'];
         $filtroClassificacao = $filtros['f_classificacao'];
 
+        // Perfil Vendedor (confirmado pelo cliente em 27/11/2026): mesma regra
+        // da tela de Clientes — só os próprios e os sem vendedor.
         $clientes = Cliente::query()
+            ->visivelPara(Auth::user())
             ->with(['vendedor', 'classificacao'])
             ->whereNotNull('cli_latitude')
             ->whereNotNull('cli_longitude')
@@ -37,7 +41,7 @@ class MapaRelacoesController extends Controller
 
         return view('mapa-relacoes.index', [
             'clientes' => $clientes,
-            'vendedores' => Usuario::vendedores()->orderBy('user_nome')->get(),
+            'vendedores' => Usuario::vendedoresAtribuiveisPor(Auth::user())->orderBy('user_nome')->get(),
             'estados' => Cliente::query()->whereNotNull('cli_uf')->distinct()->orderBy('cli_uf')->pluck('cli_uf'),
             'segmentos' => Cliente::query()->whereNotNull('cli_segmento')->where('cli_segmento', '!=', '')->distinct()->orderBy('cli_segmento')->pluck('cli_segmento'),
             'classificacoes' => ClassificacaoCliente::orderBy('cla_cli_nome')->get(),

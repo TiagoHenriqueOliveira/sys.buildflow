@@ -10,6 +10,25 @@ use Illuminate\Validation\Validator;
 
 class OrcamentoRequest extends FormRequest
 {
+    /**
+     * Perfil Vendedor (27/11/2026): o vendedor responsável não é escolhido —
+     * na inclusão é ele mesmo; na alteração fica o que já estava gravado
+     * (vale também para vendedor adicional editando o orçamento de outro).
+     * Os demais perfis com acesso escolhem livremente.
+     */
+    protected function prepareForValidation(): void
+    {
+        $usuario = $this->user();
+        if (! $usuario?->veSoOsProprios()) {
+            return;
+        }
+
+        $id = $this->route('orcamento');
+        $atual = $id ? \App\Models\Orcamento::find($id) : null;
+
+        $this->merge(['orc_vendedor_id' => $atual?->orc_vendedor_id ?? $usuario->user_id]);
+    }
+
     public function rules()
     {
         return [
@@ -61,9 +80,9 @@ class OrcamentoRequest extends FormRequest
     }
 
     /**
-     * Perfil Vendedor (2026-11-27): só se atribui como vendedor responsável e
-     * só escolhe cliente visível para ele — manter o valor já gravado (ex.:
-     * vendedor adicional editando o orçamento de outro) continua permitido.
+     * Perfil Vendedor (2026-11-27): só escolhe cliente visível para ele —
+     * manter o cliente já gravado continua permitido. O vendedor responsável
+     * é fixado em prepareForValidation.
      */
     private function validarPerfilVendedor(Validator $validator): void
     {
@@ -74,11 +93,6 @@ class OrcamentoRequest extends FormRequest
 
         $id = $this->route('orcamento');
         $atual = $id ? \App\Models\Orcamento::find($id) : null;
-
-        $vendedorId = (int) $this->input('orc_vendedor_id');
-        if ($vendedorId !== (int) $usuario->user_id && $vendedorId !== (int) $atual?->orc_vendedor_id) {
-            $validator->errors()->add('orc_vendedor_id', 'Você só pode se atribuir como vendedor responsável.');
-        }
 
         $clienteId = (int) $this->input('orc_cliente_id');
         $cliente = \App\Models\Cliente::find($clienteId);

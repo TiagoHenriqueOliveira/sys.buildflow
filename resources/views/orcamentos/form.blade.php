@@ -85,15 +85,29 @@
 
                         <div class="row">
                             <div class="col-sm-6">
-                                <x-sbadmin::form.select
-                                    id="orc_vendedor_id"
-                                    name="orc_vendedor_id"
-                                    label="Vendedor responsável"
-                                    :options="$vendedoresResponsavel->pluck('user_nome', 'user_id')->all()"
-                                    :value="old('orc_vendedor_id', $orcamento->orc_vendedor_id)"
-                                    placeholder="Selecione..."
-                                    required
-                                />
+                                @if($vendedorTravado)
+                                    {{-- Perfil Vendedor (27/11/2026): fixo; o servidor também ignora troca. --}}
+                                    <input type="hidden" name="orc_vendedor_id" value="{{ $orcamento->orc_vendedor_id }}">
+                                    <x-sbadmin::form.input
+                                        id="orc_vendedor_nome"
+                                        name="orc_vendedor_nome"
+                                        label="Vendedor responsável"
+                                        :value="optional($orcamento->vendedor)->user_nome"
+                                        help="Definido automaticamente; só outros perfis podem alterar."
+                                        readonly
+                                        disabled
+                                    />
+                                @else
+                                    <x-sbadmin::form.select
+                                        id="orc_vendedor_id"
+                                        name="orc_vendedor_id"
+                                        label="Vendedor responsável"
+                                        :options="$vendedoresResponsavel->pluck('user_nome', 'user_id')->all()"
+                                        :value="old('orc_vendedor_id', $orcamento->orc_vendedor_id)"
+                                        placeholder="Selecione..."
+                                        required
+                                    />
+                                @endif
                             </div>
                             <div class="col-sm-6">
                                 <x-sbadmin::form.select

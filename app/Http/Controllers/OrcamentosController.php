@@ -76,8 +76,18 @@ class OrcamentosController extends Controller
 
     public function create(): View
     {
+        // 27/11/2026: quem cria e atua como vendedor já vem como vendedor
+        // responsável (o perfil Vendedor nem consegue trocar — ver
+        // OrcamentoRequest::prepareForValidation).
+        $orcamento = new Orcamento();
+        $usuario = Auth::user();
+        if ($usuario->veSoOsProprios() || Usuario::vendedores()->whereKey($usuario->user_id)->exists()) {
+            $orcamento->orc_vendedor_id = $usuario->user_id;
+            $orcamento->setRelation('vendedor', $usuario);
+        }
+
         return view('orcamentos.form', [
-            'orcamento' => new Orcamento(),
+            'orcamento' => $orcamento,
             ...$this->dadosApoioFormulario(),
         ]);
     }
@@ -100,6 +110,8 @@ class OrcamentosController extends Controller
             // Vendedor responsável: o perfil Vendedor só se atribui a si mesmo
             // (2026-11-27); os vendedores adicionais (CRM04) seguem a lista toda.
             'vendedoresResponsavel' => Usuario::vendedoresAtribuiveisPor(Auth::user())->orderBy('user_nome')->get(),
+            // Perfil Vendedor não altera o vendedor responsável (27/11/2026).
+            'vendedorTravado' => Auth::user()->veSoOsProprios(),
             'usuariosAlerta' => $this->usuariosParaAlerta(),
             'tiposOrcamento' => CrmTipoOrcamento::where('crm_tp_orc_ativo', 1)
                 ->with(['configModelo.perguntas.opcoes'])

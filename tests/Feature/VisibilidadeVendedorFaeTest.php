@@ -30,7 +30,7 @@ class VisibilidadeVendedorFaeTest extends TestCase
 
         PerfilPermissao::sincronizar(NivelAcesso::Vendedor->value, [
             'clientes.ver', 'clientes.editar', 'orcamentos.ver', 'orcamentos.editar',
-            'roteiros.ver', 'roteiros.editar', 'vendedor',
+            'roteiros.ver', 'roteiros.editar', 'mapa_relacoes.ver', 'vendedor',
         ]);
         $this->ana = Usuario::factory()->vendedor()->create(['user_nome' => 'Ana Vendedora']);
         $this->bruno = Usuario::factory()->vendedor()->create(['user_nome' => 'Bruno Vendedor']);
@@ -158,6 +158,80 @@ class VisibilidadeVendedorFaeTest extends TestCase
             'crm_rot_periodo_fim' => '2026-12-02',
             'clientes' => [$cliente->cli_id],
         ])->assertSessionHasErrors('crm_rot_vendedor_id');
+    }
+
+    public function test_mapa_de_relacoes_do_vendedor_mostra_so_os_proprios_e_os_sem_vendedor(): void
+    {
+        $coordenadas = ['cli_latitude' => -26.9, 'cli_longitude' => -49.06];
+        $daAna = Cliente::factory()->create(['cli_nome' => 'Cliente da Ana', 'cli_vendedor_id' => $this->ana->user_id] + $coordenadas);
+        Cliente::factory()->create(['cli_nome' => 'Cliente do Bruno', 'cli_vendedor_id' => $this->bruno->user_id] + $coordenadas);
+        $semVendedor = Cliente::factory()->create(['cli_nome' => 'Prospect sem vendedor', 'cli_vendedor_id' => null] + $coordenadas);
+
+        $resposta = $this->actingAs($this->ana)->get(route('mapa-relacoes.index'))->assertOk();
+        $ids = $resposta->viewData('clientes')->pluck('cli_id')->sort()->values()->all();
+        $this->assertSame([$daAna->cli_id, $semVendedor->cli_id], $ids);
+        $this->assertSame([$this->ana->user_id], $resposta->viewData('vendedores')->pluck('user_id')->all());
+
+        // Filtro forçado com o id do outro vendedor não revela nada.
+        $this->assertCount(0, $this->actingAs($this->ana)
+            ->get(route('mapa-relacoes.index', ['f_vendedor' => $this->bruno->user_id]))
+            ->viewData('clientes'));
+
+        $token = $this->ana->createToken('t')->plainTextToken;
+        $this->withToken($token)->getJson('/api/fae/v1/mapa-relacoes')->assertOk()->assertJsonCount(2, 'data');
+
+        $comercial = Usuario::factory()->comercial()->create();
+        $this->assertCount(3, $this->actingAs($comercial)->get(route('mapa-relacoes.index'))->viewData('clientes'));
+    }
+
+    public function test_orcamento_novo_do_vendedor_vem_com_ele_e_o_campo_travado(): void
+    {
+        $resposta = $this->actingAs($this->ana)->get(route('orcamentos.create'))->assertOk();
+
+        $this->assertSame($this->ana->user_id, $resposta->viewData('orcamento')->orc_vendedor_id);
+        $resposta->assertSee('name="orc_vendedor_id" value="' . $this->ana->user_id . '"', false);
+        $resposta->assertSee('Ana Vendedora');
+        $resposta->assertDontSee('id="orc_vendedor_id"', false);
+    }
+
+    public function test_vendedor_nao_troca_o_vendedor_responsavel_nem_forcando_o_envio(): void
+    {
+        $cliente = Cliente::factory()->create(['cli_vendedor_id' => $this->ana->user_id]);
+
+        $this->actingAs($this->ana)->post(route('orcamentos.store'), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $this->bruno->user_id,
+            'orc_nivel' => NivelOrcamento::Medio->value,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame($this->ana->user_id, Orcamento::latest('orc_id')->first()->orc_vendedor_id);
+
+        // Vendedor adicional editando o orçamento do Bruno: não se coloca como responsável.
+        $conjunto = $this->orcamento($this->bruno, $cliente);
+        $conjunto->vendedoresAdicionais()->attach($this->ana->user_id);
+        $this->actingAs($this->ana)->put(route('orcamentos.update', $conjunto->orc_id), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $this->ana->user_id,
+            'orc_nivel' => NivelOrcamento::Medio->value,
+        ])->assertRedirect();
+        $this->assertSame($this->bruno->user_id, $conjunto->fresh()->orc_vendedor_id);
+    }
+
+    public function test_comercial_escolhe_o_vendedor_responsavel(): void
+    {
+        $comercial = Usuario::factory()->comercial()->create();
+        $cliente = Cliente::factory()->create();
+
+        $this->actingAs($comercial)->get(route('orcamentos.create'))
+            ->assertOk()
+            ->assertSee('id="orc_vendedor_id"', false)
+            ->assertDontSee('id="orc_vendedor_nome"', false);
+
+        $this->actingAs($comercial)->post(route('orcamentos.store'), [
+            'orc_cliente_id' => $cliente->cli_id,
+            'orc_vendedor_id' => $this->bruno->user_id,
+            'orc_nivel' => NivelOrcamento::Medio->value,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame($this->bruno->user_id, Orcamento::latest('orc_id')->first()->orc_vendedor_id);
     }
 
     public function test_comercial_ve_orcamentos_e_roteiros_de_todos(): void
