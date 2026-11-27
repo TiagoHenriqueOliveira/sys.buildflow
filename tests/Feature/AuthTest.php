@@ -86,7 +86,7 @@ class AuthTest extends TestCase
             'user_ativo' => true,
         ]);
 
-        $response = $this->postJson('/api/v1/login', [
+        $response = $this->postJson('/api/fae/v1/login', [
             'email' => 'api@teste.com',
             'senha' => 'password',
         ]);
@@ -97,7 +97,7 @@ class AuthTest extends TestCase
 
     public function test_login_api_com_credenciais_invalidas_retorna_422(): void
     {
-        $response = $this->postJson('/api/v1/login', [
+        $response = $this->postJson('/api/fae/v1/login', [
             'email' => 'naoexiste@teste.com',
             'senha' => 'qualquer',
         ]);
@@ -110,7 +110,7 @@ class AuthTest extends TestCase
         $usuario = Usuario::factory()->create();
         $token   = $usuario->createToken('test')->plainTextToken;
 
-        $response = $this->withToken($token)->postJson('/api/v1/logout');
+        $response = $this->withToken($token)->postJson('/api/fae/v1/logout');
 
         $response->assertOk();
         $this->assertDatabaseCount('personal_access_tokens', 0);
@@ -121,7 +121,7 @@ class AuthTest extends TestCase
         $usuario = Usuario::factory()->create();
         $token   = $usuario->createToken('test')->plainTextToken;
 
-        $response = $this->withToken($token)->getJson('/api/v1/me');
+        $response = $this->withToken($token)->getJson('/api/fae/v1/me');
 
         $response->assertOk()
             ->assertJsonFragment(['email' => $usuario->user_email]);
@@ -129,7 +129,7 @@ class AuthTest extends TestCase
 
     public function test_rota_protegida_sem_token_retorna_401(): void
     {
-        $response = $this->getJson('/api/v1/atendimentos');
+        $response = $this->getJson('/api/fae/v1/atendimentos');
 
         $response->assertUnauthorized();
     }
