@@ -53,11 +53,15 @@ class UsuarioRepository implements CrudRepositoryInterface
 
         $user->update($payload);
 
-        // Desativar o usuário precisa também invalidar sessões já abertas
-        // (app e painel) — sem isto, um token Sanctum emitido antes da
-        // desativação continuava autenticando normalmente até expirar.
-        if ((int) $payload['user_ativo'] === 0) {
-            $user->tokens()->delete();
+        // Desativar o usuário ou trocar a senha dele derruba todos os acessos
+        // já abertos (sessões web, tokens do app e navegadores lembrados) —
+        // 2026-11-27, como no promaq-sys. Antes só a desativação revogava os
+        // tokens do app.
+        if ((int) $payload['user_ativo'] === 0 || ! empty($data['user_senha'])) {
+            app(\App\Services\SessaoService::class)->encerrarOutrosAcessos(
+                $user,
+                $user->user_id === auth()->id() ? session()->getId() : null,
+            );
         }
 
         return $user;

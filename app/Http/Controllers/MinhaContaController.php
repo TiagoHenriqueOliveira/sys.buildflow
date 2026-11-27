@@ -36,6 +36,12 @@ class MinhaContaController extends Controller
 
         $usuario->update($payload);
 
+        // 2026-11-27: trocar a senha encerra os outros acessos (outros
+        // navegadores, app e aparelhos lembrados); esta sessão continua.
+        if (! empty($dados['user_senha'])) {
+            app(\App\Services\SessaoService::class)->encerrarOutrosAcessos($usuario, $request->session()->getId());
+        }
+
         return redirect()
             ->route('minha-conta.edit')
             ->with('success', 'Seus dados foram atualizados.');

@@ -30,6 +30,14 @@
                 </div>
             </div>
 
+            <div class="sbadmin-alert sbadmin-alert-info mt-3 mb-0" role="note">
+                <i class="bi bi-shield-check" aria-hidden="true"></i>
+                Verificação em duas etapas ativa
+                @if($usuario->user_mfa_confirmado_em) desde {{ $usuario->user_mfa_confirmado_em->format('d/m/Y') }}@endif.
+                Trocou de celular? Peça a um administrador para redefinir o autenticador.
+                Trocar a senha encerra seus acessos em outros navegadores e no app.
+            </div>
+
             <div class="d-flex justify-content-end gap-2 mt-3">
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">Voltar</a>
                 <button type="submit" class="btn btn-success">

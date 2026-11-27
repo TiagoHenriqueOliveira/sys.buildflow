@@ -74,6 +74,22 @@
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </button>
                         @endif
+                        {{-- 2026-11-27: só acesso total redefine o MFA (celular perdido). --}}
+                        @if(auth()->user()->temAcessoTotal() && $u->temMfaConfigurado())
+                        <form method="POST" action="{{ route('usuarios.mfa.redefinir', $u->user_id) }}" class="d-inline" x-ref="mfa{{ $u->user_id }}">
+                            @csrf
+                            @method('DELETE')
+                            <button
+                                type="button"
+                                class="btn btn-sm sbadmin-table-action-btn"
+                                title="Redefinir verificação em duas etapas"
+                                aria-label="Redefinir verificação em duas etapas de {{ e($u->user_nome) }}"
+                                @click="confirmar('Redefinir a verificação em duas etapas de {{ e($u->user_nome) }}? Os acessos dele serão encerrados e, no próximo login, ele cadastra o autenticador de novo.', { rotulo: 'Redefinir', tipo: 'danger', onConfirm: () => $refs.mfa{{ $u->user_id }}.submit() })"
+                            >
+                                <i class="bi bi-shield-x" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                        @endif
                     </td>
                     <td>{{ $u->user_nome }}</td>
                     <td>{{ $u->user_email }}</td>

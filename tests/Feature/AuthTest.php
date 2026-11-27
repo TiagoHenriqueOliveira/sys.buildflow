@@ -25,8 +25,12 @@ class AuthTest extends TestCase
             'senha' => 'password',
         ]);
 
-        $response->assertRedirect('/dashboard');
-        $this->assertAuthenticatedAs($usuario);
+        // Desde 2026-11-27 a senha certa leva ao código do app autenticador
+        // (MFA obrigatório) — ainda sem sessão autenticada. O fluxo completo
+        // está em SegurancaAcessoFaeTest.
+        $response->assertRedirect(route('login.mfa'));
+        $this->assertGuest();
+        $this->assertSame($usuario->user_id, session('login.mfa_usuario_id'));
     }
 
     public function test_login_web_com_senha_errada_falha(): void

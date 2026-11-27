@@ -29,13 +29,23 @@ class Usuario extends Authenticatable
 
     protected $hidden = [
         'user_senha',
+        'user_mfa_secret',
     ];
 
     protected $casts = [
         'user_ativo'       => 'boolean',
         'user_protegido'   => 'boolean',
         'user_nivel_acesso' => 'integer',
+        // Segredo do app autenticador (MFA, 2026-11-27) criptografado no banco.
+        'user_mfa_secret' => 'encrypted',
+        'user_mfa_confirmado_em' => 'datetime',
     ];
+
+    /** MFA obrigatório para todos no web (2026-11-27) — ver App\Services\MfaService. */
+    public function temMfaConfigurado(): bool
+    {
+        return $this->user_mfa_secret !== null && $this->user_mfa_confirmado_em !== null;
+    }
 
     public function isProtegido(): bool
     {

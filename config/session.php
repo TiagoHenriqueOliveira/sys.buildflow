@@ -46,7 +46,8 @@ return [
     |
     */
 
-    'encrypt' => false,
+    // 2026-11-27: conteúdo da sessão criptografado (como no promaq-sys).
+    'encrypt' => env('SESSION_ENCRYPT', true),
 
     /*
     |--------------------------------------------------------------------------

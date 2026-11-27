@@ -22,6 +22,7 @@ use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
 use App\Http\Controllers\PerfisAcessoController;
 use App\Http\Controllers\RoteirosViagemController;
+use App\Http\Controllers\MfaController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\UsuariosController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,13 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
     // IP+email, ver RouteServiceProvider) — antes só a API tinha proteção
     // contra força bruta de senha, o painel web ficava sem nenhuma.
     Route::post('/login', 'login')->name('login.post')->middleware('throttle:login');
+
+    // 2026-11-27: segundo passo do login (código do app autenticador) e
+    // "Não é você?" (esquece o navegador lembrado). Ainda sem sessão
+    // autenticada — o usuário fica pendente na sessão até acertar o código.
+    Route::get('/login/codigo', 'mostrarMfa')->name('login.mfa');
+    Route::post('/login/codigo', 'confirmarMfa')->name('login.mfa.store')->middleware('throttle:login');
+    Route::post('/login/esquecer', 'esquecerDispositivo')->name('login.esquecer');
 });
 
 // Serve os arquivos gravados em public/midia (disco 'public', ver
@@ -44,7 +52,10 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
 // autenticação: sessão web (painel, via cookie automático no <img>) OU
 // token Sanctum (app mobile, via header Authorization: Bearer) — sem isso,
 // assinatura e foto de qualquer cliente eram enumeráveis por ID sem login.
-Route::middleware('auth:web,sanctum')->get('/midia/{path}', [StorageController::class, 'show'])
+// 2026-11-27 (revisão de segurança do BF_v1.15.0): usuario.ativo + mfa
+// também aqui — pela sessão web, quem ainda não cadastrou o autenticador
+// não abre arquivos; pelo token do app (Sanctum) o comportamento não muda.
+Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'mfa'])->get('/midia/{path}', [StorageController::class, 'show'])
     ->where('path', '.*')
     ->name('midia.show');
 
@@ -62,7 +73,7 @@ Route::get('/apk/{arquivo}', [AppUpdateController::class, 'baixar'])
 // painel. Fica fora do grupo `auth` geral (só sessão web) por isso. A
 // checagem de que o relatório pertence ao usuário fica dentro do próprio
 // AtendimentosRelatoriosController::pdf() (RNF004).
-Route::middleware('auth:web,sanctum')
+Route::middleware(['auth:web,sanctum', 'usuario.ativo', 'mfa'])
     ->get('/atendimentos-relatorios/{id}/pdf', [AtendimentosRelatoriosController::class, 'pdf'])
     ->middleware('can:relatorios.ver')
     ->name('atendimentos-relatorios.pdf');
@@ -75,9 +86,16 @@ Route::middleware('auth:web,sanctum')
 // (App\Support\Permissoes + Gate::before no AuthServiceProvider).
 // Administrador e o usuário protegido passam em tudo automaticamente.
 // Sem permissão: página personalizada resources/views/errors/403.blade.php.
-Route::middleware('auth')->group(function () {
+// 2026-11-27: usuário desativado perde a sessão na hora (usuario.ativo) e
+// MFA obrigatório — sem o app autenticador cadastrado, só o cadastro dele e
+// o "Sair" (mfa).
+Route::middleware(['auth', 'usuario.ativo', 'mfa'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Cadastro do app autenticador (MFA) pelo próprio usuário.
+    Route::get('/minha-conta/autenticador', [MfaController::class, 'show'])->name('mfa.cadastro');
+    Route::post('/minha-conta/autenticador', [MfaController::class, 'store'])->name('mfa.cadastro.store')->middleware('throttle:login');
 
     // Dashboard (placeholder minimo por ora - ver DashboardController).
     // Sempre liberado: é o destino da página de acesso negado.
@@ -242,6 +260,8 @@ Route::middleware('auth')->group(function () {
     // manutenção.
     Route::middleware('admin')->group(function () {
         // Perfis de acesso (2026-11-16)
+        // Redefine o MFA de um usuário (celular perdido/trocado) — 2026-11-27.
+        Route::delete('/usuarios/{usuario}/autenticador', [MfaController::class, 'redefinir'])->name('usuarios.mfa.redefinir');
         Route::get('/perfis-acesso', [PerfisAcessoController::class, 'index'])->name('perfis-acesso.index');
         Route::put('/perfis-acesso', [PerfisAcessoController::class, 'update'])->name('perfis-acesso.update');
 
