@@ -178,9 +178,21 @@ class ClientesController extends Controller
      * BF03 — resumo somente leitura do cliente, consumido pela tela de
      * Atendimento (qualquer usuário autenticado, inclusive técnico sem
      * acesso ao CRUD de Clientes) para exibir os dados sem navegação extra.
+     *
+     * Auditoria 27/11/2026 (S-07): continua liberado para quem usa a tela de
+     * Atendimento (atendimentos.ver/editar) ou o cadastro de Clientes
+     * (clientes.ver), mas respeita a visibilidade do cliente — o perfil
+     * Vendedor não lê o resumo de cliente de outro vendedor.
      */
-    public function resumo(Cliente $cliente): JsonResponse
+    public function resumo(Request $request, Cliente $cliente): JsonResponse
     {
+        $usuario = $request->user();
+        abort_unless(
+            $usuario->can('atendimentos.editar') || $usuario->can('atendimentos.ver') || $usuario->can('clientes.ver'),
+            403
+        );
+        abort_unless($cliente->visivelPara($usuario), 403, 'Este cliente pertence a outro vendedor.');
+
         $cliente->load('classificacao');
 
         return response()->json([

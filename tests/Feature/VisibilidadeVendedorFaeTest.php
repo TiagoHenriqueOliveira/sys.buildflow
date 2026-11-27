@@ -77,6 +77,27 @@ class VisibilidadeVendedorFaeTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_resumo_do_cliente_respeita_o_vendedor_e_a_permissao(): void
+    {
+        // Auditoria S-07: o resumo (BF03) era aberto a qualquer usuário logado.
+        $doBruno = Cliente::factory()->create(['cli_vendedor_id' => $this->bruno->user_id]);
+        $daAna = Cliente::factory()->create(['cli_vendedor_id' => $this->ana->user_id]);
+
+        $this->actingAs($this->ana)->getJson(route('clientes.resumo', $doBruno->cli_id))->assertForbidden();
+        $this->actingAs($this->ana)->getJson(route('clientes.resumo', $daAna->cli_id))
+            ->assertOk()->assertJsonPath('cli_id', $daAna->cli_id);
+
+        // Quem usa a tela de Atendimento continua lendo (BF03).
+        PerfilPermissao::sincronizar(NivelAcesso::Tecnico->value, ['atendimentos.ver']);
+        $tecnico = Usuario::factory()->tecnico()->create();
+        $this->actingAs($tecnico)->getJson(route('clientes.resumo', $doBruno->cli_id))->assertOk();
+
+        // Sem nenhuma das permissões: 403.
+        PerfilPermissao::sincronizar(NivelAcesso::Assistencia->value, ['orcamentos.ver']);
+        $semAcesso = Usuario::factory()->assistencia()->create();
+        $this->actingAs($semAcesso)->getJson(route('clientes.resumo', $doBruno->cli_id))->assertForbidden();
+    }
+
     public function test_autocomplete_do_vendedor_esconde_cliente_de_outro(): void
     {
         Cliente::factory()->create(['cli_nome' => 'Alfa da Ana', 'cli_vendedor_id' => $this->ana->user_id]);
