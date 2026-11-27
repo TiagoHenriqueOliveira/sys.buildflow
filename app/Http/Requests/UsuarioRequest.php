@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\NivelAcesso;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UsuarioRequest extends FormRequest
 {
@@ -26,17 +27,18 @@ class UsuarioRequest extends FormRequest
                 Rule::unique('usuarios', 'user_email')->ignore($id, 'user_id'),
             ],
 
+            // Auditoria 27/11/2026 (S-05): política única (AppServiceProvider):
+            // mínimo 10, letras e números, fora de vazamentos conhecidos.
             'user_senha' => [
                 $isCreate ? 'required' : 'nullable',
                 'string',
-                'min:6',
+                Password::defaults(),
                 'max:50',
                 'confirmed',
             ],
             'user_senha_confirmation' => [
                 $isCreate ? 'required' : 'nullable',
                 'string',
-                'min:6',
                 'max:50',
             ],
 
@@ -67,9 +69,11 @@ class UsuarioRequest extends FormRequest
             'user_email.unique' => 'Este e-mail já está cadastrado.',
             'user_senha.required' => 'A senha é obrigatória no cadastro.',
             'user_senha.min' => 'A senha deve ter no mínimo :min caracteres.',
+            'user_senha.password.letters' => 'A senha deve ter ao menos uma letra.',
+            'user_senha.password.numbers' => 'A senha deve ter ao menos um número.',
+            'user_senha.password.uncompromised' => 'Esta senha aparece em vazamentos de dados conhecidos. Escolha outra.',
             'user_senha.confirmed' => 'A confirmação da senha não confere.',
             'user_senha_confirmation.required' => 'A confirmação da senha é obrigatória.',
-            'user_senha_confirmation.min' => 'A confirmação da senha deve ter no mínimo :min caracteres.',
         ];
     }
 }

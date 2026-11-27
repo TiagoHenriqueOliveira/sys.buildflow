@@ -49,6 +49,14 @@ return [
     'expiration' => null,
 
     /*
+    | Auditoria 27/11/2026 (S-05) / contrato fae/v1 §2.3: o token do app vence
+    | em N dias corridos ou em M dias sem uso, o que vier antes (checado em
+    | AppServiceProvider via Sanctum::authenticateAccessTokensUsing).
+    */
+    'expiracao_dias' => (int) env('SANCTUM_EXPIRACAO_DIAS', 30),
+    'inatividade_dias' => (int) env('SANCTUM_INATIVIDADE_DIAS', 7),
+
+    /*
     |--------------------------------------------------------------------------
     | Sanctum Middleware
     |--------------------------------------------------------------------------

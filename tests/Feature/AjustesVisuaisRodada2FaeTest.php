@@ -27,8 +27,8 @@ class AjustesVisuaisRodada2FaeTest extends TestCase
             'user_nivel_acesso' => NivelAcesso::Assistencia->value,
             'user_nome' => 'Fulano Assistência',
             'user_email' => 'assistencia@fae.local',
-            'user_senha' => 'senha123',
-            'user_senha_confirmation' => 'senha123',
+            'user_senha' => 'Bioenergia2026',
+            'user_senha_confirmation' => 'Bioenergia2026',
         ]);
 
         $response->assertRedirect();
@@ -46,8 +46,8 @@ class AjustesVisuaisRodada2FaeTest extends TestCase
             'user_nivel_acesso' => NivelAcesso::Vendedor->value,
             'user_nome' => 'Fulano Vendedor',
             'user_email' => 'vendedor@fae.local',
-            'user_senha' => 'senha123',
-            'user_senha_confirmation' => 'senha123',
+            'user_senha' => 'Bioenergia2026',
+            'user_senha_confirmation' => 'Bioenergia2026',
         ]);
 
         $response->assertRedirect();

@@ -115,6 +115,10 @@ return [
     |
     */
 
+    // Auditoria 27/11/2026 (S-05): conferir a senha nova em vazamentos
+    // conhecidos (HIBP, k-anonimato). Desligado na suíte de testes.
+    'senha_checar_vazamento' => (bool) env('SENHA_CHECAR_VAZAMENTO', true),
+
     'password_timeout' => 10800,
 
 ];

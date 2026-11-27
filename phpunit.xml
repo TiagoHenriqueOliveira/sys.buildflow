@@ -23,6 +23,7 @@
              o histórico completo; database/schema/baseline-schema.sql é
              mantido só como referência, nenhuma migration mais o lê). -->
     <env name="QUEUE_CONNECTION" value="sync"/>
+    <env name="SENHA_CHECAR_VAZAMENTO" value="false"/>
     <env name="TELESCOPE_ENABLED" value="false"/>
   </php>
   <source>

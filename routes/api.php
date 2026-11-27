@@ -28,7 +28,9 @@ Route::prefix('fae/v1')->group(function () {
     Route::get('/app/versao', [FaeAppController::class, 'versao']);
 
     // Protegidas
-    Route::middleware('auth:sanctum')->group(function () {
+    // Auditoria 27/11/2026 (S-05): token precisa da habilidade "fae-app"
+    // (os tokens antigos, com "*", continuam valendo até vencer).
+    Route::middleware(['auth:sanctum', 'abilities:fae-app'])->group(function () {
 
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me',      [AuthController::class, 'me']);

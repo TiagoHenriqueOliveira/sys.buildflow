@@ -152,7 +152,12 @@
 
             document.addEventListener('click', function (event) {
                 if (event.target.closest('#btnSugerirSenha')) {
-                    const senha = gerarSenhaProvisoria(10);
+                    // Política de senha (auditoria 27/11/2026): 10+ caracteres com
+                    // letra e número — sorteia de novo até atender.
+                    let senha = gerarSenhaProvisoria(10);
+                    while (!/[A-Za-z]/.test(senha) || !/[0-9]/.test(senha)) {
+                        senha = gerarSenhaProvisoria(10);
+                    }
                     document.getElementById('user_senha').value = senha;
                     document.getElementById('user_senha_confirmation').value = senha;
                     document.getElementById('user_senha').focus();

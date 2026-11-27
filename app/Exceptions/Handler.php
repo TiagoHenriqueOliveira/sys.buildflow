@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
@@ -43,6 +44,19 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        // Contrato fae/v1 §2.3 (auditoria 27/11/2026, S-05): o 401 da API diz
+        // se o token venceu ("token_expirado") ou não vale ("nao_autenticado").
+        // Só nas rotas da API; o web continua redirecionando para o login.
+        $this->renderable(function (AuthenticationException $e, $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return $request->attributes->get('token_expirado')
+                ? response()->json(['message' => 'Sessão do app expirada. Entre novamente.', 'codigo' => 'token_expirado'], 401)
+                : response()->json(['message' => 'Unauthenticated.', 'codigo' => 'nao_autenticado'], 401);
         });
     }
 }
