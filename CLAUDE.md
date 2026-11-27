@@ -16,7 +16,7 @@ Este projeto adiciona o módulo **CRM Comercial** ao Buildflow já existente (qu
 
 - **PHP 8.4** (mesma instalação do Apache — já disponível na máquina, sem necessidade de trocar o módulo do Apache)
 - **Laravel 13.x** — upgrade feito a partir do Laravel 10 original herdado do `feature/mcl` (pedido explícito do cliente/usuário: rodar na última versão do Laravel nesta branch, mesmo divergindo da `feature/mcl`, que continua em Laravel 10). Ao portar código do MCL pra cá, checar breaking changes de config/métodos depreciados entre as versões antes de colar direto — **não** adotar o novo esqueleto de app (bootstrap/app.php único sem Kernel.php); a estrutura antiga (`app/Http/Kernel.php`, `app/Exceptions/Handler.php`) foi mantida no upgrade.
-- MySQL, banco `buildflow_fae` (local), banco de teste `buildflow_test` (compartilhado com o setup padrão do projeto — ver `.env.testing`)
+- MySQL, banco `buildflow_fae` (local), banco de teste exclusivo `buildflow_fae_test` (desde 27/11/2026, auditoria G-04; fixado no `phpunit.xml` com `force` — antes era o `buildflow_test`, compartilhado com outros projetos)
 - Frontend: Blade + Vite + jQuery removido nesta branch — ver seção "Template visual" abaixo
 - App mobile: Flutter, projeto irmão em `C:\Users\tiago\StudioProjects\app_buildflow_fae` (ver o `CLAUDE.md` de lá)
 

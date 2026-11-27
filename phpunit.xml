@@ -10,10 +10,14 @@
   </testsuites>
   <php>
     <env name="APP_ENV" value="testing"/>
-    <!-- DB_CONNECTION/DB_DATABASE não são fixados aqui de propósito:
+    <!-- Banco de teste exclusivo da FAÉ (auditoria 27/11/2026, G-04): fixado
+         aqui com force para que a suíte (RefreshDatabase apaga tudo) nunca
+         caia no banco do .env principal, mesmo sem o .env.testing. -->
+    <env name="DB_DATABASE" value="buildflow_fae_test" force="true"/>
+    <!-- DB_CONNECTION não é fixado aqui de propósito:
              fixar sqlite aqui sobrepunha o .env.testing e impedia qualquer
              tabela de ser criada num banco de teste do zero. Ver
-             .env.testing (DB_DATABASE=buildflow_test) e as migrations
+             .env.testing (DB_DATABASE=buildflow_fae_test) e as migrations
              versionadas por tabela em database/migrations/2026_08_20_09*
              (RNF07 — ver 2026_08_20_090000_create_usuarios_table.php para
              o histórico completo; database/schema/baseline-schema.sql é
