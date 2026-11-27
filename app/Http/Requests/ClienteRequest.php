@@ -21,6 +21,16 @@ class ClienteRequest extends FormRequest
             ])
             ->all();
 
+        // Perfil Vendedor (27/11/2026, mesma regra do orçamento): o vendedor
+        // responsável não é escolhido — fica o que já estava gravado e, sem
+        // vendedor (cadastro novo ou prospect), passa a ser ele mesmo.
+        $usuario = $this->user();
+        if ($usuario?->veSoOsProprios()) {
+            $id = $this->route('cliente');
+            $atual = $id ? \App\Models\Cliente::find($id) : null;
+            $this->merge(['cli_vendedor_id' => $atual?->cli_vendedor_id ?? $usuario->user_id]);
+        }
+
         $this->merge([
             'cli_cnpj' => $cnpj !== null ? preg_replace('/\D+/', '', $cnpj) : $cnpj,
             'cli_telefone' => $tel !== null ? preg_replace('/\D+/', '', $tel) : $tel,

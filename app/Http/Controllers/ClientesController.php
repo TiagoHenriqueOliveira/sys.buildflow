@@ -81,8 +81,18 @@ class ClientesController extends Controller
 
     public function create(): View
     {
+        // 27/11/2026: quem cadastra e atua como vendedor já vem como vendedor
+        // responsável (o perfil Vendedor nem consegue trocar — ver
+        // ClienteRequest::prepareForValidation).
+        $cliente = new Cliente();
+        $usuario = auth()->user();
+        if ($usuario->veSoOsProprios() || Usuario::vendedores()->whereKey($usuario->user_id)->exists()) {
+            $cliente->cli_vendedor_id = $usuario->user_id;
+            $cliente->setRelation('vendedor', $usuario);
+        }
+
         return view('clientes.form', [
-            'cliente' => new Cliente(),
+            'cliente' => $cliente,
             ...$this->dadosApoioFormulario(),
         ]);
     }
@@ -108,6 +118,8 @@ class ClientesController extends Controller
             'vendedores' => Usuario::vendedoresAtribuiveisPor(auth()->user())
                 ->orderBy('user_nome')
                 ->get(),
+            // Perfil Vendedor não altera o vendedor responsável (27/11/2026).
+            'vendedorTravado' => auth()->user()->veSoOsProprios(),
         ];
     }
 

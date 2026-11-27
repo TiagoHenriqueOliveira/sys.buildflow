@@ -163,14 +163,29 @@
 
                         <div class="row">
                             <div class="col-sm-3">
-                                <x-sbadmin::form.select
-                                    id="cli_vendedor_id"
-                                    name="cli_vendedor_id"
-                                    label="Vendedor responsável"
-                                    :options="$vendedores->pluck('user_nome', 'user_id')->all()"
-                                    :value="old('cli_vendedor_id', $cliente->cli_vendedor_id)"
-                                    placeholder="Nenhum"
-                                />
+                                @if($vendedorTravado)
+                                    {{-- Perfil Vendedor (27/11/2026): fixo; o servidor também ignora troca.
+                                         Cliente sem vendedor passa a ser dele ao salvar. --}}
+                                    <input type="hidden" name="cli_vendedor_id" value="{{ $cliente->cli_vendedor_id ?? auth()->id() }}">
+                                    <x-sbadmin::form.input
+                                        id="cli_vendedor_nome"
+                                        name="cli_vendedor_nome"
+                                        label="Vendedor responsável"
+                                        :value="optional($cliente->vendedor)->user_nome ?? auth()->user()->user_nome"
+                                        help="Definido automaticamente; só outros perfis podem alterar."
+                                        readonly
+                                        disabled
+                                    />
+                                @else
+                                    <x-sbadmin::form.select
+                                        id="cli_vendedor_id"
+                                        name="cli_vendedor_id"
+                                        label="Vendedor responsável"
+                                        :options="$vendedores->pluck('user_nome', 'user_id')->all()"
+                                        :value="old('cli_vendedor_id', $cliente->cli_vendedor_id)"
+                                        placeholder="Nenhum"
+                                    />
+                                @endif
                             </div>
                             <div class="col-sm-3">
                                 <x-sbadmin::form.input

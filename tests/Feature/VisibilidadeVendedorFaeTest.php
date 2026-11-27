@@ -101,10 +101,59 @@ class VisibilidadeVendedorFaeTest extends TestCase
 
     public function test_vendedor_nao_atribui_cliente_a_outro_vendedor(): void
     {
+        // Forçar o id de outro vendedor não adianta: o cliente fica com a Ana.
         $this->actingAs($this->ana)->post(route('clientes.store'), [
             'cli_nome' => 'Novo', 'cli_cnpj' => '11222333000144', 'cli_cidade' => 'Blumenau', 'cli_uf' => 'SC',
             'cli_vendedor_id' => $this->bruno->user_id,
-        ])->assertSessionHasErrors('cli_vendedor_id');
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame($this->ana->user_id, Cliente::where('cli_cnpj', '11222333000144')->value('cli_vendedor_id'));
+
+        // Nem tirando o vendedor (campo vazio).
+        $this->actingAs($this->ana)->post(route('clientes.store'), [
+            'cli_nome' => 'Outro', 'cli_cnpj' => '11222333000225', 'cli_cidade' => 'Blumenau', 'cli_uf' => 'SC',
+            'cli_vendedor_id' => '',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame($this->ana->user_id, Cliente::where('cli_cnpj', '11222333000225')->value('cli_vendedor_id'));
+    }
+
+    public function test_cliente_novo_do_vendedor_vem_com_ele_e_o_campo_travado(): void
+    {
+        $resposta = $this->actingAs($this->ana)->get(route('clientes.create'))->assertOk();
+
+        $resposta->assertSee('name="cli_vendedor_id" value="' . $this->ana->user_id . '"', false);
+        $resposta->assertSee('Ana Vendedora');
+        $resposta->assertDontSee('id="cli_vendedor_id"', false);
+    }
+
+    public function test_vendedor_editando_cliente_mantem_o_vendedor_e_assume_o_prospect(): void
+    {
+        $daAna = Cliente::factory()->create(['cli_vendedor_id' => $this->ana->user_id]);
+        $prospect = Cliente::factory()->create(['cli_vendedor_id' => null]);
+
+        foreach ([$daAna, $prospect] as $cliente) {
+            $this->actingAs($this->ana)->put(route('clientes.update', $cliente->cli_id), [
+                'cli_nome' => $cliente->cli_nome, 'cli_cnpj' => $cliente->cli_cnpj,
+                'cli_cidade' => 'Blumenau', 'cli_uf' => 'SC',
+                'cli_vendedor_id' => $this->bruno->user_id,
+            ])->assertRedirect()->assertSessionHasNoErrors();
+            $this->assertSame($this->ana->user_id, $cliente->fresh()->cli_vendedor_id);
+        }
+    }
+
+    public function test_comercial_escolhe_o_vendedor_do_cliente(): void
+    {
+        $comercial = Usuario::factory()->comercial()->create();
+
+        $this->actingAs($comercial)->get(route('clientes.create'))
+            ->assertOk()
+            ->assertSee('id="cli_vendedor_id"', false)
+            ->assertDontSee('id="cli_vendedor_nome"', false);
+
+        $this->actingAs($comercial)->post(route('clientes.store'), [
+            'cli_nome' => 'Do Bruno', 'cli_cnpj' => '11222333000306', 'cli_cidade' => 'Blumenau', 'cli_uf' => 'SC',
+            'cli_vendedor_id' => $this->bruno->user_id,
+        ])->assertSessionHasNoErrors();
+        $this->assertSame($this->bruno->user_id, Cliente::where('cli_cnpj', '11222333000306')->value('cli_vendedor_id'));
     }
 
     public function test_vendedor_ve_so_os_proprios_orcamentos_inclusive_como_adicional(): void
