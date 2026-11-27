@@ -1,11 +1,11 @@
 # Contrato da API FAÉ (`/api/fae/v1`) — mudanças do plano de segurança
 
-> **Escopo exclusivo da FAÉ.** Este contrato vale só para a API `/api/fae/v1` da branch `feature/fae` e para o app `app_buildflow_fae`. Nada aqui se aplica à MCL (`/api/mcl/v1`, branch `feature/mcl`, app `app.buildflow`), e nenhuma regra da MCL vale para a FAÉ: cada cliente tem sua própria API, seu próprio app e seu próprio banco. Ele é o acordo entre as **duas sessões da FAÉ** — a do servidor (Web) e a do app (Android) — para que os dois lados implementem o mesmo comportamento.
+> **Escopo exclusivo da FAÉ.** Este contrato vale só para a API `/api/fae/v1` da branch `feature/fae` e para o app `app_buildflow_fae`; nenhuma outra API, branch, banco ou aplicativo é afetado por ele. Ele é o acordo entre as **duas sessões da FAÉ** — a do servidor (Web) e a do app (Android) — para que os dois lados implementem o mesmo comportamento.
 
 | | |
 |---|---|
 | **Versão** | 1 — proposta inicial (27/11/2026) |
-| **Vale para** | `/api/fae/v1` (branch `feature/fae`) e app `app_buildflow_fae`. **Não** vale para a MCL. |
+| **Vale para** | `/api/fae/v1` (branch `feature/fae`) e app `app_buildflow_fae`, exclusivamente. |
 | **Dono** | Sessão **Web** (`sys-buildflow-fae`). Só ela altera este arquivo. |
 | **Consumidor** | Sessão **Android** (`app_buildflow_fae`). Só lê. Se precisar de mudança, para e pede ao usuário para levar o pedido à sessão Web. |
 | **Origem** | `auditoria-seguranca-arquitetura-fae-2026-11-27.md` (achados S-02, S-03, S-04, S-05, S-13, S-14, S-15, S-17, G-02) |

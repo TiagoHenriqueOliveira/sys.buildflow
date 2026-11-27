@@ -1,6 +1,6 @@
 # Prompt — Sessão Android: plano de correção da auditoria até nota 9
 
-> Cole na sessão aberta em `C:\Users\tiago\StudioProjects\app_buildflow_fae`:
+> Cole na sessão App da FAÉ. Se ela não estiver na pasta `C:\Users\tiago\StudioProjects\app_buildflow_fae`, a própria sessão deve se mover para lá com `change_directory` — **não abra sessão nova**:
 > **"Leia e execute `C:\Apache24\htdocs\sys-buildflow-fae\docs\auditoria\PROMPT-SEGURANCA-ANDROID.md`. Comece pela Fase 0 e pare ao fim dela."**
 > (A sessão vai pedir permissão para ler essa pasta do backend — é só leitura.)
 
@@ -17,7 +17,7 @@ Corrigir, no app Flutter da FAÉ, todos os achados da auditoria de 27/11/2026 qu
 ## Regras da sessão
 
 - **Responda em pt-BR.**
-- **Só FAÉ.** O app consome apenas `/api/fae/v1`. Não reaproveite regra, endpoint ou configuração do app da MCL (`app.buildflow`, `/api/mcl/v1`) e não altere nada naquele repositório — cada cliente tem seu próprio app, API e servidor.
+- **Só FAÉ.** O app consome apenas `/api/fae/v1` e o trabalho é só na pasta `app_buildflow_fae`, branch `feature/fae`. Não altere nenhum outro repositório, pasta ou aplicativo, e não cite outros projetos em código, commits ou documentos.
 - **Confira antes de corrigir.** O relatório vale para o commit `a03c348` (v1.3.0+8). Rode `git log a03c348..HEAD` nos arquivos citados e confirme que o problema ainda existe antes de mexer. Se já mudou, registre no acompanhamento.
 - **Não reverta mudanças de outras sessões.** `git status` antes de cada commit; commite só os seus arquivos. Hoje há uma alteração local de IP de desenvolvimento em `lib/core/constants/app_config.dart` — não é sua, não commite nem desfaça sem perguntar.
 - **Uma fase por rodada.** Ao terminar, pare, entregue o relatório de fim de fase (modelo no final) e espere o usuário dizer "continuar".
@@ -35,7 +35,7 @@ Corrigir, no app Flutter da FAÉ, todos os achados da auditoria de 27/11/2026 qu
 | 0.1 | S-14 (fila) | A fila **nunca** descarta pendência em 4xx. Nova situação "erro" na `pending_writes` (migração do banco v5 → v6 preservando os itens), guardando código e mensagem do servidor. Tela "Pendências" acessível ao usuário comum (não só a tela técnica de log), com reenviar e descartar (descartar pede confirmação). Tratar `423 relatorio_bloqueado`, `403`, `409` e `422` como pendência com erro, conforme contrato §11 — funcionar mesmo antes de o servidor enviar `codigo` (usar o status HTTP). | Teste: resposta 422/423 deixa o item na fila com erro e visível; nada some sem ação do usuário; migração v5→v6 preserva as pendências |
 | 0.2 | S-05 (token) | Token em `flutter_secure_storage` (Keystore), com migração: ler o token antigo do `SharedPreferences`, gravar no seguro e apagar o antigo. | Teste: depois da migração, `SharedPreferences` sem token e sessão continua válida |
 | 0.3 | S-05 (401) | `401` pausa a fila e pede login mantendo as pendências (mesmo usuário); `403 usuario_inativo` no login faz limpeza total (cache, fila, arquivos, credenciais). Ler `expira_em` do login quando existir. Contrato §2.3, §2.4. | Testes dos dois caminhos |
-| 0.4 | S-16 | Remover os comentários e restos de infraestrutura da MCL (`api_service.dart`, host pinado de outro cliente). Manter o comportamento "fail closed" da validação TLS. | `git grep -i mcl -- lib` vazio (fora de histórico) |
+| 0.4 | S-16 | Remover de `api_service.dart` os comentários e restos de infraestrutura que não são da FAÉ (endereço de servidor e host pinado de outro projeto). Manter o comportamento "fail closed" da validação TLS. | Nenhum endereço de servidor que não seja da FAÉ em `lib/` |
 | 0.5 | — | Relatório para o usuário com a **ordem de deploy**: a versão com 0.1 precisa estar instalada em todos os aparelhos antes de o servidor ligar o `423` (S-02 da sessão Web). Sem isso, o técnico perde em silêncio o que gravou offline. | — |
 
 **Fim da Fase 0:** revisão rápida de segurança do `CLAUDE.md` (token, `debugPrint` sem dados pessoais), relatório de fim de fase.

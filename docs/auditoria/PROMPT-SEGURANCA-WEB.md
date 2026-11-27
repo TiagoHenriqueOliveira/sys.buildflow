@@ -1,6 +1,6 @@
 # Prompt — Sessão Web: plano de correção da auditoria até nota 9
 
-> Cole na sessão aberta em `C:\Apache24\htdocs\sys-buildflow-fae`:
+> Cole na sessão Web da FAÉ. Se ela não estiver na pasta `C:\Apache24\htdocs\sys-buildflow-fae`, a própria sessão deve se mover para lá com `change_directory` — **não abra sessão nova**:
 > **"Leia e execute `docs/auditoria/PROMPT-SEGURANCA-WEB.md`. Comece pela Fase 0 e pare ao fim dela."**
 
 ## Objetivo
@@ -16,7 +16,7 @@ Corrigir, no sistema web e na API `fae/v1` da FAÉ, todos os achados da auditori
 ## Regras da sessão
 
 - **Responda em pt-BR.**
-- **Só FAÉ.** Todo o trabalho é na branch `feature/fae` e na API `/api/fae/v1`. Não copie regra, rota ou comportamento da MCL (`feature/mcl`, `/api/mcl/v1`) e não altere nada que a MCL use — cada cliente tem sua própria API, banco e app. O código da MCL que ainda está nesta branch sai no passo 0.3 (S-01).
+- **Só FAÉ.** Todo o trabalho é na branch `feature/fae`, na API `/api/fae/v1` e na pasta `sys-buildflow-fae`. Não altere nenhuma outra branch, pasta, banco ou aplicativo, e não cite outros projetos em código, commits ou documentos. O código legado herdado que ainda está nesta branch sai no passo 0.3 (S-01).
 - **Confira antes de corrigir.** O relatório vale para o commit `de25f8c`; o repositório mudou depois (outras sessões trabalham aqui). Para cada item, rode `git log de25f8c..HEAD` nos arquivos citados, confirme que o problema ainda existe e só então corrija. Se já foi resolvido ou mudou, registre isso no acompanhamento em vez de refazer.
 - **Não reverta mudanças de outras sessões.** Antes de cada commit, rode `git status` e commite só os seus arquivos.
 - **Uma fase por rodada.** Ao terminar a fase, pare, entregue o relatório de fim de fase (modelo no final) e espere o usuário dizer "continuar".
@@ -36,9 +36,9 @@ Ordem sugerida (do mais barato e sem dependência ao que depende de decisão):
 |---|---|---|---|
 | 0.1 | G-04 (parte) | Propor ao usuário um banco de teste exclusivo (`buildflow_fae_test`) e apontar o `.env.testing` para ele. Criar o banco **só depois da confirmação**. Rodar a suíte uma vez para registrar a linha de base. | Suíte rodando em banco exclusivo; resultado da linha de base anotado no acompanhamento |
 | 0.2 | S-06 | `composer update` dentro de `^13` e `npm audit fix`; rodar a suíte. | `composer audit --locked` e `npm audit --omit=dev` sem avisos (ou exceções justificadas) |
-| 0.3 | S-01 | Remover `/api/v1` e `/api/mcl/v1` (rotas, controllers `Api/Mcl/*` e `Api/{Atendimentos,Relatorios,Catalogo}Controller`, `Requests/Mcl/*`, testes `*Mcl*`), portando para a `fae/v1` o que ainda for usado. Antes, pergunte ao usuário se há logs de produção mostrando algum aparelho chamando essas rotas. | `route:list --path=api` só com `api/fae/v1/*`; testes 404 para as rotas antigas |
+| 0.3 | S-01 | Desligar no `routes/api.php` os dois grupos de rotas legados (linhas 31-90 e 98-158), portando para a `fae/v1` o que ainda for usado e removendo controllers, requests e testes que ficarem sem uso. Antes, pergunte ao usuário se há logs de produção mostrando algum aparelho chamando essas rotas. | `route:list --path=api` só com `api/fae/v1/*`; testes 404 para as rotas antigas |
 | 0.4 | S-07 | `clientes/{id}/resumo` com `visivelPara` e permissão. | Teste: Vendedor A → 403 no cliente do Vendedor B |
-| 0.5 | S-16 (texto) | Trocar "A MCLvale…" em `pdf.blade.php`. **Pergunte ao usuário o texto aprovado pela FAÉ.** | HTML do PDF sem "MCL" |
+| 0.5 | S-16 (texto) | Trocar o texto jurídico com o nome de outra empresa no bloco Entrega Técnica de `pdf.blade.php`. **Pergunte ao usuário o texto aprovado pela FAÉ.** | O PDF só cita a FAÉ |
 | 0.6 | S-04 | Posse no `/midia` (prefixo do caminho → registro dono → `garantirPosse`; resto só acesso total); arquivos novos com nome UUID. Contrato §9. | Teste: técnico B → 403 no arquivo do técnico A; dono e administrador → 200 |
 | 0.7 | S-05 (parte 1) | Login da API: bloqueio por conta igual ao web, `usuario_inativo`, expiração do token (absoluta e por inatividade), habilidade `fae-app`, `expira_em` na resposta, política de senha `Password::min(10)->letters()->numbers()->uncompromised()` em todos os cadastros de senha. Contrato §1, §2.1, §2.3. | Testes do relatório §6.1 (S-05) |
 | 0.8 | S-02 | Guarda única de "relatório editável" em **todas** as rotas de escrita (web e API) → `423 relatorio_bloqueado`; assinatura do cliente só após aprovação e uma vez; arquivo de assinatura imutável com SHA-256 do PDF; status e assinatura na mesma transação. Contrato §5. **Depende de D-03.** | Testes do relatório §6.1 (S-02) |
@@ -90,7 +90,7 @@ Ordem sugerida (do mais barato e sem dependência ao que depende de decisão):
 | G-06 / S-24 | README próprio, `.env.example` comentado, OpenAPI 3.1 da `fae/v1` validado em teste, runbook de incidentes. | — |
 | G-07 | Agrupamento de marcadores nos mapas; PDF com miniaturas redimensionadas; miniaturas de vídeo em fila. | S-09 |
 | G-08 (web) | BF09 "peça levada"; BF11 fotos na observação interna; CRM03 comentários no cliente; CRM08 filtro de vendedor; BF01 regra de perfil. Formalizar em `docs/` as divergências aceitas (D-07). | D-07 |
-| S-16 (resto) | Remover docs, Postman e testes restantes da MCL. | S-01 |
+| S-16 (resto) | Remover documentação, coleções Postman e testes legados restantes do código-base de origem. | S-01 |
 
 ## Fase 4 — Sustentação
 

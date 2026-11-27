@@ -30,7 +30,7 @@
 
 ### Os 5 principais riscos (em linguagem não técnica)
 
-1. **Relatório aprovado e assinado ainda pode ser alterado.** A tela trava a edição, mas o servidor não. Um técnico consegue mudar o conteúdo de um relatório depois de aprovado e até depois da assinatura do cliente — e, por uma API antiga herdada de outro cliente que continua ligada, consegue aprovar o próprio relatório sem o supervisor. Isso compromete o valor do relatório como prova.
+1. **Relatório aprovado e assinado ainda pode ser alterado.** A tela trava a edição, mas o servidor não. Um técnico consegue mudar o conteúdo de um relatório depois de aprovado e até depois da assinatura do cliente — e, por uma API antiga herdada do código-base de origem que continua ligada, consegue aprovar o próprio relatório sem o supervisor. Isso compromete o valor do relatório como prova.
 2. **Dados comerciais visíveis para quem não deveria.** O escopo exige que contatos comerciais fiquem só com o vendedor dono e os administradores. Hoje qualquer perfil que acessa Clientes (incluindo Assistência, por padrão) vê todos os contatos, e o app recebe todos eles.
 3. **Fotos e assinaturas de qualquer atendimento abertas para qualquer usuário logado.** O endereço dos arquivos é previsível (ex.: assinatura do cliente do relatório nº X) e o sistema só confere se a pessoa está logada, não se o arquivo é de um atendimento dela.
 4. **O app entra só com e-mail e senha, e o acesso nunca expira.** O painel web exige o código do autenticador, mas a API do app não — inclusive para administradores. O "crachá" digital do app não vence e fica guardado no celular sem a proteção do cofre do Android.
@@ -95,11 +95,11 @@ A contenção (Fase 0) é de esforço **pequeno a médio** e elimina todos os ac
 | **A4** Dados pessoais / LGPD | 3 | Não | Nenhum item do programa LGPD implementado; CPF não mapeado e impresso no PDF; backups em texto claro; SQLite do app sem criptografia; EXIF/GPS mantido nas fotos; sem retenção/exclusão/anonimização. | Bloco LGPD, S-10, S-15, S-20 |
 | **A5** Segredos e configuração | 7 | Não | Sem segredos versionados, `.env` ignorado, CSRF ativo, cookies `HttpOnly`, sessão criptografada, CORS sem origens, cabeçalhos de segurança. CSP com `unsafe-inline`/`unsafe-eval`, cookie `secure` só por variável, sem `.env.example`, manutenção por GET. | S-18, S-19, S-24 |
 | **A6** Dependências | 5 | Não | Laravel 13 e PHP 8.4 dentro do suporte, lockfiles versionados; porém 18 avisos do `composer audit` (1 Alto alcançável sem login), 1 Alto no `npm audit`, 17 pacotes Dart presos a versões antigas, nenhuma varredura automática. **Veto S-06.** | S-06, G-10 |
-| **A7** Segurança da API | 4 | Não | `fae/v1` versionada, Sanctum, paginação nas listas, rate limit. Inventário sujo (`/api/v1`, `/api/mcl/v1` ativas), autenticação fraca, sem exigência de versão mínima do app, sem contrato OpenAPI, payload expõe contatos comerciais e CPF. **Veto S-01, S-05.** | S-01, S-05, S-14, G-06 |
+| **A7** Segurança da API | 4 | Não | `fae/v1` versionada, Sanctum, paginação nas listas, rate limit. Inventário sujo (dois grupos de rotas legados ativos), autenticação fraca, sem exigência de versão mínima do app, sem contrato OpenAPI, payload expõe contatos comerciais e CPF. **Veto S-01, S-05.** | S-01, S-05, S-14, G-06 |
 | **A8** Logs e auditoria | 5 | Não | `AuditService` registra login, falhas, MFA, perfis e mudança de status na web. Nada é auditado na API (aprovações pelo app), nem CRM/clientes/usuários; sem trilha de leitura de dados pessoais; registros alteráveis. | S-11 |
-| **A9** Segurança do app | 4 | Não | `allowBackup=false`, cleartext só no build de debug, validação TLS "fail closed". Token em `SharedPreferences`, SQLite sem criptografia, sem ofuscação, release com chave de debug, `applicationId` igual ao app da MCL, sem wipe/expiração do acesso offline. | S-05, S-13 |
+| **A9** Segurança do app | 4 | Não | `allowBackup=false`, cleartext só no build de debug, validação TLS "fail closed". Token em `SharedPreferences`, SQLite sem criptografia, sem ofuscação, release com chave de debug, `applicationId` genérico, não exclusivo da FAÉ, sem wipe/expiração do acesso offline. | S-05, S-13 |
 | **A10** Hardening da hospedagem | 4 | Não | Existe um documento de infraestrutura funcional, mas sem requisitos de segurança (firewall/WAF, banco isolado, backup cifrado e externo, rotação de segredos, proxies confiáveis). | S-10, S-23, Apêndice A |
-| **A11** Isolamento multi-cliente | 5 | Não | Migrations e banco por branch, `.env` separado, sem dados reais de outro cliente. Mas: rotas/controllers/testes da MCL ativos (vetor de S-01), texto jurídico da MCL no PDF da FAÉ, mesmo `applicationId` do app MCL, banco de teste compartilhado. | S-01, S-16 |
+| **A11** Isolamento multi-cliente | 5 | Não | Migrations e banco por branch, `.env` separado, sem dados reais de terceiros. Mas: rotas, controllers e testes legados do código-base de origem ativos (vetor de S-01), texto jurídico com o nome de outra empresa no PDF da FAÉ, `applicationId` não exclusivo, banco de teste compartilhado. | S-01, S-16 |
 | **B1** Arquitetura | 6 | Não | Repositories e Services existem; catálogo de permissões bem desenhado. Controllers gordos (`AtendimentosRelatoriosController` com 1.249 linhas), três implementações quase iguais da API de relatórios, regras de negócio espalhadas, policy só para Atendimento. | G-01 |
 | **B2** Qualidade | 6 | Não | Nomes consistentes e comentários ricos. Duplicação alta, comentários desatualizados (ex.: "Middleware comercial" em `Api/Fae/ClientesController.php:59`), texto com codificação quebrada nos comentários de `routes/api.php`. | G-01 |
 | **B3** Padrões Laravel | 6 | Não | Form Requests na maioria, `can:` nas rotas. Sem API Resources, várias validações inline, closures de rota para manutenção, Pint sem execução automática. | G-01 |
@@ -129,7 +129,7 @@ Legenda: ✅ atendido · 🟡 parcial · ❌ ausente · ↔ divergente (implemen
 | **BF03** Cliente no atendimento | ✅ | `clientes.resumo` (`routes/web.php:122`) | ✅ (mas sem checagem de visibilidade — S-07) |
 | **BF04** Modelo ↔ tipo de atendimento | ✅ | migration `2026_09_10_090004`; criação exige modelo (`Api/Fae/RelatoriosController.php:115-117`) | ✅ |
 | **BF05** Formulário dinâmico no app | 🟡 | `lib/features/relatorios/sections/perguntas_formulario_section.dart`, `RelatorioFormularioController` | ✅ online, 3 tipos, foto só onde habilitado (na tela); ❌ **offline** — o próprio código declara "sem cache local nem fila" (`perguntas_formulario_section.dart:15-16`) |
-| **BF06** PDF só com respondidas | ✅ | `resources/views/atendimentos-relatorios/pdf.blade.php:406-410` | ✅ (ressalva: texto jurídico da MCL no bloco Entrega Técnica — S-16) |
+| **BF06** PDF só com respondidas | ✅ | `resources/views/atendimentos-relatorios/pdf.blade.php:406-410` | ✅ (ressalva: texto jurídico com o nome de outra empresa no bloco Entrega Técnica — S-16) |
 | **BF07** Envio com comprovante | 🟡 | `storeCompartilhamento` (`Api/Fae/RelatoriosController.php:389-405`) | ✅ data/hora + hash por compartilhamento; ✅ hash único; 🟡 hash de 64 caracteres (doc pede 10) e não vinculado ao conteúdo do PDF (S-17); ❓ orçamento em PDF: §4 do documento prevê, §8 tira de escopo — decidir (D-04) |
 | **BF08** Mapa de demandas | ✅ | `MapaDemandasController.php:31` (filtros status/natureza/técnico), `lib/features/relatorios/mapa_demandas_screen.dart` | ✅ pontos por status; ✅ detalhe ao tocar |
 | **BF09** Peças levadas/trocadas | 🟡 | migration `2026_09_11_090005` (`trocada`) | ✅ trocada; ❌ **levada** (nenhuma coluna `peca_levada`) |
@@ -162,11 +162,11 @@ Formato: severidade contextual · CVSS 3.1 estimado · mapeamento OWASP Top 10 2
 
 ### 5.1 Alta
 
-#### S-01 — APIs legadas `/api/v1` e `/api/mcl/v1` ativas na FAÉ, fora da matriz de permissões e com a regra de aprovação da MCL
+#### S-01 — APIs legadas ativas na FAÉ, fora da matriz de permissões e com regra de aprovação própria
 - **Severidade:** Alta · CVSS 7.1 (`AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:N`) · API9 (inventário), API5 (BFLA), A01.
 - **Evidência:**
-  - `routes/api.php:31-90` (`/api/v1`) e `routes/api.php:98-158` (`/api/mcl/v1`): só `auth:sanctum` (`:37`, `:105`), **sem** nenhum `can:` — enquanto o grupo da FAÉ (`:165+`) exige `can:relatorios.editar` etc.
-  - `app/Http/Controllers/Api/Mcl/RelatoriosController.php:569-590`: técnico (nível ≠ 0) com as duas assinaturas grava `Aprovado` diretamente; não usa `erroMudancaStatus`, não grava `aprovado_por/_em` e permite tirar um relatório de Aprovado.
+  - `routes/api.php:31-90` (`/api/v1`) e `routes/api.php:98-158` (segundo grupo legado): só `auth:sanctum` (`:37`, `:105`), **sem** nenhum `can:` — enquanto o grupo da FAÉ (`:165+`) exige `can:relatorios.editar` etc.
+  - controller de relatórios do segundo grupo legado, método `updateStatus` (linhas 569-590; rota em `routes/api.php:129`): técnico (nível ≠ 0) com as duas assinaturas grava `Aprovado` diretamente; não usa `erroMudancaStatus`, não grava `aprovado_por/_em` e permite tirar um relatório de Aprovado.
   - O app da FAÉ só usa `fae/v1` (`lib/core/constants/app_config.dart:14-15`) — as rotas legadas não têm consumidor.
 - **Impacto no contexto:** qualquer técnico dono do atendimento aprova o próprio relatório sem o supervisor (BF10), reabre relatórios aprovados e escreve em relatórios mesmo que o perfil dele tenha perdido `relatorios.editar` em "Perfis de Acesso".
 
@@ -176,7 +176,7 @@ Formato: severidade contextual · CVSS 3.1 estimado · mapeamento OWASP Top 10 2
   - A trava existe só na tela: `app/Http/Controllers/AtendimentosRelatoriosController.php:255` (`somenteLeitura` vai para a view).
   - Endpoints de escrita sem checagem de status: web `AtendimentosRelatoriosController.php:263-300`, `:446-466` (`updateTexto`), `:357-445` (`updateAssinaturas` grava assinaturas em qualquer status); API `Api/Fae/RelatoriosController.php:334-341` (informações adicionais), `:722-755` (assinaturas); `Api/Fae/RelatorioFormularioController.php:109-158` (respostas e fotos); idem nas APIs legadas.
   - `AtendimentoRelatorio::erroMudancaStatus` (`app/Models/AtendimentoRelatorio.php:223-258`) controla só a transição de status, não a edição de conteúdo.
-  - Assinatura gravada sempre no mesmo arquivo e o registro é atualizado (`app/Services/RelatorioMclService.php:27`, `:47-58`): a assinatura anterior é perdida sem rastro.
+  - Assinatura gravada sempre no mesmo arquivo e o registro é atualizado (`saveSignature()` do serviço de mídia de relatório, linhas 27 e 47-58): a assinatura anterior é perdida sem rastro.
 - **Impacto:** o relatório que o cliente assinou pode ser alterado depois (texto, respostas, fotos, assinatura), o que o invalida como evidência. Os critérios de aceite do BF10 "tentar editar um relatório aprovado deve bloquear" e "assinatura do cliente sem aprovação deve bloquear" **falham**.
 
 #### S-03 — Contatos comerciais visíveis a todos os perfis com acesso a Clientes (regra de visibilidade do NC01 não implementada)
@@ -191,7 +191,7 @@ Formato: severidade contextual · CVSS 3.1 estimado · mapeamento OWASP Top 10 2
 
 #### S-04 — `/midia/{path}` serve qualquer arquivo a qualquer usuário autenticado (sem autorização por objeto)
 - **Severidade:** Alta (contextual: assinaturas e fotos de todos os clientes) · CVSS 6.5 (`AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N`) · API1 (BOLA), A01.
-- **Evidência:** `routes/web.php:58-60` (só `auth:web,sanctum`, `usuario.ativo`, `sessao.prazo`, `mfa`); `app/Http/Controllers/StorageController.php:17-22` (`exists` + `response`, nenhuma checagem de dono). Caminhos previsíveis: `atendimentos_relatorios/{id}/assinaturas/cliente.png` (`RelatorioMclService.php:27`), `atendimentos_relatorios/{id}/fotos/<nome original>` (`Api/Fae/RelatoriosController.php:826-827`).
+- **Evidência:** `routes/web.php:58-60` (só `auth:web,sanctum`, `usuario.ativo`, `sessao.prazo`, `mfa`); `app/Http/Controllers/StorageController.php:17-22` (`exists` + `response`, nenhuma checagem de dono). Caminhos previsíveis: `atendimentos_relatorios/{id}/assinaturas/cliente.png` (`saveSignature()`, linha 27), `atendimentos_relatorios/{id}/fotos/<nome original>` (`Api/Fae/RelatoriosController.php:826-827`).
 - **Impacto:** um Vendedor ou Técnico baixa assinaturas e fotos de atendimentos de outros técnicos e clientes enumerando IDs, contornando a posse aplicada no resto do sistema.
 
 #### S-05 — Autenticação da API sem MFA, tokens sem expiração e sem bloqueio por conta; token guardado sem proteção no aparelho
@@ -244,7 +244,7 @@ Formato: severidade contextual · CVSS 3.1 estimado · mapeamento OWASP Top 10 2
 
 #### S-13 — App Android: identidade, assinatura e armazenamento local
 - MASVS-STORAGE-1, MASVS-RESILIENCE-1/3, MASVS-PLATFORM, MASVS-CODE-1.
-- `android/app/build.gradle.kts:44`: `applicationId = "com.example.mo_control"`, **o mesmo do app da MCL** (`app.buildflow/android/app/build.gradle:44`) — instalar um substitui o outro no mesmo aparelho e as atualizações se misturam.
+- `android/app/build.gradle.kts:44`: `applicationId = "com.example.mo_control"`, um identificador genérico de exemplo, **não exclusivo da FAÉ**: qualquer outro app gerado a partir do mesmo código-base com esse identificador substitui o da FAÉ no aparelho e as atualizações se misturam.
 - `android/app/build.gradle.kts:14-27, 60-75`: sem `key.properties` (o arquivo não existe), o release é assinado com a chave de debug da máquina.
 - `tool/build_publish_apk.ps1:35`: build sem `--obfuscate --split-debug-info`.
 - `lib/core/database/local_db.dart:36-75`: SQLite sem criptografia com relatórios em JSON — incluindo CPF de assinante e observação interna (`Api/Fae/RelatoriosController.php:240`, `:301-307`) — e a fila de pendências.
@@ -263,10 +263,10 @@ Formato: severidade contextual · CVSS 3.1 estimado · mapeamento OWASP Top 10 2
 - LGPD (minimização/segurança) · A02.
 - Migration `2026_08_20_100001` (`aten_rel_ass_cpf`), obrigatório junto da assinatura do cliente (`StoreAssinaturaRequest`), devolvido pela API (`Api/Fae/RelatoriosController.php:301-307`), cacheado no app e impresso no PDF (`pdf.blade.php:621-622`), que é compartilhado por WhatsApp/Drive. O CPF não consta do inventário de dados do escopo.
 
-#### S-16 — Resquícios de outro cliente (MCL) na branch da FAÉ
+#### S-16 — Resquícios do código-base de origem na branch da FAÉ
 - A11 / integridade documental.
-- `resources/views/atendimentos-relatorios/pdf.blade.php:565`: o PDF da FAÉ diz "**A MCLvale**, neste ato representado pelo técnico abaixo assinado…" no bloco Entrega Técnica — documento assinado pelo cliente da FAÉ cita outra empresa.
-- Código, rotas, requests, docs e testes da MCL ativos (`routes/api.php:92-158`, `app/Http/Controllers/Api/Mcl/*`, `app/Http/Requests/Mcl/*`, `docs/api-mcl.md`, `docs/postman-mcl.json`, `tests/Feature/*Mcl*`); hostname de produção da MCL citado no app (`lib/core/api/api_service.dart:43-45`); `applicationId` compartilhado (S-13); banco de teste compartilhado (`CLAUDE.md`). Não foram encontrados dados pessoais nem segredos da MCL.
+- `resources/views/atendimentos-relatorios/pdf.blade.php:565`: o PDF da FAÉ traz, no bloco Entrega Técnica, um texto jurídico com o nome de **outra empresa** — documento assinado pelo cliente da FAÉ cita outra empresa.
+- Rotas, controllers, requests, documentação e testes legados herdados do código-base de origem ainda ativos (`routes/api.php:92-158` e os arquivos ligados a esse grupo); endereço de servidor de outro projeto em comentários do app (`lib/core/api/api_service.dart:43-45`); `applicationId` não exclusivo (S-13); banco de teste compartilhado (`CLAUDE.md`). Não foram encontrados dados pessoais nem segredos de terceiros.
 
 #### S-17 — Comprovante de envio (BF07/RNF06) não é prova criptográfica
 - A08 (integridade).
@@ -278,8 +278,8 @@ Formato: severidade contextual · CVSS 3.1 estimado · mapeamento OWASP Top 10 2
 |---|---|---|---|
 | S-18 | CSP com `'unsafe-inline'` e `'unsafe-eval'`; HSTS sem `includeSubDomains`; cookie `secure` depende de `SESSION_SECURE_COOKIE` (sem padrão) | `app/Http/Middleware/CabecalhosDeSeguranca.php:42-44, 50-62`; `config/session.php:172` | A05 |
 | S-19 | Rotas de manutenção por GET com efeito colateral (`?fix=1` reescreve arquivos de código/mídia no servidor), sem CSRF | `routes/web.php:274-296` | A01/A05 |
-| S-20 | Fotos guardadas sem remover EXIF (GPS do técnico) e com o nome original | `Api/Fae/RelatorioFormularioController.php:144-148`; `RelatorioMclService.php:73-88`; `AtendimentosController.php:244` | LGPD / A04 |
-| S-21 | Assinatura base64 sem limite de tamanho (`imagecreatefromstring` → consumo de memória) | `app/Http/Requests/Fae/StoreAssinaturaRequest.php:22-23`; `RelatorioMclService.php:22-39` | API4 |
+| S-20 | Fotos guardadas sem remover EXIF (GPS do técnico) e com o nome original | `Api/Fae/RelatorioFormularioController.php:144-148`; `safeFilename()` do serviço de mídia de relatório (linhas 73-88); `AtendimentosController.php:244` | LGPD / A04 |
+| S-21 | Assinatura base64 sem limite de tamanho (`imagecreatefromstring` → consumo de memória) | `app/Http/Requests/Fae/StoreAssinaturaRequest.php:22-23`; `saveSignature()` do serviço de mídia de relatório (linhas 22-39) | API4 |
 | S-22 | Regras do Configurador só na tela: a resposta aceita pergunta fora do modelo e foto mesmo sem "permite anexo" | `Api/Fae/RelatorioFormularioController.php:111-158` | API3 |
 | S-23 | Rate limit da API cai no ramo por IP (o usuário ainda não foi resolvido antes do `auth:sanctum` — inferido, não testado); `TrustProxies` vazio: atrás da Cloudflare todos os acessos parecem vir dos IPs dela | `app/Providers/RouteServiceProvider.php:44-51`; `app/Http/Middleware/TrustProxies.php:15` | API4 |
 | S-24 | Sem `.env.example` e README padrão do Laravel (configuração segura não documentada) | raiz do repositório web | A05 |
@@ -330,14 +330,14 @@ Cada item traz ID, critério, correção, aceite verificável, esforço (P/M/G) 
 
 | ID | Crit. | Sev. | Correção recomendada | Critério de aceite verificável | Esf. | Dep. |
 |---|---|---|---|---|---|---|
-| S-01 | A2, A7, A11, B10 | Alta | Remover os grupos `Route::prefix('v1')` e `Route::prefix('mcl/v1')` do `routes/api.php` da branch FAÉ; apagar `Api/Mcl/*`, `Api/{Atendimentos,Relatorios,Catalogo}Controller`, `Requests/Mcl/*` e os testes `*Mcl*` (portando para a `fae/v1` o que ainda valer). | `php artisan route:list --path=api` lista só `api/fae/v1/*`; teste novo: `PUT /api/mcl/v1/relatorios/1/status` e `GET /api/v1/relatorios` → 404. | P | — |
+| S-01 | A2, A7, A11, B10 | Alta | Desligar no `routes/api.php` da branch FAÉ os dois grupos de rotas legados (linhas 31-90 e 98-158), mantendo só `/api/fae/v1`; portar para a `fae/v1` o que ainda valer e remover controllers, requests e testes que ficarem sem uso. | `php artisan route:list --path=api` lista só `api/fae/v1/*`; teste novo: as rotas dos dois grupos legados → 404. | P | — |
 | S-02 | A2, B10 | Alta | Guarda única (ex.: `AtendimentoRelatorio::garantirEditavel()` ou middleware `relatorio.editavel`) aplicada a **todas** as rotas de escrita de relatório (web e `fae/v1`), devolvendo 423 quando `Aprovado`. Assinatura do cliente só com status Aprovado e uma única vez; cada assinatura em arquivo novo e imutável (nome com hash), guardando o SHA-256 do PDF no momento da assinatura. Status e assinatura na mesma transação. | Testes: toda rota de escrita em relatório Aprovado → 423 (web e API); assinatura do cliente com status ≠ Aprovado → 422; segunda assinatura do cliente → 409; `Revisar` volta a permitir edição. | M | D-03 |
 | S-03 | A2, A4, B10 | Alta | Adicionar `cli_cont_usuario_id` (autor) em `clientes_contatos`; escopo `contatosVisiveisPara($usuario)`: contato Comercial visível só ao autor/vendedor responsável e a quem tem acesso total; aplicar no formulário web, no `show` da API, no histórico e no resumo. Trocar o "apaga e recria" por sincronização por ID, preservando contatos ocultos a quem edita. | Teste: Assistência abre cliente com contato Comercial de outro vendedor → contato ausente no HTML e no JSON; editar e salvar o cliente não remove esse contato. | M | D-01 |
 | S-04 | A2, A4 | Alta | No `StorageController`, mapear o prefixo do caminho para o registro dono (`atendimentos/{id}` e `atendimentos_relatorios/{id}` → `garantirPosse`) e negar o resto a quem não tem acesso total; ou servir só por URL assinada temporária (`URL::temporarySignedRoute`) emitida após a checagem. Novos arquivos com nome aleatório (UUID). | Teste: técnico B recebe 403 em foto/assinatura do atendimento do técnico A; Vendedor recebe 403 em `atendimentos_relatorios/*`; administrador recebe 200. | M | — |
 | S-05 (parte 1) | A1, A7, A9 | Alta | API: o mesmo bloqueio por conta do web (chave `login.senha.<sha1(email)>`); expiração dos tokens (`sanctum.expiration` ≈ 30 dias + 7 dias de inatividade via `last_used_at`); habilidade restrita (`fae-app`); política de senha `Password::min(10)->letters()->numbers()->uncompromised()`. App: token em `flutter_secure_storage` (Keystore). | Testes: 6ª senha errada na API → bloqueio de 15 min mesmo de outro IP; token com mais de 30 dias → 401; senha "123456" rejeitada; `shared_preferences` sem token. | M | — |
 | S-06 | A6 | Alta | `composer update` dentro de `^13` (≥ 13.40, Symfony ≥ 8.1.12, commonmark corrigido) e `npm audit fix`; rodar a suíte. | `composer audit --locked` sem avisos (ou exceções justificadas por escrito); `npm audit --omit=dev` limpo. | P | — |
 | S-07 | A2 | Média | `resumo`: `abort_unless($cliente->visivelPara($usuario))` e exigir `atendimentos.editar` ou `clientes.ver`. | Teste: Vendedor A → 403 no resumo de cliente do Vendedor B. | P | — |
-| S-16 (texto) | A11, B10 | Média | Trocar "A MCLvale" pelo texto aprovado pela FAÉ em `pdf.blade.php:565`. | O HTML do PDF não contém "MCL". | P | Texto do cliente |
+| S-16 (texto) | A11, B10 | Média | Trocar o texto jurídico com o nome de outra empresa (`pdf.blade.php:565`) pelo texto aprovado pela FAÉ. | O PDF só cita a FAÉ. | P | Texto do cliente |
 
 ### 6.2 Fase 1 — Segurança restante e sincronização segura
 
@@ -383,7 +383,7 @@ Cada item traz ID, critério, correção, aceite verificável, esforço (P/M/G) 
 | G-06 | B9, A7 | README próprio (setup, deploy, rollback), `.env.example` comentado (resolve S-24), contrato OpenAPI 3.1 da `fae/v1` gerado e validado em teste (ex.: Scribe), runbook de incidentes. | `openapi.yaml` validado no CI; um dev novo sobe o ambiente só com o README. | M | — |
 | G-07 | B7 | Agrupamento de marcadores (Leaflet.markercluster) e limite por área visível; PDF com miniaturas redimensionadas e cache; backup fora do PHP; miniaturas em fila. | PDF com 200 fotos gerado em menos de 30 s e 256 MB; mapa com 5.000 pontos navegável. | M | S-09 |
 | G-08 | B10 | Itens parciais do escopo: BF09 "levada"; BF11 fotos; CRM03 comentários no cliente; CRM08 filtro de vendedor; BF01 regra de perfil; formalizar as divergências aceitas (NC01 pré-cadastro, NC04 só fotos, status do BF10). | Matriz da seção 4 sem 🟡 nem ↔ sem registro formal. | M | D-07 |
-| S-16 (resto) | A11 | Eliminar os artefatos MCL restantes (docs, Postman, testes, comentários de infraestrutura MCL no app). | `git grep -i mcl` só em histórico/CHANGELOG. | P | S-01 |
+| S-16 (resto) | A11 | Eliminar os artefatos legados restantes do código-base de origem (documentação, coleções Postman, testes e comentários de infraestrutura no app). | Nenhum nome, rota ou endereço de outro projeto no código e na documentação da branch. | P | S-01 |
 
 ### 6.5 Fase 4 — Sustentação
 
@@ -401,7 +401,7 @@ Cada item traz ID, critério, correção, aceite verificável, esforço (P/M/G) 
 **Caminho crítico:** D-03 → S-02 → S-14 (idempotência e tratamento de 423 na fila) → G-02 (revisão) → G-03 (formulário offline) → G-04 (testes). É a sequência mais longa e a que mais move B5, B10 e B11.
 
 **Riscos de regressão:**
-- **S-01:** o app publicado (v1.3.0+8) já usa só `fae/v1`; confirmar nos logs de acesso que nenhum aparelho antigo chama `/api/mcl/v1` ou `/api/v1` antes de remover.
+- **S-01:** o app publicado (v1.3.0+8) já usa só `fae/v1`; confirmar nos logs de acesso que nenhum aparelho antigo chama as rotas dos grupos legados antes de desligá-las.
 - **S-02:** o app grava seções depois da aprovação em alguns fluxos (ex.: assinatura do cliente) — alinhar a regra com D-03 e tratar 423 na fila; sem o S-14, a fila descarta o item em silêncio.
 - **S-03:** o "apaga e recria" de contatos apagaria os contatos ocultos a quem edita — a sincronização por ID precisa entrar **junto**.
 - **S-04:** as telas usam `asset('midia/...')`; o dono precisa continuar recebendo 200. O PDF lê do disco e não é afetado.
@@ -462,7 +462,7 @@ A projeção supõe as decisões D-01..D-07 tomadas a tempo; A4 e A10 dependem d
 Cada item precisa de evidência anexada (teste automatizado, saída de comando ou print).
 
 **Autenticação e autorização**
-- [ ] `route:list --path=api` mostra só `api/fae/v1/*`; testes de 404 para `/api/v1` e `/api/mcl/v1`.
+- [ ] `route:list --path=api` mostra só `api/fae/v1/*`; testes de 404 para as rotas dos dois grupos legados.
 - [ ] Login da API: bloqueio por conta após 5 erros; MFA exigido para os perfis definidos; token expira (absoluto e por inatividade); habilidade restrita.
 - [ ] Política de senha ≥ 10 caracteres com checagem de vazamento; troca de e-mail/senha exige a senha atual.
 - [ ] O cadastro do MFA não é possível só com a senha.
@@ -476,7 +476,7 @@ Cada item precisa de evidência anexada (teste automatizado, saída de comando o
 - [ ] Assinatura do cliente só após a aprovação, uma única vez, em arquivo imutável e com o hash do PDF guardado.
 - [ ] Comprovante verificável (HMAC) e tabela só de inserção.
 - [ ] Revisão de modelo: os três critérios de aceite do NC02 passam.
-- [ ] Nenhum texto de outro cliente nos PDFs.
+- [ ] Nenhum texto com o nome de outra empresa nos PDFs.
 
 **Sincronização**
 - [ ] Retentativa após timeout não duplica relatório, anexo ou resposta (teste com rede simulada).
