@@ -23,19 +23,20 @@
 }
 
 :root[data-theme='dark'] {
-    --sbadmin-bg: #{$sbadmin-bg-dark};
-    --sbadmin-surface: #1E293B;
-    --sbadmin-surface-muted: #17233A;
-    --sbadmin-text: #E2E8F0;
-    --sbadmin-text-muted: #94A3B8;
-    --sbadmin-border: #334155;
+    // Paleta "Azul do login" (2026-11-27) — tokens em _variables.scss.
+    --sbadmin-bg: #{$sbadmin-dark-bg};
+    --sbadmin-surface: #{$sbadmin-dark-surface};
+    --sbadmin-surface-muted: #{$sbadmin-dark-surface-muted};
+    --sbadmin-text: #{$sbadmin-dark-text};
+    --sbadmin-text-muted: #{$sbadmin-dark-text-muted};
+    --sbadmin-border: #{$sbadmin-dark-border};
 
-    --sbadmin-sidebar-bg: #0B1220;
-    --sbadmin-sidebar-text: #94A3B8;
-    --sbadmin-sidebar-text-muted: #64748B;
+    --sbadmin-sidebar-bg: #{$sbadmin-dark-sidebar-bg};
+    --sbadmin-sidebar-text: #{$sbadmin-dark-sidebar-text};
+    --sbadmin-sidebar-text-muted: #{$sbadmin-dark-sidebar-text-muted};
     --sbadmin-sidebar-active-bg: #{$sbadmin-color-secondary};
     --sbadmin-sidebar-active-text: #ffffff;
     --sbadmin-sidebar-hover-bg: rgba(255, 255, 255, 0.06);
 
-    --sbadmin-topbar-bg: #1E293B;
+    --sbadmin-topbar-bg: #{$sbadmin-dark-surface};
 }

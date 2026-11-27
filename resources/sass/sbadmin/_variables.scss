@@ -11,7 +11,24 @@ $sbadmin-color-secondary: #2563EB; // azul - botoes, links, item ativo
 
 // Fundos
 $sbadmin-bg-light: #F8FAFC;
+// Azul-marinho mais escuro: início do degradê da tela de login e fundo do
+// tooltip do rail. O tema escuro das telas usa os tokens "dark" abaixo.
 $sbadmin-bg-dark: #0F172A;
+
+// Tema escuro das telas (2026-11-27, escolha do cliente: opção 2 "Azul do
+// login"): um degrau mais claro que o slate original (#0F172A/#1E293B),
+// para cansar menos a vista, na mesma família azul do degradê do login.
+$sbadmin-dark-bg: #1A2A4A;
+$sbadmin-dark-surface: #22375F;
+$sbadmin-dark-surface-muted: #1F3256;
+$sbadmin-dark-border: #34507E;
+$sbadmin-dark-text: #EAF0FB;
+$sbadmin-dark-text-muted: #AABAD6;
+$sbadmin-dark-sidebar-bg: #132140;
+$sbadmin-dark-sidebar-text: #AABAD6;
+$sbadmin-dark-sidebar-text-muted: #7F92B5;
+// Campos, modais e dropdowns do Bootstrap (--bs-body-bg no modo escuro).
+$sbadmin-dark-input-bg: #1B2D50;
 
 // Cores semanticas
 $sbadmin-color-success: #16A34A;
@@ -61,6 +78,13 @@ $dark: $sbadmin-bg-dark;
 
 $body-bg: $sbadmin-bg-light;
 $body-color: $sbadmin-color-primary;
+
+// Modo escuro do Bootstrap (data-bs-theme="dark") na mesma paleta do tema.
+$body-bg-dark: $sbadmin-dark-input-bg;
+$body-color-dark: $sbadmin-dark-text;
+$body-secondary-bg-dark: $sbadmin-dark-surface-muted;
+$body-tertiary-bg-dark: $sbadmin-dark-surface-muted;
+$border-color-dark: $sbadmin-dark-border;
 
 $font-family-sans-serif: $sbadmin-font-family;
 $font-weight-normal: $sbadmin-font-weight-regular;
