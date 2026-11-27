@@ -203,27 +203,27 @@ Route::middleware(['auth', 'usuario.ativo', 'sessao.prazo', 'mfa'])->group(funct
     });
     Route::middleware('can:relatorios.editar')->group(function () {
         Route::post('/atendimentos-relatorios', [AtendimentosRelatoriosController::class, 'store'])->name('atendimentos-relatorios.store');
-        Route::match(['put', 'patch'], '/atendimentos-relatorios/{atendimentos_relatorio}', [AtendimentosRelatoriosController::class, 'update'])->name('atendimentos-relatorios.update');
-        Route::post('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'updateDados'])->name('atendimentos-relatorios.update-dados');
-        Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->name('atendimentos-relatorios.update-horarios');
-        Route::post('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'updateClima'])->name('atendimentos-relatorios.update-clima');
+        Route::match(['put', 'patch'], '/atendimentos-relatorios/{atendimentos_relatorio}', [AtendimentosRelatoriosController::class, 'update'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.update');
+        Route::post('/atendimentos-relatorios/{id}/dados', [AtendimentosRelatoriosController::class, 'updateDados'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.update-dados');
+        Route::post('/atendimentos-relatorios/{id}/horarios', [AtendimentosRelatoriosController::class, 'updateHorarios'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.update-horarios');
+        Route::post('/atendimentos-relatorios/{id}/clima', [AtendimentosRelatoriosController::class, 'updateClima'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.update-clima');
         Route::post('/atendimentos-relatorios/{id}/assinaturas', [AtendimentosRelatoriosController::class, 'updateAssinaturas'])->name('atendimentos-relatorios.update-assinaturas');
         Route::post('/atendimentos-relatorios/{id}/texto/{campo}', [AtendimentosRelatoriosController::class, 'updateTexto'])->name('atendimentos-relatorios.update-texto');
-        Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->name('atendimentos-relatorios.store-ocorrencia');
-        Route::delete('/atendimentos-relatorios/{id}/ocorrencias/{ocorrenciaId}', [AtendimentosRelatoriosController::class, 'destroyOcorrencia'])->name('atendimentos-relatorios.destroy-ocorrencia');
-        Route::post('/atendimentos-relatorios/{id}/servicos', [AtendimentosRelatoriosController::class, 'storeServico'])->name('atendimentos-relatorios.store-servico');
-        Route::delete('/atendimentos-relatorios/{id}/servicos/{itemId}', [AtendimentosRelatoriosController::class, 'destroyServico'])->name('atendimentos-relatorios.destroy-servico');
-        Route::post('/atendimentos-relatorios/{id}/pecas', [AtendimentosRelatoriosController::class, 'storePeca'])->name('atendimentos-relatorios.store-peca');
-        Route::delete('/atendimentos-relatorios/{id}/pecas/{itemId}', [AtendimentosRelatoriosController::class, 'destroyPeca'])->name('atendimentos-relatorios.destroy-peca');
-        Route::post('/atendimentos-relatorios/{id}/descricao-itens', [AtendimentosRelatoriosController::class, 'storeDescricaoItem'])->name('atendimentos-relatorios.store-descricao-item');
-        Route::delete('/atendimentos-relatorios/{id}/descricao-itens/{itemId}', [AtendimentosRelatoriosController::class, 'destroyDescricaoItem'])->name('atendimentos-relatorios.destroy-descricao-item');
-        Route::post('/atendimentos-relatorios/{id}/upload-anexos', [AtendimentosRelatoriosController::class, 'uploadAnexos'])->name('atendimentos-relatorios.upload-anexos');
-        Route::delete('/atendimentos-relatorios/{id}/anexos/{type}/{itemId}', [AtendimentosRelatoriosController::class, 'destroyAnexo'])->name('atendimentos-relatorios.destroy-anexo');
+        Route::post('/atendimentos-relatorios/{id}/ocorrencias', [AtendimentosRelatoriosController::class, 'storeOcorrencia'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.store-ocorrencia');
+        Route::delete('/atendimentos-relatorios/{id}/ocorrencias/{ocorrenciaId}', [AtendimentosRelatoriosController::class, 'destroyOcorrencia'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-ocorrencia');
+        Route::post('/atendimentos-relatorios/{id}/servicos', [AtendimentosRelatoriosController::class, 'storeServico'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.store-servico');
+        Route::delete('/atendimentos-relatorios/{id}/servicos/{itemId}', [AtendimentosRelatoriosController::class, 'destroyServico'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-servico');
+        Route::post('/atendimentos-relatorios/{id}/pecas', [AtendimentosRelatoriosController::class, 'storePeca'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.store-peca');
+        Route::delete('/atendimentos-relatorios/{id}/pecas/{itemId}', [AtendimentosRelatoriosController::class, 'destroyPeca'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-peca');
+        Route::post('/atendimentos-relatorios/{id}/descricao-itens', [AtendimentosRelatoriosController::class, 'storeDescricaoItem'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.store-descricao-item');
+        Route::delete('/atendimentos-relatorios/{id}/descricao-itens/{itemId}', [AtendimentosRelatoriosController::class, 'destroyDescricaoItem'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-descricao-item');
+        Route::post('/atendimentos-relatorios/{id}/upload-anexos', [AtendimentosRelatoriosController::class, 'uploadAnexos'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.upload-anexos');
+        Route::delete('/atendimentos-relatorios/{id}/anexos/{type}/{itemId}', [AtendimentosRelatoriosController::class, 'destroyAnexo'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-anexo');
         // Sessao 08 - perguntas dinamicas do Configurador (NC02/NC03) e
         // comprovante de compartilhamento (BF07).
-        Route::post('/atendimentos-relatorios/{id}/respostas', [AtendimentosRelatoriosController::class, 'storeResposta'])->name('atendimentos-relatorios.store-resposta');
-        Route::delete('/atendimentos-relatorios/{id}/respostas/{respostaId}', [AtendimentosRelatoriosController::class, 'destroyResposta'])->name('atendimentos-relatorios.destroy-resposta');
-        Route::delete('/atendimentos-relatorios/{id}/respostas-fotos/{fotoId}', [AtendimentosRelatoriosController::class, 'destroyRespostaFoto'])->name('atendimentos-relatorios.destroy-resposta-foto');
+        Route::post('/atendimentos-relatorios/{id}/respostas', [AtendimentosRelatoriosController::class, 'storeResposta'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.store-resposta');
+        Route::delete('/atendimentos-relatorios/{id}/respostas/{respostaId}', [AtendimentosRelatoriosController::class, 'destroyResposta'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-resposta');
+        Route::delete('/atendimentos-relatorios/{id}/respostas-fotos/{fotoId}', [AtendimentosRelatoriosController::class, 'destroyRespostaFoto'])->middleware('relatorio.editavel')->name('atendimentos-relatorios.destroy-resposta-foto');
         Route::post('/atendimentos-relatorios/{id}/compartilhamentos', [AtendimentosRelatoriosController::class, 'storeCompartilhamento'])->name('atendimentos-relatorios.store-compartilhamento');
     });
 

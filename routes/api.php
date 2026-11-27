@@ -101,32 +101,32 @@ Route::prefix('fae/v1')->group(function () {
         // (horarios/clima/servicos/pecas/ocorrencias) ficam so pra
         // relatorios com dado legado (decisao da sessao 13).
         Route::get('/relatorios/{id}/formulario', [FaeRelatorioFormularioController::class, 'formulario'])->middleware('can:relatorios.ver');
-        Route::post('/relatorios/{id}/respostas', [FaeRelatorioFormularioController::class, 'storeResposta'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/respostas/{respostaId}', [FaeRelatorioFormularioController::class, 'destroyResposta'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/respostas-fotos/{fotoId}', [FaeRelatorioFormularioController::class, 'destroyRespostaFoto'])->middleware('can:relatorios.editar');
+        Route::post('/relatorios/{id}/respostas', [FaeRelatorioFormularioController::class, 'storeResposta'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/respostas/{respostaId}', [FaeRelatorioFormularioController::class, 'destroyResposta'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/respostas-fotos/{fotoId}', [FaeRelatorioFormularioController::class, 'destroyRespostaFoto'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
 
         // RelatÃ³rio â€” seÃ§Ãµes de escrita
-        Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais'])->middleware('can:relatorios.editar');
+        Route::put('/relatorios/{id}/informacoes-adicionais',  [FaeRelatoriosController::class, 'updateInformacoesAdicionais'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
         Route::put('/relatorios/{id}/observacao-interna',      [FaeRelatoriosController::class, 'updateObservacaoInterna'])->middleware('can:relatorios.editar');
-        Route::put('/relatorios/{id}/horarios',                [FaeRelatoriosController::class, 'updateHorarios'])->middleware('can:relatorios.editar');
-        Route::put('/relatorios/{id}/clima',                   [FaeRelatoriosController::class, 'updateClima'])->middleware('can:relatorios.editar');
+        Route::put('/relatorios/{id}/horarios',                [FaeRelatoriosController::class, 'updateHorarios'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::put('/relatorios/{id}/clima',                   [FaeRelatoriosController::class, 'updateClima'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
         Route::put('/relatorios/{id}/status',                  [FaeRelatoriosController::class, 'updateStatus'])->middleware('can:relatorios.editar');
 
         // ServiÃ§os (1:N)
-        Route::post('/relatorios/{id}/servicos',             [FaeRelatoriosController::class, 'storeServico'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/servicos/{serv_id}', [FaeRelatoriosController::class, 'destroyServico'])->middleware('can:relatorios.editar');
+        Route::post('/relatorios/{id}/servicos',             [FaeRelatoriosController::class, 'storeServico'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/servicos/{serv_id}', [FaeRelatoriosController::class, 'destroyServico'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
 
         // PeÃ§as (1:N)
-        Route::post('/relatorios/{id}/pecas',             [FaeRelatoriosController::class, 'storePeca'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/pecas/{peca_id}', [FaeRelatoriosController::class, 'destroyPeca'])->middleware('can:relatorios.editar');
+        Route::post('/relatorios/{id}/pecas',             [FaeRelatoriosController::class, 'storePeca'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/pecas/{peca_id}', [FaeRelatoriosController::class, 'destroyPeca'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
 
         // Itens de descriÃ§Ã£o (texto + foto opcional) â€” RF001, multipart/form-data
-        Route::post('/relatorios/{id}/descricao-itens',              [FaeRelatoriosController::class, 'storeDescricaoItem'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/descricao-itens/{item_id}',  [FaeRelatoriosController::class, 'destroyDescricaoItem'])->middleware('can:relatorios.editar');
+        Route::post('/relatorios/{id}/descricao-itens',              [FaeRelatoriosController::class, 'storeDescricaoItem'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/descricao-itens/{item_id}',  [FaeRelatoriosController::class, 'destroyDescricaoItem'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
 
         // OcorrÃªncias
-        Route::post('/relatorios/{id}/ocorrencias',                    [FaeRelatoriosController::class, 'storeOcorrencia'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}',  [FaeRelatoriosController::class, 'destroyOcorrencia'])->middleware('can:relatorios.editar');
+        Route::post('/relatorios/{id}/ocorrencias',                    [FaeRelatoriosController::class, 'storeOcorrencia'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/ocorrencias/{ocorrencia_id}',  [FaeRelatoriosController::class, 'destroyOcorrencia'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
 
         // Comprovante de compartilhamento (BF07)
         Route::get('/relatorios/{id}/compartilhamentos',  [FaeRelatoriosController::class, 'getCompartilhamentos'])->middleware('can:relatorios.ver');
@@ -137,8 +137,8 @@ Route::prefix('fae/v1')->group(function () {
 
         // Fotos / vÃ­deos / arquivos (multipart/form-data)
         Route::get('/relatorios/{id}/anexos',                    [FaeRelatoriosController::class, 'getAnexos'])->middleware('can:relatorios.ver');
-        Route::post('/relatorios/{id}/anexos',                   [FaeRelatoriosController::class, 'uploadAnexos'])->middleware('can:relatorios.editar');
-        Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [FaeRelatoriosController::class, 'destroyAnexo'])->middleware('can:relatorios.editar');
+        Route::post('/relatorios/{id}/anexos',                   [FaeRelatoriosController::class, 'uploadAnexos'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
+        Route::delete('/relatorios/{id}/anexos/{tipo}/{item_id}', [FaeRelatoriosController::class, 'destroyAnexo'])->middleware(['can:relatorios.editar', 'relatorio.editavel']);
     });
 });
 

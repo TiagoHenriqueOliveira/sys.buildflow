@@ -24,8 +24,11 @@ class RelatorioMclService
         }
 
         $data = base64_decode($m[2]);
-        $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}.png";
-        $dir  = dirname(storage_path('app/public/' . $path));
+        // S-02 (27/11/2026): cada assinatura num arquivo novo — a anterior
+        // nunca é sobrescrita e a troca fica na auditoria com o SHA-256.
+        $path = "atendimentos_relatorios/{$relatorio->aten_rel_id}/assinaturas/{$tipo}-"
+            . now()->format('YmdHis') . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)) . '.png';
+        $dir  = dirname(\Illuminate\Support\Facades\Storage::disk('public')->path($path));
 
         if (! is_dir($dir)) mkdir($dir, 0755, true);
 
@@ -36,7 +39,7 @@ class RelatorioMclService
         $white = imagecolorallocate($bg, 255, 255, 255);
         imagefilledrectangle($bg, 0, 0, imagesx($image), imagesy($image), $white);
         imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
-        $saved = imagepng($bg, storage_path('app/public/' . $path));
+        $saved = imagepng($bg, \Illuminate\Support\Facades\Storage::disk('public')->path($path));
         imagedestroy($image);
         imagedestroy($bg);
 
@@ -47,6 +50,10 @@ class RelatorioMclService
         $existing = AtendimentoRelatorioAssinatura::where('aten_rel_ass_relatorio_id', $relatorio->aten_rel_id)
             ->where('aten_rel_ass_tipo', $tipo)
             ->first();
+
+        \App\Services\AuditService::log('Relatorios', 'ASSINATURA', $relatorio->aten_rel_id,
+            ['tipo' => $tipo, 'arquivo' => $existing?->aten_rel_ass_path],
+            ['tipo' => $tipo, 'arquivo' => $path, 'sha256' => hash_file('sha256', \Illuminate\Support\Facades\Storage::disk('public')->path($path)), 'canal' => 'api']);
 
         $now = now()->format('Y-m-d H:i:s');
         if ($existing) {

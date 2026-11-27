@@ -676,6 +676,11 @@ class RelatoriosController extends Controller
         $novoStatus = (int) $request->status;
         $usuario = $request->user();
 
+        // S-02 / D-03: aprovado e assinado pelo cliente não muda mais de status.
+        if (\App\Support\RelatorioBloqueado::statusTravado($relatorio, $novoStatus)) {
+            return \App\Support\RelatorioBloqueado::resposta($relatorio, 'Relatório aprovado e assinado pelo cliente: o status não pode mais ser alterado.');
+        }
+
         $erro = $relatorio->erroMudancaStatus($novoStatus, $usuario);
         if ($erro !== null) {
             return response()->json(['message' => $erro, 'status' => $relatorio->aten_rel_status], 422);
@@ -723,6 +728,18 @@ class RelatoriosController extends Controller
     {
         $relatorio = AtendimentoRelatorio::findOrFail($id);
         if (! $this->checkAcesso($request, $relatorio)) return response()->json(['message' => 'Acesso negado.'], 403);
+
+        // S-02 / D-03 (contrato §5): relatório Aprovado só aceita a
+        // assinatura do cliente que ainda falta, uma única vez. Antes da
+        // aprovação o fluxo de campo continua como sempre (decisão do usuário).
+        if (\App\Support\RelatorioBloqueado::aprovado($relatorio)) {
+            if ($request->filled('tecnico')) {
+                return \App\Support\RelatorioBloqueado::resposta($relatorio);
+            }
+            if ($request->filled('cliente') && $relatorio->assinaturaCliente()) {
+                return \App\Support\RelatorioBloqueado::assinaturaJaRegistrada();
+            }
+        }
 
         // Item 2.3: se as duas assinaturas vierem na mesma requisição, o
         // registro da segunda não pode ficar pendente sem o da primeira em

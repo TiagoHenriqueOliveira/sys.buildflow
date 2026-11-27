@@ -5,6 +5,7 @@ namespace Tests;
 use App\Models\PerfilPermissao;
 use Database\Seeders\PermissoesPadraoSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -28,5 +29,10 @@ abstract class TestCase extends BaseTestCase
         // Memo estático por "request" — entre testes do mesmo processo
         // pode ter ficado o estado de uma transação já desfeita.
         PerfilPermissao::limparCache();
+
+        // Auditoria 27/11/2026: nenhum teste grava no storage real (o disco
+        // 'public' é o de produção nesta máquina). Antes, as assinaturas de
+        // teste caíam em storage/app/public/atendimentos_relatorios/{id}.
+        Storage::fake('public');
     }
 }

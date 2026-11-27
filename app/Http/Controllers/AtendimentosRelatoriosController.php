@@ -358,6 +358,25 @@ class AtendimentosRelatoriosController extends Controller
     {
         $relatorio = $this->relatorioComPosseGarantida($id, ['modeloRelatorio', 'assinaturas']);
 
+        // Auditoria 27/11/2026 (S-02, D-03): relatório Aprovado só recebe a
+        // assinatura do cliente que ainda falta (uma vez); com ela, o status
+        // não muda mais. Assistência/Admin ainda devolvem um aprovado sem
+        // assinatura do cliente (regra de 2026-11-03, mantida).
+        $novoStatusPedido = (int) $request->aten_rel_status;
+        if (\App\Support\RelatorioBloqueado::statusTravado($relatorio, $novoStatusPedido)) {
+            return \App\Support\RelatorioBloqueado::resposta($relatorio, 'Relatório aprovado e assinado pelo cliente: o status não pode mais ser alterado.');
+        }
+        if (\App\Support\RelatorioBloqueado::aprovado($relatorio) && $novoStatusPedido === (int) $relatorio->aten_rel_status) {
+            $obsMudou = $request->has('observacao_supervisor')
+                && (string) $request->input('observacao_supervisor') !== (string) $relatorio->aten_rel_observacao_supervisor;
+            if ($request->filled('assinatura_responsavel') || $obsMudou) {
+                return \App\Support\RelatorioBloqueado::resposta($relatorio);
+            }
+            if ($request->filled('assinatura_cliente') && $relatorio->assinaturaCliente()) {
+                return \App\Support\RelatorioBloqueado::assinaturaJaRegistrada();
+            }
+        }
+
         try {
             $novoStatus = (int) $request->aten_rel_status;
             $usuario = auth()->user();
@@ -370,6 +389,9 @@ class AtendimentosRelatoriosController extends Controller
             if ($erro !== null) {
                 return response()->json(['success' => false, 'message' => $erro], 422);
             }
+
+            // Status e assinaturas na mesma transação (S-02).
+            \Illuminate\Support\Facades\DB::beginTransaction();
 
             $statusAnterior = $relatorio->aten_rel_status;
             $relatorio->update([
@@ -416,6 +438,8 @@ class AtendimentosRelatoriosController extends Controller
                 );
             }
 
+            \Illuminate\Support\Facades\DB::commit();
+
             // Depois de gravar as assinaturas: quem recebe o aviso já
             // encontra o relatório completo ao abrir o link.
             if (
@@ -434,6 +458,9 @@ class AtendimentosRelatoriosController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
+            if (\Illuminate\Support\Facades\DB::transactionLevel() > 0) {
+                \Illuminate\Support\Facades\DB::rollBack();
+            }
             report($e);
 
             return response()->json([
@@ -455,6 +482,11 @@ class AtendimentosRelatoriosController extends Controller
             return response()->json(['success' => false, 'message' => 'Campo inválido.'], 422);
         }
         $relatorio = $this->relatorioComPosseGarantida($id);
+
+        // S-02 / D-03: depois de Aprovado só a observação interna muda.
+        if ($campo !== 'aten_rel_observacao_interna' && \App\Support\RelatorioBloqueado::aprovado($relatorio)) {
+            return \App\Support\RelatorioBloqueado::resposta($relatorio);
+        }
 
         try {
             $relatorio->update([$campo => $request->input('valor')]);
@@ -1076,11 +1108,11 @@ class AtendimentosRelatoriosController extends Controller
                         continue;
                     }
 
-                    $full      = storage_path('app/public/' . $path);
+                    $full      = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
                     $thumbDir  = "atendimentos_relatorios/{$id}/fotos/thumbs";
                     $thumbName = $safeName;
                     $thumbPath = $thumbDir . '/' . $thumbName;
-                    $thumbFull = storage_path('app/public/' . $thumbPath);
+                    $thumbFull = \Illuminate\Support\Facades\Storage::disk('public')->path($thumbPath);
 
                     ProcessarMidiaJob::dispatch('imagem', $full, $thumbFull, 400);
 
