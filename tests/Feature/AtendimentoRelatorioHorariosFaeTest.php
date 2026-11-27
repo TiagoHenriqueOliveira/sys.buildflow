@@ -150,7 +150,8 @@ class AtendimentoRelatorioHorariosFaeTest extends TestCase
 
     public function test_pdf_da_entrega_tecnica_cita_a_fae_e_nao_outra_empresa(): void
     {
-        // Auditoria S-16: o bloco Entrega Técnica dizia "A MCLvale...".
+        // Auditoria S-16: o bloco Entrega Técnica citava outra empresa
+        // ("..., neste ato representado pelo técnico...").
         $tecnico = Usuario::factory()->tecnico()->create();
         $relatorio = $this->criarRelatorio($tecnico);
         $relatorio->atendimento->update(['aten_entrega_tecnica' => 1]);
@@ -160,7 +161,7 @@ class AtendimentoRelatorioHorariosFaeTest extends TestCase
         $texto = preg_replace('/data:[^"\')\s]+/', '', $html);
 
         $this->assertStringContainsString('A FAÉ Bioenergia, neste ato representada pelo técnico abaixo assinado', $texto);
-        $this->assertStringNotContainsStringIgnoringCase('mcl', $texto);
+        $this->assertStringNotContainsString(', neste ato representado pelo', $texto);
     }
 
     // ─── API mobile (fae/v1) ─────────────────────────────────────────────

@@ -17,13 +17,13 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * Auditoria 27/11/2026, S-01: as APIs herdadas (/api/v1 e /api/mcl/v1) saíram
- * da branch da FAÉ. As regras de negócio que os testes delas cobriam e que
- * também valem na FAÉ foram portadas para a /api/fae/v1, sem mudar a regra:
- * REL-02, REL-03, criação de relatório (avança o atendimento), validações,
- * listagem por técnico e exclusão de anexo com o arquivo físico.
- * A regra de aprovação da MCL (técnico aprova com as duas assinaturas) não
- * foi portada: na FAÉ quem aprova é o supervisor (BF10).
+ * Auditoria 27/11/2026, S-01: os dois grupos de rotas legados herdados saíram
+ * da API. As regras de negócio que os testes deles cobriam e que valem na
+ * FAÉ foram portadas para a /api/fae/v1, sem mudar a regra: REL-02, REL-03,
+ * criação de relatório (avança o atendimento), validações, listagem por
+ * técnico e exclusão de anexo com o arquivo físico. A regra de aprovação
+ * legada (técnico aprova com as duas assinaturas) não foi portada: na FAÉ
+ * quem aprova é a Assistência (BF10).
  */
 class RelatorioApiRegrasFaeTest extends TestCase
 {
@@ -65,13 +65,17 @@ class RelatorioApiRegrasFaeTest extends TestCase
 
     public function test_apis_herdadas_nao_existem_mais(): void
     {
-        $token = Usuario::factory()->administrador()->create()->createToken('test')->plainTextToken;
+        // Toda rota da API é da fae/v1 — nenhum grupo legado sobrou.
+        $foraDaFae = collect(\Illuminate\Support\Facades\Route::getRoutes()->getRoutes())
+            ->map(fn ($rota) => $rota->uri())
+            ->filter(fn (string $uri) => str_starts_with($uri, 'api/') && ! str_starts_with($uri, 'api/fae/v1/'))
+            ->values()
+            ->all();
+        $this->assertSame([], $foraDaFae);
 
+        $token = Usuario::factory()->administrador()->create()->createToken('test')->plainTextToken;
         $this->postJson('/api/v1/login', ['email' => 'x@x.com', 'senha' => 'x'])->assertNotFound();
-        $this->postJson('/api/mcl/v1/login', ['email' => 'x@x.com', 'senha' => 'x'])->assertNotFound();
         $this->withToken($token)->getJson('/api/v1/relatorios')->assertNotFound();
-        $this->withToken($token)->putJson('/api/mcl/v1/relatorios/1/status', ['status' => 1])->assertNotFound();
-        $this->getJson('/api/mcl/v1/app/versao')->assertNotFound();
     }
 
     // ── REL-02: não cria relatório em atendimento Paralisado/Concluído ─────
