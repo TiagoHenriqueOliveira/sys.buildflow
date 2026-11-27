@@ -10,6 +10,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' - ' : '' }}{{ config('sbadmin.brand.name') }}</title>
+    {{-- Ícone da aba: logo da FAÉ sem a palavra "Bioenergia" (27/11/2026). --}}
+    <link rel="icon" href="{{ asset('favicon.ico') }}?v=2" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('img/favicon-180.png') }}">
 
     {{-- Define data-theme/data-bs-theme o mais cedo possivel para evitar flash de tema errado.
          data-bs-theme ativa o color mode nativo do Bootstrap 5.3 (forms, tabelas, dropdowns,

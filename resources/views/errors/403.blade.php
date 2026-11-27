@@ -21,6 +21,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
         <title>Acesso negado | {{ config('sbadmin.brand.name') }}</title>
+        <link rel="icon" href="{{ asset('favicon.ico') }}?v=2" sizes="any">
 
         <script>
             (function () {

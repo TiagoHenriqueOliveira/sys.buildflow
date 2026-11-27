@@ -9,6 +9,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{{ config('sbadmin.brand.name') }}</title>
+        <link rel="icon" href="{{ asset('favicon.ico') }}?v=2" sizes="any">
+        <link rel="apple-touch-icon" href="{{ asset('img/favicon-180.png') }}">
         @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     </head>
     <body class="fae-auth-body">
