@@ -154,6 +154,59 @@ class ClientesApiFaeTest extends TestCase
         $this->assertDatabaseHas('clientes', ['cli_id' => $cliente->cli_id, 'cli_nome' => 'Nome Novo']);
     }
 
+    /**
+     * Regressao: ClienteRepository grava null em todo campo que nao vem no
+     * PUT, e o app so edita parte do cadastro - ele devolve o resto com o
+     * valor recebido no GET. O GET precisa trazer todos esses campos.
+     */
+    public function test_editar_pelo_app_devolvendo_o_detalhe_preserva_campos_que_o_app_nao_edita(): void
+    {
+        $admin = Usuario::factory()->administrador()->create();
+        $vendedor = Usuario::factory()->comercial()->create();
+        $cliente = Cliente::factory()->create([
+            'cli_vendedor_id' => $vendedor->user_id,
+            'cli_dias_alerta_recontato' => 30,
+            'cli_inscricao_estadual' => '123456',
+            'cli_contato_principal' => 'Maria',
+            'cli_caso_sucesso' => true,
+            'cli_caso_sucesso_descricao' => 'Caldeira entregue',
+        ]);
+        $cliente->localizacoes()->create(['cli_loc_descricao' => 'Usina 2', 'cli_loc_link_mapa' => 'https://maps.google.com/?q=-21.1,-47.8']);
+
+        $detalhe = $this->withToken($this->token($admin))->getJson("/api/fae/v1/clientes/{$cliente->cli_id}")
+            ->assertOk()
+            ->assertJsonPath('data.vendedor_id', $vendedor->user_id)
+            ->assertJsonPath('data.dias_alerta_recontato', 30)
+            ->json('data');
+
+        // Mesmo corpo que ClienteFormScreen._corpoRequisicao monta.
+        $this->withToken($this->token($admin))->putJson("/api/fae/v1/clientes/{$cliente->cli_id}", [
+            'cli_nome' => 'Nome Novo',
+            'cli_cnpj' => $detalhe['cnpj'],
+            'cli_cidade' => $detalhe['cidade'],
+            'cli_uf' => $detalhe['uf'],
+            'cli_vendedor_id' => $detalhe['vendedor_id'],
+            'cli_dias_alerta_recontato' => $detalhe['dias_alerta_recontato'],
+            'cli_inscricao_estadual' => $detalhe['inscricao_estadual'],
+            'cli_contato_principal' => $detalhe['contato_principal'],
+            'cli_caso_sucesso' => $detalhe['caso_sucesso'],
+            'cli_caso_sucesso_descricao' => $detalhe['caso_sucesso_descricao'],
+            'localizacoes' => $detalhe['localizacoes'],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('clientes', [
+            'cli_id' => $cliente->cli_id,
+            'cli_nome' => 'Nome Novo',
+            'cli_vendedor_id' => $vendedor->user_id,
+            'cli_dias_alerta_recontato' => 30,
+            'cli_inscricao_estadual' => '123456',
+            'cli_contato_principal' => 'Maria',
+            'cli_caso_sucesso' => 1,
+            'cli_caso_sucesso_descricao' => 'Caldeira entregue',
+        ]);
+        $this->assertDatabaseHas('clientes_localizacoes', ['cli_loc_cliente_id' => $cliente->cli_id, 'cli_loc_descricao' => 'Usina 2']);
+    }
+
     public function test_autocomplete_retorna_clientes_ativos_filtrados_por_nome(): void
     {
         $tecnico = Usuario::factory()->tecnico()->create();

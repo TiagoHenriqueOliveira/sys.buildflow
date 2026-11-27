@@ -122,6 +122,11 @@ class ClientesController extends Controller
             'cnpj'                   => $c->cli_cnpj,
             'inscricao_estadual'     => $c->cli_inscricao_estadual,
             'contato_principal'      => $c->cli_contato_principal,
+            // O app nao edita estes dois campos, mas precisa devolve-los no
+            // PUT: ClienteRepository::camposPrincipais grava null em tudo que
+            // nao vier na requisicao.
+            'vendedor_id'            => $c->cli_vendedor_id,
+            'dias_alerta_recontato'  => $c->cli_dias_alerta_recontato,
             'segmento'               => $c->cli_segmento,
             'email'                  => $c->cli_email,
             'classificacao_id'       => $c->cli_classificacao_id,
