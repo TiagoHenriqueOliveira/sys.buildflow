@@ -32,7 +32,10 @@ class CabecalhosDeSeguranca
 
         $cabecalhos->set('X-Content-Type-Options', 'nosniff');
         $cabecalhos->set('X-Frame-Options', 'SAMEORIGIN');
-        $cabecalhos->set('Referrer-Policy', 'same-origin');
+        // Não usar 'same-origin'/'no-referrer': o OpenStreetMap exige o Referer
+        // e bloqueia os blocos do mapa sem ele (403 "Access blocked", visto em
+        // produção em 27/11/2026). Para fora, vai só a origem, sem caminho.
+        $cabecalhos->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $cabecalhos->set('Permissions-Policy', 'camera=(self), geolocation=(self), microphone=(), payment=()');
         $cabecalhos->set('Cross-Origin-Opener-Policy', 'same-origin');
 
@@ -48,7 +51,7 @@ class CabecalhosDeSeguranca
                 "default-src 'self'",
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com",
                 "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
-                "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://cdnjs.cloudflare.com",
+                "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://cdnjs.cloudflare.com",
                 "font-src 'self' data:",
                 "media-src 'self' blob:",
                 "connect-src 'self'",

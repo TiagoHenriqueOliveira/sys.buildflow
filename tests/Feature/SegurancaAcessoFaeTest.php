@@ -303,4 +303,12 @@ class SegurancaAcessoFaeTest extends TestCase
         $this->assertStringContainsString("frame-ancestors 'self'", (string) $resposta->headers->get('Content-Security-Policy'));
         $this->assertStringContainsString("object-src 'none'", (string) $resposta->headers->get('Content-Security-Policy'));
     }
+
+    public function test_mapas_recebem_os_blocos_do_openstreetmap(): void
+    {
+        // Sem Referer o OpenStreetMap devolve 403 "Access blocked" nos blocos do mapa.
+        $resposta = $this->get(route('login'));
+        $resposta->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $this->assertStringContainsString('https://tile.openstreetmap.org', (string) $resposta->headers->get('Content-Security-Policy'));
+    }
 }
