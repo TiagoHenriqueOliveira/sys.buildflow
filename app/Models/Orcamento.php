@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\NivelOrcamento;
 use App\Enums\ResultadoOrcamento;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -72,5 +73,27 @@ class Orcamento extends Model
             'orc_vend_ad_orcamento_id',
             'orc_vend_ad_usuario_id'
         );
+    }
+
+    /**
+     * Perfil Vendedor (2026-11-27): só os orçamentos em que ele é o vendedor
+     * responsável ou um dos vendedores adicionais (indicação conjunta, CRM04).
+     */
+    public function scopeVisivelPara(Builder $query, Usuario $usuario): Builder
+    {
+        if (! $usuario->veSoOsProprios()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $q) => $q
+            ->where('orc_vendedor_id', $usuario->user_id)
+            ->orWhereHas('vendedoresAdicionais', fn (Builder $v) => $v->where('usuarios.user_id', $usuario->user_id)));
+    }
+
+    public function visivelPara(Usuario $usuario): bool
+    {
+        return ! $usuario->veSoOsProprios()
+            || (int) $this->orc_vendedor_id === (int) $usuario->user_id
+            || $this->vendedoresAdicionais()->where('usuarios.user_id', $usuario->user_id)->exists();
     }
 }

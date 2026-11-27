@@ -36,7 +36,17 @@ class ClienteRequest extends FormRequest
         return [
             'cli_nome' => ['required', 'string', 'max:100'],
             'cli_contato_principal' => ['nullable', 'string', 'max:100'],
-            'cli_vendedor_id' => ['nullable', 'integer', Rule::exists('usuarios', 'user_id')],
+            'cli_vendedor_id' => [
+                'nullable', 'integer', Rule::exists('usuarios', 'user_id'),
+                // Perfil Vendedor (2026-11-27): só pode deixar sem vendedor ou
+                // se atribuir — atribuir a outro esconderia o cliente dele.
+                function ($attribute, $value, $fail) {
+                    $usuario = $this->user();
+                    if ($usuario?->veSoOsProprios() && $value !== null && (int) $value !== (int) $usuario->user_id) {
+                        $fail('Você só pode se atribuir como vendedor responsável.');
+                    }
+                },
+            ],
 
             'cli_cnpj' => [
                 'required',

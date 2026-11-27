@@ -33,7 +33,8 @@ class OrcamentosController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Orcamento::query()->with(['cliente', 'vendedor', 'tipoOrcamento'])->orderByDesc('orc_id');
+        // Perfil Vendedor (2026-11-27): só os orçamentos em que ele é vendedor.
+        $query = Orcamento::query()->with(['cliente', 'vendedor', 'tipoOrcamento'])->visivelPara($request->user())->orderByDesc('orc_id');
 
         if ($request->filled('cliente')) {
             $termo = $request->cliente;
@@ -54,8 +55,14 @@ class OrcamentosController extends Controller
     {
         $registro = Orcamento::with(['cliente', 'vendedor', 'tipoOrcamento', 'respostas', 'comentarios.autor', 'comentarios.usuarioAlertado', 'vendedoresAdicionais'])
             ->findOrFail($orcamento);
+        $this->garantirVisivel($registro);
 
         return response()->json(['data' => $this->formatDetalhe($registro)]);
+    }
+
+    private function garantirVisivel(Orcamento $orcamento): void
+    {
+        abort_unless($orcamento->visivelPara(auth()->user()), 403, 'Este orçamento pertence a outro vendedor.');
     }
 
     public function store(OrcamentoRequest $request): JsonResponse
@@ -68,6 +75,7 @@ class OrcamentosController extends Controller
 
     public function update(OrcamentoRequest $request, int $orcamento): JsonResponse
     {
+        $this->garantirVisivel(Orcamento::findOrFail($orcamento));
         $registro = $this->repository->update($orcamento, $request->validated());
         $registro->load(['cliente', 'vendedor', 'tipoOrcamento', 'respostas', 'comentarios.autor', 'vendedoresAdicionais']);
 
@@ -77,6 +85,7 @@ class OrcamentosController extends Controller
     public function storeComentario(OrcamentoComentarioRequest $request, int $id): JsonResponse
     {
         $orcamento = Orcamento::findOrFail($id);
+        $this->garantirVisivel($orcamento);
 
         $comentario = $orcamento->comentarios()->create([
             'orc_com_autor_id' => Auth::id(),
@@ -104,6 +113,7 @@ class OrcamentosController extends Controller
     public function destroyComentario(int $id, int $comentarioId): JsonResponse
     {
         $orcamento = Orcamento::findOrFail($id);
+        $this->garantirVisivel($orcamento);
         $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail()->delete();
 
         return response()->json(['message' => 'Comentário removido com sucesso.']);

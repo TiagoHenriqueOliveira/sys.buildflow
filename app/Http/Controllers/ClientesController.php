@@ -52,6 +52,7 @@ class ClientesController extends Controller
 
         $clientes = Cliente::query()
             ->with('classificacao')
+            ->visivelPara($request->user())
             ->when($filtroNome !== '', fn ($q) => $q->where('cli_nome', 'like', "%{$filtroNome}%"))
             ->when($filtroCnpj !== '', fn ($q) => $q->where('cli_cnpj', 'like', "%{$filtroCnpj}%"))
             ->when($filtroCidade !== '', fn ($q) => $q->where('cli_cidade', 'like', "%{$filtroCidade}%"))
@@ -89,6 +90,7 @@ class ClientesController extends Controller
     public function edit(int $id): View
     {
         $cliente = Cliente::with(['contatos', 'equipamentos', 'localizacoes'])->findOrFail($id);
+        abort_unless($cliente->visivelPara(auth()->user()), 403, 'Este cliente pertence a outro vendedor.');
 
         return view('clientes.form', [
             'cliente' => $cliente,
@@ -101,8 +103,9 @@ class ClientesController extends Controller
         return [
             'classificacoes' => ClassificacaoCliente::where('cla_cli_ativo', 1)->orderBy('cla_cli_nome')->get(),
             'segmentos' => \App\Models\Segmento::where('seg_ativo', 1)->orderBy('seg_descricao')->get(),
-            // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16).
-            'vendedores' => Usuario::vendedores()
+            // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16);
+            // o perfil Vendedor só se atribui a si mesmo (2026-11-27).
+            'vendedores' => Usuario::vendedoresAtribuiveisPor(auth()->user())
                 ->orderBy('user_nome')
                 ->get(),
         ];
@@ -119,6 +122,7 @@ class ClientesController extends Controller
 
     public function update(ClienteRequest $request, int $id): RedirectResponse
     {
+        abort_unless(Cliente::findOrFail($id)->visivelPara($request->user()), 403, 'Este cliente pertence a outro vendedor.');
         $cliente = $this->repository->update($id, $request->validated());
 
         // Pedido do cliente (2026-09-11): ao editar, permanece na tela de
@@ -141,6 +145,7 @@ class ClientesController extends Controller
         $term = $request->get('term', '');
 
         $clientes = Cliente::where('cli_ativo', 1)
+            ->visivelPara($request->user())
             ->where('cli_nome', 'like', '%' . $term . '%')
             ->orderBy('cli_nome')
             ->limit(20)

@@ -32,6 +32,7 @@ class OrcamentosController extends Controller
 
         $orcamentos = Orcamento::query()
             ->with(['cliente', 'vendedor', 'tipoOrcamento'])
+            ->visivelPara($request->user())
             ->when($filtroCliente !== '', fn ($q) => $q->whereHas('cliente', fn ($c) => $c->where('cli_nome', 'like', "%{$filtroCliente}%")))
             ->when($filtroVendedor !== '', fn ($q) => $q->where('orc_vendedor_id', (int) $filtroVendedor))
             ->when($filtroTipo !== '', fn ($q) => $q->where('orc_tipo_orcamento_id', (int) $filtroTipo))
@@ -64,6 +65,7 @@ class OrcamentosController extends Controller
     public function edit(int $id): View
     {
         $orcamento = Orcamento::with(['cliente', 'vendedor', 'respostas', 'comentarios.autor', 'vendedoresAdicionais'])->findOrFail($id);
+        $this->garantirVisivel($orcamento);
 
         return view('orcamentos.form', [
             'orcamento' => $orcamento,
@@ -75,6 +77,9 @@ class OrcamentosController extends Controller
     {
         return [
             'vendedores' => $this->vendedoresComerciais(),
+            // Vendedor responsável: o perfil Vendedor só se atribui a si mesmo
+            // (2026-11-27); os vendedores adicionais (CRM04) seguem a lista toda.
+            'vendedoresResponsavel' => Usuario::vendedoresAtribuiveisPor(Auth::user())->orderBy('user_nome')->get(),
             'usuariosAlerta' => $this->usuariosParaAlerta(),
             'tiposOrcamento' => CrmTipoOrcamento::where('crm_tp_orc_ativo', 1)
                 ->with(['configModelo.perguntas.opcoes'])
@@ -116,8 +121,15 @@ class OrcamentosController extends Controller
             ->with('success', 'Orçamento cadastrado com sucesso.');
     }
 
+    /** Perfil Vendedor (2026-11-27): só os orçamentos em que ele é vendedor. */
+    private function garantirVisivel(Orcamento $orcamento): void
+    {
+        abort_unless($orcamento->visivelPara(Auth::user()), 403, 'Este orçamento pertence a outro vendedor.');
+    }
+
     public function update(OrcamentoRequest $request, int $id): RedirectResponse
     {
+        $this->garantirVisivel(Orcamento::findOrFail($id));
         $this->repository->update($id, $request->validated());
 
         return redirect()
@@ -133,6 +145,7 @@ class OrcamentosController extends Controller
     public function storeComentario(OrcamentoComentarioRequest $request, int $id): RedirectResponse
     {
         $orcamento = Orcamento::findOrFail($id);
+        $this->garantirVisivel($orcamento);
 
         $orcamento->comentarios()->create([
             'orc_com_autor_id' => Auth::id(),
@@ -175,6 +188,7 @@ class OrcamentosController extends Controller
     public function destroyComentario(int $id, int $comentarioId): RedirectResponse
     {
         $orcamento = Orcamento::findOrFail($id);
+        $this->garantirVisivel($orcamento);
         $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail()->delete();
 
         return redirect()

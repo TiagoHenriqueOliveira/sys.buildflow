@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -65,6 +66,29 @@ class Cliente extends Model
     public function localizacoes()
     {
         return $this->hasMany(ClienteLocalizacao::class, 'cli_loc_cliente_id', 'cli_id');
+    }
+
+    /**
+     * Perfil Vendedor (2026-11-27): só os clientes em que ele é o vendedor
+     * responsável e os que ainda não têm vendedor definido (decisão do
+     * cliente: um prospect sem vendedor continua visível a todos).
+     */
+    public function scopeVisivelPara(Builder $query, Usuario $usuario): Builder
+    {
+        if (! $usuario->veSoOsProprios()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $q) => $q
+            ->whereNull('cli_vendedor_id')
+            ->orWhere('cli_vendedor_id', $usuario->user_id));
+    }
+
+    public function visivelPara(Usuario $usuario): bool
+    {
+        return ! $usuario->veSoOsProprios()
+            || $this->cli_vendedor_id === null
+            || (int) $this->cli_vendedor_id === (int) $usuario->user_id;
     }
 
     public function temGeolocalizacao(): bool

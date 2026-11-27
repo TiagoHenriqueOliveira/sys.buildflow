@@ -54,6 +54,20 @@ class Usuario extends Authenticatable
             || (int) $this->user_nivel_acesso === NivelAcesso::Administrador->value;
     }
 
+    /**
+     * Pedido do cliente (2026-11-27): o PERFIL Vendedor só enxerga o que é
+     * dele — clientes em que é o vendedor responsável (ou sem vendedor),
+     * orçamentos em que é o vendedor (responsável ou adicional, CRM04) e os
+     * próprios roteiros de viagem. Vale só para o perfil Vendedor; os demais
+     * perfis (inclusive Comercial) continuam vendo tudo. Ver os escopos
+     * visivelPara() de Cliente, Orcamento e RoteiroViagem.
+     */
+    public function veSoOsProprios(): bool
+    {
+        return ! $this->temAcessoTotal()
+            && (int) $this->user_nivel_acesso === NivelAcesso::Vendedor->value;
+    }
+
     /** Permissão de tela ("orcamentos.ver") — ver App\Support\Permissoes. */
     public function temPermissao(string $chave): bool
     {
@@ -92,6 +106,20 @@ class Usuario extends Authenticatable
      * Usuários ativos que têm a permissão de tela — Administradores e o
      * usuário protegido sempre entram (acesso total).
      */
+    /**
+     * Combo "Vendedor responsável" (cliente, orçamento, roteiro): o perfil
+     * Vendedor (2026-11-27) só pode atribuir a si mesmo — se escolhesse
+     * outro, o registro sumiria da tela dele na hora (ver veSoOsProprios).
+     */
+    public function scopeVendedoresAtribuiveisPor(Builder $query, Usuario $usuario): Builder
+    {
+        $query->vendedores();
+
+        return $usuario->veSoOsProprios()
+            ? $query->where('user_id', $usuario->user_id)
+            : $query;
+    }
+
     public function scopeComPermissao(Builder $query, string $chave): Builder
     {
         return $query->where('user_ativo', true)->where(function (Builder $q) use ($chave) {

@@ -28,6 +28,7 @@ class RoteirosViagemController extends Controller
 
         $roteiros = RoteiroViagem::query()
             ->with(['vendedor', 'clientes'])
+            ->visivelPara($request->user())
             ->when($filtroVendedor !== '', fn ($q) => $q->where('crm_rot_vendedor_id', (int) $filtroVendedor))
             ->when($filtroPeriodo !== '', fn ($q) => $q->where('crm_rot_periodo_inicio', '<=', $filtroPeriodo)->where('crm_rot_periodo_fim', '>=', $filtroPeriodo))
             ->orderByDesc('crm_rot_id')
@@ -54,6 +55,7 @@ class RoteirosViagemController extends Controller
     public function edit(int $id): View
     {
         $roteiro = RoteiroViagem::with(['clientes.cliente'])->findOrFail($id);
+        abort_unless($roteiro->visivelPara(auth()->user()), 403, 'Este roteiro pertence a outro vendedor.');
 
         return view('roteiros-viagem.form', [
             'roteiro' => $roteiro,
@@ -65,14 +67,15 @@ class RoteirosViagemController extends Controller
     {
         return [
             'vendedores' => $this->vendedoresComerciais(),
-            'clientesDisponiveis' => Cliente::where('cli_ativo', 1)->orderBy('cli_nome')->get(),
+            'clientesDisponiveis' => Cliente::where('cli_ativo', 1)->visivelPara(auth()->user())->orderBy('cli_nome')->get(),
         ];
     }
 
     private function vendedoresComerciais()
     {
-        // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16).
-        return Usuario::vendedores()
+        // Perfis marcados "Atua como vendedor" em Perfis de Acesso (2026-11-16);
+        // o perfil Vendedor só enxerga/atribui a si mesmo (2026-11-27).
+        return Usuario::vendedoresAtribuiveisPor(auth()->user())
             ->orderBy('user_nome')
             ->get();
     }
@@ -88,6 +91,7 @@ class RoteirosViagemController extends Controller
 
     public function update(RoteiroViagemRequest $request, int $id): RedirectResponse
     {
+        abort_unless(RoteiroViagem::findOrFail($id)->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
         $this->repository->update($id, $request->validated());
 
         return redirect()

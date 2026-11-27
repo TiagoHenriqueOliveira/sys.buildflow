@@ -55,6 +55,35 @@ class OrcamentoRequest extends FormRequest
             if (in_array($vendedorId, $adicionais, true)) {
                 $validator->errors()->add('vendedores_adicionais', 'O vendedor responsável não pode ser selecionado também como vendedor adicional.');
             }
+
+            $this->validarPerfilVendedor($validator);
         });
+    }
+
+    /**
+     * Perfil Vendedor (2026-11-27): só se atribui como vendedor responsável e
+     * só escolhe cliente visível para ele — manter o valor já gravado (ex.:
+     * vendedor adicional editando o orçamento de outro) continua permitido.
+     */
+    private function validarPerfilVendedor(Validator $validator): void
+    {
+        $usuario = $this->user();
+        if (! $usuario?->veSoOsProprios()) {
+            return;
+        }
+
+        $id = $this->route('orcamento');
+        $atual = $id ? \App\Models\Orcamento::find($id) : null;
+
+        $vendedorId = (int) $this->input('orc_vendedor_id');
+        if ($vendedorId !== (int) $usuario->user_id && $vendedorId !== (int) $atual?->orc_vendedor_id) {
+            $validator->errors()->add('orc_vendedor_id', 'Você só pode se atribuir como vendedor responsável.');
+        }
+
+        $clienteId = (int) $this->input('orc_cliente_id');
+        $cliente = \App\Models\Cliente::find($clienteId);
+        if ($cliente && $clienteId !== (int) $atual?->orc_cliente_id && ! $cliente->visivelPara($usuario)) {
+            $validator->errors()->add('orc_cliente_id', 'Este cliente pertence a outro vendedor.');
+        }
     }
 }

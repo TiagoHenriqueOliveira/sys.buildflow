@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\StatusRoteiroViagem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class RoteiroViagemRequest extends FormRequest
 {
@@ -40,5 +41,32 @@ class RoteiroViagemRequest extends FormRequest
             'clientes.required' => 'Adicione ao menos um cliente ao roteiro.',
             'clientes.min' => 'Adicione ao menos um cliente ao roteiro.',
         ];
+    }
+
+    /**
+     * Perfil Vendedor (2026-11-27): o roteiro é sempre dele, e só entram
+     * clientes visíveis para ele (os que já estavam no roteiro continuam).
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $usuario = $this->user();
+            if (! $usuario?->veSoOsProprios()) {
+                return;
+            }
+
+            if ((int) $this->input('crm_rot_vendedor_id') !== (int) $usuario->user_id) {
+                $validator->errors()->add('crm_rot_vendedor_id', 'Você só pode cadastrar roteiros para você mesmo.');
+            }
+
+            $id = $this->route('roteiros_viagem') ?? $this->route('roteiro');
+            $jaNoRoteiro = $id
+                ? \App\Models\RoteiroViagemCliente::where('crm_rot_cli_roteiro_id', $id)->pluck('crm_rot_cli_cliente_id')->map(fn ($v) => (int) $v)->all()
+                : [];
+            $novos = array_diff(array_map('intval', (array) $this->input('clientes', [])), $jaNoRoteiro);
+            if ($novos !== [] && \App\Models\Cliente::whereIn('cli_id', $novos)->visivelPara($usuario)->count() !== count(array_unique($novos))) {
+                $validator->errors()->add('clientes', 'O roteiro tem cliente de outro vendedor.');
+            }
+        });
     }
 }

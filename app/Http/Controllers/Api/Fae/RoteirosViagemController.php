@@ -22,7 +22,8 @@ class RoteirosViagemController extends Controller
 
     public function index(): JsonResponse
     {
-        $roteiros = RoteiroViagem::with('vendedor')->orderByDesc('crm_rot_id')->paginate(20);
+        // Perfil Vendedor (2026-11-27): só os próprios roteiros.
+        $roteiros = RoteiroViagem::with('vendedor')->visivelPara(auth()->user())->orderByDesc('crm_rot_id')->paginate(20);
 
         return response()->json([
             'data' => collect($roteiros->items())->map(fn ($r) => $this->formatResumo($r))->values(),
@@ -35,6 +36,7 @@ class RoteirosViagemController extends Controller
     public function show(int $roteiro): JsonResponse
     {
         $registro = RoteiroViagem::with(['vendedor', 'clientes.cliente'])->findOrFail($roteiro);
+        abort_unless($registro->visivelPara(auth()->user()), 403, 'Este roteiro pertence a outro vendedor.');
 
         return response()->json(['data' => $this->formatDetalhe($registro)]);
     }
@@ -49,6 +51,7 @@ class RoteirosViagemController extends Controller
 
     public function update(RoteiroViagemRequest $request, int $roteiro): JsonResponse
     {
+        abort_unless(RoteiroViagem::findOrFail($roteiro)->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
         $registro = $this->repository->update($roteiro, $request->validated());
         $registro->load(['vendedor', 'clientes.cliente']);
 

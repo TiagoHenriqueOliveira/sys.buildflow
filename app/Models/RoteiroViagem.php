@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StatusRoteiroViagem;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,5 +40,19 @@ class RoteiroViagem extends Model
     {
         return $this->hasMany(RoteiroViagemCliente::class, 'crm_rot_cli_roteiro_id', 'crm_rot_id')
             ->orderBy('crm_rot_cli_ordem');
+    }
+
+    /** Perfil Vendedor (2026-11-27): só os próprios roteiros. */
+    public function scopeVisivelPara(Builder $query, Usuario $usuario): Builder
+    {
+        return $usuario->veSoOsProprios()
+            ? $query->where('crm_rot_vendedor_id', $usuario->user_id)
+            : $query;
+    }
+
+    public function visivelPara(Usuario $usuario): bool
+    {
+        return ! $usuario->veSoOsProprios()
+            || (int) $this->crm_rot_vendedor_id === (int) $usuario->user_id;
     }
 }

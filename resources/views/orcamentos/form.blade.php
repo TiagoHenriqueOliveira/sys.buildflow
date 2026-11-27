@@ -89,7 +89,7 @@
                                     id="orc_vendedor_id"
                                     name="orc_vendedor_id"
                                     label="Vendedor responsável"
-                                    :options="$vendedores->pluck('user_nome', 'user_id')->all()"
+                                    :options="$vendedoresResponsavel->pluck('user_nome', 'user_id')->all()"
                                     :value="old('orc_vendedor_id', $orcamento->orc_vendedor_id)"
                                     placeholder="Selecione..."
                                     required

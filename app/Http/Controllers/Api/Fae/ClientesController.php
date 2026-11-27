@@ -26,7 +26,8 @@ class ClientesController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Cliente::query()->with('classificacao')->orderBy('cli_nome');
+        // Perfil Vendedor (2026-11-27): só os próprios clientes e os sem vendedor.
+        $query = Cliente::query()->with('classificacao')->visivelPara($request->user())->orderBy('cli_nome');
 
         if ($request->filled('search')) {
             $query->where('cli_nome', 'like', '%' . $request->search . '%');
@@ -48,6 +49,7 @@ class ClientesController extends Controller
     public function show(int $cliente): JsonResponse
     {
         $registro = Cliente::with(['classificacao', 'contatos', 'equipamentos', 'localizacoes'])->findOrFail($cliente);
+        abort_unless($registro->visivelPara(auth()->user()), 403, 'Este cliente pertence a outro vendedor.');
 
         return response()->json(['data' => $this->formatDetalhe($registro)]);
     }
@@ -70,6 +72,7 @@ class ClientesController extends Controller
      */
     public function update(ClienteRequest $request, int $cliente): JsonResponse
     {
+        abort_unless(Cliente::findOrFail($cliente)->visivelPara($request->user()), 403, 'Este cliente pertence a outro vendedor.');
         $registro = $this->repository->update($cliente, $request->validated());
         $registro->load(['classificacao', 'contatos', 'equipamentos', 'localizacoes']);
 
@@ -85,6 +88,7 @@ class ClientesController extends Controller
         $term = $request->get('term', '');
 
         $clientes = Cliente::where('cli_ativo', 1)
+            ->visivelPara($request->user())
             ->where('cli_nome', 'like', '%' . $term . '%')
             ->orderBy('cli_nome')
             ->limit(20)
