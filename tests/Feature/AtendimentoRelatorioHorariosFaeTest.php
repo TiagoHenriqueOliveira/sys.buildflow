@@ -148,6 +148,21 @@ class AtendimentoRelatorioHorariosFaeTest extends TestCase
         $this->assertStringContainsString('Segunda-feira', $html);
     }
 
+    public function test_pdf_da_entrega_tecnica_cita_a_fae_e_nao_outra_empresa(): void
+    {
+        // Auditoria S-16: o bloco Entrega Técnica dizia "A MCLvale...".
+        $tecnico = Usuario::factory()->tecnico()->create();
+        $relatorio = $this->criarRelatorio($tecnico);
+        $relatorio->atendimento->update(['aten_entrega_tecnica' => 1]);
+
+        $html = view('atendimentos-relatorios.pdf', $this->dadosPdf($relatorio->fresh()))->render();
+        // Imagens embutidas (base64) podem conter qualquer sequência de letras.
+        $texto = preg_replace('/data:[^"\')\s]+/', '', $html);
+
+        $this->assertStringContainsString('A FAÉ Bioenergia, neste ato representada pelo técnico abaixo assinado', $texto);
+        $this->assertStringNotContainsStringIgnoringCase('mcl', $texto);
+    }
+
     // ─── API mobile (fae/v1) ─────────────────────────────────────────────
 
     public function test_api_grava_dias_e_detalhe_devolve_horarios_dias(): void

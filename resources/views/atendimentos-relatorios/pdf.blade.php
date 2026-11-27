@@ -562,7 +562,8 @@
     <div class="section-title">{{ $secNum() }}. Entrega Técnica</div>
     <p style="font-weight:bold; margin-bottom:6px;">Entrega Técnica de Equipamentos</p>
     <p style="margin-bottom:6px;"><strong>Equipamento instalado:</strong> {{ $equipStr }}</p>
-    <p style="margin-bottom:4px;">A MCLvale, neste ato representado pelo técnico abaixo assinado, coloca em início a operação e funcionamento do(s) equipamento(s) adquirido(s).</p>
+    {{-- Auditoria 27/11/2026 (S-16): o texto herdado citava "A MCLvale". --}}
+    <p style="margin-bottom:4px;">A FAÉ Bioenergia, neste ato representada pelo técnico abaixo assinado, coloca em início a operação e funcionamento do(s) equipamento(s) adquirido(s).</p>
     <p style="margin-bottom:4px;">A equipe operacional foi devidamente instruída, tendo recebido todas as informações necessárias para o correto funcionamento dos equipamentos/instalação.</p>
     <p style="margin-bottom:4px;">Além dessas informações, é indispensável a leitura do manual de Fabricação do Equipamento.</p>
     <p style="margin-bottom:4px;"><em>OBS: Esse registro é utilizado para controle técnico.</em></p>
