@@ -6,6 +6,7 @@ import '@fontsource/ubuntu-sans/500.css';
 import '@fontsource/ubuntu-sans/600.css';
 import '@fontsource/ubuntu-sans/700.css';
 import Alpine from 'alpinejs';
+import { Tooltip } from 'bootstrap';
 import { registerSbAdmin } from './sbadmin/app';
 import { registerConfirmModal } from './confirm-modal';
 import { somenteDigitos, formatarCnpj, formatarTelefone } from './formatters';
@@ -28,3 +29,8 @@ window.setupAutocomplete = setupAutocomplete;
 window.iniciarFeedbackSalvamento = iniciarFeedbackSalvamento;
 window.pararFeedbackSalvamento = pararFeedbackSalvamento;
 Alpine.start();
+
+// Tooltips do Bootstrap (2026-11-27): qualquer elemento com
+// data-bs-toggle="tooltip" + data-bs-title (ex.: botão de excluir
+// comentário bloqueado em orcamentos/form.blade.php).
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => new Tooltip(el));

@@ -24,11 +24,16 @@ class OrcamentosController extends Controller
 
     public function index(Request $request): View
     {
-        $filtros = $this->filtrosPersistentes('orcamentos', ['f_cliente', 'f_vendedor', 'f_tipo', 'f_nivel']);
+        // 2026-11-27: + prazo de envio (período de/até) e resultado ("aberto"
+        // = ainda sem resultado).
+        $filtros = $this->filtrosPersistentes('orcamentos', ['f_cliente', 'f_vendedor', 'f_tipo', 'f_nivel', 'f_prazo_de', 'f_prazo_ate', 'f_resultado']);
         $filtroCliente = $filtros['f_cliente'];
         $filtroVendedor = $filtros['f_vendedor'];
         $filtroTipo = $filtros['f_tipo'];
         $filtroNivel = $filtros['f_nivel'];
+        $filtroPrazoDe = $this->dataValida($filtros['f_prazo_de']);
+        $filtroPrazoAte = $this->dataValida($filtros['f_prazo_ate']);
+        $filtroResultado = $filtros['f_resultado'];
 
         $orcamentos = Orcamento::query()
             ->with(['cliente', 'vendedor', 'tipoOrcamento'])
@@ -37,6 +42,10 @@ class OrcamentosController extends Controller
             ->when($filtroVendedor !== '', fn ($q) => $q->where('orc_vendedor_id', (int) $filtroVendedor))
             ->when($filtroTipo !== '', fn ($q) => $q->where('orc_tipo_orcamento_id', (int) $filtroTipo))
             ->when($filtroNivel !== '', fn ($q) => $q->where('orc_nivel', (int) $filtroNivel))
+            ->when($filtroPrazoDe !== '', fn ($q) => $q->whereDate('orc_prazo_envio', '>=', $filtroPrazoDe))
+            ->when($filtroPrazoAte !== '', fn ($q) => $q->whereDate('orc_prazo_envio', '<=', $filtroPrazoAte))
+            ->when($filtroResultado === 'aberto', fn ($q) => $q->whereNull('orc_resultado'))
+            ->when($filtroResultado !== '' && $filtroResultado !== 'aberto', fn ($q) => $q->where('orc_resultado', (int) $filtroResultado))
             ->orderByDesc('orc_id')
             ->paginate(15)
             ->withQueryString();
@@ -50,8 +59,19 @@ class OrcamentosController extends Controller
             'filtroVendedor' => $filtroVendedor,
             'filtroTipo' => $filtroTipo,
             'filtroNivel' => $filtroNivel,
-            'temFiltro' => $filtroCliente !== '' || $filtroVendedor !== '' || $filtroTipo !== '' || $filtroNivel !== '',
+            'filtroPrazoDe' => $filtroPrazoDe,
+            'filtroPrazoAte' => $filtroPrazoAte,
+            'filtroResultado' => $filtroResultado,
+            'resultados' => \App\Enums\ResultadoOrcamento::cases(),
+            'temFiltro' => $filtroCliente !== '' || $filtroVendedor !== '' || $filtroTipo !== '' || $filtroNivel !== ''
+                || $filtroPrazoDe !== '' || $filtroPrazoAte !== '' || $filtroResultado !== '',
         ]);
+    }
+
+    /** Data do filtro no formato do <input type="date">; qualquer outra coisa é ignorada. */
+    private function dataValida(string $valor): string
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor) === 1 ? $valor : '';
     }
 
     public function create(): View
@@ -189,7 +209,10 @@ class OrcamentosController extends Controller
     {
         $orcamento = Orcamento::findOrFail($id);
         $this->garantirVisivel($orcamento);
-        $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail()->delete();
+        $comentario = $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail();
+        // 2026-11-27: só quem incluiu o comentário pode excluí-lo.
+        abort_unless((int) $comentario->orc_com_autor_id === (int) Auth::id(), 403, 'Só quem incluiu o comentário pode excluí-lo.');
+        $comentario->delete();
 
         return redirect()
             ->route('orcamentos.edit', $id)

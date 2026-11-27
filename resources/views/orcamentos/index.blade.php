@@ -40,7 +40,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-3">
                     <label for="f_nivel" class="sbadmin-form-label">Nível</label>
                     <select id="f_nivel" name="f_nivel" class="form-select sbadmin-form-control">
                         <option value="">Todos</option>
@@ -49,7 +49,26 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-12 col-md-2 d-flex gap-2">
+                {{-- 2026-11-27: prazo de envio (período) e resultado. --}}
+                <div class="col-6 col-md-3">
+                    <label for="f_prazo_de" class="sbadmin-form-label">Prazo de envio — de</label>
+                    <input type="date" id="f_prazo_de" name="f_prazo_de" value="{{ $filtroPrazoDe }}" class="form-control sbadmin-form-control">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="f_prazo_ate" class="sbadmin-form-label">Prazo de envio — até</label>
+                    <input type="date" id="f_prazo_ate" name="f_prazo_ate" value="{{ $filtroPrazoAte }}" class="form-control sbadmin-form-control">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="f_resultado" class="sbadmin-form-label">Resultado</label>
+                    <select id="f_resultado" name="f_resultado" class="form-select sbadmin-form-control">
+                        <option value="">Todos</option>
+                        <option value="aberto" @selected($filtroResultado === 'aberto')>Em aberto</option>
+                        @foreach($resultados as $r)
+                            <option value="{{ $r->value }}" @selected((string) $filtroResultado === (string) $r->value)>{{ $r->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-6 col-md-3 d-flex gap-2">
                     <button type="submit" class="btn btn-info">
                         <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar
                     </button>

@@ -15,7 +15,9 @@ class MapaRelacoesController extends Controller
 
     public function index(Request $request): View
     {
-        $filtros = $this->filtrosPersistentes('mapa-relacoes', ['f_vendedor', 'f_estado', 'f_segmento', 'f_classificacao']);
+        $filtros = $this->filtrosPersistentes('mapa-relacoes', ['f_vendedor', 'f_estado', 'f_segmento', 'f_classificacao', 'f_caso_sucesso']);
+        // 2026-11-27: "1" = somente clientes marcados como caso de sucesso.
+        $filtroCasoSucesso = $filtros['f_caso_sucesso'] === '1' ? '1' : '';
         $filtroVendedor = $filtros['f_vendedor'];
         $filtroEstado = $filtros['f_estado'];
         $filtroSegmento = $filtros['f_segmento'];
@@ -29,6 +31,7 @@ class MapaRelacoesController extends Controller
             ->when($filtroEstado !== '', fn ($q) => $q->where('cli_uf', $filtroEstado))
             ->when($filtroSegmento !== '', fn ($q) => $q->where('cli_segmento', $filtroSegmento))
             ->when($filtroClassificacao !== '', fn ($q) => $q->where('cli_classificacao_id', (int) $filtroClassificacao))
+            ->when($filtroCasoSucesso === '1', fn ($q) => $q->where('cli_caso_sucesso', 1))
             ->orderBy('cli_nome')
             ->get();
 
@@ -42,6 +45,7 @@ class MapaRelacoesController extends Controller
             'filtroEstado' => $filtroEstado,
             'filtroSegmento' => $filtroSegmento,
             'filtroClassificacao' => $filtroClassificacao,
+            'filtroCasoSucesso' => $filtroCasoSucesso,
         ]);
     }
 }

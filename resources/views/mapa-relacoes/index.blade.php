@@ -47,6 +47,13 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-sm-6 col-md-3">
+                    <label class="sbadmin-form-label" for="f_caso_sucesso">Casos de sucesso</label>
+                    <select class="form-select sbadmin-form-control" id="f_caso_sucesso" name="f_caso_sucesso">
+                        <option value="">Todos os clientes</option>
+                        <option value="1" @selected($filtroCasoSucesso === '1')>Somente casos de sucesso</option>
+                    </select>
+                </div>
                 <div class="col-12 d-flex gap-2">
                     <button type="submit" class="btn btn-info text-white">
                         <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar

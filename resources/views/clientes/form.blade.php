@@ -472,9 +472,9 @@
                         @if($editando)
                             <hr>
                             <h6 class="fw-bold mb-2">Histórico</h6>
-                            @php $historico = $cliente->historico(); @endphp
+                            @php $historico = $cliente->historico(auth()->user()); @endphp
                             @if($historico->isEmpty())
-                                <p class="text-body-secondary small">Nenhum atendimento, relatório ou orçamento registrado para este cliente ainda.</p>
+                                <p class="text-body-secondary small">Nenhum atendimento, orçamento ou roteiro de viagem registrado para este cliente ainda.</p>
                             @else
                                 <div class="table-responsive">
                                     <table class="table table-sm table-striped table-hover mb-0">
@@ -488,7 +488,7 @@
                                         <tbody>
                                             @foreach($historico as $item)
                                             <tr>
-                                                <td class="align-middle">{{ \Illuminate\Support\Carbon::parse($item['data'])->format('d/m/Y') }}</td>
+                                                <td class="align-middle text-nowrap">{{ $item['data_exibicao'] ?? \Illuminate\Support\Carbon::parse($item['data'])->format('d/m/Y') }}</td>
                                                 <td class="align-middle">{{ $item['tipo'] }}</td>
                                                 <td class="align-middle"><a href="{{ $item['link'] }}">{{ $item['descricao'] }}</a></td>
                                             </tr>

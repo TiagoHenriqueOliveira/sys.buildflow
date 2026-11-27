@@ -112,7 +112,20 @@ class Cliente extends Model
      * relatorio aqui - a aba "Relatorios" do proprio cadastro de Atendimento
      * (ver AtendimentosController::getRelatorios()) ja cobre isso.
      */
-    public function historico()
+    /** Visitas deste cliente em roteiros de viagem (CRM05/06). */
+    public function visitasRoteiro()
+    {
+        return $this->hasMany(RoteiroViagemCliente::class, 'crm_rot_cli_cliente_id', 'cli_id');
+    }
+
+    /**
+     * Histórico consolidado do cliente (aba Histórico). Desde 2026-11-27
+     * inclui os roteiros de viagem: a data mostra o período do roteiro
+     * (data_exibicao) e a descrição, a observação da visita a este cliente.
+     * Com $usuario, os roteiros seguem a visibilidade dele (perfil Vendedor
+     * só vê os próprios).
+     */
+    public function historico(?Usuario $usuario = null)
     {
         $itensAtendimento = $this->atendimentos->map(fn ($atendimento) => [
             'tipo' => 'Atendimento',
@@ -128,7 +141,20 @@ class Cliente extends Model
             'link' => route('orcamentos.edit', $orcamento->orc_id),
         ]);
 
-        return $itensAtendimento->concat($itensOrcamento)
+        $itensRoteiro = $this->visitasRoteiro()
+            ->with('roteiro')
+            ->whereHas('roteiro', fn ($q) => $usuario ? $q->visivelPara($usuario) : $q)
+            ->get()
+            ->map(fn ($visita) => [
+                'tipo' => 'Roteiro de viagem',
+                'data' => $visita->roteiro->crm_rot_periodo_inicio,
+                'data_exibicao' => $visita->roteiro->crm_rot_periodo_inicio->format('d/m/Y')
+                    . ' a ' . $visita->roteiro->crm_rot_periodo_fim->format('d/m/Y'),
+                'descricao' => filled($visita->crm_rot_cli_observacao) ? $visita->crm_rot_cli_observacao : 'Sem observação',
+                'link' => route('roteiros-viagem.edit', $visita->crm_rot_cli_roteiro_id),
+            ]);
+
+        return $itensAtendimento->concat($itensOrcamento)->concat($itensRoteiro)
             ->filter(fn ($item) => $item['data'] !== null)
             ->sortByDesc('data')
             ->values();

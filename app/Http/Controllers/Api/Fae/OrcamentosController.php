@@ -114,7 +114,10 @@ class OrcamentosController extends Controller
     {
         $orcamento = Orcamento::findOrFail($id);
         $this->garantirVisivel($orcamento);
-        $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail()->delete();
+        $comentario = $orcamento->comentarios()->where('orc_com_id', $comentarioId)->firstOrFail();
+        // 2026-11-27: só quem incluiu o comentário pode excluí-lo.
+        abort_unless((int) $comentario->orc_com_autor_id === (int) Auth::id(), 403, 'Só quem incluiu o comentário pode excluí-lo.');
+        $comentario->delete();
 
         return response()->json(['message' => 'Comentário removido com sucesso.']);
     }

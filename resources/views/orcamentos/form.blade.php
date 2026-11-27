@@ -276,13 +276,25 @@
                                 <div class="sbadmin-card-body py-2">
                                     <div class="d-flex justify-content-between align-items-start small text-body-secondary">
                                         <span>{{ optional($comentario->autor)->user_nome }} — {{ $comentario->orc_com_criado_em->format('d/m/Y H:i') }}</span>
-                                        <form method="POST" action="{{ route('orcamentos.destroy-comentario', [$orcamento->orc_id, $comentario->orc_com_id]) }}" class="m-0">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Excluir comentário">
-                                                <i class="bi bi-trash" aria-hidden="true"></i>
-                                            </button>
-                                        </form>
+                                        {{-- 2026-11-27: só quem incluiu exclui; para os demais o
+                                             botão fica bloqueado com o motivo no tooltip (o
+                                             tooltip fica no <span>, porque botão desabilitado
+                                             não recebe o mouse). --}}
+                                        @if((int) $comentario->orc_com_autor_id === (int) auth()->id())
+                                            <form method="POST" action="{{ route('orcamentos.destroy-comentario', [$orcamento->orc_id, $comentario->orc_com_id]) }}" class="m-0">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Excluir comentário">
+                                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Só quem incluiu o comentário pode excluí-lo.">
+                                                <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 pe-none" disabled aria-label="Excluir comentário (bloqueado: só quem incluiu pode excluir)">
+                                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </span>
+                                        @endif
                                     </div>
                                     <p class="mb-0" style="white-space:pre-wrap;">{{ $comentario->orc_com_texto }}</p>
                                     @if($comentario->orc_com_alerta_usuario_id)
