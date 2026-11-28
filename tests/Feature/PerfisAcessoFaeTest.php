@@ -111,21 +111,29 @@ class PerfisAcessoFaeTest extends TestCase
         $this->actingAs($protegido)->get(route('orcamentos.index'))->assertOk();
     }
 
-    public function test_usuario_protegido_nao_aparece_na_listagem_nem_para_ele_mesmo(): void
+    /**
+     * Auditoria S-12 (decisão D-06, 28/11/2026): a conta do fornecedor
+     * aparece para os administradores da FAÉ, só para leitura — antes
+     * (pedido de 2026-11-16) ficava oculta para todos.
+     */
+    public function test_usuario_protegido_aparece_aos_administradores_so_para_leitura(): void
     {
         $protegido = $this->protegido();
         $admin = Usuario::factory()->administrador()->create();
 
         $this->actingAs($admin)->get(route('usuarios.index'))
             ->assertOk()
-            ->assertDontSee('3iodigital26@gmail.com');
+            ->assertSee('<td>3iodigital26@gmail.com</td>', false)
+            ->assertSee('Fornecedor — acesso total')
+            ->assertDontSee('data-email="3iodigital26@gmail.com"', false)
+            ->assertDontSee(route('usuarios.mfa.redefinir', $protegido->user_id))
+            ->assertDontSee(route('usuarios.codigo-acesso', $protegido->user_id));
 
-        // Logado como ele, o e-mail aparece no menu do usuário (topbar) —
-        // o que não pode é aparecer como linha da listagem.
-        $this->actingAs($protegido)->get(route('usuarios.index'))
+        // Quem não tem acesso total (ex.: perfil com usuarios.ver) não a vê.
+        \App\Models\PerfilPermissao::sincronizar(NivelAcesso::Comercial->value, ['usuarios.ver']);
+        $this->actingAs(Usuario::factory()->comercial()->create())->get(route('usuarios.index'))
             ->assertOk()
-            ->assertDontSee('<td>3iodigital26@gmail.com</td>', false)
-            ->assertDontSee('data-email="3iodigital26@gmail.com"', false);
+            ->assertDontSee('<td>3iodigital26@gmail.com</td>', false);
     }
 
     public function test_ninguem_alem_dele_edita_o_usuario_protegido(): void

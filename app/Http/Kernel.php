@@ -65,6 +65,8 @@ class Kernel extends HttpKernel
         // Contrato fae/v1 §3 e §4 (auditoria S-14).
         'versao.app' => \App\Http\Middleware\VersaoMinimaApp::class,
         'idempotente' => \App\Http\Middleware\Idempotencia::class,
+        // S-12 (D-06): toda ação da conta do fornecedor vai para a auditoria.
+        'auditar.fornecedor' => \App\Http\Middleware\AuditarFornecedor::class,
         // Habilidades do token Sanctum (contrato fae/v1 §2.3: "fae-app").
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,

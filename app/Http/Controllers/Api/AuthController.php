@@ -89,6 +89,16 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // S-12 (decisão D-06): a conta do fornecedor não entra pela API do app.
+        if ($usuario->isProtegido()) {
+            AuditService::log('autenticacao', 'login_api_negado', $usuario->user_id, [], ['ip' => $request->ip(), 'canal' => 'api']);
+
+            return response()->json([
+                'message' => 'Esta conta não tem acesso pelo aplicativo.',
+                'codigo' => 'sem_acesso_api',
+            ], 403);
+        }
+
         $deviceName = (string) $request->input('device_name', 'flutter_app');
 
         if (! $usuario->exigeMfaNoApp()) {

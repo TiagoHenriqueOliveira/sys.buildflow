@@ -40,19 +40,32 @@ class UsuariosController extends Controller
         $filtros = $this->filtrosPersistentes('usuarios', ['f_nome', 'f_email']);
         $filtroNome = $filtros['f_nome'];
         $filtroEmail = $filtros['f_email'];
-        // Pedido do cliente (2026-11-16): o usuário protegido
-        // (3iodigital26@gmail.com) não aparece na listagem para ninguém,
-        // nem para ele mesmo — ele se edita por "Minha conta".
+        // Auditoria S-12 (decisão D-06, 28/11/2026): a conta do fornecedor
+        // (usuário protegido) passa a aparecer para os administradores da
+        // FAÉ, só para leitura e com o último acesso — antes (pedido de
+        // 2026-11-16) ela ficava oculta para todos. Continua editável só
+        // por ela mesma, em "Minha conta".
         $usuarios = Usuario::query()
-            ->where('user_protegido', 0)
+            ->when(! Auth::user()->temAcessoTotal(), fn ($q) => $q->where('user_protegido', 0))
             ->when($filtroNome !== '', fn ($q) => $q->where('user_nome', 'like', "%{$filtroNome}%"))
             ->when($filtroEmail !== '', fn ($q) => $q->where('user_email', 'like', "%{$filtroEmail}%"))
+            ->orderByDesc('user_protegido')
             ->orderBy('user_nome')
             ->paginate(15)
             ->withQueryString();
 
+        $protegidos = collect($usuarios->items())->filter(fn (Usuario $u) => $u->isProtegido())->pluck('user_id');
+        $ultimosAcessos = $protegidos->isEmpty() ? collect() : \App\Models\LogAuditoria::query()
+            ->whereIn('log_aud_usuario_id', $protegidos)
+            ->where('log_aud_modulo', 'autenticacao')
+            ->where('log_aud_acao', 'login')
+            ->groupBy('log_aud_usuario_id')
+            ->selectRaw('log_aud_usuario_id, MAX(log_aud_created_at) AS ultimo')
+            ->pluck('ultimo', 'log_aud_usuario_id');
+
         return view('usuarios.index', [
             'usuarios' => $usuarios,
+            'ultimosAcessos' => $ultimosAcessos,
             'filtroNome' => $filtroNome,
             'filtroEmail' => $filtroEmail,
             'temFiltro' => $filtroNome !== '' || $filtroEmail !== '',

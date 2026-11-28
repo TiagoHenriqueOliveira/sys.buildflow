@@ -37,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
         // Vale também para os tokens emitidos antes desta versão. O motivo
         // fica marcado na requisição para o 401 trazer "token_expirado".
         Sanctum::authenticateAccessTokensUsing(function (PersonalAccessToken $token, bool $valido) {
+            // S-12 (decisão D-06): token da conta do fornecedor não vale na API.
+            if ($token->tokenable instanceof \App\Models\Usuario && $token->tokenable->isProtegido()) {
+                return false;
+            }
+
             if ($valido && ! self::tokenExpirado($token)) {
                 return true;
             }

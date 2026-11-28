@@ -73,8 +73,13 @@
             @foreach($usuarios as $u)
                 <tr class="{{ $u->user_ativo ? '' : 'table-danger' }}">
                     <td class="text-center">
+                        {{-- S-12 (D-06): a conta do fornecedor aparece só para leitura (ela se edita em "Minha conta"). --}}
+                        @php($somenteLeitura = $u->isProtegido())
+                        @if($somenteLeitura)
+                            <span class="text-body-secondary small">Só leitura</span>
+                        @endif
                         {{-- Administrador só é editável por quem tem acesso total. --}}
-                        @if(auth()->user()->temPermissao('usuarios.editar') && ((int) $u->user_nivel_acesso !== \App\Enums\NivelAcesso::Administrador->value || auth()->user()->temAcessoTotal()))
+                        @if(! $somenteLeitura && auth()->user()->temPermissao('usuarios.editar') && ((int) $u->user_nivel_acesso !== \App\Enums\NivelAcesso::Administrador->value || auth()->user()->temAcessoTotal()))
                         <button
                             type="button"
                             class="btn btn-sm sbadmin-table-action-btn"
@@ -90,7 +95,7 @@
                         </button>
                         @endif
                         {{-- 2026-11-27: só acesso total redefine o MFA (celular perdido). --}}
-                        @if(auth()->user()->temAcessoTotal() && $u->temMfaConfigurado())
+                        @if(! $somenteLeitura && auth()->user()->temAcessoTotal() && $u->temMfaConfigurado())
                         <form method="POST" action="{{ route('usuarios.mfa.redefinir', $u->user_id) }}" class="d-inline" x-ref="mfa{{ $u->user_id }}">
                             @csrf
                             @method('DELETE')
@@ -106,7 +111,7 @@
                         </form>
                         @endif
                         {{-- S-08: sem autenticador → código de ativação; com autenticador → código para redefinir a senha. --}}
-                        @if(auth()->user()->temAcessoTotal() && $u->user_ativo)
+                        @if(! $somenteLeitura && auth()->user()->temAcessoTotal() && $u->user_ativo)
                         @php($tipoCodigo = $u->temMfaConfigurado() ? \App\Services\CodigoAcessoService::REDEFINIR_SENHA : \App\Services\CodigoAcessoService::ATIVACAO_MFA)
                         @php($rotuloCodigo = $u->temMfaConfigurado() ? 'Gerar código para redefinir a senha' : 'Gerar código de ativação do autenticador')
                         <form method="POST" action="{{ route('usuarios.codigo-acesso', $u->user_id) }}" class="d-inline" x-ref="cod{{ $u->user_id }}">
@@ -129,6 +134,14 @@
                         @unless($u->temMfaConfigurado())
                             <x-sbadmin::badge type="warning">Sem autenticador</x-sbadmin::badge>
                         @endunless
+                        @if($u->isProtegido())
+                            <x-sbadmin::badge type="info">Fornecedor — acesso total</x-sbadmin::badge>
+                            <div class="small text-body-secondary">
+                                Último acesso:
+                                {{ ($ultimosAcessos[$u->user_id] ?? null) ? \Illuminate\Support\Carbon::parse($ultimosAcessos[$u->user_id])->format('d/m/Y H:i') : 'nunca' }}
+                                · sem acesso pelo app · ações registradas na auditoria
+                            </div>
+                        @endif
                     </td>
                     <td>{{ $u->user_email }}</td>
                     <td>{{ \App\Enums\NivelAcesso::from((int) $u->user_nivel_acesso)->label() }}</td>
