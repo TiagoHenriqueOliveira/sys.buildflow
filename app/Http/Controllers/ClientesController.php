@@ -101,6 +101,8 @@ class ClientesController extends Controller
     {
         $cliente = Cliente::with(['contatos', 'equipamentos', 'localizacoes'])->findOrFail($id);
         abort_unless($cliente->visivelPara(auth()->user()), 403, 'Este cliente pertence a outro vendedor.');
+        // S-03 / D-01: o formulário só traz os contatos que o usuário vê.
+        $cliente->setRelation('contatos', $cliente->contatosVisiveisPara(auth()->user()));
 
         return view('clientes.form', [
             'cliente' => $cliente,

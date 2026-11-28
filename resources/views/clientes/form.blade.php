@@ -25,6 +25,9 @@
     $editando = $cliente->exists;
     $contatosIniciais = old('contatos', $editando
         ? $cliente->contatos->map(fn ($c) => [
+            // S-03: o id volta no POST para o contato ser atualizado (e não
+            // recriado); contatos que o usuário não vê nem chegam aqui.
+            'id' => $c->cli_cont_id,
             'nome' => $c->cli_cont_nome,
             'cargo' => $c->cli_cont_cargo,
             'telefone' => $mascararTelefone($c->cli_cont_telefone),
@@ -56,7 +59,7 @@
             equipamentos: {{ \Illuminate\Support\Js::from($equipamentosIniciais) }},
             localizacoes: {{ \Illuminate\Support\Js::from($localizacoesIniciais) }},
             linkMapa: {{ \Illuminate\Support\Js::from(old('cli_link_mapa', $cliente->cli_link_mapa)) }},
-            addContato() { this.contatos.push({ nome: '', cargo: '', telefone: '', email: '', tipo: 0 }); },
+            addContato() { this.contatos.push({ id: null, nome: '', cargo: '', telefone: '', email: '', tipo: 0 }); },
             removerContato(i) { this.contatos.splice(i, 1); },
             addEquipamento() { this.equipamentos.push({ descricao: '' }); },
             removerEquipamento(i) { this.equipamentos.splice(i, 1); },
@@ -296,6 +299,7 @@
                                     <div class="row g-2">
                                         <div class="col-md-4">
                                             <label class="sbadmin-form-label">Nome</label>
+                                            <input type="hidden" :name="'contatos['+i+'][id]'" :value="contato.id ?? ''">
                                             <input type="text" class="form-control sbadmin-form-control" maxlength="100" :name="'contatos['+i+'][nome]'" x-model="contato.nome" placeholder="Ex.: João da Silva">
                                         </div>
                                         <div class="col-md-3">

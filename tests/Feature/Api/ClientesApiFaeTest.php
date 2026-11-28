@@ -47,7 +47,9 @@ class ClientesApiFaeTest extends TestCase
         $cliente = Cliente::factory()->create();
         $cliente->contatos()->create([
             'cli_cont_nome' => 'Fulano',
-            'cli_cont_tipo' => 1,
+            // Técnico: contato Comercial de outro autor não aparece para o
+            // técnico desde a auditoria S-03 (ver ContatosClienteFaeTest).
+            'cli_cont_tipo' => 0,
         ]);
         $cliente->equipamentos()->create(['cli_equip_descricao' => 'Bomba X']);
         $cliente->localizacoes()->create(['cli_loc_descricao' => 'Galpao 2']);

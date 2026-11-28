@@ -115,8 +115,14 @@ class ClientesController extends Controller
         ];
     }
 
+    /**
+     * Contrato fae/v1 §7 (auditoria S-03 / D-01): a API omite os contatos
+     * que o usuário não vê e cada contato traz "criado_por_id".
+     */
     private function formatDetalhe(Cliente $c): array
     {
+        $c->setRelation('contatos', $c->contatosVisiveisPara(auth()->user()));
+
         return [
             ...$this->formatResumo($c),
             'cnpj'                   => $c->cli_cnpj,
@@ -142,6 +148,7 @@ class ClientesController extends Controller
                 'telefone'  => $ct->cli_cont_telefone,
                 'email'     => $ct->cli_cont_email,
                 'tipo'      => $ct->cli_cont_tipo?->value,
+                'criado_por_id' => $ct->cli_cont_usuario_id,
             ])->values(),
             'equipamentos' => $c->equipamentos->map(fn ($e) => [
                 'id'       => $e->cli_equip_id,

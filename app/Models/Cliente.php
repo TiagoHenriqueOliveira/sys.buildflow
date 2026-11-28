@@ -53,6 +53,14 @@ class Cliente extends Model
         return $this->belongsTo(ClassificacaoCliente::class, 'cli_classificacao_id', 'cla_cli_id');
     }
 
+    /** Contatos que o usuário pode ver (S-03 / D-01 — ver ClienteContato::visivelPara). */
+    public function contatosVisiveisPara(?Usuario $usuario): \Illuminate\Support\Collection
+    {
+        return $usuario
+            ? $this->contatos->filter(fn (ClienteContato $c) => $c->visivelPara($usuario, $this))->values()
+            : $this->contatos;
+    }
+
     public function contatos()
     {
         return $this->hasMany(ClienteContato::class, 'cli_cont_cliente_id', 'cli_id');

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Cliente;
+use App\Models\ClienteContato;
 use App\Repositories\Contracts\CrudRepositoryInterface;
 use App\Support\CoordenadasMapa;
 use Illuminate\Support\Facades\DB;
@@ -108,30 +109,44 @@ class ClienteRepository implements CrudRepositoryInterface
     }
 
     /**
-     * Etapa 1 (telas): substitui a lista inteira de contatos a cada save —
-     * simples o suficiente pro volume esperado (poucos contatos por
-     * cliente) e evita ter que casar IDs entre o que veio do form e o que
-     * já existe no banco. Se isso virar gargalo/perda de histórico, revisar
-     * na sessão de persistência (03).
+     * Auditoria 27/11/2026 (S-03): sincronização por id em vez de "apaga e
+     * recria". Entre os contatos que quem salva pode ver: com id → atualiza
+     * (mantém o autor), sem id → cria com o autor = quem salvou, ausente da
+     * lista → remove. Os contatos que ele não vê (Comercial de outro, D-01)
+     * ficam intocados — antes, salvar o cliente apagava esses contatos.
+     * Quem envia a lista sem ids (app antigo) continua com o efeito de
+     * antes sobre os contatos visíveis.
      */
     private function sincronizarContatos(Cliente $cliente, array $contatos): void
     {
-        $cliente->contatos()->delete();
+        $usuario = auth()->user();
+        $existentes = $cliente->contatos()->get()->keyBy('cli_cont_id');
+        $visiveis = $usuario
+            ? $existentes->filter(fn (ClienteContato $c) => $c->visivelPara($usuario, $cliente))
+            : $existentes;
+        $mantidos = [];
 
-        $linhas = collect($contatos)
-            ->filter(fn ($c) => filled($c['nome'] ?? null))
-            ->map(fn ($c) => [
-                'cli_cont_cliente_id' => $cliente->cli_id,
+        foreach (collect($contatos)->filter(fn ($c) => filled($c['nome'] ?? null)) as $c) {
+            $dados = [
                 'cli_cont_nome' => $c['nome'],
                 'cli_cont_cargo' => $c['cargo'] ?? null,
                 'cli_cont_telefone' => $c['telefone'] ?? null,
                 'cli_cont_email' => $c['email'] ?? null,
                 'cli_cont_tipo' => $c['tipo'] ?? 0,
-            ])
-            ->all();
+            ];
+            $id = isset($c['id']) ? (int) $c['id'] : 0;
 
-        if ($linhas !== []) {
-            $cliente->contatos()->insert($linhas);
+            if ($id && $visiveis->has($id) && ! in_array($id, $mantidos, true)) {
+                $visiveis[$id]->update($dados);
+                $mantidos[] = $id;
+            } else {
+                $cliente->contatos()->create($dados + ['cli_cont_usuario_id' => $usuario?->user_id]);
+            }
+        }
+
+        $remover = $visiveis->keys()->diff($mantidos);
+        if ($remover->isNotEmpty()) {
+            ClienteContato::whereIn('cli_cont_id', $remover->all())->delete();
         }
     }
 

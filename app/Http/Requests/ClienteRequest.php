@@ -83,6 +83,7 @@ class ClienteRequest extends FormRequest
             'cli_link_mapa' => ['nullable', 'url', 'max:500'],
 
             'contatos' => ['nullable', 'array'],
+            'contatos.*.id' => ['nullable', 'integer'],
             'contatos.*.nome' => ['required_with:contatos.*', 'string', 'max:100'],
             'contatos.*.cargo' => ['nullable', 'string', 'max:100'],
             'contatos.*.telefone' => ['nullable', 'digits_between:10,11'],
