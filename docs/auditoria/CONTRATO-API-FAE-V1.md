@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Versão** | 2 — §5 ajustado às decisões do usuário e status da Fase 0 (28/11/2026) |
+| **Versão** | 3 — Fase 1 do servidor (28/11/2026; ver Changelog) |
 | **Vale para** | `/api/fae/v1` (branch `feature/fae`) e app `app_buildflow_fae`, exclusivamente. |
 | **Dono** | Sessão **Web** (`sys-buildflow-fae`). Só ela altera este arquivo. |
 | **Consumidor** | Sessão **Android** (`app_buildflow_fae`). Só lê. Se precisar de mudança, para e pede ao usuário para levar o pedido à sessão Web. |
@@ -45,7 +45,8 @@ Corpo: `{ "email", "senha", "device_name" }`.
 
 - `expira_em`: ISO 8601 com fuso (ex.: `2026-12-27T10:00:00-03:00`).
 - `desafio`: string opaca aleatória, uso único, válida por 5 minutos, ligada ao usuário.
-- Quem tem MFA exigido no app depende da **decisão D-08** (todos, como no web, ou só Administrador/Assistência/usuário protegido). Até a decisão, a regra fica configurável (`API_MFA_PERFIS`).
+- **Decisão D-08 (28/11/2026): MFA no app para todos os perfis**, como no web. A regra fica atrás da flag `API_MFA_PERFIS` (`nenhum` | `todos`; valor desconhecido = `todos`). Hoje `nenhum`: o app publicado não sabe fazer o segundo passo. Passa a `todos` quando o app novo estiver nos aparelhos.
+- O bloqueio por erros de código (5 → 15 min) e o "código já usado" são os mesmos do web: errar no app bloqueia o web e vice-versa.
 
 ### 2.2 Segundo passo — `POST /api/fae/v1/login/mfa`
 
@@ -150,7 +151,7 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 |---|---|---|---|
 | §1 Envelope de erro | parcial: `codigo` nas respostas de login, 401, 403 de mídia, 409 e 423; o resto na Fase 1 | BF_v1.15.13–1.15.15 | — |
 | §2 Autenticação (lockout, expiração, `usuario_inativo`) | **implementado** (habilidade `fae-app`; tokens antigos com `*` valem até vencer; `expira_em` = validade absoluta) | BF_v1.15.14 / `5151cd6` | `SANCTUM_EXPIRACAO_DIAS=30`, `SANCTUM_INATIVIDADE_DIAS=7` |
-| §2 MFA na API (`/login/mfa`) | pendente | — | `API_MFA_PERFIS` |
+| §2 MFA na API (`/login/mfa`) | **implementado** (D-08: todos os perfis) | BF_v1.17.0 | `API_MFA_PERFIS=nenhum` hoje → `todos` com o app novo |
 | §3 Versão do app | pendente | — | `MOBILE_EXIGIR_CABECALHO_VERSAO` |
 | §4 Idempotência | pendente | — | `API_EXIGIR_IDEMPOTENCIA` |
 | §5 Relatório bloqueado | **implementado** (regras da v2) | BF_v1.15.15 / `628f474` | — |
@@ -164,3 +165,4 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 
 - **v1 (27/11/2026):** proposta inicial, derivada da auditoria.
 - **v2 (28/11/2026):** §5 conforme as decisões do usuário — o cliente continua assinando antes da aprovação (sem o `422 assinatura_cliente_antes_aprovacao`); depois de Aprovado, só a assinatura do cliente que falta (uma vez), compartilhamentos e observação interna; aprovado e assinado pelo cliente não muda de status. §9: nome UUID adiado. Seção 12 com o status da Fase 0. **Repassar à sessão Android.**
+- **v3 (28/11/2026, Fase 1 do servidor):** §2.1/§2.2 — D-08 decidida (MFA para todos os perfis), flag `API_MFA_PERFIS` (`nenhum`/`todos`), bloqueio de código compartilhado com o web. **Repassar à sessão Android.**

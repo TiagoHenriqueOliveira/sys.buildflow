@@ -1,7 +1,7 @@
 # Acompanhamento — correções da auditoria (sessão Web)
 
 Relatório: `auditoria-seguranca-arquitetura-fae-2026-11-27.md` (base: commit `de25f8c`).
-Contrato da API: `CONTRATO-API-FAE-V1.md` (versão 2, 28/11/2026).
+Contrato da API: `CONTRATO-API-FAE-V1.md` (versão 3, 28/11/2026).
 Status: **feito** / **parcial** / **bloqueado** / **não se aplica**.
 
 ## Decisões do usuário registradas
@@ -17,6 +17,11 @@ Status: **feito** / **parcial** / **bloqueado** / **não se aplica**.
 | D-01 — dono do contato Comercial | Quem cadastrou **e** o vendedor responsável do cliente |
 | D-01 — perfil Comercial | Vê os contatos comerciais de todos |
 | Migration de contatos em produção | Autorizada, com backup antes (feito em 28/11/2026) |
+| D-08 — MFA no app | Todos os perfis, como no web |
+| D-04 — comprovante | Código de 10 caracteres (o completo fica guardado); só o relatório (orçamento sem PDF/comprovante nesta fase) |
+| D-05 — CPF | Continua obrigatório na assinatura do cliente, cifrado no banco e mascarado no PDF e na API |
+| D-06 — conta do fornecedor | Mantida, visível (só leitura) aos administradores da FAÉ, sem acesso à API, toda ação auditada |
+| Arquivos de teste na pasta real de assinaturas | Apagar (feito em 28/11/2026: 10 PNGs de 100 bytes, nenhum ligado a relatório do banco) |
 
 ## Fase 0 — Contenção
 
@@ -32,6 +37,12 @@ Status: **feito** / **parcial** / **bloqueado** / **não se aplica**.
 | 0.8 | S-02 | feito (com divergência aceita) | 1.15.15 | `628f474` | `RelatorioBloqueadoFaeTest` (10) | Guarda única em 33 rotas (17 web, 16 API). Assinatura do cliente antes da aprovação mantida por decisão do usuário. **Pendente:** SHA-256 do PDF no momento da assinatura (entra com o snapshot do PDF do S-17, Fase 1); hoje guarda o SHA-256 da imagem na auditoria |
 | 0.9 | S-03 | feito | 1.15.18 | `a9a2ab5` | `ContatosClienteFaeTest` (6) | Migration `2026_11_28_090000` rodada em produção. PDF e histórico não exibem contatos do cliente (não se aplica). Equipamentos e localizações mantêm o "substitui a lista" (não há item oculto nelas) |
 | — | Revisão de segurança (MINOR) | feito | 1.16.0 | `d8ebf5c` | `SegurancaRotasFaeTest` (2) | Ver seção abaixo |
+
+## Fase 1 — Segurança restante e sincronização segura (servidor)
+
+| ID | Status | Versão BF | Commit | Teste que prova | Observações |
+|---|---|---|---|---|---|
+| S-05 (parte 2) | feito | 1.17.0 | (este commit) | `ApiMfaFaeTest` (11) | `POST /login` devolve o desafio (64 caracteres, uso único, 5 min, guardado só o SHA-256); `POST /login/mfa`. Flag `API_MFA_PERFIS=nenhum` até o app novo. Revisão de segurança do MINOR: única rota pública nova é `api/fae/v1/login/mfa` (limitador + desafio), acrescentada ao `SegurancaRotasFaeTest` |
 
 ## Revisão de segurança — fechamento da Fase 0 (BF_v1.16.0)
 
@@ -54,7 +65,7 @@ Achados desta revisão para a Fase 1: rotas `admin/*` de manutenção por GET (S
 |---|---|---|
 | API só `api/fae/v1/*`; 404 nas rotas legadas | ok | `RelatorioApiRegrasFaeTest::test_apis_herdadas_nao_existem_mais`, `SegurancaRotasFaeTest` |
 | Login da API: bloqueio por conta; token expira; habilidade restrita | ok | `ApiAutenticacaoFaeTest` |
-| Login da API: MFA | pendente (S-05 parte 2, Fase 1, D-08) | — |
+| Login da API: MFA | ok (atrás da flag `API_MFA_PERFIS`, ligar com o app novo) | `ApiMfaFaeTest` |
 | Senha ≥ 10 com checagem de vazamento | ok | `ApiAutenticacaoFaeTest::test_politica_de_senha…`, `…vazamento…` |
 | Troca de e-mail/senha exige a senha atual; MFA não cadastrável só com a senha | pendente (S-08, Fase 1) | — |
 | `/midia`: 403 para outro técnico; 200 para dono e acesso total | ok | `MidiaPosseFaeTest` |
@@ -70,5 +81,5 @@ Achados desta revisão para a Fase 1: rotas `admin/*` de manutenção por GET (S
 
 ## Ocorrências desta fase
 
-- **Isolamento dos testes:** assinaturas e miniaturas eram gravadas com `storage_path()` direto, fora do disco `public`, e por isso a suíte gravava PNGs de teste (100 bytes) na pasta real `storage/app/public/atendimentos_relatorios/{id}/assinaturas/`. Nenhuma assinatura real foi sobrescrita. Corrigido na 1.15.15 (disco `public` + `Storage::fake('public')` em toda a suíte). Os arquivos de teste que ficaram na pasta real aguardam autorização do usuário para serem apagados.
+- **Isolamento dos testes:** assinaturas e miniaturas eram gravadas com `storage_path()` direto, fora do disco `public`, e por isso a suíte gravava PNGs de teste (100 bytes) na pasta real `storage/app/public/atendimentos_relatorios/{id}/assinaturas/`. Nenhuma assinatura real foi sobrescrita. Corrigido na 1.15.15 (disco `public` + `Storage::fake('public')` em toda a suíte). Os arquivos de teste que ficaram na pasta real foram apagados em 28/11/2026, com autorização do usuário.
 - **Deploy:** esta pasta é a produção; cada mudança entrou no ar ao ser gravada. Tokens do app emitidos há mais de 30 dias, ou sem uso há 7, passam a pedir login de novo.

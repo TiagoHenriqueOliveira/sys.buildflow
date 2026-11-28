@@ -13,9 +13,10 @@ use PragmaRX\Google2FA\Google2FA;
 
 /**
  * MFA por app autenticador (TOTP, RFC 6238: 6 dígitos a cada 30 s) —
- * obrigatório para todos no acesso web desde 2026-11-27 (mesmo desenho do
- * promaq-sys). Um código aceito não pode ser reutilizado (guarda o último
- * passo de tempo aceito por usuário).
+ * obrigatório para todos no acesso web desde 2026-11-27 e no login do app
+ * (contrato fae/v1 §2.2, decisão D-08: todos os perfis). Um código aceito
+ * não pode ser reutilizado (guarda o último passo de tempo aceito por
+ * usuário) — o controle vale para web e app juntos.
  *
  * Força bruta: 5 códigos errados bloqueiam o MFA do usuário por 15 minutos,
  * venha de qualquer IP.
@@ -99,7 +100,13 @@ class MfaService
 
     public function minutosParaLiberar(Usuario $usuario): int
     {
-        return max(1, (int) ceil(RateLimiter::availableIn($this->chaveErros($usuario)) / 60));
+        return max(1, (int) ceil($this->segundosParaLiberar($usuario) / 60));
+    }
+
+    /** Para o cabeçalho Retry-After do 429 "mfa_bloqueado" da API. */
+    public function segundosParaLiberar(Usuario $usuario): int
+    {
+        return max(1, RateLimiter::availableIn($this->chaveErros($usuario)));
     }
 
     public function confirmar(Usuario $usuario, string $segredo): void

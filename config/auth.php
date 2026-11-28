@@ -119,6 +119,13 @@ return [
     // conhecidos (HIBP, k-anonimato). Desligado na suíte de testes.
     'senha_checar_vazamento' => (bool) env('SENHA_CHECAR_VAZAMENTO', true),
 
+    // Auditoria 27/11/2026 (S-05 parte 2): MFA no login do app (contrato
+    // fae/v1 §2.1). Decisão D-08: "todos" os perfis. Fica "nenhum" até o app
+    // novo, que sabe fazer o segundo passo, estar instalado nos aparelhos.
+    'api_mfa_perfis' => in_array(env('API_MFA_PERFIS', 'nenhum'), ['todos', 'nenhum'], true)
+        ? env('API_MFA_PERFIS', 'nenhum')
+        : 'todos',
+
     'password_timeout' => 10800,
 
 ];

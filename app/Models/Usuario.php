@@ -47,6 +47,17 @@ class Usuario extends Authenticatable
         return $this->user_mfa_secret !== null && $this->user_mfa_confirmado_em !== null;
     }
 
+    /**
+     * Contrato fae/v1 §2.1 (auditoria S-05 parte 2, decisão D-08 do usuário:
+     * todos os perfis). Liga por API_MFA_PERFIS=todos depois que o app com o
+     * segundo passo do login estiver instalado nos aparelhos; até lá fica
+     * "nenhum" e o login do app continua de um passo só.
+     */
+    public function exigeMfaNoApp(): bool
+    {
+        return config('auth.api_mfa_perfis') === 'todos';
+    }
+
     public function isProtegido(): bool
     {
         return (bool) $this->user_protegido;

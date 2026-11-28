@@ -22,6 +22,7 @@ class SegurancaRotasFaeTest extends TestCase
         '_ignition/update-config',
         'api/fae/v1/app/versao',   // o app confere a versão antes do login
         'api/fae/v1/login',        // login do app (limitador + bloqueio por conta)
+        'api/fae/v1/login/mfa',    // segundo passo do login do app (desafio de uso único)
         'apk/{arquivo}',           // instalador do app
         'login',                   // login web (guest + limitador)
         'login/codigo',            // 2º passo do MFA (guest + limitador)

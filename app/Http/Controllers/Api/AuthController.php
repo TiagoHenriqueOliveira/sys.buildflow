@@ -7,11 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Usuario;
 use App\Providers\AppServiceProvider;
 use App\Services\AuditService;
+use App\Services\MfaService;
 use App\Support\SenhaFicticia;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
@@ -19,8 +22,11 @@ class AuthController extends Controller
     /** Habilidade única dos tokens do app (contrato fae/v1 §2.3). */
     public const HABILIDADE = 'fae-app';
 
+    /** Validade do desafio do segundo passo (contrato §2.1: 5 minutos). */
+    public const DESAFIO_MINUTOS = 5;
+
     /**
-     * Login — retorna token Sanctum.
+     * Login — retorna token Sanctum (ou o desafio do MFA).
      *
      * POST /api/fae/v1/login
      * Body: { "email": "...", "senha": "...", "device_name": "..." }
@@ -31,9 +37,13 @@ class AuthController extends Controller
      * - senha certa de usuário desativado: 403 "usuario_inativo";
      * - credenciais inválidas: 422 "credenciais_invalidas" (mesma mensagem
      *   para e-mail inexistente e senha errada; mantém "errors.email");
+     * - MFA exigido (Usuario::exigeMfaNoApp, decisão D-08: todos os perfis,
+     *   ligado por API_MFA_PERFIS): sem autenticador → 403
+     *   "mfa_nao_cadastrado"; com autenticador → 200 "mfa_pendente" com o
+     *   desafio do segundo passo (POST /login/mfa), sem token;
      * - token só com a habilidade "fae-app" e com "expira_em".
      */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, MfaService $mfa): JsonResponse
     {
         $request->validate([
             'email' => ['required', 'string', 'email'],
@@ -79,8 +89,108 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $deviceName = (string) $request->input('device_name', 'flutter_app');
+
+        if (! $usuario->exigeMfaNoApp()) {
+            return $this->emitirToken($usuario, $deviceName, $request, false);
+        }
+
+        if (! $usuario->temMfaConfigurado()) {
+            AuditService::log('autenticacao', 'login_sem_mfa', $usuario->user_id, [], ['ip' => $request->ip(), 'canal' => 'api']);
+
+            return response()->json([
+                'message' => 'Cadastre o aplicativo autenticador no sistema web antes de entrar pelo app.',
+                'codigo' => 'mfa_nao_cadastrado',
+            ], 403);
+        }
+
+        if ($mfa->bloqueado($usuario)) {
+            return $this->mfaBloqueado($usuario, $mfa, $request);
+        }
+
+        $desafio = Str::random(64);
+        $expiraEm = now()->addMinutes(self::DESAFIO_MINUTOS);
+        Cache::put(self::chaveDesafio($desafio), [
+            'usuario_id' => $usuario->user_id,
+            'device_name' => $deviceName,
+        ], $expiraEm);
+
+        return response()->json([
+            'mfa_pendente' => true,
+            'desafio' => $desafio,
+            'desafio_expira_em' => $expiraEm->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Segundo passo do login com MFA (contrato fae/v1 §2.2).
+     *
+     * POST /api/fae/v1/login/mfa
+     * Body: { "desafio": "...", "codigo": "123456" }
+     *
+     * O desafio é de uso único e vale 5 minutos. O bloqueio por erros de
+     * código (5 → 15 min) e o "código já usado" são os mesmos do web
+     * (MfaService), por usuário, de qualquer IP.
+     */
+    public function loginMfa(Request $request, MfaService $mfa): JsonResponse
+    {
+        $request->validate([
+            'desafio' => ['required', 'string', 'max:128'],
+            'codigo' => ['required', 'string', 'max:10'],
+        ]);
+
+        $chave = self::chaveDesafio((string) $request->input('desafio'));
+        $pendente = Cache::get($chave);
+        $usuario = is_array($pendente) ? Usuario::find($pendente['usuario_id'] ?? 0) : null;
+
+        if (! $usuario || ! $usuario->user_ativo) {
+            Cache::forget($chave);
+
+            return response()->json([
+                'message' => 'O login expirou. Entre de novo com e-mail e senha.',
+                'codigo' => 'desafio_invalido',
+            ], 422);
+        }
+
+        if ($mfa->bloqueado($usuario)) {
+            Cache::forget($chave);
+
+            return $this->mfaBloqueado($usuario, $mfa, $request);
+        }
+
+        if (! $mfa->verificar($usuario, (string) $request->input('codigo'))) {
+            AuditService::log('autenticacao', 'mfa_invalido', $usuario->user_id, [], ['ip' => $request->ip(), 'canal' => 'api']);
+
+            if ($mfa->bloqueado($usuario)) {
+                Cache::forget($chave);
+
+                return $this->mfaBloqueado($usuario, $mfa, $request);
+            }
+
+            return response()->json([
+                'message' => 'Código inválido ou já usado.',
+                'codigo' => 'mfa_invalido',
+            ], 422);
+        }
+
+        Cache::forget($chave);
+
+        return $this->emitirToken($usuario, (string) ($pendente['device_name'] ?? 'flutter_app'), $request, true);
+    }
+
+    private function mfaBloqueado(Usuario $usuario, MfaService $mfa, Request $request): JsonResponse
+    {
+        AuditService::log('autenticacao', 'mfa_bloqueado', $usuario->user_id, [], ['ip' => $request->ip(), 'canal' => 'api']);
+
+        return response()->json([
+            'message' => "Muitas tentativas com código errado. Tente de novo em {$mfa->minutosParaLiberar($usuario)} minutos.",
+            'codigo' => 'mfa_bloqueado',
+        ], 429)->header('Retry-After', (string) $mfa->segundosParaLiberar($usuario));
+    }
+
+    private function emitirToken(Usuario $usuario, string $deviceName, Request $request, bool $comMfa): JsonResponse
+    {
         // Revogar tokens antigos do mesmo device_name (evita acúmulo)
-        $deviceName = $request->input('device_name', 'flutter_app');
         $usuario->tokens()->where('name', $deviceName)->delete();
 
         $novo = $usuario->createToken(
@@ -89,7 +199,7 @@ class AuthController extends Controller
             now()->addDays((int) config('sanctum.expiracao_dias')),
         );
 
-        AuditService::log('autenticacao', 'login', $usuario->user_id, [], ['ip' => $request->ip(), 'canal' => 'api']);
+        AuditService::log('autenticacao', 'login', $usuario->user_id, [], ['mfa' => $comMfa, 'ip' => $request->ip(), 'canal' => 'api']);
 
         return response()->json([
             'token'      => $novo->plainTextToken,
@@ -97,6 +207,12 @@ class AuthController extends Controller
             'expira_em'  => AppServiceProvider::tokenExpiraEm($novo->accessToken)->toIso8601String(),
             'usuario'    => self::dadosUsuario($usuario),
         ]);
+    }
+
+    /** O desafio nunca é guardado em claro: só o SHA-256 dele vira chave do cache. */
+    private static function chaveDesafio(string $desafio): string
+    {
+        return 'api.mfa.desafio.' . hash('sha256', $desafio);
     }
 
     /**

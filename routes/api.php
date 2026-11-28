@@ -25,6 +25,7 @@ Route::prefix('fae/v1')->group(function () {
 
     // PÃºblica
     Route::post('/login',  [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::post('/login/mfa', [AuthController::class, 'loginMfa'])->middleware('throttle:login');
     Route::get('/app/versao', [FaeAppController::class, 'versao']);
 
     // Protegidas
