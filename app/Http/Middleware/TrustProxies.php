@@ -15,6 +15,31 @@ class TrustProxies extends Middleware
     protected $proxies;
 
     /**
+     * Auditoria S-23 (28/11/2026): lista configurável por TRUSTED_PROXIES
+     * (config/proxies.php) — "cloudflare" usa as faixas da Cloudflare; vazio
+     * mantém o comportamento de antes (nenhum proxy confiável).
+     */
+    protected function proxies()
+    {
+        $valor = trim((string) config('proxies.confiaveis'));
+
+        if ($valor === '') {
+            return null;
+        }
+
+        if ($valor === '*') {
+            return '*';
+        }
+
+        $lista = [];
+        foreach (array_filter(array_map('trim', explode(',', $valor))) as $item) {
+            $lista = array_merge($lista, $item === 'cloudflare' ? (array) config('proxies.cloudflare') : [$item]);
+        }
+
+        return $lista;
+    }
+
+    /**
      * The headers that should be used to detect proxies.
      *
      * @var int

@@ -44,10 +44,18 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             // Usuários autenticados (app mobile) recebem limite maior para suportar
             // rajadas de sincronização offline e navegação rápida entre telas.
-            if ($request->user()) {
-                return Limit::perMinute(300)->by($request->user()->id);
+            // Auditoria S-23 (28/11/2026): este limitador roda antes do
+            // auth:sanctum da rota, então o usuário vem do token (guard
+            // sanctum) — antes caía sempre no ramo por IP, e técnicos na
+            // mesma rede dividiam o limite. A chave é o user_id (a antiga
+            // usava ->id, que não existe neste model).
+            $usuario = $request->bearerToken() ? $request->user('sanctum') : null;
+
+            if ($usuario) {
+                return Limit::perMinute(300)->by('usuario:' . $usuario->user_id);
             }
-            return Limit::perMinute(60)->by($request->ip());
+
+            return Limit::perMinute(60)->by('ip:' . $request->ip());
         });
 
         // Limite dedicado e mais rígido para login — antes compartilhava o
