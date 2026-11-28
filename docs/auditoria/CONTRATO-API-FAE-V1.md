@@ -149,15 +149,15 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 | Seção | Status | Versão web / commit | Flags |
 |---|---|---|---|
 | §1 Envelope de erro | parcial: `codigo` nas respostas de login, 401, 403 de mídia, 409 e 423; o resto na Fase 1 | BF_v1.15.13–1.15.15 | — |
-| §2 Autenticação (lockout, expiração, `usuario_inativo`) | **implementado** (habilidade `fae-app`; tokens antigos com `*` valem até vencer; `expira_em` = validade absoluta) | BF_v1.15.14 / `facc0b4` | `SANCTUM_EXPIRACAO_DIAS=30`, `SANCTUM_INATIVIDADE_DIAS=7` |
+| §2 Autenticação (lockout, expiração, `usuario_inativo`) | **implementado** (habilidade `fae-app`; tokens antigos com `*` valem até vencer; `expira_em` = validade absoluta) | BF_v1.15.14 / `5151cd6` | `SANCTUM_EXPIRACAO_DIAS=30`, `SANCTUM_INATIVIDADE_DIAS=7` |
 | §2 MFA na API (`/login/mfa`) | pendente | — | `API_MFA_PERFIS` |
 | §3 Versão do app | pendente | — | `MOBILE_EXIGIR_CABECALHO_VERSAO` |
 | §4 Idempotência | pendente | — | `API_EXIGIR_IDEMPOTENCIA` |
-| §5 Relatório bloqueado | **implementado** (regras da v2) | BF_v1.15.15 / `4d512a9` | — |
+| §5 Relatório bloqueado | **implementado** (regras da v2) | BF_v1.15.15 / `628f474` | — |
 | §6 Concorrência | pendente | — | `API_EXIGIR_IF_MATCH` |
-| §7 Contatos | **implementado** (visibilidade D-01, `criado_por_id`, sincronização por `id` preservando ocultos) | BF_v1.15.18 / `61ec17b` | — |
+| §7 Contatos | **implementado** (visibilidade D-01, `criado_por_id`, sincronização por `id` preservando ocultos) | BF_v1.15.18 / `a9a2ab5` | — |
 | §8 Revisão do modelo | pendente | — | — |
-| §9 Mídia | parcial: posse e `sem_acesso_arquivo` implementados; nome UUID pendente (L-03) | BF_v1.15.13 / `6b9c4c7` | — |
+| §9 Mídia | parcial: posse e `sem_acesso_arquivo` implementados; nome UUID pendente (L-03) | BF_v1.15.13 / `074726d` | — |
 | §10 CPF e comprovante | pendente | — | — |
 
 ## Changelog
