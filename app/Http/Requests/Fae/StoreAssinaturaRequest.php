@@ -19,8 +19,9 @@ class StoreAssinaturaRequest extends FormRequest
         // obrigatórios (mesmo bug corrigido em AtendimentoRelatorioAssinaturasRequest,
         // a versão web deste mesmo endpoint).
         return [
-            'tecnico'      => ['nullable', 'string'],
-            'cliente'      => ['nullable', 'string'],
+            // Auditoria S-21: tamanho, formato e dimensões da imagem.
+            'tecnico'      => ['nullable', 'string', new \App\Rules\AssinaturaBase64()],
+            'cliente'      => ['nullable', 'string', new \App\Rules\AssinaturaBase64()],
             'cliente_nome' => ['nullable', 'required_with:cliente', 'string', 'max:100'],
             'cliente_cpf'  => ['nullable', 'required_with:cliente', 'string', 'max:14'],
         ];

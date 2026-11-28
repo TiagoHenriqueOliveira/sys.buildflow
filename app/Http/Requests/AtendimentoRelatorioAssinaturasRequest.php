@@ -10,8 +10,9 @@ class AtendimentoRelatorioAssinaturasRequest extends FormRequest
     {
         return [
             'aten_rel_status'         => ['required', 'integer', 'in:0,1,2,3'],
-            'assinatura_responsavel'  => ['nullable', 'string'],
-            'assinatura_cliente'      => ['nullable', 'string'],
+            // Auditoria S-21: tamanho, formato e dimensões da imagem.
+            'assinatura_responsavel'  => ['nullable', 'string', new \App\Rules\AssinaturaBase64()],
+            'assinatura_cliente'      => ['nullable', 'string', new \App\Rules\AssinaturaBase64()],
             // 'nullable' é necessário além de 'required_with': sem ele, quando
             // assinatura_cliente não vem preenchido (ex: admin aprovando sem
             // assinatura), o campo chega como null e as regras 'string'/'max'

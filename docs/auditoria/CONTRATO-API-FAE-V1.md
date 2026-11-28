@@ -123,6 +123,7 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 - `GET /relatorios/{id}/formulario` devolve as perguntas **da revisão do relatório** e o `revisao_id`.
 - Resposta para pergunta que não está nessa revisão: `422 codigo: "pergunta_fora_do_modelo"`.
 - Foto em pergunta sem "permite anexo": `422 codigo: "anexo_nao_permitido"`.
+- Assinatura (`POST /assinaturas`): PNG ou JPEG em base64 de até 1 MB e até 2000 × 2000 pixels; fora disso, `422 codigo: "validacao"` no campo da assinatura.
 - O app guarda o formulário por `revisao_id` para preencher offline.
 
 ## 9. Mídia
@@ -153,7 +154,7 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 
 | Seção | Status | Versão web / commit | Flags |
 |---|---|---|---|
-| §1 Envelope de erro | parcial: `codigo` nas respostas de login, 401, 403 de mídia, 409 e 423; o resto na Fase 1 | BF_v1.15.13–1.15.15 | — |
+| §1 Envelope de erro | parcial: `codigo` no login, 401, 403 de mídia, 409, 423, 426, 428 e **todo 422 de validação** (`validacao`); 403/404 genéricos ainda sem `codigo` | BF_v1.15.13–1.19.2 | — |
 | §2 Autenticação (lockout, expiração, `usuario_inativo`) | **implementado** (habilidade `fae-app`; tokens antigos com `*` valem até vencer; `expira_em` = validade absoluta) | BF_v1.15.14 / `5151cd6` | `SANCTUM_EXPIRACAO_DIAS=30`, `SANCTUM_INATIVIDADE_DIAS=7` |
 | §2 MFA na API (`/login/mfa`) | **implementado** (D-08: todos os perfis) | BF_v1.17.0 | `API_MFA_PERFIS=nenhum` hoje → `todos` com o app novo |
 | §3 Versão do app | **implementado** (426 só com `MOBILE_APK_OBRIGATORIA=true`; `sha256_apk` em `/app/versao`; `url_apk` ainda `http://` no `.env` — trocar para HTTPS quando houver) | BF_v1.19.0 | `MOBILE_EXIGIR_CABECALHO_VERSAO=false` |
@@ -161,7 +162,7 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 | §5 Relatório bloqueado | **implementado** (regras da v2) | BF_v1.15.15 / `628f474` | — |
 | §6 Concorrência | **implementado** (`versao` em cliente, orçamento e roteiro; `If-Match`; PUT parcial com listas preservadas quando ausentes) | BF_v1.19.0 | `API_EXIGIR_IF_MATCH=false` |
 | §7 Contatos | **implementado** (visibilidade D-01, `criado_por_id`, sincronização por `id` preservando ocultos) | BF_v1.15.18 / `a9a2ab5` | — |
-| §8 Revisão do modelo | pendente | — | — |
+| §8 Revisão do modelo | parcial: `pergunta_fora_do_modelo` e `anexo_nao_permitido` implementados (web e API); `revisao_id` depende da revisão versionada do modelo (D-02) | BF_v1.19.2 | — |
 | §9 Mídia | parcial: posse e `sem_acesso_arquivo` implementados; nome UUID pendente (L-03) | BF_v1.15.13 / `074726d` | — |
 | §10 CPF e comprovante | pendente | — | — |
 
@@ -169,4 +170,4 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 
 - **v1 (27/11/2026):** proposta inicial, derivada da auditoria.
 - **v2 (28/11/2026):** §5 conforme as decisões do usuário — o cliente continua assinando antes da aprovação (sem o `422 assinatura_cliente_antes_aprovacao`); depois de Aprovado, só a assinatura do cliente que falta (uma vez), compartilhamentos e observação interna; aprovado e assinado pelo cliente não muda de status. §9: nome UUID adiado. Seção 12 com o status da Fase 0. **Repassar à sessão Android.**
-- **v3 (28/11/2026, Fase 1 do servidor):** §2.1/§2.2 — D-08 decidida (MFA para todos os perfis), flag `API_MFA_PERFIS` (`nenhum`/`todos`), bloqueio de código compartilhado com o web. §3: o 426 só vale com a atualização obrigatória ligada. §4: códigos `idempotencia_obrigatoria` (428) e `idempotencia_chave_invalida` (422), chave por usuário. §6: `versao_obrigatoria` (428); a versão sobe também nas gravações pelo web. **Repassar à sessão Android.**
+- **v3 (28/11/2026, Fase 1 do servidor):** §2.1/§2.2 — D-08 decidida (MFA para todos os perfis), flag `API_MFA_PERFIS` (`nenhum`/`todos`), bloqueio de código compartilhado com o web. §3: o 426 só vale com a atualização obrigatória ligada. §4: códigos `idempotencia_obrigatoria` (428) e `idempotencia_chave_invalida` (422), chave por usuário. §6: `versao_obrigatoria` (428); a versão sobe também nas gravações pelo web. §8: assinatura em base64 limitada a 1 MB e 2000 × 2000 px (422 `validacao`). **Repassar à sessão Android.**

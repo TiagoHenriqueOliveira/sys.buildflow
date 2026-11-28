@@ -119,10 +119,15 @@ class RelatorioFormularioController extends Controller
 
         $relatorio = $this->relatorioComPosse($id, ['configModelo.perguntas']);
 
-        try {
-            $perguntaId = (int) $request->input('pergunta_id');
-            $pergunta = $relatorio->configModelo?->perguntas->firstWhere('cfg_perg_id', $perguntaId);
+        $perguntaId = (int) $request->input('pergunta_id');
+        $pergunta = $relatorio->configModelo?->perguntas->firstWhere('cfg_perg_id', $perguntaId);
 
+        // Auditoria S-22 / contrato §8: regras do Configurador no servidor.
+        if ($recusa = \App\Support\RegraRespostaFormulario::recusa($pergunta, $request)) {
+            return $recusa;
+        }
+
+        try {
             if ($pergunta?->cfg_perg_repetivel) {
                 $resposta = AtendimentoRelatorioResposta::create([
                     'aten_rel_resp_relatorio_id' => $id,

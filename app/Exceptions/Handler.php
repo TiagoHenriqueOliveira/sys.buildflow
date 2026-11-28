@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -67,6 +68,20 @@ class Handler extends ExceptionHandler
             return $request->attributes->get('token_expirado')
                 ? response()->json(['message' => 'Sessão do app expirada. Entre novamente.', 'codigo' => 'token_expirado'], 401)
                 : response()->json(['message' => 'Unauthenticated.', 'codigo' => 'nao_autenticado'], 401);
+        });
+
+        // Contrato fae/v1 §1: o 422 de validação da API mantém "errors" por
+        // campo e ganha codigo "validacao" (o app decide pelo código).
+        $this->renderable(function (ValidationException $e, $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'codigo' => 'validacao',
+                'errors' => $e->errors(),
+            ], $e->status);
         });
     }
 }
