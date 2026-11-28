@@ -7,6 +7,7 @@ use App\Enums\NivelAcesso;
 use App\Http\Requests\UsuarioRequest;
 use App\Models\Usuario;
 use App\Repositories\UsuarioRepository;
+use App\Services\CodigoAcessoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -58,13 +59,18 @@ class UsuariosController extends Controller
         ]);
     }
 
-    public function store(UsuarioRequest $request): RedirectResponse
+    public function store(UsuarioRequest $request, CodigoAcessoService $codigos): RedirectResponse
     {
         $usuario = $this->repository->create($request->validated());
 
+        // S-08 (28/11/2026): a conta nova só cadastra o autenticador com o
+        // código de ativação, mostrado aqui uma única vez.
+        $gerado = $codigos->gerar($usuario, CodigoAcessoService::ATIVACAO_MFA, $request->user());
+
         return redirect()
             ->route('usuarios.index')
-            ->with('success', 'Usuário "'.$usuario->user_nome.'" cadastrado com sucesso.');
+            ->with('success', 'Usuário "'.$usuario->user_nome.'" cadastrado com sucesso.')
+            ->with('codigo_gerado', CodigosAcessoController::paraExibir($usuario, CodigoAcessoService::ATIVACAO_MFA, $gerado));
     }
 
     public function update(UsuarioRequest $request, int $id): RedirectResponse

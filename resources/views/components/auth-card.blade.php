@@ -1,7 +1,7 @@
 @props(['subtitulo' => 'Gestão Comercial, Start-up e Assistência Técnica'])
 {{-- Card das telas de acesso (login, código do autenticador e cadastro do
-     autenticador) — visual aprovado em 2026-11-18 (padrão do promaq-sys +
-     logo da FAÉ com texto branco). Estilos .fae-auth-* em
+     autenticador) — visual aprovado em 2026-11-18 (logo da FAÉ com texto
+     branco). Estilos .fae-auth-* em
      resources/sass/app.scss. Tema sempre escuro, como o resto do sistema. --}}
 <!DOCTYPE html>
 <html lang="pt-BR" translate="no" data-theme="dark" data-bs-theme="dark">
@@ -20,6 +20,10 @@
                 <h1 class="fae-auth-title">Buildflow</h1>
                 <p class="fae-auth-subtitle">{{ $subtitulo }}</p>
             </div>
+
+            @if(session('success'))
+                <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
+            @endif
 
             @if($errors->any())
                 <x-sbadmin::alert type="error">

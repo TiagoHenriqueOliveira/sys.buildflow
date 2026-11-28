@@ -129,8 +129,9 @@ class SegurancaAcessoFaeTest extends TestCase
 
         $this->get(route('mfa.cadastro'))->assertOk()->assertSee('<svg', false);
         $segredo = session('mfa.segredo_em_cadastro');
+        $ativacao = app(\App\Services\CodigoAcessoService::class)->gerar($usuario, \App\Services\CodigoAcessoService::ATIVACAO_MFA, null)['codigo'];
 
-        $this->post(route('mfa.cadastro.store'), ['codigo' => $this->codigoAtual($segredo)])
+        $this->post(route('mfa.cadastro.store'), ['ativacao' => $ativacao, 'codigo' => $this->codigoAtual($segredo)])
             ->assertRedirect(route('dashboard'));
         $this->assertTrue($usuario->refresh()->temMfaConfigurado());
         $this->get(route('dashboard'))->assertOk();
@@ -240,7 +241,8 @@ class SegurancaAcessoFaeTest extends TestCase
         $this->actingAs($usuario)->put(route('minha-conta.update'), [
             'user_nome' => $usuario->user_nome, 'user_email' => $usuario->user_email,
             'user_senha' => 'NovaSenha#2026', 'user_senha_confirmation' => 'NovaSenha#2026',
-        ])->assertRedirect();
+            'senha_atual' => 'senha-forte', 'codigo_mfa' => $this->codigoAtual(),
+        ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertSame(0, DispositivoLembrado::count());
         $this->assertSame(0, $usuario->tokens()->count());

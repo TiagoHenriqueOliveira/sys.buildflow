@@ -35,6 +35,16 @@ class Handler extends ExceptionHandler
         'current_password',
         'password',
         'password_confirmation',
+        // 28/11/2026 (S-08): senhas e códigos de uso único nunca voltam
+        // preenchidos no formulário depois de um erro de validação.
+        'senha',
+        'senha_atual',
+        'user_senha',
+        'user_senha_confirmation',
+        'codigo',
+        'codigo_mfa',
+        'ativacao',
+        'codigo_redefinicao',
     ];
 
     /**

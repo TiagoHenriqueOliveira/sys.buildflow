@@ -5,6 +5,7 @@ use App\Http\Controllers\AtendimentosController;
 use App\Http\Controllers\AtendimentosRelatoriosController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientesController;
+use App\Http\Controllers\CodigosAcessoController;
 use App\Http\Controllers\ConfiguradorModelosController;
 use App\Http\Controllers\ConfiguradorPerguntasController;
 use App\Http\Controllers\CrmTiposOrcamentoController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\SegmentosController;
 use App\Http\Controllers\OcorrenciasController;
 use App\Http\Controllers\OrcamentosController;
 use App\Http\Controllers\PerfisAcessoController;
+use App\Http\Controllers\RedefinirSenhaController;
 use App\Http\Controllers\RoteirosViagemController;
 use App\Http\Controllers\MfaController;
 use App\Http\Controllers\StorageController;
@@ -41,6 +43,13 @@ Route::controller(AuthController::class)->middleware('guest')->group(function ()
     Route::get('/login/codigo', 'mostrarMfa')->name('login.mfa');
     Route::post('/login/codigo', 'confirmarMfa')->name('login.mfa.store')->middleware('throttle:login');
     Route::post('/login/esquecer', 'esquecerDispositivo')->name('login.esquecer');
+});
+
+// Auditoria S-08 (28/11/2026): "Esqueci minha senha" com o código de
+// redefinição gerado pelo administrador + o código do autenticador.
+Route::middleware('guest')->group(function () {
+    Route::get('/login/redefinir-senha', [RedefinirSenhaController::class, 'show'])->name('login.redefinir');
+    Route::post('/login/redefinir-senha', [RedefinirSenhaController::class, 'store'])->name('login.redefinir.store')->middleware('throttle:login');
 });
 
 // Serve os arquivos gravados em public/midia (disco 'public', ver
@@ -106,7 +115,7 @@ Route::middleware(['auth', 'usuario.ativo', 'sessao.prazo', 'mfa'])->group(funct
     // também como o usuário protegido se edita, já que não aparece em
     // Usuários).
     Route::get('/minha-conta', [MinhaContaController::class, 'edit'])->name('minha-conta.edit');
-    Route::put('/minha-conta', [MinhaContaController::class, 'update'])->name('minha-conta.update');
+    Route::put('/minha-conta', [MinhaContaController::class, 'update'])->name('minha-conta.update')->middleware('throttle:login');
 
     // Notificacoes (sino do topbar) - disponivel pra qualquer usuario
     // autenticado, sem restricao de perfil (o proprio conteudo ja e
@@ -263,6 +272,8 @@ Route::middleware(['auth', 'usuario.ativo', 'sessao.prazo', 'mfa'])->group(funct
         // Perfis de acesso (2026-11-16)
         // Redefine o MFA de um usuário (celular perdido/trocado) — 2026-11-27.
         Route::delete('/usuarios/{usuario}/autenticador', [MfaController::class, 'redefinir'])->name('usuarios.mfa.redefinir');
+        // S-08 (28/11/2026): código de ativação do autenticador / de redefinição de senha.
+        Route::post('/usuarios/{usuario}/codigo-acesso', [CodigosAcessoController::class, 'store'])->name('usuarios.codigo-acesso');
         Route::get('/perfis-acesso', [PerfisAcessoController::class, 'index'])->name('perfis-acesso.index');
         Route::put('/perfis-acesso', [PerfisAcessoController::class, 'update'])->name('perfis-acesso.update');
 

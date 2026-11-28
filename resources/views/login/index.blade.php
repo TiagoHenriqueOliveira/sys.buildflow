@@ -45,6 +45,11 @@
         </button>
     </form>
 
+    {{-- S-08 (28/11/2026): redefinição com o código gerado pelo administrador. --}}
+    <div class="text-center mt-3">
+        <a href="{{ route('login.redefinir') }}" class="btn btn-link btn-sm">Esqueci minha senha</a>
+    </div>
+
     @push('scripts')
         <script>
             document.getElementById('loginForm').addEventListener('submit', function () {

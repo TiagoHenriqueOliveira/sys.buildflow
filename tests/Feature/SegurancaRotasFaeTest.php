@@ -27,6 +27,7 @@ class SegurancaRotasFaeTest extends TestCase
         'login',                   // login web (guest + limitador)
         'login/codigo',            // 2º passo do MFA (guest + limitador)
         'login/esquecer',          // "esquecer este navegador" (guest)
+        'login/redefinir-senha',   // "Esqueci minha senha" com código do admin + MFA (guest + limitador)
         'sanctum/csrf-cookie',
     ];
 

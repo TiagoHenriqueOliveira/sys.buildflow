@@ -25,6 +25,21 @@
             <x-sbadmin::alert type="success">{{ session('success') }}</x-sbadmin::alert>
         @endif
 
+        {{-- S-08 (28/11/2026): o código aparece só esta vez — o banco guarda só o HMAC dele. --}}
+        @if(session('codigo_gerado'))
+            @php($gerado = session('codigo_gerado'))
+            <x-sbadmin::alert type="warning">
+                Código de {{ $gerado['tipo'] }} de <strong>{{ $gerado['nome'] }}</strong>:
+                <code class="fs-5 user-select-all">{{ $gerado['codigo'] }}</code>
+                (uso único, vale até {{ $gerado['expira_em'] }}).
+                Repasse ao usuário por um canal seguro — ele não será mostrado de novo.
+            </x-sbadmin::alert>
+        @endif
+
+        @if($errors->has('codigo'))
+            <x-sbadmin::alert type="error">{{ $errors->first('codigo') }}</x-sbadmin::alert>
+        @endif
+
         <form method="GET" action="{{ route('usuarios.index') }}" class="sbadmin-card mb-4">
             {{-- Filtros individuais por coluna — combinaveis entre si (AND:
                  cada filtro preenchido restringe ainda mais o resultado).
@@ -90,8 +105,31 @@
                             </button>
                         </form>
                         @endif
+                        {{-- S-08: sem autenticador → código de ativação; com autenticador → código para redefinir a senha. --}}
+                        @if(auth()->user()->temAcessoTotal() && $u->user_ativo)
+                        @php($tipoCodigo = $u->temMfaConfigurado() ? \App\Services\CodigoAcessoService::REDEFINIR_SENHA : \App\Services\CodigoAcessoService::ATIVACAO_MFA)
+                        @php($rotuloCodigo = $u->temMfaConfigurado() ? 'Gerar código para redefinir a senha' : 'Gerar código de ativação do autenticador')
+                        <form method="POST" action="{{ route('usuarios.codigo-acesso', $u->user_id) }}" class="d-inline" x-ref="cod{{ $u->user_id }}">
+                            @csrf
+                            <input type="hidden" name="tipo" value="{{ $tipoCodigo }}">
+                            <button
+                                type="button"
+                                class="btn btn-sm sbadmin-table-action-btn"
+                                title="{{ $rotuloCodigo }}"
+                                aria-label="{{ $rotuloCodigo }} de {{ e($u->user_nome) }}"
+                                @click="confirmar('{{ $rotuloCodigo }} de {{ e($u->user_nome) }}? Um código anterior do mesmo tipo deixa de valer.', { rotulo: 'Gerar', onConfirm: () => $refs.cod{{ $u->user_id }}.submit() })"
+                            >
+                                <i class="bi {{ $u->temMfaConfigurado() ? 'bi-key' : 'bi-qr-code' }}" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                        @endif
                     </td>
-                    <td>{{ $u->user_nome }}</td>
+                    <td>
+                        {{ $u->user_nome }}
+                        @unless($u->temMfaConfigurado())
+                            <x-sbadmin::badge type="warning">Sem autenticador</x-sbadmin::badge>
+                        @endunless
+                    </td>
                     <td>{{ $u->user_email }}</td>
                     <td>{{ \App\Enums\NivelAcesso::from((int) $u->user_nivel_acesso)->label() }}</td>
                     <td>

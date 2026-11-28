@@ -6,8 +6,8 @@ use App\Models\Usuario;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Encerra o acesso de um usuário em outros lugares (2026-11-27, mesmo
- * comportamento do promaq-sys): troca de senha e desativação derrubam as
+ * Encerra o acesso de um usuário em outros lugares (2026-11-27): troca de
+ * senha, redefinição de senha e desativação derrubam as
  * sessões web (SESSION_DRIVER=database), os tokens do app e os aparelhos
  * lembrados — quem tinha a senha antiga não continua logado.
  */

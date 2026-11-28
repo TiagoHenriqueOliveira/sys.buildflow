@@ -22,6 +22,9 @@ Status: **feito** / **parcial** / **bloqueado** / **não se aplica**.
 | D-05 — CPF | Continua obrigatório na assinatura do cliente, cifrado no banco e mascarado no PDF e na API |
 | D-06 — conta do fornecedor | Mantida, visível (só leitura) aos administradores da FAÉ, sem acesso à API, toda ação auditada |
 | Arquivos de teste na pasta real de assinaturas | Apagar (feito em 28/11/2026: 10 PNGs de 100 bytes, nenhum ligado a relatório do banco) |
+| S-08 — primeiro cadastro do autenticador | Código de ativação de uso único gerado pelo administrador (72 h) |
+| S-08 — recuperação de senha | Código de redefinição gerado pelo administrador (24 h) + código do autenticador, na tela de login (sem e-mail) |
+| Migration `codigos_acesso` em produção | Autorizada, com backup antes (feito em 28/11/2026) |
 
 ## Fase 0 — Contenção
 
@@ -42,7 +45,8 @@ Status: **feito** / **parcial** / **bloqueado** / **não se aplica**.
 
 | ID | Status | Versão BF | Commit | Teste que prova | Observações |
 |---|---|---|---|---|---|
-| S-05 (parte 2) | feito | 1.17.0 | (este commit) | `ApiMfaFaeTest` (11) | `POST /login` devolve o desafio (64 caracteres, uso único, 5 min, guardado só o SHA-256); `POST /login/mfa`. Flag `API_MFA_PERFIS=nenhum` até o app novo. Revisão de segurança do MINOR: única rota pública nova é `api/fae/v1/login/mfa` (limitador + desafio), acrescentada ao `SegurancaRotasFaeTest` |
+| S-05 (parte 2) | feito | 1.17.0 | `fe08888` | `ApiMfaFaeTest` (11) | `POST /login` devolve o desafio (64 caracteres, uso único, 5 min, guardado só o SHA-256); `POST /login/mfa`. Flag `API_MFA_PERFIS=nenhum` até o app novo. Revisão de segurança do MINOR: única rota pública nova é `api/fae/v1/login/mfa` (limitador + desafio), acrescentada ao `SegurancaRotasFaeTest` |
+| S-08 | feito | 1.18.0 | (este commit) | `CodigosAcessoFaeTest` (15) | Tabela `codigos_acesso` (só o HMAC do código; uso único; novo código revoga o anterior; 5 erros → 15 min). Código de ativação gerado ao criar o usuário, ao redefinir o MFA e pelo botão na tela de Usuários (só acesso total). "Esqueci minha senha" na tela de login: e-mail + código de redefinição + código do autenticador; encerra todos os acessos. Minha conta: e-mail/senha só com senha atual + código do autenticador. Senhas e códigos não voltam preenchidos após erro (`dontFlash`). Em produção, 8 usuários ativos ainda sem autenticador precisam do código de ativação. Revisão de segurança do MINOR: rotas públicas novas `login/redefinir-senha` (GET/POST, guest + limitador); `usuarios/{usuario}/codigo-acesso` atrás de `admin` |
 
 ## Revisão de segurança — fechamento da Fase 0 (BF_v1.16.0)
 
@@ -67,7 +71,7 @@ Achados desta revisão para a Fase 1: rotas `admin/*` de manutenção por GET (S
 | Login da API: bloqueio por conta; token expira; habilidade restrita | ok | `ApiAutenticacaoFaeTest` |
 | Login da API: MFA | ok (atrás da flag `API_MFA_PERFIS`, ligar com o app novo) | `ApiMfaFaeTest` |
 | Senha ≥ 10 com checagem de vazamento | ok | `ApiAutenticacaoFaeTest::test_politica_de_senha…`, `…vazamento…` |
-| Troca de e-mail/senha exige a senha atual; MFA não cadastrável só com a senha | pendente (S-08, Fase 1) | — |
+| Troca de e-mail/senha exige a senha atual; MFA não cadastrável só com a senha | ok | `CodigosAcessoFaeTest` |
 | `/midia`: 403 para outro técnico; 200 para dono e acesso total | ok | `MidiaPosseFaeTest` |
 | `clientes/{id}/resumo` respeita `visivelPara` | ok | `VisibilidadeVendedorFaeTest` |
 | Contato Comercial oculto (HTML/JSON) e preservado ao editar | ok | `ContatosClienteFaeTest` |

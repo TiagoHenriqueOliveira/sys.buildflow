@@ -28,6 +28,13 @@
                 <div class="col-md-4">
                     <x-sbadmin::form.input id="user_senha_confirmation" type="password" name="user_senha_confirmation" label="Confirmar nova senha" maxlength="50" autocomplete="new-password" />
                 </div>
+                {{-- S-08 (28/11/2026): exigidos só para trocar o e-mail ou a senha. --}}
+                <div class="col-md-6">
+                    <x-sbadmin::form.input id="senha_atual" type="password" name="senha_atual" label="Senha atual" maxlength="50" autocomplete="current-password" help="Obrigatória para trocar o e-mail ou a senha." />
+                </div>
+                <div class="col-md-6">
+                    <x-sbadmin::form.input id="codigo_mfa" name="codigo_mfa" label="Código do aplicativo autenticador" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" help="Obrigatório para trocar o e-mail ou a senha." />
+                </div>
             </div>
 
             <div class="sbadmin-alert sbadmin-alert-info mt-3 mb-0" role="note">
