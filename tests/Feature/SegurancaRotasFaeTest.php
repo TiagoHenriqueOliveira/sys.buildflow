@@ -44,6 +44,17 @@ class SegurancaRotasFaeTest extends TestCase
         $this->assertSame($esperadas, $publicas);
     }
 
+    /** Auditoria S-19: manutenção que altera arquivos não roda mais por GET. */
+    public function test_rotas_de_manutencao_por_get_nao_existem(): void
+    {
+        $admin = \App\Models\Usuario::factory()->administrador()->create();
+
+        foreach (['/admin/codigo/remover-bom?fix=1', '/admin/midia/remover-bom?fix=1', '/admin/midia/diagnosticar?fix=1'] as $uri) {
+            $this->actingAs($admin)->get($uri)->assertNotFound();
+        }
+        $this->assertFalse(Route::has('admin.codigo.remover-bom'));
+    }
+
     public function test_ferramenta_de_depuracao_fica_desligada_sem_app_debug(): void
     {
         config(['app.debug' => false]);

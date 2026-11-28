@@ -280,29 +280,10 @@ Route::middleware(['auth', 'usuario.ativo', 'sessao.prazo', 'mfa'])->group(funct
         // Logs de Auditoria
         Route::get('/logs-auditoria', [LogsAuditoriaController::class, 'index'])->name('logs-auditoria.index');
 
-        // Manutenção — roda o comando midia:diagnosticar sem precisar de SSH/console
-        // (?fix=1 aplica a correção; sem o parâmetro, só relata)
-        Route::get('/admin/midia/diagnosticar', function (\Illuminate\Http\Request $request) {
-            \Illuminate\Support\Facades\Artisan::call('midia:diagnosticar', $request->boolean('fix') ? ['--fix' => true] : []);
-            return response(\Illuminate\Support\Facades\Artisan::output())
-                ->header('Content-Type', 'text/plain; charset=UTF-8');
-        })->name('admin.midia.diagnosticar');
-
-        // Manutenção — roda o comando midia:remover-bom sem precisar de SSH/console
-        // (?fix=1 aplica a correção; sem o parâmetro, só relata)
-        Route::get('/admin/midia/remover-bom', function (\Illuminate\Http\Request $request) {
-            \Illuminate\Support\Facades\Artisan::call('midia:remover-bom', $request->boolean('fix') ? ['--fix' => true] : []);
-            return response(\Illuminate\Support\Facades\Artisan::output())
-                ->header('Content-Type', 'text/plain; charset=UTF-8');
-        })->name('admin.midia.remover-bom');
-
-        // Manutenção — roda o comando codigo:remover-bom sem precisar de SSH/console
-        // (?fix=1 aplica a correção; sem o parâmetro, só relata)
-        Route::get('/admin/codigo/remover-bom', function (\Illuminate\Http\Request $request) {
-            \Illuminate\Support\Facades\Artisan::call('codigo:remover-bom', $request->boolean('fix') ? ['--fix' => true] : []);
-            return response(\Illuminate\Support\Facades\Artisan::output())
-                ->header('Content-Type', 'text/plain; charset=UTF-8');
-        })->name('admin.codigo.remover-bom');
+        // Auditoria S-19 (28/11/2026): as rotas de manutenção por GET
+        // (midia:diagnosticar, midia:remover-bom, codigo:remover-bom com
+        // ?fix=1) saíram — alteravam arquivos com um simples link. Os
+        // comandos continuam disponíveis pelo artisan no servidor.
     });
 
 });
