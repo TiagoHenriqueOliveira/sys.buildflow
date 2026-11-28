@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Versão** | 1 — proposta inicial (27/11/2026) |
+| **Versão** | 2 — §5 ajustado às decisões do usuário e status da Fase 0 (28/11/2026) |
 | **Vale para** | `/api/fae/v1` (branch `feature/fae`) e app `app_buildflow_fae`, exclusivamente. |
 | **Dono** | Sessão **Web** (`sys-buildflow-fae`). Só ela altera este arquivo. |
 | **Consumidor** | Sessão **Android** (`app_buildflow_fae`). Só lê. Se precisar de mudança, para e pede ao usuário para levar o pedido à sessão Web. |
@@ -93,9 +93,12 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 ## 5. Relatório bloqueado (BF10)
 
 - Escrita em relatório `Aprovado` (qualquer rota de escrita de relatório): `423 codigo: "relatorio_bloqueado"` com `status_relatorio`.
-- Assinatura do cliente antes da aprovação: `422 codigo: "assinatura_cliente_antes_aprovacao"`.
-- Segunda assinatura do cliente: `409 codigo: "assinatura_ja_registrada"`.
-- O que continua permitido depois de Aprovado depende da **decisão D-03** (ex.: assinatura do cliente uma vez, compartilhamentos). O app trata `423` como pendência com erro (§11), nunca descarta em silêncio.
+- **Depois de Aprovado continuam permitidos (decisão D-03):** a assinatura do **cliente** que ainda falta, uma única vez (`POST /assinaturas` com `cliente`); `POST /compartilhamentos`; `PUT /observacao-interna`. Assinatura do técnico, informações adicionais e todas as demais seções → `423`.
+- Segunda assinatura do cliente em relatório Aprovado: `409 codigo: "assinatura_ja_registrada"`.
+- Relatório Aprovado **e já assinado pelo cliente** não muda mais de status: `PUT /status` → `423`. Sem a assinatura do cliente, Assistência/Administrador ainda devolvem para Revisar e a edição volta.
+- **Antes da aprovação nada muda** (decisão do usuário, 27/11/2026): o cliente assina em campo e pode refazer; **não existe** o `422 assinatura_cliente_antes_aprovacao` previsto na v1.
+- Cada assinatura é gravada num arquivo novo (a anterior nunca é sobrescrita); a URL devolvida muda a cada assinatura.
+- O app trata `423` como pendência com erro (§11), nunca descarta em silêncio.
 
 ## 6. Concorrência (cliente, orçamento, roteiro)
 
@@ -120,7 +123,7 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 ## 9. Mídia
 
 - `GET /midia/{path}` continua aceitando o Bearer do app, agora com checagem de posse: `403 codigo: "sem_acesso_arquivo"` para arquivo de atendimento que o usuário não acessa.
-- Arquivos novos têm nome aleatório (UUID). As URLs devolvidas no JSON continuam no formato `.../midia/<caminho>`.
+- Arquivos novos têm nome aleatório (UUID). As URLs devolvidas no JSON continuam no formato `.../midia/<caminho>`. *(Ainda não implementado: entra com a remoção de EXIF, L-03/S-20; a checagem de posse já vale.)*
 
 ## 10. CPF e comprovante
 
@@ -145,18 +148,19 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 
 | Seção | Status | Versão web / commit | Flags |
 |---|---|---|---|
-| §1 Envelope de erro | pendente | — | — |
-| §2 Autenticação (lockout, expiração, `usuario_inativo`) | pendente | — | — |
+| §1 Envelope de erro | parcial: `codigo` nas respostas de login, 401, 403 de mídia, 409 e 423; o resto na Fase 1 | BF_v1.15.13–1.15.15 | — |
+| §2 Autenticação (lockout, expiração, `usuario_inativo`) | **implementado** (habilidade `fae-app`; tokens antigos com `*` valem até vencer; `expira_em` = validade absoluta) | BF_v1.15.14 / `facc0b4` | `SANCTUM_EXPIRACAO_DIAS=30`, `SANCTUM_INATIVIDADE_DIAS=7` |
 | §2 MFA na API (`/login/mfa`) | pendente | — | `API_MFA_PERFIS` |
 | §3 Versão do app | pendente | — | `MOBILE_EXIGIR_CABECALHO_VERSAO` |
 | §4 Idempotência | pendente | — | `API_EXIGIR_IDEMPOTENCIA` |
-| §5 Relatório bloqueado | pendente | — | — |
+| §5 Relatório bloqueado | **implementado** (regras da v2) | BF_v1.15.15 / `4d512a9` | — |
 | §6 Concorrência | pendente | — | `API_EXIGIR_IF_MATCH` |
-| §7 Contatos | pendente | — | — |
+| §7 Contatos | **implementado** (visibilidade D-01, `criado_por_id`, sincronização por `id` preservando ocultos) | BF_v1.15.18 / `61ec17b` | — |
 | §8 Revisão do modelo | pendente | — | — |
-| §9 Mídia | pendente | — | — |
+| §9 Mídia | parcial: posse e `sem_acesso_arquivo` implementados; nome UUID pendente (L-03) | BF_v1.15.13 / `6b9c4c7` | — |
 | §10 CPF e comprovante | pendente | — | — |
 
 ## Changelog
 
 - **v1 (27/11/2026):** proposta inicial, derivada da auditoria.
+- **v2 (28/11/2026):** §5 conforme as decisões do usuário — o cliente continua assinando antes da aprovação (sem o `422 assinatura_cliente_antes_aprovacao`); depois de Aprovado, só a assinatura do cliente que falta (uma vez), compartilhamentos e observação interna; aprovado e assinado pelo cliente não muda de status. §9: nome UUID adiado. Seção 12 com o status da Fase 0. **Repassar à sessão Android.**
