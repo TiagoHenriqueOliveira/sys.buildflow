@@ -36,14 +36,26 @@ class ClienteRepository implements CrudRepositoryInterface
         return DB::transaction(function () use ($id, $data) {
             $cliente = Cliente::findOrFail($id);
 
-            $cliente->update([
+            $campos = [
                 ...$this->camposPrincipais($data),
                 'cli_ativo' => $data['cli_ativo'] ?? $cliente->cli_ativo,
-            ]);
+            ];
+            // Contrato fae/v1 §6 (S-14): no PUT parcial da API a lista que não
+            // veio no corpo não é tocada (o web sempre manda as três listas).
+            if (! array_key_exists('equipamentos', $data)) {
+                $campos['cli_equipamento_vendido'] = $cliente->cli_equipamento_vendido;
+            }
+            $cliente->update($campos);
 
-            $this->sincronizarContatos($cliente, $data['contatos'] ?? []);
-            $this->sincronizarEquipamentos($cliente, $data['equipamentos'] ?? []);
-            $this->sincronizarLocalizacoes($cliente, $data['localizacoes'] ?? []);
+            if (array_key_exists('contatos', $data)) {
+                $this->sincronizarContatos($cliente, $data['contatos'] ?? []);
+            }
+            if (array_key_exists('equipamentos', $data)) {
+                $this->sincronizarEquipamentos($cliente, $data['equipamentos'] ?? []);
+            }
+            if (array_key_exists('localizacoes', $data)) {
+                $this->sincronizarLocalizacoes($cliente, $data['localizacoes'] ?? []);
+            }
 
             return $cliente;
         });

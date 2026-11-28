@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 class RoteiroViagem extends Model
 {
     use HasFactory;
+    use \App\Models\Concerns\TemVersao;
+
+    /** Contrato fae/v1 §6 (S-14): sobe a cada gravação. */
+    public const COLUNA_VERSAO = 'crm_rot_versao';
 
     protected $table = 'crm_roteiros_viagem';
     protected $primaryKey = 'crm_rot_id';

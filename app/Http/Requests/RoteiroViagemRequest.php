@@ -9,6 +9,41 @@ use Illuminate\Validation\Validator;
 
 class RoteiroViagemRequest extends FormRequest
 {
+    use Concerns\PutParcialDaApi;
+
+    /**
+     * Contrato fae/v1 §6 (S-14): no PUT da API, campo ausente fica como está
+     * gravado — inclusive a lista de clientes e os resultados/observações
+     * de cada um.
+     */
+    protected function prepareForValidation(): void
+    {
+        $id = $this->route('roteiro');
+        $atual = $id ? \App\Models\RoteiroViagem::with('clientes')->find($id) : null;
+
+        $this->completarComAtual($atual, [
+            'crm_rot_vendedor_id', 'crm_rot_periodo_inicio', 'crm_rot_periodo_fim', 'crm_rot_link_mapa', 'crm_rot_status',
+        ]);
+
+        if (! $atual || ! $this->ehPutParcialDaApi()) {
+            return;
+        }
+
+        $faltando = [];
+        if (! $this->exists('clientes')) {
+            $faltando['clientes'] = $atual->clientes->pluck('crm_rot_cli_cliente_id')->map(fn ($v) => (int) $v)->all();
+        }
+        if (! $this->exists('resultados')) {
+            $faltando['resultados'] = $atual->clientes->mapWithKeys(fn ($c) => [(int) $c->crm_rot_cli_cliente_id => $c->crm_rot_cli_resultado?->value])->all();
+        }
+        if (! $this->exists('observacoes')) {
+            $faltando['observacoes'] = $atual->clientes->mapWithKeys(fn ($c) => [(int) $c->crm_rot_cli_cliente_id => $c->crm_rot_cli_observacao])->all();
+        }
+        if ($faltando !== []) {
+            $this->merge($faltando);
+        }
+    }
+
     public function rules()
     {
         return [

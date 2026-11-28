@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 class Cliente extends Model
 {
     use HasFactory;
+    use \App\Models\Concerns\TemVersao;
+
+    /** Contrato fae/v1 §6 (S-14): sobe a cada gravação. */
+    public const COLUNA_VERSAO = 'cli_versao';
 
     protected $table = 'clientes';
     protected $primaryKey = 'cli_id';

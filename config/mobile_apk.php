@@ -1,7 +1,7 @@
 <?php
 
 // Configuração da versão mais recente do app móvel BuildFlow (Flutter),
-// consultada por GET /api/mcl/v1/app/versao. Atualizar as variáveis de
+// consultada por GET /api/fae/v1/app/versao. Atualizar as variáveis de
 // ambiente (não este arquivo) a cada nova release do APK.
 return [
 
@@ -15,5 +15,10 @@ return [
 
     // URL pública (sem autenticação) para baixar o APK dessa versão.
     'url_apk' => env('MOBILE_APK_URL', ''),
+
+    // Contrato fae/v1 §3 (auditoria S-14): com a atualização obrigatória
+    // ligada, requisição sem "X-App-Version" (app antigo) também recebe 426
+    // quando true. Desligado até o app novo estar nos aparelhos.
+    'exigir_cabecalho_versao' => (bool) env('MOBILE_EXIGIR_CABECALHO_VERSAO', false),
 
 ];

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RoteiroViagemRequest;
 use App\Models\RoteiroViagem;
 use App\Repositories\RoteiroViagemRepository;
+use App\Support\ConcorrenciaApi;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CRM05/06/09 (mobile) - Roteiro de Viagem. Reaproveita
@@ -49,19 +51,28 @@ class RoteirosViagemController extends Controller
         return response()->json(['data' => $this->formatDetalhe($roteiro)], 201);
     }
 
+    /** PUT parcial com If-Match (contrato fae/v1 §6, auditoria S-14). */
     public function update(RoteiroViagemRequest $request, int $roteiro): JsonResponse
     {
-        $atual = RoteiroViagem::findOrFail($roteiro);
-        abort_unless($atual->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
-        // 2026-11-27: roteiro concluído não aceita edição (reabrir é pelo web,
-        // só Administrador/Comercial).
-        if ($atual->estaConcluido()) {
-            return response()->json(['message' => 'Roteiro concluído não pode ser editado.'], 422);
-        }
-        $registro = $this->repository->update($roteiro, $request->validated());
-        $registro->load(['vendedor', 'clientes.cliente']);
+        return DB::transaction(function () use ($request, $roteiro) {
+            $atual = RoteiroViagem::lockForUpdate()->findOrFail($roteiro);
+            abort_unless($atual->visivelPara($request->user()), 403, 'Este roteiro pertence a outro vendedor.');
+            // 2026-11-27: roteiro concluído não aceita edição (reabrir é pelo web,
+            // só Administrador/Comercial).
+            if ($atual->estaConcluido()) {
+                return response()->json(['message' => 'Roteiro concluído não pode ser editado.'], 422);
+            }
 
-        return response()->json(['data' => $this->formatDetalhe($registro)]);
+            $recusa = ConcorrenciaApi::recusa($request, $atual->versao(), fn () => $this->formatDetalhe($atual->load(['vendedor', 'clientes.cliente'])));
+            if ($recusa) {
+                return $recusa;
+            }
+
+            $registro = $this->repository->update($roteiro, $request->validated());
+            $registro->load(['vendedor', 'clientes.cliente']);
+
+            return response()->json(['data' => $this->formatDetalhe($registro)]);
+        });
     }
 
     private function formatResumo(RoteiroViagem $r): array
@@ -80,6 +91,7 @@ class RoteirosViagemController extends Controller
     {
         return [
             ...$this->formatResumo($r),
+            'versao' => $r->versao(),
             'vendedor_id' => $r->crm_rot_vendedor_id,
             'link_mapa' => $r->crm_rot_link_mapa,
             'clientes' => $r->clientes->map(fn ($c) => [

@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 class Orcamento extends Model
 {
     use HasFactory;
+    use \App\Models\Concerns\TemVersao;
+
+    /** Contrato fae/v1 §6 (S-14): sobe a cada gravação. */
+    public const COLUNA_VERSAO = 'orc_versao';
 
     protected $table = 'orcamentos';
     protected $primaryKey = 'orc_id';

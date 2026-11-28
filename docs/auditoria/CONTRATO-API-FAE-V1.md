@@ -75,8 +75,9 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 ## 3. Versão do app
 
 - Toda requisição envia `X-App-Version: <versionName>+<buildNumber>` (ex.: `1.4.0+9`), inclusive o login.
-- Abaixo de `MOBILE_APK_VERSAO_MINIMA`: `426 codigo: "versao_minima"` com `{ "versao_minima", "url_apk", "sha256_apk" }`.
-- Sem o cabeçalho: aceito enquanto `MOBILE_EXIGIR_CABECALHO_VERSAO=false` (app antigo).
+- Abaixo de `MOBILE_APK_VERSAO_MINIMA`, **com a atualização obrigatória ligada** (`MOBILE_APK_OBRIGATORIA=true`): `426 codigo: "versao_minima"` com `{ "versao_minima", "url_apk", "sha256_apk" }`. Com a atualização obrigatória desligada, nenhuma versão é barrada (o `versao_minima` hoje é "a mais recente publicada").
+- Sem o cabeçalho (ou com valor fora do formato `x.y.z+b`): aceito enquanto `MOBILE_EXIGIR_CABECALHO_VERSAO=false` (app antigo); com `true`, também `426`.
+- `GET /app/versao` nunca recebe `426`.
 - `GET /app/versao` passa a devolver `{ "versao_minima", "obrigatoria", "url_apk", "sha256_apk" }`. `url_apk` sempre em HTTPS; o app confere o SHA-256 do arquivo baixado antes de instalar.
 
 ## 4. Idempotência
@@ -89,7 +90,9 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
   - Mesma chave ainda em processamento: `409 codigo: "idempotencia_em_andamento"` (o app tenta de novo depois).
   - Hash do conteúdo em `multipart`: campos + SHA-256 de cada arquivo.
 - O app gera a chave **quando enfileira** a gravação e reutiliza a mesma chave em todas as retentativas.
-- Sem o cabeçalho: comportamento antigo enquanto `API_EXIGIR_IDEMPOTENCIA=false`.
+- Sem o cabeçalho: comportamento antigo enquanto `API_EXIGIR_IDEMPOTENCIA=false`; com `true`, `428 codigo: "idempotencia_obrigatoria"`.
+- Chave fora do formato (16 a 64 caracteres, letras, números e hífen): `422 codigo: "idempotencia_chave_invalida"`.
+- A chave é por usuário. Ficam guardadas as respostas 2xx e as recusas de regra (403, 404, 409, 422, 423). 401, 419, 426, 429 e 5xx não ficam: a retentativa roda de novo. Processamento parado há mais de 5 minutos é retomado pela próxima tentativa.
 
 ## 5. Relatório bloqueado (BF10)
 
@@ -104,7 +107,8 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 ## 6. Concorrência (cliente, orçamento, roteiro)
 
 - O `GET` de cliente, orçamento e roteiro devolve `versao` (inteiro, sobe a cada gravação).
-- `PUT` envia `If-Match: <versao>`. Versão diferente: `409 codigo: "conflito_versao"` com `atual` (a representação atual completa). Sem `If-Match`: aceito enquanto `API_EXIGIR_IF_MATCH=false`.
+- `PUT` envia `If-Match: <versao>` (aceita também `"3"` e `W/"3"`). Versão diferente: `409 codigo: "conflito_versao"` com `atual` (a representação atual completa). Sem `If-Match`: aceito enquanto `API_EXIGIR_IF_MATCH=false`; com `true`, `428 codigo: "versao_obrigatoria"`.
+- A versão sobe a cada gravação, pelo app **ou pelo web**.
 - Semântica do `PUT`: altera só os campos presentes no corpo. Listas (`contatos`, `equipamentos`, `localizacoes`) só são tocadas se a chave vier no corpo; item com `id` é atualizado, sem `id` é criado, item visível ausente é removido e item que o usuário **não** vê é preservado.
 
 ## 7. Contatos do cliente (NC01)
@@ -152,10 +156,10 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 | §1 Envelope de erro | parcial: `codigo` nas respostas de login, 401, 403 de mídia, 409 e 423; o resto na Fase 1 | BF_v1.15.13–1.15.15 | — |
 | §2 Autenticação (lockout, expiração, `usuario_inativo`) | **implementado** (habilidade `fae-app`; tokens antigos com `*` valem até vencer; `expira_em` = validade absoluta) | BF_v1.15.14 / `5151cd6` | `SANCTUM_EXPIRACAO_DIAS=30`, `SANCTUM_INATIVIDADE_DIAS=7` |
 | §2 MFA na API (`/login/mfa`) | **implementado** (D-08: todos os perfis) | BF_v1.17.0 | `API_MFA_PERFIS=nenhum` hoje → `todos` com o app novo |
-| §3 Versão do app | pendente | — | `MOBILE_EXIGIR_CABECALHO_VERSAO` |
-| §4 Idempotência | pendente | — | `API_EXIGIR_IDEMPOTENCIA` |
+| §3 Versão do app | **implementado** (426 só com `MOBILE_APK_OBRIGATORIA=true`; `sha256_apk` em `/app/versao`; `url_apk` ainda `http://` no `.env` — trocar para HTTPS quando houver) | BF_v1.19.0 | `MOBILE_EXIGIR_CABECALHO_VERSAO=false` |
+| §4 Idempotência | **implementado** (13 rotas; 7 dias) | BF_v1.19.0 | `API_EXIGIR_IDEMPOTENCIA=false` |
 | §5 Relatório bloqueado | **implementado** (regras da v2) | BF_v1.15.15 / `628f474` | — |
-| §6 Concorrência | pendente | — | `API_EXIGIR_IF_MATCH` |
+| §6 Concorrência | **implementado** (`versao` em cliente, orçamento e roteiro; `If-Match`; PUT parcial com listas preservadas quando ausentes) | BF_v1.19.0 | `API_EXIGIR_IF_MATCH=false` |
 | §7 Contatos | **implementado** (visibilidade D-01, `criado_por_id`, sincronização por `id` preservando ocultos) | BF_v1.15.18 / `a9a2ab5` | — |
 | §8 Revisão do modelo | pendente | — | — |
 | §9 Mídia | parcial: posse e `sem_acesso_arquivo` implementados; nome UUID pendente (L-03) | BF_v1.15.13 / `074726d` | — |
@@ -165,4 +169,4 @@ Corpo: `{ "desafio", "codigo" }` (6 dígitos).
 
 - **v1 (27/11/2026):** proposta inicial, derivada da auditoria.
 - **v2 (28/11/2026):** §5 conforme as decisões do usuário — o cliente continua assinando antes da aprovação (sem o `422 assinatura_cliente_antes_aprovacao`); depois de Aprovado, só a assinatura do cliente que falta (uma vez), compartilhamentos e observação interna; aprovado e assinado pelo cliente não muda de status. §9: nome UUID adiado. Seção 12 com o status da Fase 0. **Repassar à sessão Android.**
-- **v3 (28/11/2026, Fase 1 do servidor):** §2.1/§2.2 — D-08 decidida (MFA para todos os perfis), flag `API_MFA_PERFIS` (`nenhum`/`todos`), bloqueio de código compartilhado com o web. **Repassar à sessão Android.**
+- **v3 (28/11/2026, Fase 1 do servidor):** §2.1/§2.2 — D-08 decidida (MFA para todos os perfis), flag `API_MFA_PERFIS` (`nenhum`/`todos`), bloqueio de código compartilhado com o web. §3: o 426 só vale com a atualização obrigatória ligada. §4: códigos `idempotencia_obrigatoria` (428) e `idempotencia_chave_invalida` (422), chave por usuário. §6: `versao_obrigatoria` (428); a versão sobe também nas gravações pelo web. **Repassar à sessão Android.**

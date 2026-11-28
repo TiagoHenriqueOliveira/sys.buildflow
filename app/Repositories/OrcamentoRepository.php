@@ -43,8 +43,14 @@ class OrcamentoRepository implements CrudRepositoryInterface
                 'orc_ativo' => $data['orc_ativo'] ?? $orcamento->orc_ativo,
             ]);
 
-            $this->sincronizarRespostas($orcamento, $data['respostas'] ?? []);
-            $this->sincronizarVendedoresAdicionais($orcamento, $data['vendedores_adicionais'] ?? []);
+            // Contrato fae/v1 §6 (S-14): no PUT parcial da API a lista que não
+            // veio no corpo não é tocada (o web sempre manda as duas).
+            if (array_key_exists('respostas', $data)) {
+                $this->sincronizarRespostas($orcamento, $data['respostas'] ?? []);
+            }
+            if (array_key_exists('vendedores_adicionais', $data)) {
+                $this->sincronizarVendedoresAdicionais($orcamento, $data['vendedores_adicionais'] ?? []);
+            }
 
             return $orcamento;
         });

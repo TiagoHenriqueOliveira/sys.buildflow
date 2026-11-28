@@ -21,17 +21,22 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('fae/v1')->group(function () {
+// Auditoria S-14 / contrato §3: X-App-Version → 426 "versao_minima"
+// (só com MOBILE_APK_OBRIGATORIA=true; /app/versao nunca é barrado).
+Route::prefix('fae/v1')->middleware('versao.app')->group(function () {
 
     // PÃºblica
     Route::post('/login',  [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/login/mfa', [AuthController::class, 'loginMfa'])->middleware('throttle:login');
-    Route::get('/app/versao', [FaeAppController::class, 'versao']);
+    Route::get('/app/versao', [FaeAppController::class, 'versao'])->name('fae.app.versao');
 
     // Protegidas
     // Auditoria 27/11/2026 (S-05): token precisa da habilidade "fae-app"
     // (os tokens antigos, com "*", continuam valendo até vencer).
-    Route::middleware(['auth:sanctum', 'abilities:fae-app'])->group(function () {
+    // Contrato §4 (S-14): "idempotente" age só nos POST que criam algo
+    // (lista em App\Http\Middleware\Idempotencia::ROTAS), antes das
+    // permissões e do bloqueio de relatório aprovado.
+    Route::middleware(['auth:sanctum', 'abilities:fae-app', 'idempotente'])->group(function () {
 
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me',      [AuthController::class, 'me']);

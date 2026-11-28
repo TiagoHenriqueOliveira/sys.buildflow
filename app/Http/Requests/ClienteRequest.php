@@ -8,8 +8,22 @@ use Illuminate\Validation\Rule;
 
 class ClienteRequest extends FormRequest
 {
+    use Concerns\PutParcialDaApi;
+
+    /** Campos simples que o PUT da API completa com o valor gravado (§6). */
+    private const CAMPOS = [
+        'cli_nome', 'cli_contato_principal', 'cli_vendedor_id', 'cli_cnpj', 'cli_inscricao_estadual',
+        'cli_cidade', 'cli_uf', 'cli_segmento', 'cli_caso_sucesso', 'cli_caso_sucesso_descricao',
+        'cli_classificacao_id', 'cli_dias_alerta_recontato', 'cli_telefone', 'cli_email', 'cli_ativo',
+        'cli_latitude', 'cli_longitude', 'cli_link_mapa',
+    ];
+
     protected function prepareForValidation()
     {
+        $id = $this->route('cliente');
+        $this->completarComAtual($id ? \App\Models\Cliente::find($id) : null, self::CAMPOS);
+        $this->listasAusentesComoVazias(['contatos', 'equipamentos', 'localizacoes']);
+
         $cnpj = $this->input('cli_cnpj');
         $tel  = $this->input('cli_telefone');
         $uf   = $this->input('cli_uf');
@@ -35,8 +49,11 @@ class ClienteRequest extends FormRequest
             'cli_cnpj' => $cnpj !== null ? preg_replace('/\D+/', '', $cnpj) : $cnpj,
             'cli_telefone' => $tel !== null ? preg_replace('/\D+/', '', $tel) : $tel,
             'cli_uf' => $uf !== null ? strtoupper(trim($uf)) : $uf,
-            'contatos' => $contatos,
         ]);
+        // PUT parcial da API (§6): sem a chave "contatos", a lista não é tocada.
+        if ($this->exists('contatos')) {
+            $this->merge(['contatos' => $contatos]);
+        }
     }
 
     public function rules()

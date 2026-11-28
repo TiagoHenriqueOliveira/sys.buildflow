@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ClienteRequest;
 use App\Models\Cliente;
 use App\Repositories\ClienteRepository;
+use App\Support\ConcorrenciaApi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * NC01 (mobile) - CRUD de clientes consumido pelo app. Reaproveita
@@ -70,13 +72,24 @@ class ClientesController extends Controller
      * PUT /api/fae/v1/clientes/{id}
      * Middleware `comercial`: so Comercial/Administrador podem editar.
      */
+    /** PUT parcial com If-Match (contrato fae/v1 §6, auditoria S-14). */
     public function update(ClienteRequest $request, int $cliente): JsonResponse
     {
-        abort_unless(Cliente::findOrFail($cliente)->visivelPara($request->user()), 403, 'Este cliente pertence a outro vendedor.');
-        $registro = $this->repository->update($cliente, $request->validated());
-        $registro->load(['classificacao', 'contatos', 'equipamentos', 'localizacoes']);
+        return DB::transaction(function () use ($request, $cliente) {
+            $atual = Cliente::lockForUpdate()->findOrFail($cliente);
+            abort_unless($atual->visivelPara($request->user()), 403, 'Este cliente pertence a outro vendedor.');
 
-        return response()->json(['data' => $this->formatDetalhe($registro)]);
+            $recusa = ConcorrenciaApi::recusa($request, $atual->versao(),
+                fn () => $this->formatDetalhe($atual->load(['classificacao', 'contatos', 'equipamentos', 'localizacoes'])));
+            if ($recusa) {
+                return $recusa;
+            }
+
+            $registro = $this->repository->update($cliente, $request->validated());
+            $registro->load(['classificacao', 'contatos', 'equipamentos', 'localizacoes']);
+
+            return response()->json(['data' => $this->formatDetalhe($registro)]);
+        });
     }
 
     /**
@@ -125,12 +138,12 @@ class ClientesController extends Controller
 
         return [
             ...$this->formatResumo($c),
+            'versao'                 => $c->versao(),
             'cnpj'                   => $c->cli_cnpj,
             'inscricao_estadual'     => $c->cli_inscricao_estadual,
             'contato_principal'      => $c->cli_contato_principal,
-            // O app nao edita estes dois campos, mas precisa devolve-los no
-            // PUT: ClienteRepository::camposPrincipais grava null em tudo que
-            // nao vier na requisicao.
+            // O app nao edita estes dois campos. Desde o PUT parcial (§6,
+            // S-14) campo ausente fica como esta gravado.
             'vendedor_id'            => $c->cli_vendedor_id,
             'dias_alerta_recontato'  => $c->cli_dias_alerta_recontato,
             'segmento'               => $c->cli_segmento,

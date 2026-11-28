@@ -16,15 +16,24 @@ class OrcamentoRequest extends FormRequest
      * (vale também para vendedor adicional editando o orçamento de outro).
      * Os demais perfis com acesso escolhem livremente.
      */
+    use Concerns\PutParcialDaApi;
+
     protected function prepareForValidation(): void
     {
+        $id = $this->route('orcamento');
+        $atual = $id ? \App\Models\Orcamento::find($id) : null;
+
+        // Contrato fae/v1 §6 (S-14): PUT parcial na API.
+        $this->completarComAtual($atual, [
+            'orc_cliente_id', 'orc_vendedor_id', 'orc_tipo_orcamento_id', 'orc_nivel',
+            'orc_prazo_envio', 'orc_resultado', 'orc_ativo',
+        ]);
+        $this->listasAusentesComoVazias(['respostas', 'vendedores_adicionais']);
+
         $usuario = $this->user();
         if (! $usuario?->veSoOsProprios()) {
             return;
         }
-
-        $id = $this->route('orcamento');
-        $atual = $id ? \App\Models\Orcamento::find($id) : null;
 
         $this->merge(['orc_vendedor_id' => $atual?->orc_vendedor_id ?? $usuario->user_id]);
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Fae;
 
 use App\Http\Controllers\Controller;
+use App\Support\VersaoApp;
 use Illuminate\Http\JsonResponse;
 
 class AppController extends Controller
@@ -20,6 +21,8 @@ class AppController extends Controller
             'versao_minima' => config('mobile_apk.versao_minima'),
             'obrigatoria'   => (bool) config('mobile_apk.obrigatoria'),
             'url_apk'       => config('mobile_apk.url_apk'),
+            // Contrato §3 (S-14): o app confere o arquivo baixado antes de instalar.
+            'sha256_apk'    => VersaoApp::sha256Apk(),
         ]);
     }
 }

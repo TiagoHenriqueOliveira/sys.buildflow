@@ -7,7 +7,9 @@ use App\Http\Requests\OrcamentoComentarioRequest;
 use App\Http\Requests\OrcamentoRequest;
 use App\Models\Orcamento;
 use App\Repositories\OrcamentoRepository;
+use App\Support\ConcorrenciaApi;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -73,13 +75,25 @@ class OrcamentosController extends Controller
         return response()->json(['data' => $this->formatDetalhe($orcamento)], 201);
     }
 
+    /** PUT parcial com If-Match (contrato fae/v1 §6, auditoria S-14). */
     public function update(OrcamentoRequest $request, int $orcamento): JsonResponse
     {
-        $this->garantirVisivel(Orcamento::findOrFail($orcamento));
-        $registro = $this->repository->update($orcamento, $request->validated());
-        $registro->load(['cliente', 'vendedor', 'tipoOrcamento', 'respostas', 'comentarios.autor', 'vendedoresAdicionais']);
+        $relacoes = ['cliente', 'vendedor', 'tipoOrcamento', 'respostas', 'comentarios.autor', 'vendedoresAdicionais'];
 
-        return response()->json(['data' => $this->formatDetalhe($registro)]);
+        return DB::transaction(function () use ($request, $orcamento, $relacoes) {
+            $atual = Orcamento::lockForUpdate()->findOrFail($orcamento);
+            $this->garantirVisivel($atual);
+
+            $recusa = ConcorrenciaApi::recusa($request, $atual->versao(), fn () => $this->formatDetalhe($atual->load($relacoes)));
+            if ($recusa) {
+                return $recusa;
+            }
+
+            $registro = $this->repository->update($orcamento, $request->validated());
+            $registro->load($relacoes);
+
+            return response()->json(['data' => $this->formatDetalhe($registro)]);
+        });
     }
 
     public function storeComentario(OrcamentoComentarioRequest $request, int $id): JsonResponse
@@ -143,6 +157,7 @@ class OrcamentosController extends Controller
     {
         return [
             ...$this->formatResumo($o),
+            'versao' => $o->versao(),
             'cliente_id' => $o->orc_cliente_id,
             'vendedor_id' => $o->orc_vendedor_id,
             'tipo_orcamento_id' => $o->orc_tipo_orcamento_id,

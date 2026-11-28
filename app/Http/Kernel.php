@@ -62,6 +62,9 @@ class Kernel extends HttpKernel
         'usuario.ativo' => \App\Http\Middleware\UsuarioAtivo::class,
         'sessao.prazo' => \App\Http\Middleware\SessaoComPrazo::class,
         'relatorio.editavel' => \App\Http\Middleware\RelatorioEditavel::class,
+        // Contrato fae/v1 §3 e §4 (auditoria S-14).
+        'versao.app' => \App\Http\Middleware\VersaoMinimaApp::class,
+        'idempotente' => \App\Http\Middleware\Idempotencia::class,
         // Habilidades do token Sanctum (contrato fae/v1 §2.3: "fae-app").
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
